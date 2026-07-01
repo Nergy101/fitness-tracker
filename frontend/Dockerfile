@@ -6,11 +6,9 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
-
-# API base URL is baked in at build time (Vite statically inlines it).
-# Override for non-local deploys: --build-arg VITE_API_URL=https://api.example.com
-ARG VITE_API_URL=http://localhost:8000
-ENV VITE_API_URL=$VITE_API_URL
+# Empty → relative /api requests, proxied by nginx to the backend. This is what
+# lets the same image work on localhost or any domain without a rebuild.
+ENV VITE_API_URL=""
 RUN npm run build
 
 FROM nginx:alpine

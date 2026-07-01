@@ -1,38 +1,36 @@
-# Runs the pushed :latest images by default. Override the registry/tag with
-# env vars, e.g. `REGISTRY=ghcr.io/nergy101 TAG=v1 docker compose up`.
+# Runs the pushed :latest images. Just `docker compose up` and open
+# http://localhost:8080 — the frontend proxies /api to the backend over the
+# internal network, so nothing else needs configuring.
 #
-# The `build:` sections let you build + push those same tags locally:
-#   docker compose build
-#   docker compose push
+#   docker compose up            # run it
+#   docker compose build         # build the images locally
+#   docker compose push          # push them (after: docker login ghcr.io)
 services:
   backend:
-    image: ${REGISTRY:-ghcr.io/nergy101}/fitness-tracker-backend:${TAG:-latest}
-    build:
-      context: ./backend
-    environment:
-      # Persisted SQLite on the named volume.
-      DATABASE_URL: sqlite:////data/fitness_tracker.db
-      # Allow the frontend origin (published port below).
-      CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-8080},http://127.0.0.1:${FRONTEND_PORT:-8080}
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    image: ghcr.io/nergy101/fitness-tracker-backend:latest
+    build: ./backend
+    # No published port: only the frontend reaches it, over the internal network.
+    expose:
+      - "8000"
     volumes:
       - backend-data:/data
+    networks:
+      - app
     restart: unless-stopped
 
   frontend:
-    image: ${REGISTRY:-ghcr.io/nergy101}/fitness-tracker-frontend:${TAG:-latest}
-    build:
-      context: ./frontend
-      args:
-        # Baked into the static bundle — point the browser at the backend's
-        # published port. Rebuild if you change BACKEND_PORT.
-        VITE_API_URL: http://localhost:${BACKEND_PORT:-8000}
+    image: ghcr.io/nergy101/fitness-tracker-frontend:latest
+    build: ./frontend
     ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      - "8080:80"
     depends_on:
       - backend
+    networks:
+      - app
     restart: unless-stopped
+
+networks:
+  app:
 
 volumes:
   backend-data:

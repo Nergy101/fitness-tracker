@@ -1,7 +1,9 @@
 // Typed client for the FitnessTracker FastAPI backend.
 // Mirrors backend/app/schemas.py.
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// Empty string → same-origin relative requests (Docker: nginx proxies /api to
+// the backend). Unset → localhost:8000 for `npm run dev` convenience.
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 export type Category = "cardio" | "strength" | "flexibility" | "other";
 

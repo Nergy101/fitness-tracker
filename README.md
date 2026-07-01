@@ -61,6 +61,11 @@ Run the published images (frontend on `:8080`, backend on `:8000`):
 docker compose up
 ```
 
+Then open **http://localhost:8080** — that's all. The frontend proxies `/api`
+to the backend over an internal Docker network, so the backend isn't exposed
+publicly, there's no CORS to configure, and no API URL to set. It works the
+same on localhost or any VPS/domain, with no rebuild.
+
 `docker-compose.yml` pins the pushed `:latest` images from GHCR and includes
 `build:` sections so you can build and push those same tags:
 
@@ -69,15 +74,8 @@ docker compose build
 docker compose push        # requires: docker login ghcr.io
 ```
 
-Override the registry, tag, or ports with env vars:
-
-```bash
-REGISTRY=ghcr.io/you TAG=v1 FRONTEND_PORT=3000 docker compose up
-```
-
-> The frontend's API URL is baked in at build time (`VITE_API_URL`, default
-> `http://localhost:8000`). For a non-local deploy, rebuild with
-> `--build-arg VITE_API_URL=https://your-api`.
+To change the exposed port, edit the `frontend` `ports:` mapping (e.g.
+`"3000:80"`).
 
 ### CI
 
