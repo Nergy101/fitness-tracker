@@ -391,3 +391,80 @@ test("wellness check-in logs and displays trend", async ({ page, request }) => {
   expect(match).toBeTruthy();
   expect(match.energy).toBe(3);
 });
+
+// ─── Runs ──────────────────────────────────────────────
+
+test("log a run via UI shows in recent runs and history", async ({ page, request }) => {
+  await page.goto("/");
+
+  // Open the run logger
+  await page.getByText("Log a Run").click();
+
+  // Select 30m duration
+  await page.getByRole("button", { name: "30m" }).click();
+
+  // Enter distance
+  await page.locator('input[placeholder="e.g. 5.0"]').fill("5.0");
+
+  // Save
+  await page.getByRole("button", { name: "Save Run" }).click();
+
+  // Toast confirms
+  await expect(page.getByRole("status")).toContainText("Run logged");
+
+  // Run appears in recent runs section
+  await expect(page.getByText("5.0 km", { exact: false }).first()).toBeVisible();
+
+  // Verify via API — pace should be 360s/km (30min / 5km)
+  const runs = await (await request.get(`${API_URL}/api/v1/runs`)).json();
+  const match = runs.find((r: { distance_km: number }) => r.distance_km === 5.0);
+  expect(match).toBeTruthy();
+  expect(match.pace_per_km).toBe(360);
+  expect(match.duration_seconds).toBe(1800);
+
+  // Verify it appears in History with a Run label
+  await page.getByRole("button", { name: "History" }).click();
+  await expect(page.getByText("Run: 5.0km").first()).toBeVisible();
+});
+
+test("run stats endpoint returns correct aggregates", async ({ page, request }) => {
+  // Seed two runs via API
+  await request.post(`${API_URL}/api/v1/runs`, {
+    data: { duration_seconds: 1800, distance_km: 5.0, date: "2026-07-01" },
+  });
+  await request.post(`${API_URL}/api/v1/runs`, {
+    data: { duration_seconds: 2700, distance_km: 7.5, date: "2026-07-02" },
+  });
+
+  const stats = await (await request.get(`${API_URL}/api/v1/runs/stats`)).json();
+  expect(stats.total_runs).toBe(2);
+  expect(stats.total_distance_km).toBeCloseTo(12.5, 1);
+  expect(stats.total_duration_seconds).toBe(4500);
+  // avg pace = 4500s / 12.5km = 360 s/km
+  expect(stats.avg_pace_per_km).toBeCloseTo(360, 0);
+
+  // Verify on the Workouts tab
+  await page.goto("/");
+  await expect(page.getByText("Running Stats").first()).toBeVisible();
+  await expect(page.getByText("12").first()).toBeVisible(); // total km (12.5 rounded to 12)
+});
+
+test("deleting a run removes it and the associated session", async ({ request }) => {
+  const res = await request.post(`${API_URL}/api/v1/runs`, {
+    data: { duration_seconds: 1200, distance_km: 3.0, notes: "to-delete" },
+  });
+  const run = await res.json();
+  expect(run.id).toBeTruthy();
+
+  // Delete it
+  await request.delete(`${API_URL}/api/v1/runs/${run.id}`);
+
+  // Verify it's gone from runs
+  const runs = await (await request.get(`${API_URL}/api/v1/runs`)).json();
+  expect(runs.find((r: { id: number }) => r.id === run.id)).toBeFalsy();
+
+  // Verify it's gone from sessions
+  const sessions = await (await request.get(`${API_URL}/api/v1/sessions`)).json();
+  const match = sessions.find((s: { template_name: string }) => s.template_name.includes("3.0km"));
+  expect(match).toBeFalsy();
+});
