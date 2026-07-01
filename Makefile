@@ -1,4 +1,4 @@
-.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed run-fake-history build e2e clean help
+.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed seed-fake-history remove-fake-history build e2e clean help
 
 # ─── Config ──────────────────────────────────────────────
 
@@ -58,8 +58,11 @@ setup-frontend: frontend/node_modules ## Install frontend dependencies
 seed: $(STAMP) ## Seed database with initial exercise data
 	cd backend && $(VENV_PY) seed.py
 
-run-fake-history: $(STAMP) ## Seed example workout history (for demos)
+seed-fake-history: $(STAMP) ## Seed example workout history (for demos)
 	cd backend && $(VENV_PY) scripts/seed_fake_history.py
+
+remove-fake-history: $(STAMP) ## Remove all workout history (sessions)
+	cd backend && $(VENV_PY) scripts/seed_fake_history.py clear
 
 # ─── Run ─────────────────────────────────────────────────
 

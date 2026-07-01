@@ -81,7 +81,9 @@ def seed_fake_history() -> None:
             return
 
         # Clear existing sessions so the demo set is clean and repeatable.
+        # Delete children first — bulk delete bypasses ORM cascade.
         removed = db.query(WorkoutSession).count()
+        db.query(SessionExercise).delete()
         db.query(WorkoutSession).delete()
         db.commit()
 
@@ -110,5 +112,23 @@ def seed_fake_history() -> None:
         db.close()
 
 
+def clear_history() -> None:
+    """Delete all workout sessions (removes fake and real history alike)."""
+    Base.metadata.create_all(bind=engine)
+    ensure_schema()
+    db = SessionLocal()
+    try:
+        removed = db.query(WorkoutSession).count()
+        db.query(SessionExercise).delete()
+        db.query(WorkoutSession).delete()
+        db.commit()
+        print(f"History cleared: removed {removed} session(s).")
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
-    seed_fake_history()
+    if len(sys.argv) > 1 and sys.argv[1] == "clear":
+        clear_history()
+    else:
+        seed_fake_history()

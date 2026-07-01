@@ -156,6 +156,104 @@ test("Skip advances past the current exercise", async ({ page, request }) => {
   await expect(page.getByText("Workout Complete!")).toBeVisible({ timeout: 15_000 });
 });
 
+test("history range selector and all-time drill-down", async ({ page, request }) => {
+  // Seed one session directly so History has data to show.
+  const res = await request.post(`${API_URL}/api/v1/sessions`, {
+    data: {
+      template_id: null,
+      template_name: "E2E History",
+      total_duration_seconds: 600,
+      total_kcal_estimated: 90,
+      exercises: [
+        {
+          exercise_id: null,
+          exercise_name: "Push-ups",
+          duration_seconds: 30,
+          kcal_burned: 3,
+          order_index: 0,
+          completed: true,
+        },
+      ],
+    },
+  });
+  expect(res.status()).toBe(201);
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "History" }).click();
+
+  // Range pills present; the session shows in the default (Last 7 days) range.
+  await expect(page.getByRole("button", { name: "This week" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Last 30 days" })).toBeVisible();
+  await expect(page.getByText("E2E History").first()).toBeVisible();
+
+  // Drill into all-time and back.
+  await page.getByRole("button", { name: "View all" }).click();
+  await expect(page.getByText("All time")).toBeVisible();
+  await expect(page.getByText("E2E History").first()).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("button", { name: "This week" })).toBeVisible();
+});
+
+test("history export produces a versioned file and import restores sessions", async ({
+  page,
+  request,
+}) => {
+  // Seed a session so there's something to export.
+  await request.post(`${API_URL}/api/v1/sessions`, {
+    data: {
+      template_id: null,
+      template_name: "Export Me",
+      total_duration_seconds: 300,
+      total_kcal_estimated: 42,
+      exercises: [],
+    },
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "History" }).click();
+
+  // Export → capture the download and assert the versioned envelope.
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Export" }).click(),
+  ]);
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const c of stream) chunks.push(c as Buffer);
+  const parsed = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  expect(parsed.version).toBe(1);
+  expect(Array.isArray(parsed.sessions)).toBe(true);
+  expect(parsed.sessions.some((s: { template_name: string }) => s.template_name === "Export Me")).toBe(true);
+
+  // Import a versioned file with a preserved past date; it should appear.
+  const importDoc = JSON.stringify({
+    version: 1,
+    sessions: [
+      {
+        template_name: "Imported Session",
+        total_duration_seconds: 120,
+        total_kcal_estimated: 20,
+        started_at: "2026-06-15T09:00:00",
+        exercises: [],
+      },
+    ],
+  });
+  await page.setInputFiles('input[type="file"]', {
+    name: "history.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(importDoc),
+  });
+  // The imported date is older than the default range, so view all to see it.
+  await page.getByRole("button", { name: "View all" }).click();
+  await expect(page.getByText("Imported Session").first()).toBeVisible();
+
+  // And it persisted with the imported date (via the API).
+  const sessions = await (await request.get(`${API_URL}/api/v1/sessions`)).json();
+  const imported = sessions.find((s: { template_name: string }) => s.template_name === "Imported Session");
+  expect(imported).toBeTruthy();
+  expect(imported.started_at.startsWith("2026-06-15")).toBe(true);
+});
+
 test("theme toggle flips and persists", async ({ page }) => {
   await page.goto("/");
   const html = page.locator("html");

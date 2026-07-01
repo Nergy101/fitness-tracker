@@ -98,6 +98,8 @@ export interface WorkoutSessionInput {
   total_duration_seconds: number;
   total_kcal_estimated: number;
   exercises: SessionExerciseInput[];
+  started_at?: string | null;
+  finished_at?: string | null;
 }
 
 async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> {

@@ -6,6 +6,7 @@ import {
 } from "@phosphor-icons/react";
 import { useTheme } from "../useTheme";
 import { useAudio } from "../useAudio";
+import { useLocale } from "../useLocale";
 
 interface TopControlsProps {
   /** Larger, higher-contrast buttons for the dark fullscreen runner. */
@@ -17,6 +18,7 @@ interface TopControlsProps {
 export default function TopControls({ variant = "header" }: TopControlsProps) {
   const { theme, toggleTheme } = useTheme();
   const { muted, toggleMuted } = useAudio();
+  const { locale, toggleLocale } = useLocale();
 
   const size = variant === "overlay" ? 22 : 20;
   const btn =
@@ -38,6 +40,14 @@ export default function TopControls({ variant = "header" }: TopControlsProps) {
         ) : (
           <SpeakerHigh size={size} weight="fill" />
         )}
+      </button>
+      <button
+        onClick={toggleLocale}
+        aria-label={`Date format ${locale === "dmy" ? "day/month" : "month/day"} — tap to switch`}
+        className={btn + " text-xs font-semibold tabular-nums"}
+        style={{ minWidth: size + 12 }}
+      >
+        {locale === "dmy" ? "D/M" : "M/D"}
       </button>
       <button
         onClick={toggleTheme}

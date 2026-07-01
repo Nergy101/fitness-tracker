@@ -60,7 +60,8 @@ def create_session(data: WorkoutSessionCreate, db: Session = Depends(get_db)):
     session = WorkoutSession(
         template_id=data.template_id,
         template_name=template_name,
-        started_at=datetime.now(timezone.utc),
+        started_at=data.started_at or datetime.now(timezone.utc),
+        finished_at=data.finished_at,
         total_duration_seconds=data.total_duration_seconds,
         total_kcal_estimated=data.total_kcal_estimated,
     )

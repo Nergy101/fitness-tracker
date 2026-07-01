@@ -109,6 +109,10 @@ class WorkoutSessionCreate(BaseModel):
     exercises: list[SessionExerciseCreate] = []
     total_duration_seconds: int = 0
     total_kcal_estimated: float = 0.0
+    # Optional — set by history import to preserve original timing; the runner
+    # omits them and the server stamps "now".
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
 
 
 class WorkoutSessionEnd(BaseModel):
