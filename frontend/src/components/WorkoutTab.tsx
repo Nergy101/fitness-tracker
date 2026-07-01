@@ -155,7 +155,7 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
         >
           <PersonSimpleRun size={22} className="text-accent shrink-0" />
           <div className="text-left">
-            <p className="text-sm font-semibold text-white">Log a Run</p>
+            <p className="text-sm font-semibold text-fg">Log a Run</p>
             <p className="text-[11px] text-fg/40 mt-0.5">Record a completed run with distance, duration, and pace</p>
           </div>
         </button>
@@ -164,7 +164,7 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <PersonSimpleRun size={18} className="text-accent" />
-              <span className="text-sm font-semibold text-white">Log a Run</span>
+              <span className="text-sm font-semibold text-fg">Log a Run</span>
             </div>
             <button onClick={() => setShowRunForm(false)} className="text-xs text-fg/40 hover:text-white">Cancel</button>
           </div>

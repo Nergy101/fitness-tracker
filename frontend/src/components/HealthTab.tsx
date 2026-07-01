@@ -448,7 +448,7 @@ function SettingsModal({
             <label className="text-xs text-fg/50 block mb-1">Birthday</label>
             <input type="date" value={form.birthday}
               onChange={(e) => setForm({ ...form, birthday: e.target.value })}
-              className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50" />
+              className="w-full min-w-0 bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50 box-border" />
           </div>
           <div>
             <label className="text-xs text-fg/50 block mb-1">Gender</label>
@@ -472,7 +472,7 @@ function SettingsModal({
             <label className="text-xs text-fg/50 block mb-1">Reminder Time</label>
             <input type="time" value={form.reminder_time}
               onChange={(e) => setForm({ ...form, reminder_time: e.target.value })}
-              className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50" />
+              className="w-full min-w-0 bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50 box-border" />
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.notifications_enabled}
