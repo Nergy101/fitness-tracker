@@ -132,3 +132,15 @@ class WellnessCheckin(Base):
     sleep_hours = Column(Float, nullable=True)
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class RunEntry(Base):
+    __tablename__ = "run_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    duration_seconds = Column(Integer, nullable=False)
+    distance_km = Column(Float, nullable=False)
+    pace_per_km = Column(Float, nullable=True)  # computed: seconds per km
+    date = Column(Date, nullable=False, default=lambda: date.today())
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

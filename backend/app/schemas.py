@@ -271,3 +271,40 @@ class HealthScoreResponse(BaseModel):
     streak_score: float = 0.0
     measurement_score: float = 0.0
     spotlight: str = ""
+
+
+# ─── Run Schemas ────────────────────────────────────────────
+
+
+class RunEntryCreate(BaseModel):
+    duration_seconds: int
+    distance_km: float
+    date: Optional[date] = None
+    notes: str = ""
+
+
+class RunEntryResponse(BaseModel):
+    id: int
+    duration_seconds: int
+    distance_km: float
+    pace_per_km: Optional[float] = None
+    date: date
+    notes: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RunStatsResponse(BaseModel):
+    total_runs: int = 0
+    total_distance_km: float = 0.0
+    total_duration_seconds: int = 0
+    avg_pace_per_km: Optional[float] = None
+    current_week_distance_km: float = 0.0
+    previous_week_distance_km: float = 0.0
+    best_week_distance_km: float = 0.0
+    fastest_5k_seconds: Optional[int] = None
+    fastest_10k_seconds: Optional[int] = None
+    longest_run_seconds: Optional[int] = None
+    longest_run_distance_km: Optional[float] = None
+    monthly_breakdown: list[dict] = []

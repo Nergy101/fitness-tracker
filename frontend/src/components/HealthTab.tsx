@@ -3,6 +3,8 @@ import {
   CaretDown,
   CaretUp,
   Gear,
+  Smiley,
+  Ruler,
 } from "@phosphor-icons/react";
 import {
   api,
@@ -301,7 +303,13 @@ export default function HealthTab() {
         onClick={() => setShowMeas(!showMeas)}
         className="w-full bg-surface rounded-xl p-4 border border-fg/5 flex items-center justify-between"
       >
-        <span className="text-sm font-semibold text-white">Body Measurements</span>
+        <div className="flex items-center gap-3">
+          <Ruler size={22} className="text-accent shrink-0" />
+          <div className="text-left">
+            <span className="text-sm font-semibold text-white">Body Measurements</span>
+            <p className="text-[11px] text-fg/40 mt-0.5">Track waist, hips, arms, thighs and see changes over time</p>
+          </div>
+        </div>
         {showMeas ? <CaretUp size={18} /> : <CaretDown size={18} />}
       </button>
       {showMeas && <MeasurementsSection />}
@@ -311,7 +319,13 @@ export default function HealthTab() {
         onClick={() => setShowWellness(!showWellness)}
         className="w-full bg-surface rounded-xl p-4 border border-fg/5 flex items-center justify-between"
       >
-        <span className="text-sm font-semibold text-white">Wellness Check-in</span>
+        <div className="flex items-center gap-3">
+          <Smiley size={22} className="text-accent shrink-0" />
+          <div className="text-left">
+            <span className="text-sm font-semibold text-white">Wellness Check-in</span>
+            <p className="text-[11px] text-fg/40 mt-0.5">Log your mood, energy, stress, and sleep to spot trends</p>
+          </div>
+        </div>
         {showWellness ? <CaretUp size={18} /> : <CaretDown size={18} />}
       </button>
       {showWellness && <WellnessSection />}
