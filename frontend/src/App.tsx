@@ -54,7 +54,7 @@ export default function App() {
   const tabTitle = TABS.find((t) => t.id === currentTab)?.label ?? "";
 
   return (
-    <div className="app-shell flex flex-col min-h-screen pt-[env(safe-area-inset-top)]">
+    <div className="app-shell flex flex-col h-screen pt-[env(safe-area-inset-top)]">
       <header className="px-4 py-3 flex items-center justify-between border-b border-fg/10 shrink-0">
         <h1 className="text-lg font-bold">{tabTitle}</h1>
         <div className="flex items-center gap-3">
@@ -74,7 +74,7 @@ export default function App() {
         {currentTab === "health" && <HealthTab />}
       </main>
 
-      <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 pt-2 pb-[max(env(safe-area-inset-bottom,0px),6px)] shrink-0">
+      <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[max(env(safe-area-inset-bottom,0px),6px)] shrink-0">
         {TABS.map((tab) => (
           <button
             key={tab.id}
