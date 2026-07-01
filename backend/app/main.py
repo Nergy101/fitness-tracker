@@ -3,13 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS
 from app.database import engine, Base, ensure_schema
-from app.routers import exercises, workouts, sessions, health, runs
+from app.routers import exercises, workouts, sessions, health, runs, auth
 
 # Create all tables on startup, then apply additive migrations.
 Base.metadata.create_all(bind=engine)
 ensure_schema()
 
-app = FastAPI(title="FitnessTracker API", version="1.1.0")
+app = FastAPI(title="FitnessTracker API", version="1.2.0")
+
+# Auth middleware — must be added before other middleware/routes
+app.middleware("http")(auth.auth_middleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +27,7 @@ app.include_router(workouts.router)
 app.include_router(sessions.router)
 app.include_router(health.router)
 app.include_router(runs.router)
+app.include_router(auth.router)
 
 
 @app.get("/api/health")

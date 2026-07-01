@@ -296,10 +296,29 @@ export interface RunStatsResponse {
 }
 
 async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  // Attach auth token if stored
+  const token = localStorage.getItem("fitness_auth");
+  if (token) {
+    headers["Authorization"] = `Basic ${token}`;
+  }
+
   const res = await fetch(`${API_BASE}${url}`, {
-    headers: { "Content-Type": "application/json", ...options.headers },
     ...options,
+    headers,
   });
+
+  // Handle 401 — clear auth and redirect to login
+  if (res.status === 401) {
+    localStorage.removeItem("fitness_auth");
+    window.location.reload();
+    throw new Error("Session expired");
+  }
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`API error ${res.status}: ${text}`);

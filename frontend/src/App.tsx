@@ -13,6 +13,7 @@ import HistoryTab from "./components/HistoryTab";
 import HealthTab from "./components/HealthTab";
 import WorkoutRunner from "./components/WorkoutRunner";
 import TopControls from "./components/TopControls";
+import LoginScreen, { getStoredAuth, clearStoredAuth } from "./components/LoginScreen";
 
 type TabId = "workout" | "exercises" | "history" | "health";
 
@@ -30,11 +31,16 @@ const TABS: Tab[] = [
 ];
 
 export default function App() {
+  const [authenticated, setAuthenticated] = useState(() => !!getStoredAuth());
   const [currentTab, setCurrentTab] = useState<TabId>("workout");
   const [runningWorkout, setRunningWorkout] = useState<WorkoutTemplate | null>(
     null,
   );
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+  if (!authenticated) {
+    return <LoginScreen onLogin={() => setAuthenticated(true)} />;
+  }
 
   if (runningWorkout) {
     return (
@@ -60,6 +66,13 @@ export default function App() {
         <div className="flex items-center gap-3">
           <span className="text-xs text-fg/40">FitnessTracker</span>
           <TopControls />
+          <button
+            onClick={() => { clearStoredAuth(); setAuthenticated(false); }}
+            className="text-[10px] text-fg/20 hover:text-red-400 transition-colors"
+            title="Logout"
+          >
+            Logout
+          </button>
         </div>
       </header>
 

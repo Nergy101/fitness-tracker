@@ -3,10 +3,10 @@ __pycache__/
 *.pyc
 node_modules/
 dist/
-*.tsbuildinfo
 .env
 *.db
 .astro/
+settings.toml
 
 # Playwright
 /frontend/test-results/
