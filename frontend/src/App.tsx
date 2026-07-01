@@ -2,17 +2,15 @@ import { useState } from "react";
 import {
   Barbell,
   ChartBar,
-  Moon,
   PersonSimpleRun,
-  Sun,
   type Icon,
 } from "@phosphor-icons/react";
 import { type WorkoutTemplate } from "./api";
-import { useTheme } from "./useTheme";
 import WorkoutTab from "./components/WorkoutTab";
 import ExercisesTab from "./components/ExercisesTab";
 import HistoryTab from "./components/HistoryTab";
 import WorkoutRunner from "./components/WorkoutRunner";
+import TopControls from "./components/TopControls";
 
 type TabId = "workout" | "exercises" | "history";
 
@@ -23,13 +21,12 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "workout", label: "Workout", icon: Barbell },
+  { id: "workout", label: "Workouts", icon: Barbell },
   { id: "exercises", label: "Exercises", icon: PersonSimpleRun },
   { id: "history", label: "History", icon: ChartBar },
 ];
 
 export default function App() {
-  const { theme, toggleTheme } = useTheme();
   const [currentTab, setCurrentTab] = useState<TabId>("workout");
   const [runningWorkout, setRunningWorkout] = useState<WorkoutTemplate | null>(
     null,
@@ -59,13 +56,7 @@ export default function App() {
         <h1 className="text-lg font-bold">{tabTitle}</h1>
         <div className="flex items-center gap-3">
           <span className="text-xs text-fg/40">FitnessTracker</span>
-          <button
-            onClick={toggleTheme}
-            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="text-fg/50 hover:text-fg transition-colors p-1 rounded-lg"
-          >
-            {theme === "dark" ? <Sun size={20} weight="fill" /> : <Moon size={20} weight="fill" />}
-          </button>
+          <TopControls />
         </div>
       </header>
 

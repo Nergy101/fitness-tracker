@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type WorkoutTemplate } from "../api";
+import { soundStart, soundRest, soundFinish, speak } from "../sound";
+import { SkipForward, X } from "@phosphor-icons/react";
 import ExerciseImage from "./ExerciseImage";
+import TopControls from "./TopControls";
 
 type Phase = "rest" | "exercise" | "roundrest" | "finished";
 
@@ -12,26 +15,6 @@ function kcalFor(durationSeconds: number, kcalPerMin: number): number {
   return (durationSeconds / 60) * kcalPerMin;
 }
 
-function beep(): void {
-  try {
-    const Ctor = window.AudioContext || window.webkitAudioContext;
-    if (!Ctor) return;
-    const ctx = new Ctor();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = "sine";
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
-    if (navigator.vibrate) navigator.vibrate(200);
-  } catch {
-    // AudioContext may be unavailable (autoplay policy / SSR); ignore.
-  }
-}
 
 interface WorkoutRunnerProps {
   workout: WorkoutTemplate;
@@ -100,6 +83,7 @@ export default function WorkoutRunner({
       setPhase("rest");
       setCurrentRound(round);
       setCurrentIndex(i);
+      speak(`Next up: ${exercises[i]?.exercise?.name ?? "exercise"}`);
       setRestCountdown(REST_SECONDS);
       setRestProgress(0);
       const restStart = Date.now();
@@ -110,7 +94,7 @@ export default function WorkoutRunner({
         setRestProgress(Math.min(1, elapsed / REST_SECONDS));
         if (elapsed >= REST_SECONDS) {
           clear();
-          beep();
+          soundStart();
           startExercise(round, i);
         }
       }, 50);
@@ -118,10 +102,15 @@ export default function WorkoutRunner({
 
     function advanceFrom(round: number, i: number) {
       clear();
-      beep();
-      if (i < totalExercises - 1) startRest(round, i + 1);
-      else if (round < rounds - 1) startRoundRest(round + 1);
-      else finish();
+      if (i < totalExercises - 1) {
+        soundRest();
+        startRest(round, i + 1);
+      } else if (round < rounds - 1) {
+        soundRest();
+        startRoundRest(round + 1);
+      } else {
+        finish();
+      }
     }
 
     // Configurable rest between rounds. Replaces the short get-ready before the
@@ -134,13 +123,14 @@ export default function WorkoutRunner({
       setPhase("roundrest");
       setCurrentRound(nextRound);
       setCurrentIndex(0);
+      speak(`Next up: ${exercises[0]?.exercise?.name ?? "exercise"}`);
       setRestCountdown(restBetween);
       setRestProgress(0);
       const restStart = Date.now();
       clear();
       advanceRef.current = () => {
         clear();
-        beep();
+        soundStart();
         startExercise(nextRound, 0);
       };
       intervalId = setInterval(() => {
@@ -149,7 +139,7 @@ export default function WorkoutRunner({
         setRestProgress(Math.min(1, elapsed / restBetween));
         if (elapsed >= restBetween) {
           clear();
-          beep();
+          soundStart();
           startExercise(nextRound, 0);
         }
       }, 50);
@@ -175,6 +165,7 @@ export default function WorkoutRunner({
 
     function finish() {
       clear();
+      soundFinish();
       setPhase("finished");
       void saveSession();
     }
@@ -214,6 +205,7 @@ export default function WorkoutRunner({
 
   const currentName = exercises[currentIndex]?.exercise?.name ?? "Exercise";
   const currentImage = exercises[currentIndex]?.exercise?.image_url ?? null;
+  const currentDescription = exercises[currentIndex]?.exercise?.description ?? "";
   const displayTime = (() => {
     const s = Math.ceil(timer);
     const m = Math.floor(s / 60);
@@ -237,8 +229,11 @@ export default function WorkoutRunner({
             src={currentImage}
             alt={currentName}
             iconSize={48}
-            className="w-56 h-40 rounded-2xl mb-6 border border-fg/10"
+            className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
           />
+          {currentDescription && (
+            <p className="text-fg/50 text-sm max-w-xs mb-5">{currentDescription}</p>
+          )}
           <div className="relative w-48 h-48 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
@@ -292,9 +287,9 @@ export default function WorkoutRunner({
           <p className="text-fg/30 text-sm mb-4">Catch your breath</p>
           <button
             onClick={() => advanceRef.current()}
-            className="text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
           >
-            Skip rest
+            <SkipForward size={16} weight="fill" /> Skip rest
           </button>
         </div>
       )}
@@ -312,8 +307,11 @@ export default function WorkoutRunner({
             src={currentImage}
             alt={currentName}
             iconSize={48}
-            className="w-56 h-40 rounded-2xl mb-6 border border-fg/10"
+            className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
           />
+          {currentDescription && (
+            <p className="text-fg/50 text-sm max-w-xs mb-5">{currentDescription}</p>
+          )}
           <div className="relative w-48 h-48 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
@@ -337,9 +335,9 @@ export default function WorkoutRunner({
           <p className="text-fg/30 text-sm">Go!</p>
           <button
             onClick={() => advanceRef.current()}
-            className="mt-4 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+            className="mt-4 inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
           >
-            Skip
+            <SkipForward size={16} weight="fill" /> Skip
           </button>
         </div>
       )}
@@ -382,12 +380,17 @@ export default function WorkoutRunner({
         <div className="absolute top-4 left-4">
           <button
             onClick={onCancel}
-            className="text-fg/40 hover:text-fg/70 text-sm px-3 py-1.5"
+            className="inline-flex items-center gap-1.5 text-fg/40 hover:text-fg/70 text-sm px-3 py-1.5"
           >
-            Cancel
+            <X size={16} weight="bold" /> Stop
           </button>
         </div>
       )}
+
+      {/* Theme + mute stay reachable throughout the workout. */}
+      <div className="absolute top-4 right-4">
+        <TopControls variant="overlay" />
+      </div>
     </div>
   );
 }
