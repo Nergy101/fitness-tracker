@@ -4,8 +4,10 @@
 
 setup: setup-backend setup-frontend ## Install everything
 
+PIP := $(shell command -v pip3 2>/dev/null || command -v pip 2>/dev/null || echo pip3)
+
 setup-backend: ## Install backend dependencies
-	cd backend && pip install -r requirements.txt
+	cd backend && $(PIP) install -r requirements.txt
 
 setup-frontend: ## Install frontend dependencies
 	cd frontend && npm install
