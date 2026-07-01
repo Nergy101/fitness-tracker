@@ -151,7 +151,7 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
       {!showRunForm ? (
         <button
           onClick={() => setShowRunForm(true)}
-          className="w-full bg-surface rounded-xl p-4 border border-fg/5 border-dashed hover:border-accent/30 transition-colors mb-4 flex items-center gap-3"
+          className="w-full bg-surface rounded-xl p-4 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors mb-4 flex items-center gap-3"
         >
           <PersonSimpleRun size={22} className="text-accent shrink-0" />
           <div className="text-left">
