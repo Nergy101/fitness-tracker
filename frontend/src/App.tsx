@@ -74,7 +74,7 @@ export default function App() {
         {currentTab === "health" && <HealthTab />}
       </main>
 
-      <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[env(safe-area-inset-bottom,8px)] shrink-0">
+      <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 pt-2 pb-[max(env(safe-area-inset-bottom,0px),6px)] shrink-0">
         {TABS.map((tab) => (
           <button
             key={tab.id}
