@@ -5,6 +5,8 @@ import {
   Gear,
   Smiley,
   Ruler,
+  Flame,
+  Trophy,
 } from "@phosphor-icons/react";
 import {
   api,
@@ -40,13 +42,13 @@ function bmiColor(cat: string | null): string {
 }
 
 function streakMsg(days: number): string {
-  if (days >= 90) return "🔥🔥🔥 Legendary!";
-  if (days >= 30) return "🏆 Month streak!";
-  if (days >= 21) return "🔥 21 days — unstoppable!";
-  if (days >= 14) return "🔥 Two weeks strong!";
-  if (days >= 7) return "🔥 Week streak!";
-  if (days >= 3) return "🔥 3-day streak!";
-  if (days > 0) return `🔥 ${days}-day streak`;
+  if (days >= 90) return "Legendary streak!";
+  if (days >= 30) return "Month streak!";
+  if (days >= 21) return "21 days — unstoppable!";
+  if (days >= 14) return "Two weeks strong!";
+  if (days >= 7) return "Week streak!";
+  if (days >= 3) return "3-day streak!";
+  if (days > 0) return `${days}-day streak`;
   return "Log today to start a streak!";
 }
 
@@ -233,14 +235,20 @@ export default function HealthTab() {
       {streak && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-white">{streakMsg(streak.current_streak)}</p>
-              <p className="text-xs text-fg/40 mt-0.5">
-                Best: {streak.best_streak} days
-                {streak.last_logged_date && ` · Last: ${shortDate(streak.last_logged_date)}`}
-              </p>
+            <div className="flex items-center gap-2">
+              {streak.current_streak >= 30 ? (
+                <Trophy size={28} className="text-yellow-400 shrink-0" />
+              ) : (
+                <Flame size={28} className="text-orange-400 shrink-0" weight={streak.current_streak >= 7 ? "fill" : "regular"} />
+              )}
+              <div>
+                <p className="text-sm font-semibold text-white">{streakMsg(streak.current_streak)}</p>
+                <p className="text-xs text-fg/40 mt-0.5">
+                  Best: {streak.best_streak} days
+                  {streak.last_logged_date && ` · Last: ${shortDate(streak.last_logged_date)}`}
+                </p>
+              </div>
             </div>
-            <span className="text-2xl">🔥</span>
           </div>
         </div>
       )}

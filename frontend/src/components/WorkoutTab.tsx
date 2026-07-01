@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, SmileySad, Timer, MapTrifold } from "@phosphor-icons/react";
+import { CheckCircle, SmileySad, PersonSimpleRun, MapTrifold } from "@phosphor-icons/react";
 import {
   api,
   type Exercise,
@@ -153,7 +153,7 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
           onClick={() => setShowRunForm(true)}
           className="w-full bg-surface rounded-xl p-4 border border-fg/5 border-dashed hover:border-accent/30 transition-colors mb-4 flex items-center gap-3"
         >
-          <Timer size={22} className="text-accent shrink-0" />
+          <PersonSimpleRun size={22} className="text-accent shrink-0" />
           <div className="text-left">
             <p className="text-sm font-semibold text-white">Log a Run</p>
             <p className="text-[11px] text-fg/40 mt-0.5">Record a completed run with distance, duration, and pace</p>
@@ -163,7 +163,7 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
         <div className="bg-surface rounded-xl p-4 border border-accent/20 mb-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Timer size={18} className="text-accent" />
+              <PersonSimpleRun size={18} className="text-accent" />
               <span className="text-sm font-semibold text-white">Log a Run</span>
             </div>
             <button onClick={() => setShowRunForm(false)} className="text-xs text-fg/40 hover:text-white">Cancel</button>
@@ -196,9 +196,9 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
                 value={runCustomDuration}
                 onChange={(e) => {
                   setRunCustomDuration(e.target.value);
-                  setRunDuration(parseInt(e.target.value) || 0);
+                  setRunDuration((parseInt(e.target.value) || 0) * 60);
                 }}
-                placeholder="Seconds"
+                placeholder="Minutes"
                 className="mt-2 w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
               />
             )}
@@ -265,7 +265,7 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
       {runStats && runStats.total_runs > 0 && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
           <div className="flex items-center gap-2 mb-3">
-            <Timer size={16} className="text-accent" />
+            <PersonSimpleRun size={16} className="text-accent" />
             <span className="text-xs text-fg/50 font-medium">Running Stats</span>
           </div>
           <div className="grid grid-cols-4 gap-2 mb-3">
@@ -304,7 +304,7 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
             return (
               <div key={run.id} className="bg-surface rounded-xl p-3 border border-fg/5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Timer size={18} className="text-accent shrink-0" />
+                  <PersonSimpleRun size={18} className="text-accent shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-white">
                       {run.distance_km.toFixed(1)}km · {formatDuration(run.duration_seconds)}
