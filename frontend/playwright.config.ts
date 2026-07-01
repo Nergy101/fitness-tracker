@@ -35,6 +35,7 @@ export default defineConfig({
       env: {
         DATABASE_URL: "sqlite:///./e2e.db",
         CORS_ORIGINS: `${BASE_URL},http://localhost:${FRONTEND_PORT}`,
+        FITNESS_PASSWORD: "e2e-test-password",
       },
     },
     {
