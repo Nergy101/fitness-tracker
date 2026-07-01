@@ -14,9 +14,8 @@ setup-frontend: ## Install frontend dependencies
 	cd frontend && npm install
 
 venv: ## Create a Python virtual environment and install deps
-	$(PYTHON) -m venv backend/.venv && \
-		. backend/.venv/bin/activate && \
-		$(PIP) install -r backend/requirements.txt
+	$(PYTHON) -m venv backend/.venv
+	backend/.venv/bin/python -m pip install -r backend/requirements.txt
 	@echo "✅ Venv created: source backend/.venv/bin/activate"
 
 # ─── Database ───────────────────────────────────────────
