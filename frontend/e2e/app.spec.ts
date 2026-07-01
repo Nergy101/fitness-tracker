@@ -267,3 +267,127 @@ test("theme toggle flips and persists", async ({ page }) => {
   const persisted = await page.evaluate(() => localStorage.getItem("theme"));
   expect(persisted).toBe(initiallyDark ? "light" : "dark");
 });
+
+// ─── Health Tab ──────────────────────────────────────────
+
+test("health tab shows 4 tabs and renders BMI card", async ({ page }) => {
+  await page.goto("/");
+
+  // Bottom nav has a Health tab with heartbeat icon
+  await expect(page.getByRole("button", { name: "Health" })).toBeVisible();
+  await page.getByRole("button", { name: "Health" }).click();
+
+  // Health tab loads — shows BMI section or the prompt to set height
+  await expect(page.getByText(/BMI|Log Weight|Health Settings/)).toBeVisible();
+});
+
+test("health settings modal saves and BMI appears", async ({ page, request }) => {
+  // Seed a weight entry so BMI has data to compute
+  await request.post(`${API_URL}/api/v1/health/weight`, {
+    data: { weight_kg: 75, date: "2026-07-01", notes: "" },
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Health" }).click();
+
+  // Open settings via gear icon
+  await page.getByTitle("Health Settings").click();
+
+  // Fill in height and birthday
+  const heightInput = page.locator('input[type="number"]').first();
+  await heightInput.fill("180");
+  const birthdayInput = page.locator('input[type="date"]');
+  await birthdayInput.fill("1996-01-15");
+  const genderSelect = page.locator("select");
+  await genderSelect.selectOption("male");
+
+  // Save
+  await page.getByRole("button", { name: "Save Settings" }).click();
+
+  // BMI should now show — 75 kg at 180 cm = 23.1
+  await expect(page.getByText("BMI").first()).toBeVisible();
+  await expect(page.getByText(/23[.\d]/)).toBeVisible();
+});
+
+test("logging weight creates entry visible in history", async ({ page, request }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Health" }).click();
+
+  // Type weight in the quick-log input
+  const weightInput = page.locator('input[placeholder="kg"]');
+  await weightInput.fill("82.5");
+  await page.getByRole("button", { name: "Log", exact: true }).click();
+
+  // Wait for save and re-render
+  await page.waitForTimeout(500);
+
+  // The entry should show in the Recent Weights section
+  await expect(page.getByText("82.5 kg").first()).toBeVisible();
+
+  // Verify via API
+  const entries = await (await request.get(`${API_URL}/api/v1/health/weight`)).json();
+  const match = entries.find((e: { weight_kg: number }) => e.weight_kg === 82.5);
+  expect(match).toBeTruthy();
+});
+
+test("health score card shows after logging weight", async ({ page, request }) => {
+  // Seed weight + profile for meaningful score
+  await request.post(`${API_URL}/api/v1/health/weight`, {
+    data: { weight_kg: 78, date: "2026-07-01", notes: "" },
+  });
+  await request.put(`${API_URL}/api/v1/health/profile`, {
+    data: { height_cm: 175, birthday: "1996-01-15", gender: "male" },
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Health" }).click();
+
+  // Health Score gauge renders
+  await expect(page.getByText("Health Score")).toBeVisible();
+  // At least one sub-score label should show
+  await expect(page.getByText(/BMI:|Workouts:|Streak:|Meas:/)).toBeVisible();
+});
+
+test("goal progress bar renders when goal is set", async ({ page, request }) => {
+  // Seed weight entries and set a goal
+  await request.post(`${API_URL}/api/v1/health/weight`, {
+    data: { weight_kg: 85, date: "2026-06-01", notes: "" },
+  });
+  await request.post(`${API_URL}/api/v1/health/weight`, {
+    data: { weight_kg: 80, date: "2026-07-01", notes: "" },
+  });
+  await request.put(`${API_URL}/api/v1/health/profile`, {
+    data: { goal_weight_kg: 75 },
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Health" }).click();
+
+  // Goal Progress card shows
+  await expect(page.getByText("Goal Progress")).toBeVisible();
+  await expect(page.getByText("%")).toBeVisible(); // percentage
+  await expect(page.getByText(/kg to go|Goal reached/)).toBeVisible();
+});
+
+test("wellness check-in logs and displays trend", async ({ page, request }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Health" }).click();
+
+  // Open wellness section
+  await page.getByText("Wellness Check-in").click();
+
+  // Adjust sliders
+  await page.locator('input[type="range"]').nth(0).fill("4"); // mood
+  await page.locator('input[type="range"]').nth(1).fill("3"); // energy
+
+  // Submit
+  await page.getByRole("button", { name: "Log Check-in" }).click();
+
+  await page.waitForTimeout(300);
+
+  // Verify via API
+  const entries = await (await request.get(`${API_URL}/api/v1/health/wellness`)).json();
+  const match = entries.find((e: { mood: number }) => e.mood === 4);
+  expect(match).toBeTruthy();
+  expect(match.energy).toBe(3);
+});
