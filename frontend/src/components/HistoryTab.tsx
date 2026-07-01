@@ -315,7 +315,12 @@ function SessionList({
         >
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="font-semibold text-sm">{session.template_name}</h3>
+              <div className="flex items-center gap-2">
+                {session.template_name.startsWith("Run:") && (
+                  <span className="text-accent text-sm">🏃</span>
+                )}
+                <h3 className="font-semibold text-sm">{session.template_name}</h3>
+              </div>
               <p className="text-xs text-fg/40 mt-0.5">
                 {formatDate(session.started_at)}
               </p>
