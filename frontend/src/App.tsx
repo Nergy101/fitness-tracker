@@ -38,7 +38,7 @@ export default function App() {
 
   if (runningWorkout) {
     return (
-      <div className="fixed inset-0 z-50">
+      <div className="fixed inset-0 z-50 pt-[env(safe-area-inset-top)]">
         <WorkoutRunner
           workout={runningWorkout}
           onFinish={() => {
@@ -54,7 +54,7 @@ export default function App() {
   const tabTitle = TABS.find((t) => t.id === currentTab)?.label ?? "";
 
   return (
-    <div className="app-shell flex flex-col h-screen">
+    <div className="app-shell flex flex-col min-h-screen pt-[env(safe-area-inset-top)]">
       <header className="px-4 py-3 flex items-center justify-between border-b border-fg/10 shrink-0">
         <h1 className="text-lg font-bold">{tabTitle}</h1>
         <div className="flex items-center gap-3">
