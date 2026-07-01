@@ -6,6 +6,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Cancel in-flight runs; only the latest push to main matters.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ${{ github.repository_owner }}/fitness-tracker
