@@ -10,6 +10,7 @@ class ExerciseBase(BaseModel):
     category: str = "other"
     default_kcal_per_min: float = 5.0
     default_duration_seconds: int = 30
+    image_url: Optional[str] = None
 
 
 class ExerciseCreate(ExerciseBase):
@@ -22,6 +23,7 @@ class ExerciseUpdate(BaseModel):
     category: Optional[str] = None
     default_kcal_per_min: Optional[float] = None
     default_duration_seconds: Optional[int] = None
+    image_url: Optional[str] = None
 
 
 class ExerciseResponse(ExerciseBase):
@@ -53,6 +55,8 @@ class WorkoutTemplateExerciseResponse(WorkoutTemplateExerciseBase):
 class WorkoutTemplateBase(BaseModel):
     name: str
     description: str = ""
+    rounds: int = 1
+    rest_between_rounds: int = 180
 
 
 class WorkoutTemplateCreate(WorkoutTemplateBase):
@@ -62,6 +66,8 @@ class WorkoutTemplateCreate(WorkoutTemplateBase):
 class WorkoutTemplateUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    rounds: Optional[int] = None
+    rest_between_rounds: Optional[int] = None
     exercises: Optional[list[WorkoutTemplateExerciseCreate]] = None
 
 
@@ -69,6 +75,8 @@ class WorkoutTemplateResponse(WorkoutTemplateBase):
     id: int
     created_at: datetime
     exercises: list[WorkoutTemplateExerciseResponse] = []
+    work_duration_seconds: int = 0
+    rest_duration_seconds: int = 0
     total_duration_seconds: int = 0
 
     model_config = {"from_attributes": True}

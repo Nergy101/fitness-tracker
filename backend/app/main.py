@@ -2,11 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS
-from app.database import engine, Base
+from app.database import engine, Base, ensure_schema
 from app.routers import exercises, workouts, sessions
 
-# Create all tables on startup
+# Create all tables on startup, then apply additive migrations.
 Base.metadata.create_all(bind=engine)
+ensure_schema()
 
 app = FastAPI(title="FitnessTracker API", version="1.0.0")
 

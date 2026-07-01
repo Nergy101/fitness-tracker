@@ -12,7 +12,9 @@ router = APIRouter(prefix="/api/v1/workouts", tags=["workouts"])
 
 
 def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateResponse:
-    total_duration = sum(te.duration_seconds for te in template.exercises)
+    per_round = sum(te.duration_seconds for te in template.exercises)
+    work_duration = per_round * template.rounds
+    rest_duration = max(0, template.rounds - 1) * template.rest_between_rounds
     ex_responses = []
     for te in template.exercises:
         ex_responses.append(WorkoutTemplateExerciseResponse(
@@ -27,9 +29,13 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
         id=template.id,
         name=template.name,
         description=template.description,
+        rounds=template.rounds,
+        rest_between_rounds=template.rest_between_rounds,
         created_at=template.created_at,
         exercises=ex_responses,
-        total_duration_seconds=total_duration,
+        work_duration_seconds=work_duration,
+        rest_duration_seconds=rest_duration,
+        total_duration_seconds=work_duration + rest_duration,
     )
 
 
@@ -49,7 +55,7 @@ def get_workout(workout_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=WorkoutTemplateResponse, status_code=201)
 def create_workout(data: WorkoutTemplateCreate, db: Session = Depends(get_db)):
-    template = WorkoutTemplate(name=data.name, description=data.description)
+    template = WorkoutTemplate(name=data.name, description=data.description, rounds=data.rounds, rest_between_rounds=data.rest_between_rounds)
     db.add(template)
     db.flush()
 
@@ -81,6 +87,10 @@ def update_workout(workout_id: int, data: WorkoutTemplateUpdate, db: Session = D
         template.name = data.name
     if data.description is not None:
         template.description = data.description
+    if data.rounds is not None:
+        template.rounds = data.rounds
+    if data.rest_between_rounds is not None:
+        template.rest_between_rounds = data.rest_between_rounds
 
     if data.exercises is not None:
         # Remove existing exercises

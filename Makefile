@@ -1,51 +1,95 @@
-.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed build clean
+.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed build e2e clean help
+
+# ─── Config ──────────────────────────────────────────────
+
+PYTHON ?= python3
+VENV   := $(CURDIR)/backend/.venv
+VENV_PY := $(VENV)/bin/python
+STAMP  := $(VENV)/.deps-installed
+
+# Ports/hosts are overridable: `make FRONTEND_PORT=5199` if 5173 is taken.
+BACKEND_HOST  ?= localhost
+BACKEND_PORT  ?= 8000
+FRONTEND_HOST ?= localhost
+FRONTEND_PORT ?= 5173
+
+BACKEND_URL  := http://$(BACKEND_HOST):$(BACKEND_PORT)
+FRONTEND_URL := http://$(FRONTEND_HOST):$(FRONTEND_PORT)
+
+# Keep the two sides in sync automatically:
+#   • the browser tells the API its Origin  → CORS must allow the frontend URL
+#   • the frontend must call the right API   → VITE_API_URL points at the backend
+# Exported so the uvicorn / vite subprocesses inherit them.
+export CORS_ORIGINS := http://localhost:$(FRONTEND_PORT),http://127.0.0.1:$(FRONTEND_PORT)
+export VITE_API_URL := $(BACKEND_URL)
+
+# Browser opener: macOS `open`, Linux `xdg-open`, else no-op. Override with
+# `make OPEN=...` (e.g. OPEN=true to disable).
+OPEN ?= $(shell command -v open 2>/dev/null || command -v xdg-open 2>/dev/null || echo true)
+
+# Bare `make` starts everything.
+.DEFAULT_GOAL := run
 
 # ─── Setup ───────────────────────────────────────────────
 
 setup: setup-backend setup-frontend ## Install everything
 
-PIP := $(shell command -v pip3 2>/dev/null || command -v pip 2>/dev/null || echo pip3)
-PYTHON := $(shell command -v python3 2>/dev/null || command -v python 2>/dev/null || echo python3)
+# Create the venv only if it's missing.
+$(VENV_PY):
+	$(PYTHON) -m venv $(VENV)
 
-setup-backend: ## Install backend dependencies
-	cd backend && $(PIP) install -r requirements.txt
+# (Re)install deps into the venv whenever requirements.txt changes.
+$(STAMP): backend/requirements.txt | $(VENV_PY)
+	$(VENV_PY) -m pip install --upgrade pip
+	$(VENV_PY) -m pip install -r backend/requirements.txt
+	@touch $(STAMP)
 
-setup-frontend: ## Install frontend dependencies
+setup-backend: $(STAMP) ## Install backend dependencies (into backend/.venv)
+
+# Install node deps only when package.json changes.
+frontend/node_modules: frontend/package.json
 	cd frontend && npm install
+	@touch frontend/node_modules
 
-venv: ## Create a Python virtual environment and install deps
-	$(PYTHON) -m venv backend/.venv
-	backend/.venv/bin/python -m pip install -r backend/requirements.txt
-	@echo "✅ Venv created: source backend/.venv/bin/activate"
+setup-frontend: frontend/node_modules ## Install frontend dependencies
 
 # ─── Database ───────────────────────────────────────────
 
-seed: ## Seed database with initial exercise data
-	$(VENV_PREFIX) cd backend && python seed.py
+seed: $(STAMP) ## Seed database with initial exercise data
+	cd backend && $(VENV_PY) seed.py
 
 # ─── Run ─────────────────────────────────────────────────
 
-VENV_ACTIVATE := backend/.venv/bin/activate
-ifneq ("$(wildcard $(VENV_ACTIVATE))","")
-	VENV_PREFIX := . $(VENV_ACTIVATE) &&
-endif
+run-backend: $(STAMP) ## Start the FastAPI backend (with hot reload)
+	cd backend && $(VENV_PY) -m uvicorn app.main:app --host $(BACKEND_HOST) --port $(BACKEND_PORT) --reload
 
-run-backend: ## Start the FastAPI backend (with hot reload)
-	$(VENV_PREFIX) cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+run-frontend: frontend/node_modules ## Start the Vite dev server
+	cd frontend && npm run dev -- --host $(FRONTEND_HOST) --port $(FRONTEND_PORT) --strictPort
 
-run-frontend: ## Start the Astro dev server
-	cd frontend && npm run dev
-
-run: ## Start both backend and frontend
+run: $(STAMP) seed frontend/node_modules ## Start backend + frontend, then open the app
+	@echo "Backend  → $(BACKEND_URL)"
+	@echo "Frontend → $(FRONTEND_URL)"
 	@trap 'kill 0' EXIT; \
 		$(MAKE) run-backend & \
 		$(MAKE) run-frontend & \
+		( for i in $$(seq 1 60); do \
+			curl -sf -o /dev/null $(FRONTEND_URL) && break; \
+			sleep 0.5; \
+		  done; \
+		  echo "Opening $(FRONTEND_URL)"; \
+		  $(OPEN) $(FRONTEND_URL) >/dev/null 2>&1 || true ) & \
 		wait
 
 # ─── Build ───────────────────────────────────────────────
 
-build: ## Build the frontend for production
+build: frontend/node_modules ## Build the frontend for production
 	cd frontend && npm run build
+
+# ─── Test ────────────────────────────────────────────────
+
+e2e: $(STAMP) frontend/node_modules ## Run the Playwright end-to-end suite
+	cd frontend && npx playwright install chromium
+	cd frontend && npm run test:e2e
 
 # ─── Clean ───────────────────────────────────────────────
 

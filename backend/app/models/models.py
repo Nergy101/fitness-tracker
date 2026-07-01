@@ -15,6 +15,7 @@ class Exercise(Base):
     category = Column(String(50), nullable=False, default="other")  # cardio, strength, flexibility, other
     default_kcal_per_min = Column(Float, default=5.0)
     default_duration_seconds = Column(Integer, default=30)
+    image_url = Column(String(512), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -24,6 +25,8 @@ class WorkoutTemplate(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, default="")
+    rounds = Column(Integer, nullable=False, default=1)
+    rest_between_rounds = Column(Integer, nullable=False, default=180)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     exercises = relationship("WorkoutTemplateExercise", back_populates="template", cascade="all, delete-orphan", order_by="WorkoutTemplateExercise.order_index")
