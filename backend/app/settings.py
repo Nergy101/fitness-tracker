@@ -51,3 +51,9 @@ def load_settings() -> dict[str, Any]:
 
 # Eagerly load on import so settings are available at startup.
 settings = load_settings()
+
+# Allow overriding password via env var (useful for tests / Docker).
+ENV_PASSWORD = os.getenv("FITNESS_PASSWORD")
+if ENV_PASSWORD:
+    settings.setdefault("auth", {})["password"] = ENV_PASSWORD
+    print(f"🔑 Using FITNESS_PASSWORD env var (overriding settings.toml)")
