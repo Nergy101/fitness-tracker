@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from sqlalchemy import (
-    Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean
+    Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean, Date, Time
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -72,3 +72,63 @@ class SessionExercise(Base):
     completed = Column(Boolean, default=True)
 
     session = relationship("WorkoutSession", back_populates="exercises")
+
+
+# ─── Health Tracking Models ────────────────────────────────
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    height_cm = Column(Float, nullable=True)
+    birthday = Column(Date, nullable=True)
+    gender = Column(String(20), nullable=True)  # male, female, other
+    goal_weight_kg = Column(Float, nullable=True)
+    weight_unit = Column(String(10), default="kg")  # kg or lbs
+    reminder_time = Column(Time, nullable=True)
+    notifications_enabled = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+
+class WeightEntry(Base):
+    __tablename__ = "weight_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    weight_kg = Column(Float, nullable=False)
+    date = Column(Date, nullable=False, default=lambda: date.today())
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class BodyMeasurement(Base):
+    __tablename__ = "body_measurements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, nullable=False, default=lambda: date.today())
+    waist_cm = Column(Float, nullable=True)
+    hips_cm = Column(Float, nullable=True)
+    chest_cm = Column(Float, nullable=True)
+    left_arm_cm = Column(Float, nullable=True)
+    right_arm_cm = Column(Float, nullable=True)
+    left_thigh_cm = Column(Float, nullable=True)
+    right_thigh_cm = Column(Float, nullable=True)
+    neck_cm = Column(Float, nullable=True)
+    estimated_body_fat_pct = Column(Float, nullable=True)
+    body_fat_method = Column(String(20), nullable=True)  # manual, navy
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class WellnessCheckin(Base):
+    __tablename__ = "wellness_checkins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, nullable=False, default=lambda: date.today())
+    mood = Column(Integer, nullable=True)       # 1-5
+    energy = Column(Integer, nullable=True)     # 1-5
+    stress = Column(Integer, nullable=True)     # 1-5
+    sleep_hours = Column(Float, nullable=True)
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

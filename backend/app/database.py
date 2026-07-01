@@ -34,6 +34,9 @@ def ensure_schema() -> None:
                     "ALTER TABLE exercises ADD COLUMN image_url VARCHAR(512)"
                 ))
 
+        # Health tracking tables — ensure they exist (new tables are created by create_all above)
+        # Add any additive columns for these tables here in future versions.
+
 
 def get_db():
     db = SessionLocal()

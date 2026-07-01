@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Barbell,
   ChartBar,
+  Heartbeat,
   PersonSimpleRun,
   type Icon,
 } from "@phosphor-icons/react";
@@ -9,10 +10,11 @@ import { type WorkoutTemplate } from "./api";
 import WorkoutTab from "./components/WorkoutTab";
 import ExercisesTab from "./components/ExercisesTab";
 import HistoryTab from "./components/HistoryTab";
+import HealthTab from "./components/HealthTab";
 import WorkoutRunner from "./components/WorkoutRunner";
 import TopControls from "./components/TopControls";
 
-type TabId = "workout" | "exercises" | "history";
+type TabId = "workout" | "exercises" | "history" | "health";
 
 interface Tab {
   id: TabId;
@@ -24,6 +26,7 @@ const TABS: Tab[] = [
   { id: "workout", label: "Workouts", icon: Barbell },
   { id: "exercises", label: "Exercises", icon: PersonSimpleRun },
   { id: "history", label: "History", icon: ChartBar },
+  { id: "health", label: "Health", icon: Heartbeat },
 ];
 
 export default function App() {
@@ -68,6 +71,7 @@ export default function App() {
         {currentTab === "history" && (
           <HistoryTab refreshKey={historyRefreshKey} />
         )}
+        {currentTab === "health" && <HealthTab />}
       </main>
 
       <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 shrink-0">

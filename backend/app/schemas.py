@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 from pydantic import BaseModel, Field
 
@@ -132,3 +132,142 @@ class WorkoutSessionResponse(BaseModel):
     exercises: list[SessionExerciseResponse] = []
 
     model_config = {"from_attributes": True}
+
+
+# ─── Health Schemas ─────────────────────────────────────────
+
+
+class UserProfileResponse(BaseModel):
+    height_cm: Optional[float] = None
+    birthday: Optional[date] = None
+    gender: Optional[str] = None
+    goal_weight_kg: Optional[float] = None
+    weight_unit: str = "kg"
+    reminder_time: Optional[str] = None  # HH:MM format
+    notifications_enabled: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+class UserProfileUpdate(BaseModel):
+    height_cm: Optional[float] = None
+    birthday: Optional[date] = None
+    gender: Optional[str] = None
+    goal_weight_kg: Optional[float] = None
+    weight_unit: Optional[str] = None
+    reminder_time: Optional[str] = None
+    notifications_enabled: Optional[bool] = None
+
+
+class WeightEntryCreate(BaseModel):
+    weight_kg: float
+    date: Optional[date] = None
+    notes: str = ""
+
+
+class WeightEntryResponse(BaseModel):
+    id: int
+    weight_kg: float
+    date: date
+    notes: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class WeightStatsResponse(BaseModel):
+    latest: Optional[WeightEntryResponse] = None
+    min: Optional[WeightEntryResponse] = None
+    max: Optional[WeightEntryResponse] = None
+    avg_7d: Optional[float] = None
+    avg_30d: Optional[float] = None
+    total_entries: int = 0
+
+
+class StreakResponse(BaseModel):
+    current_streak: int = 0
+    best_streak: int = 0
+    last_logged_date: Optional[date] = None
+
+
+class GoalProgressResponse(BaseModel):
+    start_weight_kg: Optional[float] = None
+    current_weight_kg: Optional[float] = None
+    goal_weight_kg: Optional[float] = None
+    progress_percentage: Optional[float] = None
+    remaining_kg: Optional[float] = None
+
+
+class BodyMeasurementCreate(BaseModel):
+    date: Optional[date] = None
+    waist_cm: Optional[float] = None
+    hips_cm: Optional[float] = None
+    chest_cm: Optional[float] = None
+    left_arm_cm: Optional[float] = None
+    right_arm_cm: Optional[float] = None
+    left_thigh_cm: Optional[float] = None
+    right_thigh_cm: Optional[float] = None
+    neck_cm: Optional[float] = None
+    estimated_body_fat_pct: Optional[float] = None
+    body_fat_method: Optional[str] = None
+    notes: str = ""
+
+
+class BodyMeasurementResponse(BaseModel):
+    id: int
+    date: date
+    waist_cm: Optional[float] = None
+    hips_cm: Optional[float] = None
+    chest_cm: Optional[float] = None
+    left_arm_cm: Optional[float] = None
+    right_arm_cm: Optional[float] = None
+    left_thigh_cm: Optional[float] = None
+    right_thigh_cm: Optional[float] = None
+    neck_cm: Optional[float] = None
+    estimated_body_fat_pct: Optional[float] = None
+    body_fat_method: Optional[str] = None
+    notes: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MeasurementChangesResponse(BaseModel):
+    first: Optional[BodyMeasurementResponse] = None
+    latest: Optional[BodyMeasurementResponse] = None
+    deltas: dict[str, Optional[float]] = {}  # field_name -> delta
+
+
+class WellnessCreate(BaseModel):
+    date: Optional[date] = None
+    mood: Optional[int] = None
+    energy: Optional[int] = None
+    stress: Optional[int] = None
+    sleep_hours: Optional[float] = None
+    notes: str = ""
+
+
+class WellnessResponse(BaseModel):
+    id: int
+    date: date
+    mood: Optional[int] = None
+    energy: Optional[int] = None
+    stress: Optional[int] = None
+    sleep_hours: Optional[float] = None
+    notes: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class WellnessTrendsResponse(BaseModel):
+    weekly_averages: list[dict] = []  # [{week_start, avg_mood, avg_energy, avg_stress, avg_sleep}]
+
+
+class HealthScoreResponse(BaseModel):
+    score: float = 0.0
+    bmi_score: float = 0.0
+    workout_score: float = 0.0
+    streak_score: float = 0.0
+    measurement_score: float = 0.0
+    spotlight: str = ""
