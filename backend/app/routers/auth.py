@@ -61,7 +61,6 @@ async def auth_middleware(request: Request, call_next):
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Authorization header missing"},
-                headers={"WWW-Authenticate": "Basic"},
             )
 
         try:
