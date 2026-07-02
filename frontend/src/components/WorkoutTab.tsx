@@ -12,6 +12,7 @@ import WorkoutEditor from "./WorkoutEditor";
 
 interface WorkoutTabProps {
   onStartWorkout: (workout: WorkoutTemplate) => void;
+  onLogWorkout?: () => void;
 }
 
 const DURATION_OPTIONS = [
@@ -29,7 +30,7 @@ function formatPace(secondsPerKm: number | null): string {
   return `${min}:${sec.toString().padStart(2, "0")} /km`;
 }
 
-export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
+export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabProps) {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +82,54 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
       setToast(wasEditing ? "Workout updated" : "Workout created");
     } finally {
       setLoading(false);
+    }
+  }
+
+  const DEFAULT_KCAL_PER_MIN = 5;
+
+  function kcalFor(durationSeconds: number, kcalPerMin: number): number {
+    return (durationSeconds / 60) * kcalPerMin;
+  }
+
+  async function logWorkout(tpl: WorkoutTemplate) {
+    const rounds = Math.max(1, tpl.rounds || 1);
+    const workDuration = tpl.exercises.reduce(
+      (sum, e) => sum + (e.duration_seconds || 30), 0,
+    ) * rounds;
+    const restDuration = Math.max(0, rounds - 1) * (tpl.rest_between_rounds || 0);
+    const totalDuration = workDuration + restDuration;
+    const totalKcal = tpl.exercises.reduce(
+      (sum, e) =>
+        sum +
+        kcalFor(
+          e.duration_seconds || 30,
+          e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
+        ),
+      0,
+    ) * rounds;
+
+    try {
+      await api.createSession({
+        template_id: tpl.id,
+        template_name: tpl.name || "",
+        total_duration_seconds: totalDuration,
+        total_kcal_estimated: totalKcal,
+        exercises: tpl.exercises.map((e, i) => ({
+          exercise_id: e.exercise?.id ?? e.exercise_id,
+          exercise_name: e.exercise?.name || "",
+          duration_seconds: e.duration_seconds || 30,
+          kcal_burned: kcalFor(
+            e.duration_seconds || 30,
+            e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
+          ),
+          order_index: i,
+          completed: true,
+        })),
+      });
+      setToast("Workout logged! ✓");
+      onLogWorkout?.();
+    } catch {
+      setToast("Failed to log workout");
     }
   }
 
@@ -389,6 +438,13 @@ export default function WorkoutTab({ onStartWorkout }: WorkoutTabProps) {
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                     </svg>
+                  </button>
+                  <button
+                    onClick={() => logWorkout(tpl)}
+                    className="border border-fg/20 text-fg/60 rounded-xl px-3 py-1.5 text-xs font-semibold hover:border-accent/40 hover:text-accent transition-colors"
+                    title="Log this workout as completed"
+                  >
+                    Log
                   </button>
                   <button
                     onClick={() => onStartWorkout(tpl)}

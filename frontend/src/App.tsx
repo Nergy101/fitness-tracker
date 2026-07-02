@@ -78,7 +78,10 @@ export default function App() {
 
       <main className="flex-1 overflow-y-auto px-4 py-4">
         {currentTab === "workout" && (
-          <WorkoutTab onStartWorkout={setRunningWorkout} />
+        <WorkoutTab
+        onStartWorkout={setRunningWorkout}
+        onLogWorkout={() => setHistoryRefreshKey((k) => k + 1)}
+        />
         )}
         {currentTab === "exercises" && <ExercisesTab />}
         {currentTab === "history" && (
