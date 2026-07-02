@@ -501,6 +501,35 @@ test.describe("authenticated", () => {
     const match = sessions.find((s: { template_name: string }) => s.template_name.includes("3.0km"));
     expect(match).toBeFalsy();
   });
+
+  test("log workout button creates a session that appears in history", async ({ page, request }) => {
+    // Create a fast workout via API for testing
+    const workout = await createFastWorkout(request, "E2E Log Test", 2, 2, 10, _authHeaders);
+    expect(workout.id).toBeTruthy();
+
+    await page.goto("/");
+
+    // Wait for workouts to load
+    await expect(page.getByText("E2E Log Test", { exact: true })).toBeVisible();
+
+    // Click the Log button on our test workout
+    await page.getByRole("button", { name: "Log" }).first().click();
+
+    // Toast confirms
+    await expect(page.getByRole("status")).toContainText("Workout logged!", { timeout: 5000 });
+
+    // Verify via API — session should exist
+    const sessions = await (await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })).json();
+    const match = sessions.find((s: { template_name: string }) => s.template_name === "E2E Log Test");
+    expect(match).toBeTruthy();
+    expect(match.total_duration_seconds).toBeGreaterThan(0);
+    expect(match.total_kcal_estimated).toBeGreaterThan(0);
+    expect(match.exercises.length).toBe(2);
+
+    // Verify it appears in the History tab
+    await page.getByRole("button", { name: "History" }).click();
+    await expect(page.getByText("E2E Log Test").first()).toBeVisible();
+  });
 });
 
 // --- Auth flow tests ---

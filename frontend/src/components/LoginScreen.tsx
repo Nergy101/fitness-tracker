@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Heartbeat, Eye, EyeSlash } from "@phosphor-icons/react";
 
 const AUTH_KEY = "fitness_auth";
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 export function getStoredAuth(): string | null {
   return localStorage.getItem(AUTH_KEY);
@@ -33,7 +34,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     setError("");
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),

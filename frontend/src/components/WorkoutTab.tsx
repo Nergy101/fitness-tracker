@@ -138,23 +138,27 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
     const dur = runDuration;
     if (isNaN(dist) || dist <= 0 || dur <= 0) return;
 
-    await api.createRun({
-      duration_seconds: dur,
-      distance_km: dist,
-      date: runDate,
-      notes: runNotes,
-    });
+    try {
+      await api.createRun({
+        duration_seconds: dur,
+        distance_km: dist,
+        date: runDate,
+        notes: runNotes,
+      });
 
-    setToast("Run logged! 🏃");
-    setRunDistance("");
-    setRunNotes("");
-    setRunCustomDuration("");
-    setRunDuration(1800);
-    setShowRunForm(false);
+      setToast("Run logged! 🏃");
+      setRunDistance("");
+      setRunNotes("");
+      setRunCustomDuration("");
+      setRunDuration(1800);
+      setShowRunForm(false);
 
-    const [runs, stats] = await Promise.all([api.getRuns(), api.getRunStats()]);
-    setRecentRuns(runs);
-    setRunStats(stats);
+      const [runs, stats] = await Promise.all([api.getRuns(), api.getRunStats()]);
+      setRecentRuns(runs);
+      setRunStats(stats);
+    } catch {
+      setToast("Failed to log run");
+    }
   }
 
   function deleteRun(id: number) {

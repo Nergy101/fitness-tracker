@@ -1,6 +1,22 @@
 from datetime import datetime, date
-from typing import Optional
+from typing import Optional, Annotated
 from pydantic import BaseModel, Field
+from pydantic.functional_validators import BeforeValidator
+
+
+def _coerce_date(v):
+    """Coerce string/date to date or None. Pydantic v2.13+ doesn't auto-coerce Optional[date]."""
+    if v is None:
+        return None
+    if isinstance(v, date):
+        return v
+    if isinstance(v, str):
+        parts = v.split("-")
+        return date(int(parts[0]), int(parts[1]), int(parts[2]))
+    return v
+
+
+DateField = Annotated[Optional[date], BeforeValidator(_coerce_date)]
 
 
 # --- Exercise Schemas ---
@@ -151,7 +167,7 @@ class UserProfileResponse(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     height_cm: Optional[float] = None
-    birthday: Optional[date] = None
+    birthday: DateField = None
     gender: Optional[str] = None
     goal_weight_kg: Optional[float] = None
     weight_unit: Optional[str] = None
@@ -161,7 +177,7 @@ class UserProfileUpdate(BaseModel):
 
 class WeightEntryCreate(BaseModel):
     weight_kg: float
-    date: Optional[date] = None
+    date: DateField = None
     notes: str = ""
 
 
@@ -199,7 +215,7 @@ class GoalProgressResponse(BaseModel):
 
 
 class BodyMeasurementCreate(BaseModel):
-    date: Optional[date] = None
+    date: DateField = None
     waist_cm: Optional[float] = None
     hips_cm: Optional[float] = None
     chest_cm: Optional[float] = None
@@ -239,7 +255,7 @@ class MeasurementChangesResponse(BaseModel):
 
 
 class WellnessCreate(BaseModel):
-    date: Optional[date] = None
+    date: DateField = None
     mood: Optional[int] = None
     energy: Optional[int] = None
     stress: Optional[int] = None
@@ -279,7 +295,7 @@ class HealthScoreResponse(BaseModel):
 class RunEntryCreate(BaseModel):
     duration_seconds: int
     distance_km: float
-    date: Optional[date] = None
+    date: DateField = None
     notes: str = ""
 
 

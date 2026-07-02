@@ -46,11 +46,12 @@ async def auth_middleware(request: Request, call_next):
     """FastAPI middleware that protects all /api/v1/* routes with Basic Auth.
 
     The /api/health and /api/auth/* endpoints are public.
+    OPTIONS preflight requests pass through for CORS.
     """
     path = request.url.path
 
-    # Public endpoints
-    if path == "/api/health" or path.startswith("/api/auth/"):
+    # Public endpoints + CORS preflight
+    if request.method == "OPTIONS" or path == "/api/health" or path.startswith("/api/auth/"):
         return await call_next(request)
 
     # All /api/* paths need auth
