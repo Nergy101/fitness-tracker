@@ -324,9 +324,33 @@ test.describe("authenticated", () => {
     expect(persisted).toBe(initiallyDark ? "light" : "dark");
   });
 
+  // --- Stats Tab ---
+
+  test("stats tab loads with summary data", async ({ page, request }) => {
+    // Seed a session so stats has data
+    await request.post(`${API_URL}/api/v1/sessions`, {
+      data: {
+        template_id: null,
+        template_name: "Stats Test",
+        total_duration_seconds: 600,
+        total_kcal_estimated: 100,
+        exercises: [],
+      },
+      headers: _authHeaders,
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Stats" }).click();
+
+    // Stats tab loads
+    await expect(page.getByText("Statistics")).toBeVisible();
+    // At least one stat card shows (total kcal, consistency, etc.)
+    await expect(page.getByText("Total kcal burned").first()).toBeVisible();
+  });
+
   // --- Health Tab ---
 
-  test("health tab shows 4 tabs and renders BMI card", async ({ page }) => {
+  test("health tab loads and renders BMI card", async ({ page }) => {
     await page.goto("/");
 
     // Bottom nav has a Health tab with heartbeat icon
