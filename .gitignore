@@ -13,3 +13,4 @@ settings.toml
 /frontend/playwright-report/
 /frontend/blob-report/
 /frontend/.playwright/
+.coverage
