@@ -4,8 +4,6 @@ import {
   api,
   type Exercise,
   type WorkoutTemplate,
-  type RunEntryResponse,
-  type RunStatsResponse,
 } from "../api";
 import { formatDuration } from "../format";
 import WorkoutEditor from "./WorkoutEditor";
@@ -46,8 +44,6 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [runDistance, setRunDistance] = useState("");
   const [runDate, setRunDate] = useState(new Date().toISOString().slice(0, 10));
   const [runNotes, setRunNotes] = useState("");
-  const [recentRuns, setRecentRuns] = useState<RunEntryResponse[]>([]);
-  const [runStats, setRunStats] = useState<RunStatsResponse | null>(null);
 
   // Auto-dismiss the toast.
   useEffect(() => {
@@ -57,12 +53,10 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   }, [toast]);
 
   useEffect(() => {
-    Promise.all([api.getWorkouts(), api.getExercises(), api.getRuns(), api.getRunStats()])
-      .then(([tpls, exs, runs, stats]) => {
+    Promise.all([api.getWorkouts(), api.getExercises()])
+      .then(([tpls, exs]) => {
         setTemplates(tpls);
         setAllExercises(exs);
-        setRecentRuns(runs);
-        setRunStats(stats);
       })
       .catch(() => setError("Failed to load workouts"))
       .finally(() => setLoading(false));
@@ -153,21 +147,9 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       setRunDuration(1800);
       setShowRunForm(false);
 
-      const [runs, stats] = await Promise.all([api.getRuns(), api.getRunStats()]);
-      setRecentRuns(runs);
-      setRunStats(stats);
     } catch {
       setToast("Failed to log run");
     }
-  }
-
-  function deleteRun(id: number) {
-    api.deleteRun(id).then(() => {
-      Promise.all([api.getRuns(), api.getRunStats()]).then(([runs, stats]) => {
-        setRecentRuns(runs);
-        setRunStats(stats);
-      });
-    });
   }
 
   async function deleteWorkout(id: number, name: string) {
@@ -321,71 +303,6 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
           >
             Save Run
           </button>
-        </div>
-      )}
-
-      {/* ─── Run Stats ──────────────────────────────────── */}
-
-      {runStats && runStats.total_runs > 0 && (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <PersonSimpleRun size={16} className="text-accent" />
-            <span className="text-xs text-fg/50 font-medium">Running Stats</span>
-          </div>
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            <div className="text-center">
-              <p className="text-lg font-bold text-white">{runStats.total_runs}</p>
-              <p className="text-[10px] text-fg/40">Runs</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-white">{runStats.total_distance_km.toFixed(0)}</p>
-              <p className="text-[10px] text-fg/40">Total km</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-white">{formatPace(runStats.avg_pace_per_km)}</p>
-              <p className="text-[10px] text-fg/40">Avg pace</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-bold text-accent">{formatDuration(runStats.total_duration_seconds)}</p>
-              <p className="text-[10px] text-fg/40">Total time</p>
-            </div>
-          </div>
-          {runStats.longest_run_distance_km && (
-            <p className="text-xs text-fg/40">
-              Longest run: {runStats.longest_run_distance_km.toFixed(1)}km · Best 5k: {runStats.fastest_5k_seconds ? formatPace(runStats.fastest_5k_seconds * 5) : "—"}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ─── Recent Runs ────────────────────────────────── */}
-
-      {recentRuns.length > 0 && (
-        <div className="mb-4 space-y-2">
-          <p className="text-xs text-fg/50 font-medium">Recent Runs</p>
-          {recentRuns.slice(0, 5).map((run) => {
-            const p = run.pace_per_km;
-            return (
-              <div key={run.id} className="bg-surface rounded-xl p-3 border border-fg/5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <PersonSimpleRun size={18} className="text-accent shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      {run.distance_km.toFixed(1)}km · {formatDuration(run.duration_seconds)}
-                    </p>
-                    <p className="text-xs text-fg/40">
-                      Pace {formatPace(p)}
-                      {run.notes && ` · ${run.notes}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-fg/30">{run.date.slice(5)}</span>
-                  <button onClick={() => deleteRun(run.id)} className="text-red-400/40 hover:text-red-400 text-xs">del</button>
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
 

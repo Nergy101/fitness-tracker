@@ -579,11 +579,6 @@ test.describe("authenticated", () => {
     expect(stats.total_duration_seconds).toBe(4500);
     // avg pace = 4500s / 12.5km = 360 s/km
     expect(stats.avg_pace_per_km).toBeCloseTo(360, 0);
-
-    // Verify on the Workouts tab
-    await page.goto("/");
-    await expect(page.getByText("Running Stats").first()).toBeVisible();
-    await expect(page.getByText("13", { exact: true })).toBeVisible(); // total km: (12.5).toFixed(0) = "13"
   });
 
   test("deleting a run removes it and the associated session", async ({ request }) => {
