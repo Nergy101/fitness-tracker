@@ -77,16 +77,29 @@ jobs:
       - name: Install Playwright browsers
         run: |
           cd frontend
-          npx playwright install chromium
+          npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         run: |
           cd frontend
           npm run test:e2e
 
+      # Traces (on-first-retry) are the only way to debug CI-only failures.
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: frontend/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
   publish:
     name: Build & push Docker images
     needs: [test, e2e]
+    # Tests run on PRs, but images are published only from pushes to main
+    # (and manual dispatches) — never from unreviewed PR code.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read

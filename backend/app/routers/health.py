@@ -305,6 +305,15 @@ def create_wellness(data: WellnessCreate, db: Session = Depends(get_db)):
     return checkin
 
 
+@router.delete("/wellness/{checkin_id}", status_code=204)
+def delete_wellness(checkin_id: int, db: Session = Depends(get_db)):
+    checkin = db.get(WellnessCheckin, checkin_id)
+    if not checkin:
+        raise HTTPException(status_code=404, detail="Check-in not found")
+    db.delete(checkin)
+    db.commit()
+
+
 @router.get("/wellness/trends", response_model=WellnessTrendsResponse)
 def wellness_trends(db: Session = Depends(get_db)):
     entries = db.query(WellnessCheckin).order_by(WellnessCheckin.date.asc()).all()

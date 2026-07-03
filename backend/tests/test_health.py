@@ -344,6 +344,16 @@ class TestWellness:
         assert week["avg_mood"] >= 4.0
         assert week["entry_count"] >= 1
 
+    def test_delete(self, client: TestClient, auth_headers: dict):
+        created = client.post(self.URL, json={"mood": 3, "energy": 2}, headers=auth_headers).json()
+        resp = client.delete(f"{self.URL}/{created['id']}", headers=auth_headers)
+        assert resp.status_code == 204
+        assert client.get(self.URL, headers=auth_headers).json() == []
+
+    def test_delete_missing(self, client: TestClient, auth_headers: dict):
+        resp = client.delete(f"{self.URL}/9999", headers=auth_headers)
+        assert resp.status_code == 404
+
 
 # ─── Health Score ─────────────────────────────────────────────
 

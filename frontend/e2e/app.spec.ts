@@ -39,6 +39,37 @@ async function createFastWorkout(
   return res.json();
 }
 
+// The first cleanup captures the seeded workout templates so later cleanups
+// can delete only templates that tests created.
+let seededTemplateIds: Set<number> | null = null;
+
+/** Delete everything tests can create so each test starts from the seeded state. */
+async function resetData(request: APIRequestContext, headers: Record<string, string>) {
+  const list = async (path: string): Promise<{ id: number }[]> =>
+    (await request.get(`${API_URL}${path}`, { headers })).json();
+  const del = (path: string) => request.delete(`${API_URL}${path}`, { headers });
+
+  const templates = await list("/api/v1/workouts");
+  if (seededTemplateIds === null) {
+    seededTemplateIds = new Set(templates.map((t) => t.id));
+  } else {
+    for (const t of templates) {
+      if (!seededTemplateIds.has(t.id)) await del(`/api/v1/workouts/${t.id}`);
+    }
+  }
+  // Runs first: deleting a run also removes its auto-created session.
+  for (const r of await list("/api/v1/runs")) await del(`/api/v1/runs/${r.id}`);
+  for (const s of await list("/api/v1/sessions")) await del(`/api/v1/sessions/${s.id}`);
+  for (const w of await list("/api/v1/health/weight")) await del(`/api/v1/health/weight/${w.id}`);
+  for (const m of await list("/api/v1/health/measurements")) await del(`/api/v1/health/measurements/${m.id}`);
+  for (const c of await list("/api/v1/health/wellness")) await del(`/api/v1/health/wellness/${c.id}`);
+  // Profile is a singleton; explicit nulls clear it back to defaults.
+  await request.put(`${API_URL}/api/v1/health/profile`, {
+    data: { height_cm: null, birthday: null, gender: null, goal_weight_kg: null },
+    headers,
+  });
+}
+
 // ─── Authenticated tests — log in before each test ─────
 
 test.describe("authenticated", () => {
@@ -46,6 +77,7 @@ test.describe("authenticated", () => {
 
   test.beforeEach(async ({ page, request }) => {
     _authHeaders = await login(page);
+    await resetData(request, _authHeaders);
   });
 
   test("seeded workouts show rounds and multiplied duration", async ({ page }) => {
@@ -305,10 +337,7 @@ test.describe("authenticated", () => {
     await expect(page.getByText(/BMI|Log Weight|Health Settings/).first()).toBeVisible();
   });
 
-  // Note: skipped in CI — the BMI value render is race-conditioned on
-  // loadAll() completing after the settings modal closes. Needs longer
-  // state sync than the 500ms wait allows in CI.
-  test.skip("health settings modal saves and BMI appears", async ({ page, request }) => {
+  test("health settings modal saves and BMI appears", async ({ page, request }) => {
     // Seed a weight entry so BMI has data to compute
     await request.post(`${API_URL}/api/v1/health/weight`, {
       data: { weight_kg: 75, date: "2026-07-01", notes: "" },
@@ -321,19 +350,20 @@ test.describe("authenticated", () => {
     // Open settings via gear icon
     await page.getByTitle("Health Settings").click();
 
-    // Fill in height and birthday
-    const heightInput = page.locator('input[type="number"]').first();
-    await heightInput.fill("180");
+    // Fill in height and birthday. Scope height to its field wrapper — the
+    // quick weight-log input behind the modal is also type="number".
+    await page
+      .locator("div")
+      .filter({ hasText: /^Height \(cm\)$/ })
+      .locator("input")
+      .fill("180");
     const birthdayInput = page.locator('input[type="date"]');
     await birthdayInput.fill("1996-01-15");
     const genderSelect = page.locator("select");
     await genderSelect.selectOption("male");
 
-    // Save
+    // Save; closing the modal triggers a refetch and the BMI card renders.
     await page.getByRole("button", { name: "Save Settings" }).click();
-
-    // Wait for modal to close and BMI to compute
-    await page.waitForTimeout(500);
 
     // BMI should now show -- 75 kg at 180 cm = 23.1
     await expect(page.getByText("BMI").first()).toBeVisible({ timeout: 10000 });
@@ -348,9 +378,6 @@ test.describe("authenticated", () => {
     const weightInput = page.locator('input[placeholder="kg"]');
     await weightInput.fill("82.5");
     await page.getByRole("button", { name: "Log", exact: true }).click();
-
-    // Wait for save and re-render
-    await page.waitForTimeout(500);
 
     // The entry should show in the Recent Weights section
     await expect(page.getByText("82.5 kg").first()).toBeVisible();
@@ -416,10 +443,13 @@ test.describe("authenticated", () => {
     await page.locator('input[type="range"]').nth(0).fill("4"); // mood
     await page.locator('input[type="range"]').nth(1).fill("3"); // energy
 
-    // Submit
-    await page.getByRole("button", { name: "Log Check-in" }).click();
-
-    await page.waitForTimeout(300);
+    // Submit and wait for the POST to land before verifying via the API.
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/v1/health/wellness") && r.request().method() === "POST" && r.ok(),
+      ),
+      page.getByRole("button", { name: "Log Check-in" }).click(),
+    ]);
 
     // Verify via API
     const entries = await (await request.get(`${API_URL}/api/v1/health/wellness`, { headers: _authHeaders })).json();
@@ -458,10 +488,13 @@ test.describe("authenticated", () => {
     await page.getByPlaceholder("Hips (cm)").fill("94");
     await page.getByPlaceholder("Chest (cm)").fill("101");
 
-    // Save
-    await page.getByRole("button", { name: "Save" }).click();
-
-    await page.waitForTimeout(300);
+    // Save and wait for the POST to land before verifying via the API.
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes("/api/v1/health/measurements") && r.request().method() === "POST" && r.ok(),
+      ),
+      page.getByRole("button", { name: "Save" }).click(),
+    ]);
 
     // Verify via API — should have 2 entries now
     const entries = await (await request.get(`${API_URL}/api/v1/health/measurements`, { headers: _authHeaders })).json();
@@ -471,10 +504,7 @@ test.describe("authenticated", () => {
     await expect(page.getByText(/-3[.]0/)).toBeVisible();
   });
 
-  // Note: skipped in CI — these timing / data-sharing-sensitive tests need
-  // per-test DB isolation (currently all tests share one e2e.db with no reset).
-
-  test.skip("body measurements persist on page reload", async ({ page, request }) => {
+  test("body measurements persist on page reload", async ({ page, request }) => {
     // Seed a measurement
     await request.post(`${API_URL}/api/v1/health/measurements`, {
       data: { waist_cm: 88, hips_cm: 96, date: "2026-07-01" },
@@ -493,14 +523,13 @@ test.describe("authenticated", () => {
     await page.reload();
     await page.waitForLoadState("networkidle");
     await page.getByRole("button", { name: "Health" }).click();
-    await page.waitForTimeout(500);
     await page.getByText("Body Measurements").click();
     await expect(page.getByText("88 cm")).toBeVisible({ timeout: 10000 });
   });
 
   // --- Runs ---
 
-  test.skip("log a run via UI shows in recent runs and history", async ({ page, request }) => {
+  test("log a run via UI shows in recent runs and history", async ({ page, request }) => {
     await page.goto("/");
 
     // Open the run logger
@@ -519,7 +548,7 @@ test.describe("authenticated", () => {
     await expect(page.getByRole("status")).toContainText("Run logged");
 
     // Run appears in recent runs section
-    await expect(page.getByText("5.0 km", { exact: false }).first()).toBeVisible();
+    await expect(page.getByText("5.0km").first()).toBeVisible();
 
     // Verify via API -- pace should be 360s/km (30min / 5km)
     const runs = await (await request.get(`${API_URL}/api/v1/runs`, { headers: _authHeaders })).json();
@@ -533,7 +562,7 @@ test.describe("authenticated", () => {
     await expect(page.getByText("Run: 5.0km").first()).toBeVisible();
   });
 
-  test.skip("run stats endpoint returns correct aggregates", async ({ page, request }) => {
+  test("run stats endpoint returns correct aggregates", async ({ page, request }) => {
     // Seed two runs via API
     await request.post(`${API_URL}/api/v1/runs`, {
       data: { duration_seconds: 1800, distance_km: 5.0, date: "2026-07-01" },
@@ -554,7 +583,7 @@ test.describe("authenticated", () => {
     // Verify on the Workouts tab
     await page.goto("/");
     await expect(page.getByText("Running Stats").first()).toBeVisible();
-    await expect(page.getByText("12").first()).toBeVisible(); // total km (12.5 rounded to 12)
+    await expect(page.getByText("13", { exact: true })).toBeVisible(); // total km: (12.5).toFixed(0) = "13"
   });
 
   test("deleting a run removes it and the associated session", async ({ request }) => {
@@ -578,7 +607,7 @@ test.describe("authenticated", () => {
     expect(match).toBeFalsy();
   });
 
-  test.skip("log workout button creates a session that appears in history", async ({ page, request }) => {
+  test("log workout button creates a session that appears in history", async ({ page, request }) => {
     // Create a fast workout via API for testing
     const workout = await createFastWorkout(request, "E2E Log Test", 2, 2, 10, _authHeaders);
     expect(workout.id).toBeTruthy();
@@ -588,8 +617,12 @@ test.describe("authenticated", () => {
     // Wait for workouts to load
     await expect(page.getByText("E2E Log Test", { exact: true })).toBeVisible();
 
-    // Click the Log button on our test workout
-    await page.getByRole("button", { name: "Log" }).first().click();
+    // Click the Log button on our test workout's card (not the first card's).
+    await page
+      .locator("div.bg-surface")
+      .filter({ has: page.getByRole("heading", { name: "E2E Log Test" }) })
+      .getByRole("button", { name: "Log", exact: true })
+      .click();
 
     // Toast confirms
     await expect(page.getByRole("status")).toContainText("Workout logged!", { timeout: 5000 });
