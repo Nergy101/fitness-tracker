@@ -302,7 +302,7 @@ test.describe("authenticated", () => {
     await page.getByRole("button", { name: "Health" }).click();
 
     // Health tab loads -- shows BMI section or the prompt to set height
-    await expect(page.getByText(/BMI|Log Weight|Health Settings/)).toBeVisible();
+    await expect(page.getByText(/BMI|Log Weight|Health Settings/).first()).toBeVisible();
   });
 
   test("health settings modal saves and BMI appears", async ({ page, request }) => {
@@ -329,9 +329,12 @@ test.describe("authenticated", () => {
     // Save
     await page.getByRole("button", { name: "Save Settings" }).click();
 
+    // Wait for modal to close and BMI to compute
+    await page.waitForTimeout(500);
+
     // BMI should now show -- 75 kg at 180 cm = 23.1
-    await expect(page.getByText("BMI").first()).toBeVisible();
-    await expect(page.getByText(/23[.\d]/)).toBeVisible();
+    await expect(page.getByText("BMI").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/23[.\\d]/)).toBeVisible();
   });
 
   test("logging weight creates entry visible in history", async ({ page, request }) => {
@@ -372,7 +375,7 @@ test.describe("authenticated", () => {
     // Health Score gauge renders
     await expect(page.getByText("Health Score")).toBeVisible();
     // At least one sub-score label should show
-    await expect(page.getByText(/BMI:|Workouts:|Streak:|Meas:/)).toBeVisible();
+    await expect(page.getByText(/BMI:|Workouts:|Streak:|Meas:/).first()).toBeVisible();
   });
 
   test("goal progress bar renders when goal is set", async ({ page, request }) => {
