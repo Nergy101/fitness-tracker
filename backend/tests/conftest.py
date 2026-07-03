@@ -8,9 +8,10 @@ Fixtures:
 
 import os
 
-# MUST be set before ANY app code is imported (settings.py loads on import)
-os.environ.setdefault("FITNESS_PASSWORD", "test-password-123")
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+# MUST be set BEFORE any app code is imported (settings.py loads on import).
+# Force the test password and in-memory DB regardless of CI env.
+os.environ["FITNESS_PASSWORD"] = "test-password-123"
+os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from collections.abc import Generator
 from datetime import date, datetime, timezone

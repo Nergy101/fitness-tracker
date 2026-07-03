@@ -3,7 +3,7 @@
 import base64
 from fastapi.testclient import TestClient
 
-TEST_PASSWORD = "test-password-123"
+from .conftest import TEST_PASSWORD
 
 
 class TestLogin:

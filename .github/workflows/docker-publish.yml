@@ -40,11 +40,7 @@ jobs:
       - name: Run tests
         run: |
           cd backend
-          FITNESS_PASSWORD="ci-test-password" DATABASE_URL="sqlite:///:memory:" \
-            python -m pytest tests/ -v --cov=app --cov-report=term-missing --tb=short
-        env:
-          # No real secrets needed — tests use in-memory DB + env password.
-          FITNESS_PASSWORD: ci-test-password
+          python -m pytest tests/ -v --cov=app --cov-report=term-missing --tb=short
 
   publish:
     name: Build & push Docker images
