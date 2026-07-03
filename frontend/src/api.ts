@@ -244,6 +244,45 @@ export interface BmiResponse {
   age: number | null;
 }
 
+export interface PersonalRecord {
+  exercise_name: string;
+  value: number;
+  unit: string;
+  date: string;
+  id: number | null;
+  session_id: number | null;
+}
+
+export interface PrsResponse {
+  by_exercise: PersonalRecord[];
+  fastest_5k_seconds: number | null;
+  fastest_10k_seconds: number | null;
+  longest_run_seconds: number | null;
+  longest_run_distance_km: number | null;
+  best_week_distance_km: number | null;
+}
+
+export interface WeeklyStat {
+  week_start: string;
+  total_minutes: number;
+  total_kcal: number;
+  total_sessions: number;
+  total_distance_km: number;
+}
+
+export interface StatsOverviewResponse {
+  workout_volume_weekly: WeeklyStat[];
+  run_distance_weekly: WeeklyStat[];
+  total_kcal_burned: number;
+  consistency_score_pct: number;
+  total_sessions_all: number;
+  total_runs: number;
+  current_month_minutes: number;
+  previous_month_minutes: number;
+  current_month_vs_previous_pct: number | null;
+  avg_weight_change_kg: number | null;
+}
+
 export interface HealthScoreResponse {
   score: number;
   bmi_score: number;
@@ -447,6 +486,13 @@ export const api = {
   getBmi: () => fetchJSON<BmiResponse>("/api/v1/health/bmi"),
   getHealthScore: () =>
     fetchJSON<HealthScoreResponse>("/api/v1/health/score"),
+
+  // Personal Records
+  getPrs: () => fetchJSON<PrsResponse>("/api/v1/health/prs"),
+
+  // Stats
+  getStatsOverview: () =>
+    fetchJSON<StatsOverviewResponse>("/api/v1/stats/overview"),
 
   // ─── Runs ───────────────────────────────────────────
 

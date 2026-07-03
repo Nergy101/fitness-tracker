@@ -311,6 +311,48 @@ class RunEntryResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ─── PR / Stats Schemas ────────────────────────────────────
+
+
+class PersonalRecord(BaseModel):
+    exercise_name: str
+    value: float
+    unit: str
+    date: str
+    id: int | None = None
+    session_id: int | None = None
+
+
+class PrsResponse(BaseModel):
+    by_exercise: list[PersonalRecord] = []
+    fastest_5k_seconds: int | None = None
+    fastest_10k_seconds: int | None = None
+    longest_run_seconds: int | None = None
+    longest_run_distance_km: float | None = None
+    best_week_distance_km: float | None = None
+
+
+class WeeklyStats(BaseModel):
+    week_start: str
+    total_minutes: float
+    total_kcal: float
+    total_sessions: int
+    total_distance_km: float
+
+
+class StatsOverviewResponse(BaseModel):
+    workout_volume_weekly: list[WeeklyStats] = []
+    run_distance_weekly: list[WeeklyStats] = []
+    total_kcal_burned: float = 0.0
+    consistency_score_pct: float = 0.0
+    total_sessions_all: int = 0
+    total_runs: int = 0
+    current_month_minutes: float = 0.0
+    previous_month_minutes: float = 0.0
+    current_month_vs_previous_pct: float | None = None
+    avg_weight_change_kg: float | None = None
+
+
 class RunStatsResponse(BaseModel):
     total_runs: int = 0
     total_distance_km: float = 0.0

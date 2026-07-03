@@ -4,6 +4,7 @@ import {
   ChartBar,
   Heartbeat,
   PersonSimpleRun,
+  TrendUp,
   type Icon,
 } from "@phosphor-icons/react";
 import { type WorkoutTemplate } from "./api";
@@ -14,8 +15,9 @@ import HealthTab from "./components/HealthTab";
 import WorkoutRunner from "./components/WorkoutRunner";
 import TopControls from "./components/TopControls";
 import LoginScreen, { getStoredAuth, clearStoredAuth } from "./components/LoginScreen";
+import StatisticsTab from "./components/StatisticsTab";
 
-type TabId = "workout" | "exercises" | "history" | "health";
+type TabId = "workout" | "exercises" | "history" | "health" | "stats";
 
 interface Tab {
   id: TabId;
@@ -27,6 +29,7 @@ const TABS: Tab[] = [
   { id: "workout", label: "Workouts", icon: Barbell },
   { id: "exercises", label: "Exercises", icon: PersonSimpleRun },
   { id: "history", label: "History", icon: ChartBar },
+  { id: "stats", label: "Stats", icon: TrendUp },
   { id: "health", label: "Health", icon: Heartbeat },
 ];
 
@@ -87,6 +90,7 @@ export default function App() {
         {currentTab === "history" && (
           <HistoryTab refreshKey={historyRefreshKey} />
         )}
+        {currentTab === "stats" && <StatisticsTab />}
         {currentTab === "health" && <HealthTab />}
       </main>
 

@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.models import (
-    UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin, WorkoutSession
+    UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin, WorkoutSession,
+    SessionExercise, RunEntry,
 )
 from app.schemas import (
     UserProfileResponse, UserProfileUpdate,
@@ -16,10 +17,79 @@ from app.schemas import (
     GoalProgressResponse,
     BodyMeasurementCreate, BodyMeasurementResponse, MeasurementChangesResponse,
     WellnessCreate, WellnessResponse, WellnessTrendsResponse,
-    HealthScoreResponse,
+    HealthScoreResponse, PrsResponse,
 )
 
 router = APIRouter(prefix="/api/v1/health", tags=["health"])
+
+
+# ─── Personal Records ────────────────────────────────────────
+
+
+@router.get("/prs", response_model=PrsResponse)
+def personal_records(db: Session = Depends(get_db)):
+    from app.schemas import PrsResponse, PersonalRecord
+
+    # Compute per-exercise PRs from session exercises (longest duration)
+    exercises_data = db.query(SessionExercise).filter(
+        SessionExercise.completed == True
+    ).all()
+
+    pr_map: dict[str, tuple[float, str, int, int | None]] = {}  # name -> (max_duration, date, session_id, id)
+    for se in exercises_data:
+        name = se.exercise_name or "Unknown"
+        dur = se.duration_seconds
+        if name not in pr_map or dur > pr_map[name][0]:
+            # Find session date
+            session = db.query(WorkoutSession).filter(WorkoutSession.id == se.session_id).first()
+            date_str = session.started_at.strftime("%Y-%m-%d") if session else ""
+            pr_map[name] = (dur, date_str, se.session_id, se.exercise_id)
+
+    by_exercise = [
+        PersonalRecord(
+            exercise_name=name,
+            value=float(val[0]),
+            unit="seconds",
+            date=val[1],
+            session_id=val[2],
+            id=val[3],
+        )
+        for name, val in sorted(pr_map.items())
+    ]
+
+    # Run PRs (reuse from runs router)
+    run_entries = db.query(RunEntry).all()
+    fastest_5k = None
+    fastest_10k = None
+    longest_run = None
+    best_week_dist = 0.0
+
+    if run_entries:
+        for e in run_entries:
+            if 4.5 <= e.distance_km <= 5.5:
+                if fastest_5k is None or e.duration_seconds < fastest_5k:
+                    fastest_5k = e.duration_seconds
+            if 9.5 <= e.distance_km <= 10.5:
+                if fastest_10k is None or e.duration_seconds < fastest_10k:
+                    fastest_10k = e.duration_seconds
+        sorted_by_dist = sorted(run_entries, key=lambda e: e.distance_km, reverse=True)
+        if sorted_by_dist:
+            longest_run = sorted_by_dist[0]
+
+        sorted_dates = sorted(set(e.date for e in run_entries))
+        for d in sorted_dates:
+            window_end = d + timedelta(days=7)
+            week_dist = sum(e.distance_km for e in run_entries if d <= e.date <= window_end)
+            best_week_dist = max(best_week_dist, week_dist)
+
+    return PrsResponse(
+        by_exercise=by_exercise,
+        fastest_5k_seconds=fastest_5k,
+        fastest_10k_seconds=fastest_10k,
+        longest_run_seconds=longest_run.duration_seconds if longest_run else None,
+        longest_run_distance_km=longest_run.distance_km if longest_run else None,
+        best_week_distance_km=best_week_dist,
+    )
 
 
 def _get_or_create_profile(db: Session) -> UserProfile:

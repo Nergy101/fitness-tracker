@@ -22,7 +22,9 @@ import {
   type MeasurementChangesResponse,
   type WellnessResponse,
   type WellnessTrendsResponse,
+  type PrsResponse,
 } from "../api";
+import { formatDuration } from "../format";
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -63,6 +65,7 @@ export default function HealthTab() {
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
   const [bmi, setBmi] = useState<BmiResponse | null>(null);
   const [score, setScore] = useState<HealthScoreResponse | null>(null);
+  const [prs, setPrs] = useState<PrsResponse | null>(null);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -74,7 +77,7 @@ export default function HealthTab() {
   const loadAll = async () => {
     try {
       const [
-        p, w, s, st, g, b, sc,
+        p, w, s, st, g, b, sc, pr,
       ] = await Promise.all([
         api.getProfile(),
         api.getWeightEntries(),
@@ -83,6 +86,7 @@ export default function HealthTab() {
         api.getGoalProgress(),
         api.getBmi(),
         api.getHealthScore(),
+        api.getPrs(),
       ]);
       setProfile(p);
       setWeights(w);
@@ -91,6 +95,7 @@ export default function HealthTab() {
       setGoal(g);
       setBmi(b);
       setScore(sc);
+      setPrs(pr);
     } catch (e) {
       console.error("Failed to load health data", e);
     } finally {
@@ -274,6 +279,68 @@ export default function HealthTab() {
                 ? `${Math.abs(goal.remaining_kg).toFixed(1)} kg to go`
                 : "Goal reached! 🎉"}
             </p>
+          )}
+        </div>
+      )}
+
+      {/* Personal Records */}
+      {prs && (prs.by_exercise.length > 0 || prs.fastest_5k_seconds) && (
+        <div className="bg-surface rounded-xl p-4 border border-fg/5">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy size={20} className="text-yellow-400 shrink-0" weight="fill" />
+            <p className="text-sm font-semibold text-white">Personal Records</p>
+          </div>
+
+          {/* Exercise PRs */}
+          {prs.by_exercise.length > 0 && (
+            <div className="space-y-1.5 mb-3">
+              {prs.by_exercise.slice(0, 10).map((rec, i) => (
+                <div key={i} className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium text-white truncate">{rec.exercise_name}</span>
+                  </div>
+                  <div className="text-right shrink-0 ml-2">
+                    <span className="text-sm font-semibold text-accent">
+                      {rec.unit === "seconds" ? formatDuration(rec.value) : rec.value.toFixed(1) + " " + rec.unit}
+                    </span>
+                    {rec.date && <span className="text-[10px] text-fg/40 block">{shortDate(rec.date)}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Run PRs */}
+          {(prs.fastest_5k_seconds || prs.fastest_10k_seconds) && (
+            <div className="border-t border-fg/5 pt-2 mt-2">
+              <p className="text-xs text-fg/40 mb-1.5">Run Records</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {prs.fastest_5k_seconds && (
+                  <div className="bg-bg rounded-lg p-2">
+                    <p className="text-fg/50">Fastest 5K</p>
+                    <p className="text-sm font-bold text-white">{formatDuration(prs.fastest_5k_seconds)}</p>
+                  </div>
+                )}
+                {prs.fastest_10k_seconds && (
+                  <div className="bg-bg rounded-lg p-2">
+                    <p className="text-fg/50">Fastest 10K</p>
+                    <p className="text-sm font-bold text-white">{formatDuration(prs.fastest_10k_seconds)}</p>
+                  </div>
+                )}
+                {prs.longest_run_distance_km && (
+                  <div className="bg-bg rounded-lg p-2">
+                    <p className="text-fg/50">Longest Run</p>
+                    <p className="text-sm font-bold text-white">{prs.longest_run_distance_km.toFixed(1)} km</p>
+                  </div>
+                )}
+                {prs.best_week_distance_km != null && prs.best_week_distance_km > 0 && (
+                  <div className="bg-bg rounded-lg p-2">
+                    <p className="text-fg/50">Best Week</p>
+                    <p className="text-sm font-bold text-white">{(prs.best_week_distance_km).toFixed(1)} km</p>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -499,6 +566,8 @@ function MeasurementsSection() {
   const [form, setForm] = useState<Record<string, string>>({});
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedMeas, setSelectedMeas] = useState<Set<string>>(new Set(["waist_cm"]));
+  const [measRange, setMeasRange] = useState<"30d" | "90d" | "all">("90d");
 
   useEffect(() => {
     api.getMeasurements().then(setMeasurements).catch(() => {});
@@ -557,6 +626,62 @@ function MeasurementsSection() {
         </div>
       )}
 
+      {/* Measurement Trend Chart */}
+      {measurements.length >= 2 && (
+        <MeasurementTrendChart
+          measurements={measurements}
+          selected={selectedMeas}
+          range={measRange}
+        />
+      )}
+
+      {/* Measurement toggle buttons */}
+      {measurements.length >= 2 && (
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] text-fg/40">Show on chart</span>
+            <div className="flex gap-1">
+              {(["30d", "90d", "all"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setMeasRange(r)}
+                  className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    measRange === r
+                      ? "bg-accent/20 text-accent"
+                      : "text-fg/30 hover:text-fg/60"
+                  }`}
+                >
+                  {r === "all" ? "All" : r}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {fields.map((f) => {
+              const active = selectedMeas.has(f.key);
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => {
+                    const next = new Set(selectedMeas);
+                    if (active && next.size > 1) next.delete(f.key);
+                    else if (!active) next.add(f.key);
+                    setSelectedMeas(next);
+                  }}
+                  className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                    active
+                      ? "bg-accent/15 border-accent/30 text-accent"
+                      : "border-fg/10 text-fg/40 hover:text-fg/70"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {!showForm ? (
         <button onClick={() => setShowForm(true)}
           className="w-full bg-bg rounded-lg py-2 text-sm text-accent font-medium hover:bg-bg/80 transition-colors">
@@ -577,6 +702,129 @@ function MeasurementsSection() {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Measurement Trend Chart ──────────────────────────────
+
+const MEAS_COLORS = [
+  "#4cb782", "#facc15", "#f97316", "#a78bfa",
+  "#f472b6", "#38bdf8", "#fb923c", "#34d399",
+];
+
+function MeasurementTrendChart({
+  measurements,
+  selected,
+  range,
+}: {
+  measurements: BodyMeasurementResponse[];
+  selected: Set<string>;
+  range: "30d" | "90d" | "all";
+}) {
+  const sorted = [...measurements].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+  const cutoff = range === "all" ? 0 : range === "90d" ? 90 : 30;
+  const filtered = cutoff > 0
+    ? sorted.filter(
+        (m) =>
+          new Date(m.date).getTime() >= Date.now() - cutoff * 86400000,
+      )
+    : sorted;
+  if (filtered.length < 2) return null;
+
+  const selectedFields = [...selected];
+  const w = 300;
+  const h = 100;
+
+  // Collect all non-null values for the selected fields
+  const allValues: number[] = [];
+  const series: { key: string; points: { x: number; y: number }[]; color: string }[] = [];
+  selectedFields.forEach((field, fi) => {
+    const pts: { x: number; y: number }[] = [];
+    filtered.forEach((m, i) => {
+      const val = (m as any)[field];
+      if (val != null) {
+        const x = (i / (filtered.length - 1)) * w;
+        pts.push({ x, y: val });
+        allValues.push(val);
+      }
+    });
+    if (pts.length >= 2) {
+      series.push({ key: field, points: pts, color: MEAS_COLORS[fi % MEAS_COLORS.length] });
+    }
+  });
+
+  if (series.length === 0) return null;
+
+  const min = Math.min(...allValues) - 1;
+  const max = Math.max(...allValues) + 1;
+  const range_val = max - min || 1;
+
+  const labels = [filtered[0], filtered[Math.floor(filtered.length / 2)], filtered[filtered.length - 1]];
+
+  return (
+    <div>
+      <p className="text-[10px] text-fg/40 mb-2">Trends</p>
+      <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full h-28">
+        {series.map((s) => (
+          <polyline
+            key={s.key}
+            points={s.points.map((p) => `${p.x},${h - ((p.y - min) / range_val) * h}`).join(" ")}
+            fill="none"
+            stroke={s.color}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+        {series.map((s) =>
+          s.points.map((p, i) => (
+            <circle
+              key={`${s.key}-${i}`}
+              cx={p.x}
+              cy={h - ((p.y - min) / range_val) * h}
+              r="2"
+              fill={s.color}
+            />
+          )),
+        )}
+        {labels.map((e, i) => {
+          const idx = filtered.indexOf(e);
+          if (idx < 0) return null;
+          const x = (idx / (filtered.length - 1)) * w;
+          return (
+            <text key={i} x={x} y={h + 14} textAnchor="middle" className="fill-fg/40" fontSize="9">
+              {shortDate(e.date)}
+            </text>
+          );
+        })}
+        <text x="0" y="10" className="fill-fg/30" fontSize="9">{max.toFixed(1)}</text>
+        <text x="0" y={h - 4} className="fill-fg/30" fontSize="9">{min.toFixed(1)}</text>
+      </svg>
+      {/* Legend */}
+      <div className="flex flex-wrap gap-3 mt-1">
+        {series.map((s) => {
+          const measFields = [
+            { key: "waist_cm", label: "Waist" },
+            { key: "hips_cm", label: "Hips" },
+            { key: "chest_cm", label: "Chest" },
+            { key: "left_arm_cm", label: "Left Arm" },
+            { key: "right_arm_cm", label: "Right Arm" },
+            { key: "left_thigh_cm", label: "Left Thigh" },
+            { key: "right_thigh_cm", label: "Right Thigh" },
+            { key: "neck_cm", label: "Neck" },
+          ];
+          const label = measFields.find((f) => f.key === s.key)?.label ?? s.key;
+          return (
+            <span key={s.key} className="flex items-center gap-1 text-[10px] text-fg/50">
+              <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+              {label}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }

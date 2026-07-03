@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS
 from app.database import engine, Base, ensure_schema
-from app.routers import exercises, workouts, sessions, health, runs, auth
+from app.routers import exercises, workouts, sessions, health, runs, auth, stats
 
 # Create all tables on startup, then apply additive migrations.
 Base.metadata.create_all(bind=engine)
@@ -28,6 +28,7 @@ app.include_router(sessions.router)
 app.include_router(health.router)
 app.include_router(runs.router)
 app.include_router(auth.router)
+app.include_router(stats.router)
 
 
 @app.get("/api/health")

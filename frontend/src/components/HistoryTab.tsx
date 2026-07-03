@@ -5,6 +5,7 @@ import {
   DownloadSimple,
   SmileySad,
   UploadSimple,
+  CalendarBlank,
 } from "@phosphor-icons/react";
 import {
   api,
@@ -21,6 +22,7 @@ import {
 } from "../format";
 import { shortDate } from "../locale";
 import { useLocale } from "../useLocale";
+import CalendarView from "./CalendarView";
 
 // Bump when the export shape changes so future imports can migrate old files.
 const HISTORY_EXPORT_VERSION = 1;
@@ -461,6 +463,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   const [detail, setDetail] = useState<WorkoutSession | null>(null);
   const [range, setRange] = useState<RangeKey>("7d");
   const [view, setView] = useState<"range" | "all">("range");
+  const [calendar, setCalendar] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -599,9 +602,9 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
         {RANGES.map((r) => (
           <button
             key={r.key}
-            onClick={() => setRange(r.key)}
+            onClick={() => { setRange(r.key); setCalendar(false); }}
             className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              range === r.key
+              range === r.key && !calendar
                 ? "bg-accent text-on-accent"
                 : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
             }`}
@@ -609,17 +612,34 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
             {r.label}
           </button>
         ))}
+        <button
+          onClick={() => setCalendar(!calendar)}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+            calendar
+              ? "bg-accent text-on-accent"
+              : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+          }`}
+        >
+          <CalendarBlank size={16} className="inline mr-1" />
+          Calendar
+        </button>
       </div>
 
-      {/* Activity + summary — chart depends on the range. */}
-      <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
-        <StatsGrid sessions={rangeSessions} />
-        {range === "30d" ? (
-          <Heatmap sessions={rangeSessions} />
-        ) : (
-          <DayBars sessions={rangeSessions} mode={range} />
-        )}
-      </div>
+      {/* Activity + summary — chart depends on the mode. */}
+      {calendar ? (
+        <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
+          <CalendarView sessions={rangeSessions} />
+        </div>
+      ) : (
+        <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
+          <StatsGrid sessions={rangeSessions} />
+          {range === "30d" ? (
+            <Heatmap sessions={rangeSessions} />
+          ) : (
+            <DayBars sessions={rangeSessions} mode={range} />
+          )}
+        </div>
+      )}
 
       {/* Done workouts in range */}
       <SessionList
