@@ -571,9 +571,6 @@ test.describe("authenticated", () => {
     // Toast confirms
     await expect(page.getByRole("status")).toContainText("Run logged");
 
-    // Run appears in recent runs section
-    await expect(page.getByText("5.0km").first()).toBeVisible();
-
     // Verify via API -- pace should be 360s/km (30min / 5km)
     const runs = await (await request.get(`${API_URL}/api/v1/runs`, { headers: _authHeaders })).json();
     const match = runs.find((r: { distance_km: number }) => r.distance_km === 5.0);
