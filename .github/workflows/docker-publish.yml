@@ -1,8 +1,10 @@
-name: Publish Docker images
+name: CI — test, build & publish Docker images
 
-# Build and push the backend + frontend images to GHCR on every push to main.
+# Run tests on every push and PR; publish images only on main push.
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -16,7 +18,37 @@ env:
   IMAGE_PREFIX: ${{ github.repository_owner }}/fitness-tracker
 
 jobs:
+  test:
+    name: Backend unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install --no-cache-dir -r requirements.txt
+
+      - name: Run tests
+        run: |
+          cd backend
+          FITNESS_PASSWORD="ci-test-password" DATABASE_URL="sqlite:///:memory:" \
+            python -m pytest tests/ -v --cov=app --cov-report=term-missing --tb=short
+        env:
+          # No real secrets needed — tests use in-memory DB + env password.
+          FITNESS_PASSWORD: ci-test-password
+
   publish:
+    name: Build & push Docker images
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
