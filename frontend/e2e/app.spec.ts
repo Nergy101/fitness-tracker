@@ -422,6 +422,71 @@ test.describe("authenticated", () => {
     expect(match.energy).toBe(3);
   });
 
+  // ─── Body Measurements ─────────────────────────────────
+
+  test("body measurements section expands and shows add form", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Health" }).click();
+
+    // Click the Body Measurements collapsible button
+    await page.getByText("Body Measurements").click();
+
+    // Should show the Add Measurements button
+    await expect(page.getByText("+ Add Measurements")).toBeVisible();
+  });
+
+  test("adding body measurements saves and displays with delta", async ({ page, request }) => {
+    // Seed a first measurement so there's a baseline
+    await request.post(`${API_URL}/api/v1/health/measurements`, {
+      data: { waist_cm: 85, hips_cm: 95, chest_cm: 100, date: "2026-06-01" },
+      headers: _authHeaders,
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Health" }).click();
+    await page.getByText("Body Measurements").click();
+    await page.getByText("+ Add Measurements").click();
+
+    // Fill in measurement fields (they use placeholders like "Waist (cm)")
+    await page.getByPlaceholder("Waist (cm)").fill("82");
+    await page.getByPlaceholder("Hips (cm)").fill("94");
+    await page.getByPlaceholder("Chest (cm)").fill("101");
+
+    // Save
+    await page.getByRole("button", { name: "Save" }).click();
+
+    await page.waitForTimeout(300);
+
+    // Verify via API — should have 2 entries now
+    const entries = await (await request.get(`${API_URL}/api/v1/health/measurements`, { headers: _authHeaders })).json();
+    expect(entries.length).toBe(2);
+
+    // Delta should show the change: waist went from 85 to 82 = -3 (green)
+    await expect(page.getByText(/-3[.]0/)).toBeVisible();
+  });
+
+  test("body measurements persist on page reload", async ({ page, request }) => {
+    // Seed a measurement
+    await request.post(`${API_URL}/api/v1/health/measurements`, {
+      data: { waist_cm: 88, hips_cm: 96, date: "2026-07-01" },
+      headers: _authHeaders,
+    });
+
+    await page.goto("/");
+    await page.getByRole("button", { name: "Health" }).click();
+    await page.getByText("Body Measurements").click();
+
+    // Should show Waist: 88 cm
+    await expect(page.getByText("88 cm")).toBeVisible();
+    await expect(page.getByText("96 cm")).toBeVisible();
+
+    // Reload and check it persists
+    await page.reload();
+    await page.getByRole("button", { name: "Health" }).click();
+    await page.getByText("Body Measurements").click();
+    await expect(page.getByText("88 cm")).toBeVisible();
+  });
+
   // --- Runs ---
 
   test("log a run via UI shows in recent runs and history", async ({ page, request }) => {

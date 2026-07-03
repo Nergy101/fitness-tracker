@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, SmileySad, PersonSimpleRun, MapTrifold } from "@phosphor-icons/react";
+import { CheckCircle, SmileySad, PersonSimpleRun, MapTrifold, Trash } from "@phosphor-icons/react";
 import {
   api,
   type Exercise,
@@ -168,6 +168,17 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         setRunStats(stats);
       });
     });
+  }
+
+  async function deleteWorkout(id: number, name: string) {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      await api.deleteWorkout(id);
+      setTemplates((prev) => prev.filter((t) => t.id !== id));
+      setToast(`"${name}" deleted`);
+    } catch {
+      setToast("Failed to delete workout");
+    }
   }
 
   const pace = runDuration > 0 && parseFloat(runDistance) > 0
@@ -442,6 +453,13 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                     </svg>
+                  </button>
+                  <button
+                    onClick={() => deleteWorkout(tpl.id, tpl.name)}
+                    className="text-red-400/40 hover:text-red-400 transition-colors p-1"
+                    title="Delete"
+                  >
+                    <Trash size={18} />
                   </button>
                   <button
                     onClick={() => logWorkout(tpl)}

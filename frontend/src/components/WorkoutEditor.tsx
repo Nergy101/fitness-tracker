@@ -46,6 +46,7 @@ export default function WorkoutEditor({
   const nextKey = () => keyRef.current++;
 
   const [name, setName] = useState(workout?.name ?? "");
+  const [description, setDescription] = useState(workout?.description ?? "");
   const [rounds, setRounds] = useState(workout?.rounds ?? 1);
   const [restBetween, setRestBetween] = useState(
     workout?.rest_between_rounds ?? 180,
@@ -111,7 +112,7 @@ export default function WorkoutEditor({
     try {
       const payload = {
         name,
-        description: workout?.description ?? "",
+        description,
         rounds: Math.max(1, rounds || 1),
         rest_between_rounds: Math.max(0, restBetween || 0),
         exercises: rows.map((r, i) => ({
@@ -160,6 +161,14 @@ export default function WorkoutEditor({
           type="text"
           placeholder="Workout name..."
           className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50 mb-4"
+        />
+
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Description (optional)..."
+          rows={2}
+          className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50 mb-4 resize-none"
         />
 
         <div className="flex items-center gap-3 mb-4">
