@@ -310,18 +310,28 @@ test.describe("authenticated", () => {
     expect(imported.started_at.startsWith("2026-06-15")).toBe(true);
   });
 
-  test("theme toggle flips and persists", async ({ page }) => {
+  test("theme toggle cycles through system/light/dark", async ({ page }) => {
     await page.goto("/");
-    const html = page.locator("html");
-    const initiallyDark = await html.evaluate((el) => el.classList.contains("dark"));
+    await page.evaluate(() => localStorage.removeItem("theme-mode"));
+    await page.reload();
 
-    await page.getByRole("button", { name: /Switch to (light|dark) mode/ }).click();
-    await expect
-      .poll(() => html.evaluate((el) => el.classList.contains("dark")))
-      .toBe(!initiallyDark);
+    let mode = await page.evaluate(() => localStorage.getItem("theme-mode"));
+    expect(mode).toBe("system");
 
-    const persisted = await page.evaluate(() => localStorage.getItem("theme"));
-    expect(persisted).toBe(initiallyDark ? "light" : "dark");
+    // Click: system → light (button has aria-label "System theme")
+    await page.locator('button[aria-label="System theme"]').click();
+    mode = await page.evaluate(() => localStorage.getItem("theme-mode"));
+    expect(mode).toBe("light");
+
+    // Click: light → dark (button now has aria-label "Switch to dark mode")
+    await page.locator('button[aria-label="Switch to dark mode"]').click();
+    mode = await page.evaluate(() => localStorage.getItem("theme-mode"));
+    expect(mode).toBe("dark");
+
+    // Click: dark → system
+    await page.locator('button[aria-label="Switch to system theme"]').click();
+    mode = await page.evaluate(() => localStorage.getItem("theme-mode"));
+    expect(mode).toBe("system");
   });
 
   // --- Stats Tab ---
@@ -631,12 +641,13 @@ test.describe("authenticated", () => {
     await page.goto("/");
 
     // Wait for workouts to load
-    await expect(page.getByText("E2E Log Test", { exact: true })).toBeVisible();
+    await expect(page.getByText("E2E Log Test", { exact: true }).first()).toBeVisible();
 
-    // Click the Log button on our test workout's card (not the first card's).
+    // Click the Log button on our test workout's card
     await page
       .locator("div.bg-surface")
       .filter({ has: page.getByRole("heading", { name: "E2E Log Test" }) })
+      .first()
       .getByRole("button", { name: "Log", exact: true })
       .click();
 
