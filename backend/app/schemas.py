@@ -53,6 +53,7 @@ class ExerciseResponse(ExerciseBase):
 class WorkoutTemplateExerciseBase(BaseModel):
     exercise_id: int
     duration_seconds: int = 30
+    rest_after_seconds: int = 0
     order_index: int = 0
 
 

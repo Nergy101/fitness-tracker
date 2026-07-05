@@ -22,6 +22,7 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
             template_id=te.template_id,
             exercise_id=te.exercise_id,
             duration_seconds=te.duration_seconds,
+            rest_after_seconds=te.rest_after_seconds or 0,
             order_index=te.order_index,
             exercise=te.exercise,
         ))
@@ -68,6 +69,7 @@ def create_workout(data: WorkoutTemplateCreate, db: Session = Depends(get_db)):
             template_id=template.id,
             exercise_id=ex_data.exercise_id,
             duration_seconds=ex_data.duration_seconds or exercise.default_duration_seconds,
+            rest_after_seconds=ex_data.rest_after_seconds or 0,
             order_index=ex_data.order_index if ex_data.order_index else i,
         )
         db.add(template_exercise)
@@ -108,6 +110,7 @@ def update_workout(workout_id: int, data: WorkoutTemplateUpdate, db: Session = D
                 template_id=template.id,
                 exercise_id=ex_data.exercise_id,
                 duration_seconds=ex_data.duration_seconds or exercise.default_duration_seconds,
+                rest_after_seconds=ex_data.rest_after_seconds or 0,
                 order_index=ex_data.order_index if ex_data.order_index else i,
             )
             db.add(template_exercise)

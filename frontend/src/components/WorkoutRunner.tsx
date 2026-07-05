@@ -7,7 +7,7 @@ import TopControls from "./TopControls";
 
 type Phase = "rest" | "exercise" | "roundrest" | "finished";
 
-const REST_SECONDS = 5;
+const DEFAULT_REST = 5;
 const DEFAULT_KCAL_PER_MIN = 5;
 const RING = 264; // 2πr, r=42
 
@@ -37,7 +37,7 @@ export default function WorkoutRunner({
   const [currentRound, setCurrentRound] = useState(0);
   const [timer, setTimer] = useState(0);
   const [timerProgress, setTimerProgress] = useState(0);
-  const [restCountdown, setRestCountdown] = useState(REST_SECONDS);
+  const [restCountdown, setRestCountdown] = useState(DEFAULT_REST);
   const [restProgress, setRestProgress] = useState(0);
   // Set during each exercise; the Skip button jumps to the next exercise/round.
   const advanceRef = useRef<() => void>(() => {});
@@ -84,15 +84,23 @@ export default function WorkoutRunner({
       setCurrentRound(round);
       setCurrentIndex(i);
       speak(`Next up: ${exercises[i]?.exercise?.name ?? "exercise"}`);
-      setRestCountdown(REST_SECONDS);
+      // Per-exercise rest: use the rest_after_seconds of the exercise just
+      // completed (i > 0 ? exercises[i-1] : default 5s for the initial warm-up).
+      const restSec = i === 0 ? DEFAULT_REST : (exercises[i - 1]?.rest_after_seconds || DEFAULT_REST);
+      setRestCountdown(restSec);
       setRestProgress(0);
       const restStart = Date.now();
       clear();
+      advanceRef.current = () => {
+        clear();
+        soundStart();
+        startExercise(round, i);
+      };
       intervalId = setInterval(() => {
         const elapsed = (Date.now() - restStart) / 1000;
-        setRestCountdown(Math.max(0, REST_SECONDS - Math.floor(elapsed)));
-        setRestProgress(Math.min(1, elapsed / REST_SECONDS));
-        if (elapsed >= REST_SECONDS) {
+        setRestCountdown(Math.max(0, Math.ceil(restSec - elapsed)));
+        setRestProgress(Math.min(1, elapsed / restSec));
+        if (elapsed >= restSec) {
           clear();
           soundStart();
           startExercise(round, i);
@@ -254,7 +262,13 @@ export default function WorkoutRunner({
               <span className="text-5xl font-bold text-accent">{restCountdown}</span>
             </div>
           </div>
-          <p className="text-fg/30 text-sm">Get ready...</p>
+          <p className="text-fg/30 text-sm mb-4">Get ready...</p>
+          <button
+            onClick={() => advanceRef.current()}
+            className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+          >
+            <SkipForward size={16} weight="fill" /> Skip rest
+          </button>
         </div>
       )}
 

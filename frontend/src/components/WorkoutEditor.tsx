@@ -13,6 +13,7 @@ interface EditorRow {
   exercise_id: number;
   exercise_name: string;
   duration_seconds: number;
+  rest_after_seconds: number;
 }
 
 function rowsFromTemplate(
@@ -25,6 +26,7 @@ function rowsFromTemplate(
     exercise_id: e.exercise?.id ?? e.exercise_id,
     exercise_name: e.exercise?.name ?? "",
     duration_seconds: e.duration_seconds || 30,
+    rest_after_seconds: e.rest_after_seconds || 0,
   }));
 }
 
@@ -80,6 +82,7 @@ export default function WorkoutEditor({
         exercise_id: ex.id,
         exercise_name: ex.name,
         duration_seconds: ex.default_duration_seconds || 30,
+        rest_after_seconds: 0,
       },
     ]);
     setShowPicker(false);
@@ -102,6 +105,12 @@ export default function WorkoutEditor({
     );
   }
 
+  function setRest(key: number, value: number) {
+    setRows((prev) =>
+      prev.map((r) => (r.key === key ? { ...r, rest_after_seconds: value } : r)),
+    );
+  }
+
   function removeRow(key: number) {
     setRows((prev) => prev.filter((r) => r.key !== key));
   }
@@ -118,6 +127,7 @@ export default function WorkoutEditor({
         exercises: rows.map((r, i) => ({
           exercise_id: r.exercise_id,
           duration_seconds: r.duration_seconds || 30,
+          rest_after_seconds: r.rest_after_seconds || 0,
           order_index: i,
         })),
       };
@@ -294,7 +304,7 @@ export default function WorkoutEditor({
                 <div className="text-sm font-medium truncate">
                   {item.exercise_name}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <Stepper
                     value={item.duration_seconds}
                     onChange={(v) => setDuration(item.key, v)}
@@ -303,6 +313,15 @@ export default function WorkoutEditor({
                     step={5}
                     unit="s"
                     ariaLabel={`${item.exercise_name} duration`}
+                  />
+                  <Stepper
+                    value={item.rest_after_seconds}
+                    onChange={(v) => setRest(item.key, v)}
+                    min={0}
+                    max={600}
+                    step={5}
+                    unit="s rest"
+                    ariaLabel={`${item.exercise_name} rest after`}
                   />
                 </div>
               </div>

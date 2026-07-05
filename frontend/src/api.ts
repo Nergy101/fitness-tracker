@@ -32,6 +32,7 @@ export interface TemplateExercise {
   template_id: number;
   exercise_id: number;
   duration_seconds: number;
+  rest_after_seconds: number;
   order_index: number;
   exercise: Exercise | null;
 }
@@ -52,6 +53,7 @@ export interface WorkoutTemplate {
 export interface TemplateExerciseInput {
   exercise_id: number;
   duration_seconds: number;
+  rest_after_seconds: number;
   order_index: number;
 }
 

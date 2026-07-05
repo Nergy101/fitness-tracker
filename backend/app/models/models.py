@@ -39,6 +39,7 @@ class WorkoutTemplateExercise(Base):
     template_id = Column(Integer, ForeignKey("workout_templates.id"), nullable=False)
     exercise_id = Column(Integer, ForeignKey("exercises.id"), nullable=False)
     duration_seconds = Column(Integer, default=30)
+    rest_after_seconds = Column(Integer, default=0)
     order_index = Column(Integer, nullable=False)
 
     template = relationship("WorkoutTemplate", back_populates="exercises")

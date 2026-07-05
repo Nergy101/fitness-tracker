@@ -33,6 +33,12 @@ def ensure_schema() -> None:
                 conn.execute(text(
                     "ALTER TABLE exercises ADD COLUMN image_url VARCHAR(512)"
                 ))
+        if "workout_template_exercises" in tables:
+            cols = {c["name"] for c in inspector.get_columns("workout_template_exercises")}
+            if "rest_after_seconds" not in cols:
+                conn.execute(text(
+                    "ALTER TABLE workout_template_exercises ADD COLUMN rest_after_seconds INTEGER NOT NULL DEFAULT 0"
+                ))
 
         # Health tracking tables — ensure they exist (new tables are created by create_all above)
         # Add any additive columns for these tables here in future versions.
