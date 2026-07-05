@@ -353,10 +353,19 @@ async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> 
     headers["Authorization"] = `Basic ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers,
-  });
+  const doFetch = () =>
+    fetch(`${API_BASE}${url}`, { ...options, headers });
+
+  // One retry for network errors (offline, DNS, connection refused).
+  // Don't retry 4xx/5xx — those are server-side issues.
+  let res: Response;
+  try {
+    res = await doFetch();
+  } catch (err) {
+    // Only retry if it looks like a network error, not an abort/timeout.
+    await new Promise((r) => setTimeout(r, 1000));
+    res = await doFetch();
+  }
 
   // Handle 401 — clear auth and redirect to login
   if (res.status === 401) {

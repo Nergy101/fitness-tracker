@@ -16,6 +16,8 @@ import WorkoutRunner from "./components/WorkoutRunner";
 import TopControls from "./components/TopControls";
 import LoginScreen, { getStoredAuth, clearStoredAuth } from "./components/LoginScreen";
 import StatisticsTab from "./components/StatisticsTab";
+import ErrorBoundary from "./components/ErrorBoundary";
+import OfflineBanner from "./components/OfflineBanner";
 
 type TabId = "workout" | "exercises" | "history" | "health" | "stats";
 
@@ -34,7 +36,14 @@ const TABS: Tab[] = [
 ];
 
 export default function App() {
-  const [authenticated, setAuthenticated] = useState(() => !!getStoredAuth());
+  const [authenticated, setAuthenticated] = useState(() => {
+    try {
+      return !!getStoredAuth();
+    } catch {
+      clearStoredAuth();
+      return false;
+    }
+  });
   const [currentTab, setCurrentTab] = useState<TabId>("workout");
   const [runningWorkout, setRunningWorkout] = useState<WorkoutTemplate | null>(
     null,
@@ -63,51 +72,54 @@ export default function App() {
   const tabTitle = TABS.find((t) => t.id === currentTab)?.label ?? "";
 
   return (
-    <div className="app-shell flex flex-col h-screen pt-[env(safe-area-inset-top)]">
-      <header className="px-4 py-3 flex items-center justify-between border-b border-fg/10 shrink-0">
-        <h1 className="text-lg font-bold">{tabTitle}</h1>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-fg/40">FitnessTracker</span>
-          <TopControls />
-          <button
-            onClick={() => { clearStoredAuth(); setAuthenticated(false); }}
-            className="text-[10px] text-fg/20 hover:text-red-400 transition-colors"
-            title="Logout"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+    <ErrorBoundary>
+      <div className="app-shell flex flex-col h-screen pt-[env(safe-area-inset-top)]">
+        <OfflineBanner />
+        <header className="px-4 py-3 flex items-center justify-between border-b border-fg/10 shrink-0">
+          <h1 className="text-lg font-bold">{tabTitle}</h1>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-fg/40">FitnessTracker</span>
+            <TopControls />
+            <button
+              onClick={() => { clearStoredAuth(); setAuthenticated(false); }}
+              className="text-[10px] text-fg/20 hover:text-red-400 transition-colors"
+              title="Logout"
+            >
+              Logout
+            </button>
+          </div>
+        </header>
 
-      <main className="flex-1 overflow-y-auto px-4 py-4">
-        {currentTab === "workout" && (
-        <WorkoutTab
-        onStartWorkout={setRunningWorkout}
-        onLogWorkout={() => setHistoryRefreshKey((k) => k + 1)}
-        />
-        )}
-        {currentTab === "exercises" && <ExercisesTab />}
-        {currentTab === "history" && (
-          <HistoryTab refreshKey={historyRefreshKey} />
-        )}
-        {currentTab === "stats" && <StatisticsTab />}
-        {currentTab === "health" && <HealthTab />}
-      </main>
+        <main className="flex-1 overflow-y-auto px-4 py-4">
+          {currentTab === "workout" && (
+          <WorkoutTab
+          onStartWorkout={setRunningWorkout}
+          onLogWorkout={() => setHistoryRefreshKey((k) => k + 1)}
+          />
+          )}
+          {currentTab === "exercises" && <ExercisesTab />}
+          {currentTab === "history" && (
+            <HistoryTab refreshKey={historyRefreshKey} />
+          )}
+          {currentTab === "stats" && <StatisticsTab />}
+          {currentTab === "health" && <HealthTab />}
+        </main>
 
-      <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shrink-0">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setCurrentTab(tab.id)}
-            className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-              currentTab === tab.id ? "text-accent" : "text-fg/40"
-            }`}
-          >
-            <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
-            <span className="text-xs font-medium">{tab.label}</span>
-          </button>
-        ))}
-      </nav>
-    </div>
+        <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shrink-0">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setCurrentTab(tab.id)}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
+                currentTab === tab.id ? "text-accent" : "text-fg/40"
+              }`}
+            >
+              <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
+              <span className="text-xs font-medium">{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+    </ErrorBoundary>
   );
 }
