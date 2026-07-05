@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, type WorkoutTemplate } from "../api";
+import { api, type Exercise, type WorkoutTemplate } from "../api";
 import { soundStart, soundRest, soundFinish, speak } from "../sound";
-import { SkipForward, X } from "@phosphor-icons/react";
+import { ArrowsLeftRight, SkipForward, X } from "@phosphor-icons/react";
 import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 
@@ -15,7 +15,6 @@ function kcalFor(durationSeconds: number, kcalPerMin: number): number {
   return (durationSeconds / 60) * kcalPerMin;
 }
 
-
 interface WorkoutRunnerProps {
   workout: WorkoutTemplate;
   onFinish: () => void;
@@ -27,7 +26,10 @@ export default function WorkoutRunner({
   onFinish,
   onCancel,
 }: WorkoutRunnerProps) {
-  const exercises = workout.exercises;
+  // Mutable exercise list so swaps update in-place.
+  const [exercises, setExercises] = useState(workout.exercises);
+  const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+  const [showSwapPicker, setShowSwapPicker] = useState(false);
   const totalExercises = exercises.length;
   const rounds = Math.max(1, workout.rounds || 1);
   const restBetween = Math.max(0, workout.rest_between_rounds || 0);
@@ -39,11 +41,18 @@ export default function WorkoutRunner({
   const [timerProgress, setTimerProgress] = useState(0);
   const [restCountdown, setRestCountdown] = useState(DEFAULT_REST);
   const [restProgress, setRestProgress] = useState(0);
-  // Set during each exercise; the Skip button jumps to the next exercise/round.
   const advanceRef = useRef<() => void>(() => {});
 
-  // Work = exercise time × rounds. Rest = configured between-round rest ×
-  // (rounds − 1). Total = work + rest — matches the backend breakdown.
+  // Refs for position tracking across effect re-runs (swaps).
+  const roundRef = useRef(0);
+  const indexRef = useRef(0);
+  const phaseRef = useRef<Phase>("rest");
+
+  // Load exercises for the swap picker.
+  useEffect(() => {
+    api.getExercises().then(setAllExercises).catch(() => {});
+  }, []);
+
   const workDuration = useMemo(
     () =>
       exercises.reduce((sum, e) => sum + (e.duration_seconds || 30), 0) * rounds,
@@ -66,8 +75,29 @@ export default function WorkoutRunner({
     [exercises, rounds],
   );
 
-  // Timed state machine. Runs once on mount; the interval closes over local
-  // timestamps and stable props only, so there is no stale-state hazard.
+  const doSwap = (newExercise: Exercise) => {
+    setExercises((prev) => {
+      const next = [...prev];
+      next[indexRef.current] = {
+        ...next[indexRef.current],
+        exercise_id: newExercise.id,
+        exercise: newExercise,
+        // Keep the same duration from the original so timing is preserved
+      };
+      return next;
+    });
+    setShowSwapPicker(false);
+    // Restart current exercise with the new exercise. We do this by
+    // clearing the current interval and calling the start function.
+    // advanceRef.current at this point points to the skip/advance action,
+    // so we need a different mechanism. Use a key to force the effect to re-run.
+    swapKeyRef.current += 1;
+    // The effect cleanup will fire, then restart at the same position.
+  };
+
+  const swapKeyRef = useRef(0);
+
+  // Main state machine — re-runs when exercises list or swapKey changes.
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
     const clear = () => {
@@ -77,16 +107,18 @@ export default function WorkoutRunner({
       }
     };
 
-    // rest(round, i) precedes exercise(round, i) for every exercise in every
-    // round, so nothing is skipped.
     function startRest(round: number, i: number) {
+      roundRef.current = round;
+      indexRef.current = i;
+      phaseRef.current = "rest";
       setPhase("rest");
       setCurrentRound(round);
       setCurrentIndex(i);
       speak(`Next up: ${exercises[i]?.exercise?.name ?? "exercise"}`);
-      // Per-exercise rest: use the rest_after_seconds of the exercise just
-      // completed (i > 0 ? exercises[i-1] : default 5s for the initial warm-up).
-      const restSec = i === 0 ? DEFAULT_REST : (exercises[i - 1]?.rest_after_seconds || DEFAULT_REST);
+      const restSec =
+        i === 0
+          ? DEFAULT_REST
+          : (exercises[i - 1]?.rest_after_seconds || DEFAULT_REST);
       setRestCountdown(restSec);
       setRestProgress(0);
       const restStart = Date.now();
@@ -121,13 +153,14 @@ export default function WorkoutRunner({
       }
     }
 
-    // Configurable rest between rounds. Replaces the short get-ready before the
-    // first exercise of the next round.
     function startRoundRest(nextRound: number) {
       if (restBetween <= 0) {
         startExercise(nextRound, 0);
         return;
       }
+      roundRef.current = nextRound;
+      indexRef.current = 0;
+      phaseRef.current = "roundrest";
       setPhase("roundrest");
       setCurrentRound(nextRound);
       setCurrentIndex(0);
@@ -154,6 +187,9 @@ export default function WorkoutRunner({
     }
 
     function startExercise(round: number, i: number) {
+      roundRef.current = round;
+      indexRef.current = i;
+      phaseRef.current = "exercise";
       setPhase("exercise");
       setCurrentRound(round);
       setCurrentIndex(i);
@@ -205,11 +241,24 @@ export default function WorkoutRunner({
     if (totalExercises === 0) {
       finish();
     } else {
-      startRest(0, 0);
+      // On swap restart, pick up from the current position
+      const r = roundRef.current;
+      const i = indexRef.current;
+      const p = phaseRef.current;
+      if (swapKeyRef.current > 0 && p === "exercise") {
+        startExercise(r, i);
+      } else if (swapKeyRef.current > 0 && (p === "rest" || p === "roundrest")) {
+        startRest(r, i);
+      } else if (swapKeyRef.current > 0) {
+        startExercise(r, i);
+      } else {
+        startRest(0, 0);
+      }
     }
 
     return clear;
-  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, swapKeyRef.current]);
 
   const currentName = exercises[currentIndex]?.exercise?.name ?? "Exercise";
   const currentImage = exercises[currentIndex]?.exercise?.image_url ?? null;
@@ -229,6 +278,52 @@ export default function WorkoutRunner({
 
   return (
     <div className="workout-runner bg-bg h-full flex flex-col no-select">
+      {/* Swap exercise picker modal */}
+      {showSwapPicker && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
+          onClick={() => setShowSwapPicker(false)}
+        >
+          <div
+            className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 border border-fg/10 max-h-[70vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold">Swap Exercise</h3>
+              <button
+                onClick={() => setShowSwapPicker(false)}
+                className="text-fg/40 hover:text-white text-xl"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {allExercises.map((ex) => (
+                <button
+                  key={ex.id}
+                  onClick={() => doSwap(ex)}
+                  className="w-full text-left bg-bg rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-fg/5 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-fg/5 flex items-center justify-center shrink-0 overflow-hidden">
+                    {ex.image_url ? (
+                      <img src={ex.image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-fg/30 text-lg font-bold">
+                        {ex.name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{ex.name}</p>
+                    <p className="text-[10px] text-fg/40 capitalize">{ex.category}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {phase === "rest" && (
         <div className="flex flex-col items-center justify-center h-full px-6 text-center">
           <p className="text-fg/50 text-sm mb-2">Next up</p>
@@ -316,7 +411,16 @@ export default function WorkoutRunner({
               <span className="text-accent"> &middot; Round {currentRound + 1}/{rounds}</span>
             )}
           </p>
-          <h2 className="text-2xl font-bold text-fg mb-6">{currentName}</h2>
+          <h2 className="text-2xl font-bold text-fg mb-6">
+            {currentName}
+            <button
+              onClick={() => setShowSwapPicker(true)}
+              className="ml-2 inline-flex items-center text-fg/30 hover:text-accent transition-colors align-middle"
+              title="Swap exercise"
+            >
+              <ArrowsLeftRight size={20} weight="bold" />
+            </button>
+          </h2>
           <ExerciseImage
             src={currentImage}
             alt={currentName}
@@ -401,7 +505,6 @@ export default function WorkoutRunner({
         </div>
       )}
 
-      {/* Theme + mute stay reachable throughout the workout. */}
       <div className="absolute top-4 right-4">
         <TopControls variant="overlay" />
       </div>
