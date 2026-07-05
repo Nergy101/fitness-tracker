@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Exercise, type WorkoutTemplate } from "../api";
 import { soundStart, soundRest, soundFinish, speak } from "../sound";
-import { ArrowsLeftRight, SkipForward, X } from "@phosphor-icons/react";
+import {
+  ArrowsLeftRight,
+  SkipForward,
+  X,
+} from "@phosphor-icons/react";
 import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
+import { formatDuration } from "../format";
 
 type Phase = "rest" | "exercise" | "roundrest" | "finished";
 
 const DEFAULT_REST = 5;
 const DEFAULT_KCAL_PER_MIN = 5;
-const RING = 264; // 2πr, r=42
+const RING = 264;
 
 function kcalFor(durationSeconds: number, kcalPerMin: number): number {
   return (durationSeconds / 60) * kcalPerMin;
@@ -26,40 +31,44 @@ export default function WorkoutRunner({
   onFinish,
   onCancel,
 }: WorkoutRunnerProps) {
-  // Mutable exercise list so swaps update in-place.
   const [exercises, setExercises] = useState(workout.exercises);
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [showSwapPicker, setShowSwapPicker] = useState(false);
   const totalExercises = exercises.length;
-  const rounds = Math.max(1, workout.rounds || 1);
+  const mode = workout.mode || "circuit";
+  const isAmrap = mode === "amrap";
+  const isEmom = mode === "emom";
+  const rounds = isAmrap ? 999 : Math.max(1, workout.rounds || 1);
   const restBetween = Math.max(0, workout.rest_between_rounds || 0);
+  const timeCap = workout.time_cap_seconds || 1200;
 
   const [phase, setPhase] = useState<Phase>("rest");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentRound, setCurrentRound] = useState(0);
+  const [amrapRounds, setAmrapRounds] = useState(1);
   const [timer, setTimer] = useState(0);
   const [timerProgress, setTimerProgress] = useState(0);
   const [restCountdown, setRestCountdown] = useState(DEFAULT_REST);
   const [restProgress, setRestProgress] = useState(0);
   const advanceRef = useRef<() => void>(() => {});
 
-  // Refs for position tracking across effect re-runs (swaps).
   const roundRef = useRef(0);
   const indexRef = useRef(0);
   const phaseRef = useRef<Phase>("rest");
+  const amrapRoundRef = useRef(1);
 
-  // Load exercises for the swap picker.
   useEffect(() => {
     api.getExercises().then(setAllExercises).catch(() => {});
   }, []);
 
   const workDuration = useMemo(
     () =>
-      exercises.reduce((sum, e) => sum + (e.duration_seconds || 30), 0) * rounds,
-    [exercises, rounds],
+      exercises.reduce((sum, e) => sum + (e.duration_seconds || 30), 0) *
+      (isAmrap ? 1 : rounds),
+    [exercises, rounds, isAmrap],
   );
   const restDuration = Math.max(0, rounds - 1) * restBetween;
-  const totalDuration = workDuration + restDuration;
+  const totalDuration = isAmrap ? timeCap : workDuration + restDuration;
 
   const totalKcal = useMemo(
     () =>
@@ -71,8 +80,8 @@ export default function WorkoutRunner({
             e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
           ),
         0,
-      ) * rounds,
-    [exercises, rounds],
+      ) * (isAmrap ? 1 : rounds),
+    [exercises, rounds, isAmrap],
   );
 
   const doSwap = (newExercise: Exercise) => {
@@ -82,22 +91,15 @@ export default function WorkoutRunner({
         ...next[indexRef.current],
         exercise_id: newExercise.id,
         exercise: newExercise,
-        // Keep the same duration from the original so timing is preserved
       };
       return next;
     });
     setShowSwapPicker(false);
-    // Restart current exercise with the new exercise. We do this by
-    // clearing the current interval and calling the start function.
-    // advanceRef.current at this point points to the skip/advance action,
-    // so we need a different mechanism. Use a key to force the effect to re-run.
     swapKeyRef.current += 1;
-    // The effect cleanup will fire, then restart at the same position.
   };
 
   const swapKeyRef = useRef(0);
 
-  // Main state machine — re-runs when exercises list or swapKey changes.
   useEffect(() => {
     let intervalId: ReturnType<typeof setInterval> | undefined;
     const clear = () => {
@@ -145,6 +147,12 @@ export default function WorkoutRunner({
       if (i < totalExercises - 1) {
         soundRest();
         startRest(round, i + 1);
+      } else if (isAmrap) {
+        // AMRAP: loop back to exercise 0, increment amrap round
+        soundRest();
+        amrapRoundRef.current += 1;
+        setAmrapRounds(amrapRoundRef.current);
+        startRest(round + 1, 0);
       } else if (round < rounds - 1) {
         soundRest();
         startRoundRest(round + 1);
@@ -207,11 +215,40 @@ export default function WorkoutRunner({
       }, 50);
     }
 
-    function finish() {
-      clear();
-      soundFinish();
-      setPhase("finished");
-      void saveSession();
+    // ─── AMRAP global countdown ───────────────────────────
+    let amrapInterval: ReturnType<typeof setInterval> | undefined;
+
+    if (isAmrap) {
+      const amrapStart = Date.now();
+      amrapInterval = setInterval(() => {
+        const elapsed = (Date.now() - amrapStart) / 1000;
+        if (elapsed >= timeCap) {
+          if (amrapInterval) clearInterval(amrapInterval);
+          clear();
+          soundFinish();
+          setPhase("finished");
+          void saveSession();
+        }
+      }, 250);
+    }
+
+    // ─── EMOM minute clock ────────────────────────────────
+    let emomInterval: ReturnType<typeof setInterval> | undefined;
+    let emomStart = 0;
+
+    if (isEmom) {
+      emomStart = Date.now();
+      emomInterval = setInterval(() => {
+        const elapsed = (Date.now() - emomStart) / 1000;
+        const currentMinute = Math.floor(elapsed / 60);
+        if (currentMinute >= totalExercises) {
+          if (emomInterval) clearInterval(emomInterval);
+          clear();
+          soundFinish();
+          setPhase("finished");
+          void saveSession();
+        }
+      }, 250);
     }
 
     async function saveSession() {
@@ -238,27 +275,35 @@ export default function WorkoutRunner({
       }
     }
 
+    function finish() {
+      clear();
+      soundFinish();
+      setPhase("finished");
+      void saveSession();
+    }
+
     if (totalExercises === 0) {
       finish();
     } else {
-      // On swap restart, pick up from the current position
       const r = roundRef.current;
       const i = indexRef.current;
       const p = phaseRef.current;
       if (swapKeyRef.current > 0 && p === "exercise") {
         startExercise(r, i);
-      } else if (swapKeyRef.current > 0 && (p === "rest" || p === "roundrest")) {
-        startRest(r, i);
       } else if (swapKeyRef.current > 0) {
-        startExercise(r, i);
+        startRest(r, i);
       } else {
         startRest(0, 0);
       }
     }
 
-    return clear;
+    return () => {
+      clear();
+      if (amrapInterval) clearInterval(amrapInterval);
+      if (emomInterval) clearInterval(emomInterval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, swapKeyRef.current]);
+  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, isAmrap, isEmom, timeCap, swapKeyRef.current]);
 
   const currentName = exercises[currentIndex]?.exercise?.name ?? "Exercise";
   const currentImage = exercises[currentIndex]?.exercise?.image_url ?? null;
@@ -278,7 +323,6 @@ export default function WorkoutRunner({
 
   return (
     <div className="workout-runner bg-bg h-full flex flex-col no-select">
-      {/* Swap exercise picker modal */}
       {showSwapPicker && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
@@ -308,9 +352,7 @@ export default function WorkoutRunner({
                     {ex.image_url ? (
                       <img src={ex.image_url} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-fg/30 text-lg font-bold">
-                        {ex.name.charAt(0)}
-                      </span>
+                      <span className="text-fg/30 text-lg font-bold">{ex.name.charAt(0)}</span>
                     )}
                   </div>
                   <div className="min-w-0">
@@ -341,12 +383,8 @@ export default function WorkoutRunner({
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
               <circle
-                cx="50"
-                cy="50"
-                r="42"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="6"
+                cx="50" cy="50" r="42" fill="none"
+                stroke="var(--accent)" strokeWidth="6"
                 strokeDasharray={RING}
                 strokeDashoffset={restProgress * RING}
                 strokeLinecap="round"
@@ -371,18 +409,14 @@ export default function WorkoutRunner({
         <div className="flex flex-col items-center justify-center h-full px-6 text-center">
           <p className="text-fg/50 text-sm mb-2">Round rest</p>
           <h2 className="text-2xl font-bold text-fg mb-6">
-            Round {currentRound + 1}/{rounds} next
+            Round {currentRound + 1}/{isAmrap ? "∞" : rounds} next
           </h2>
           <div className="relative w-48 h-48 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
               <circle
-                cx="50"
-                cy="50"
-                r="42"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="6"
+                cx="50" cy="50" r="42" fill="none"
+                stroke="var(--accent)" strokeWidth="6"
                 strokeDasharray={RING}
                 strokeDashoffset={restProgress * RING}
                 strokeLinecap="round"
@@ -406,9 +440,12 @@ export default function WorkoutRunner({
       {phase === "exercise" && (
         <div className="flex flex-col items-center justify-center h-full px-6 text-center">
           <p className="text-fg/50 text-sm mb-2">
-            Exercise {currentIndex + 1} of {totalExercises}
-            {rounds > 1 && (
+            {isAmrap ? `Round ${amrapRounds}` : isEmom ? `Exercise ${currentIndex + 1} of ${totalExercises}` : `Exercise ${currentIndex + 1} of ${totalExercises}`}
+            {!isAmrap && !isEmom && rounds > 1 && (
               <span className="text-accent"> &middot; Round {currentRound + 1}/{rounds}</span>
+            )}
+            {isAmrap && (
+              <span className="text-accent"> &middot; AMRAP</span>
             )}
           </p>
           <h2 className="text-2xl font-bold text-fg mb-6">
@@ -434,11 +471,8 @@ export default function WorkoutRunner({
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
               <circle
-                cx="50"
-                cy="50"
-                r="42"
-                fill="none"
-                stroke="var(--timer)"
+                cx="50" cy="50" r="42" fill="none"
+                stroke={isAmrap ? "#f97316" : "var(--timer)"}
                 strokeWidth="6"
                 strokeDasharray={RING}
                 strokeDashoffset={(1 - timerProgress) * RING}
@@ -450,7 +484,10 @@ export default function WorkoutRunner({
               <span className="text-5xl font-bold text-fg">{displayTime}</span>
             </div>
           </div>
-          <p className="text-fg/30 text-sm">Go!</p>
+          {isAmrap && (
+            <p className="text-fg/30 text-xs mb-1">Rounds completed: {amrapRounds}</p>
+          )}
+          <p className="text-fg/30 text-sm">{isAmrap ? "Go!" : isEmom ? "Go!" : "Go!"}</p>
           <button
             onClick={() => advanceRef.current()}
             className="mt-4 inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
@@ -467,23 +504,35 @@ export default function WorkoutRunner({
               <path d="M20 6 9 17l-5-5" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-fg mb-2">Workout Complete!</h2>
+          <h2 className="text-2xl font-bold text-fg mb-2">
+            {isAmrap ? "Time!" : "Workout Complete!"}
+          </h2>
           <p className="text-fg/50 text-sm mb-6">{workout.name || "Workout"}</p>
 
           <div className="grid grid-cols-3 gap-4 mb-8 w-full max-w-xs">
             <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-fg">{Math.floor(totalDuration / 60)}m</p>
+              <p className="text-2xl font-bold text-fg">
+                {isAmrap ? formatDuration(timeCap) : `${Math.floor(totalDuration / 60)}m`}
+              </p>
               <p className="text-xs text-fg/40">Duration</p>
             </div>
             <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-fg">{totalExercises}</p>
-              <p className="text-xs text-fg/40">Exercises</p>
+              <p className="text-2xl font-bold text-fg">
+                {isAmrap ? amrapRounds : totalExercises}
+              </p>
+              <p className="text-xs text-fg/40">{isAmrap ? "Rounds" : "Exercises"}</p>
             </div>
             <div className="bg-surface rounded-xl p-3">
               <p className="text-2xl font-bold text-accent">{Math.round(totalKcal)}</p>
               <p className="text-xs text-fg/40">Kcal</p>
             </div>
           </div>
+
+          {isAmrap && (
+            <p className="text-fg/40 text-sm mb-4">
+              {amrapRounds} round{amrapRounds !== 1 ? "s" : ""} in {formatDuration(timeCap)}
+            </p>
+          )}
 
           <button
             onClick={onFinish}

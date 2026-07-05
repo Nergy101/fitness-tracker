@@ -72,6 +72,8 @@ class WorkoutTemplateExerciseResponse(WorkoutTemplateExerciseBase):
 class WorkoutTemplateBase(BaseModel):
     name: str
     description: str = ""
+    mode: str = "circuit"
+    time_cap_seconds: Optional[int] = None
     rounds: int = 1
     rest_between_rounds: int = 180
 
@@ -83,6 +85,8 @@ class WorkoutTemplateCreate(WorkoutTemplateBase):
 class WorkoutTemplateUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    mode: Optional[str] = None
+    time_cap_seconds: Optional[int] = None
     rounds: Optional[int] = None
     rest_between_rounds: Optional[int] = None
     exercises: Optional[list[WorkoutTemplateExerciseCreate]] = None

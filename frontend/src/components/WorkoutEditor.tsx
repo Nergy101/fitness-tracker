@@ -8,6 +8,15 @@ import ExerciseImage from "./ExerciseImage";
 import Stepper from "./Stepper";
 import { formatDuration } from "../format";
 
+const TIME_CAP_OPTIONS = [
+  { label: "5 min", seconds: 300 },
+  { label: "10 min", seconds: 600 },
+  { label: "15 min", seconds: 900 },
+  { label: "20 min", seconds: 1200 },
+  { label: "30 min", seconds: 1800 },
+  { label: "Custom", seconds: 0 },
+];
+
 interface EditorRow {
   key: number;
   exercise_id: number;
@@ -49,6 +58,9 @@ export default function WorkoutEditor({
 
   const [name, setName] = useState(workout?.name ?? "");
   const [description, setDescription] = useState(workout?.description ?? "");
+  const [mode, setMode] = useState(workout?.mode ?? "circuit");
+  const [timeCap, setTimeCap] = useState(workout?.time_cap_seconds ?? 1200);
+  const [timeCapCustom, setTimeCapCustom] = useState("");
   const [rounds, setRounds] = useState(workout?.rounds ?? 1);
   const [restBetween, setRestBetween] = useState(
     workout?.rest_between_rounds ?? 180,
@@ -119,9 +131,10 @@ export default function WorkoutEditor({
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         name,
         description,
+        mode,
         rounds: Math.max(1, rounds || 1),
         rest_between_rounds: Math.max(0, restBetween || 0),
         exercises: rows.map((r, i) => ({
@@ -131,6 +144,9 @@ export default function WorkoutEditor({
           order_index: i,
         })),
       };
+      if (mode === "amrap") {
+        payload.time_cap_seconds = timeCap;
+      }
       if (isEditing && workout) {
         await api.updateWorkout(workout.id, payload);
       } else {
@@ -144,6 +160,9 @@ export default function WorkoutEditor({
       setSaving(false);
     }
   }
+
+  const isAmrap = mode === "amrap";
+  const isEmom = mode === "emom";
 
   return (
     <div
@@ -181,23 +200,101 @@ export default function WorkoutEditor({
           className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50 mb-4 resize-none"
         />
 
-        <div className="flex items-center gap-3 mb-4">
-          <label htmlFor="rounds" className="text-sm text-fg/60">
-            Rounds
-          </label>
-          <Stepper
-            value={rounds}
-            onChange={setRounds}
-            min={1}
-            max={20}
-            ariaLabel="Rounds"
-          />
-          <span className="text-xs text-fg/40">
-            repeat the whole circuit this many times
-          </span>
+        {/* Mode selector */}
+        <div className="mb-4">
+          <label className="text-sm text-fg/60 block mb-2">Timer Mode</label>
+          <div className="flex gap-2">
+            {[
+              { id: "circuit", label: "Circuit", desc: "Fixed rounds" },
+              { id: "amrap", label: "AMRAP", desc: "Time cap" },
+              { id: "emom", label: "EMOM", desc: "Per minute" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setMode(opt.id)}
+                className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-colors border ${
+                  mode === opt.id
+                    ? "bg-accent/20 border-accent text-accent"
+                    : "bg-surface border-fg/10 text-fg/50 hover:text-fg"
+                }`}
+              >
+                <div className="font-semibold">{opt.label}</div>
+                <div className="text-[10px] opacity-60">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {rounds > 1 && (
+        {/* AMRAP time cap */}
+        {isAmrap && (
+          <div className="mb-4">
+            <label className="text-sm text-fg/60 block mb-2">
+              Time Cap — as many rounds as possible in:
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {TIME_CAP_OPTIONS.map((opt) => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  onClick={() => {
+                    setTimeCap(opt.seconds);
+                    setTimeCapCustom("");
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    timeCap === opt.seconds && !timeCapCustom
+                      ? "bg-accent text-on-accent"
+                      : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {timeCap === 0 && (
+              <input
+                type="number"
+                value={timeCapCustom}
+                onChange={(e) => {
+                  setTimeCapCustom(e.target.value);
+                  setTimeCap((parseInt(e.target.value) || 0) * 60);
+                }}
+                placeholder="Minutes"
+                className="mt-2 w-full bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Rounds (circuit only) */}
+        {!isAmrap && !isEmom && (
+          <div className="flex items-center gap-3 mb-4">
+            <label htmlFor="rounds" className="text-sm text-fg/60">
+              Rounds
+            </label>
+            <Stepper
+              value={rounds}
+              onChange={setRounds}
+              min={1}
+              max={20}
+              ariaLabel="Rounds"
+            />
+            <span className="text-xs text-fg/40">
+              repeat the whole circuit this many times
+            </span>
+          </div>
+        )}
+
+        {/* EMOM info */}
+        {isEmom && (
+          <p className="text-xs text-fg/40 mb-4 bg-surface rounded-xl px-4 py-3 border border-fg/5">
+            EMOM — one exercise per minute. Each exercise runs for its set
+            duration, with the remaining seconds as rest. {rows.length} exercises
+            = {formatDuration(rows.length * 60)} total.
+          </p>
+        )}
+
+        {!isAmrap && rounds > 1 && (
           <div className="mb-4">
             <label className="text-sm text-fg/60 block mb-2">
               Rest between rounds
@@ -314,15 +411,17 @@ export default function WorkoutEditor({
                     unit="s"
                     ariaLabel={`${item.exercise_name} duration`}
                   />
-                  <Stepper
-                    value={item.rest_after_seconds}
-                    onChange={(v) => setRest(item.key, v)}
-                    min={0}
-                    max={600}
-                    step={5}
-                    unit="s rest"
-                    ariaLabel={`${item.exercise_name} rest after`}
-                  />
+                  {!isEmom && (
+                    <Stepper
+                      value={item.rest_after_seconds}
+                      onChange={(v) => setRest(item.key, v)}
+                      min={0}
+                      max={600}
+                      step={5}
+                      unit="s rest"
+                      ariaLabel={`${item.exercise_name} rest after`}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -342,15 +441,27 @@ export default function WorkoutEditor({
         <div className="border-t border-fg/10 pt-3 flex items-center justify-between">
           <div className="text-sm text-fg/50 flex flex-wrap gap-x-2">
             <span>{rows.length} exercises</span>
-            {rounds > 1 && <span className="text-fg/40">&times; {rounds} rounds</span>}
-            <span className="text-fg/40">&middot;</span>
-            <span>work {formatDuration(totalDuration * Math.max(1, rounds || 1))}</span>
-            {rounds > 1 && restBetween > 0 && (
-              <span>+ rest {rounds - 1}&times;{formatDuration(restBetween)}</span>
+            {isAmrap ? (
+              <span className="text-accent">
+                AMRAP {formatDuration(timeCap)}
+              </span>
+            ) : isEmom ? (
+              <span className="text-accent">
+                EMOM {formatDuration(rows.length * 60)}
+              </span>
+            ) : (
+              <>
+                {rounds > 1 && <span className="text-fg/40">&times; {rounds} rounds</span>}
+                <span className="text-fg/40">&middot;</span>
+                <span>work {formatDuration(totalDuration * Math.max(1, rounds || 1))}</span>
+                {rounds > 1 && restBetween > 0 && (
+                  <span>+ rest {rounds - 1}&times;{formatDuration(restBetween)}</span>
+                )}
+                <span className="text-accent">
+                  = {formatDuration(totalDuration * Math.max(1, rounds || 1) + Math.max(0, rounds - 1) * restBetween)}
+                </span>
+              </>
             )}
-            <span className="text-accent">
-              = {formatDuration(totalDuration * Math.max(1, rounds || 1) + Math.max(0, rounds - 1) * restBetween)}
-            </span>
           </div>
           <button
             onClick={save}

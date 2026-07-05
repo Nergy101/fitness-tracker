@@ -7,6 +7,8 @@ const mockTemplate: WorkoutTemplate = {
   id: 1,
   name: "Full Body",
   description: "A full body circuit workout",
+  mode: "circuit",
+  time_cap_seconds: null,
   rounds: 3,
   rest_between_rounds: 60,
   created_at: "2026-07-01T00:00:00Z",

@@ -25,6 +25,8 @@ class WorkoutTemplate(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, default="")
+    mode = Column(String(20), nullable=False, default="circuit")  # circuit | amrap | emom
+    time_cap_seconds = Column(Integer, nullable=True)  # for amrap mode
     rounds = Column(Integer, nullable=False, default=1)
     rest_between_rounds = Column(Integer, nullable=False, default=180)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

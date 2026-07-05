@@ -30,6 +30,8 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
         id=template.id,
         name=template.name,
         description=template.description,
+        mode=template.mode or "circuit",
+        time_cap_seconds=template.time_cap_seconds,
         rounds=template.rounds,
         rest_between_rounds=template.rest_between_rounds,
         created_at=template.created_at,
@@ -56,7 +58,7 @@ def get_workout(workout_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=WorkoutTemplateResponse, status_code=201)
 def create_workout(data: WorkoutTemplateCreate, db: Session = Depends(get_db)):
-    template = WorkoutTemplate(name=data.name, description=data.description, rounds=data.rounds, rest_between_rounds=data.rest_between_rounds)
+    template = WorkoutTemplate(name=data.name, description=data.description, mode=data.mode, time_cap_seconds=data.time_cap_seconds, rounds=data.rounds, rest_between_rounds=data.rest_between_rounds)
     db.add(template)
     db.flush()
 
@@ -89,6 +91,10 @@ def update_workout(workout_id: int, data: WorkoutTemplateUpdate, db: Session = D
         template.name = data.name
     if data.description is not None:
         template.description = data.description
+    if data.mode is not None:
+        template.mode = data.mode
+    if data.time_cap_seconds is not None:
+        template.time_cap_seconds = data.time_cap_seconds
     if data.rounds is not None:
         template.rounds = data.rounds
     if data.rest_between_rounds is not None:

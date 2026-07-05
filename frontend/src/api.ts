@@ -41,6 +41,8 @@ export interface WorkoutTemplate {
   id: number;
   name: string;
   description: string;
+  mode: string;
+  time_cap_seconds: number | null;
   rounds: number;
   rest_between_rounds: number;
   created_at: string;
@@ -60,8 +62,10 @@ export interface TemplateExerciseInput {
 export interface WorkoutTemplateInput {
   name: string;
   description: string;
-  rounds: number;
-  rest_between_rounds: number;
+  mode?: string;
+  time_cap_seconds?: number | null;
+  rounds?: number;
+  rest_between_rounds?: number;
   exercises: TemplateExerciseInput[];
 }
 

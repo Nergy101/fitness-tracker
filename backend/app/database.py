@@ -27,6 +27,14 @@ def ensure_schema() -> None:
                 conn.execute(text(
                     "ALTER TABLE workout_templates ADD COLUMN rest_between_rounds INTEGER NOT NULL DEFAULT 180"
                 ))
+            if "mode" not in cols:
+                conn.execute(text(
+                    "ALTER TABLE workout_templates ADD COLUMN mode VARCHAR(20) NOT NULL DEFAULT 'circuit'"
+                ))
+            if "time_cap_seconds" not in cols:
+                conn.execute(text(
+                    "ALTER TABLE workout_templates ADD COLUMN time_cap_seconds INTEGER"
+                ))
         if "exercises" in tables:
             cols = {c["name"] for c in inspector.get_columns("exercises")}
             if "image_url" not in cols:
