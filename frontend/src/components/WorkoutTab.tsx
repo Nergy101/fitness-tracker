@@ -1,31 +1,23 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, SmileySad, PersonSimpleRun, MapTrifold, Trash } from "@phosphor-icons/react";
+import { CheckCircle, SmileySad } from "@phosphor-icons/react";
 import {
   api,
   type Exercise,
   type WorkoutTemplate,
 } from "../api";
-import { formatDuration } from "../format";
 import WorkoutEditor from "./WorkoutEditor";
+import RunLogger from "./RunLogger";
+import WorkoutCard from "./WorkoutCard";
 
 interface WorkoutTabProps {
   onStartWorkout: (workout: WorkoutTemplate) => void;
   onLogWorkout?: () => void;
 }
 
-const DURATION_OPTIONS = [
-  { label: "15m", seconds: 900 },
-  { label: "30m", seconds: 1800 },
-  { label: "45m", seconds: 2700 },
-  { label: "1h", seconds: 3600 },
-  { label: "Custom", seconds: 0 },
-];
+const DEFAULT_KCAL_PER_MIN = 5;
 
-function formatPace(secondsPerKm: number | null): string {
-  if (!secondsPerKm || secondsPerKm <= 0) return "—";
-  const min = Math.floor(secondsPerKm / 60);
-  const sec = Math.round(secondsPerKm % 60);
-  return `${min}:${sec.toString().padStart(2, "0")} /km`;
+function kcalFor(durationSeconds: number, kcalPerMin: number): number {
+  return (durationSeconds / 60) * kcalPerMin;
 }
 
 export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabProps) {
@@ -37,15 +29,6 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [editing, setEditing] = useState<WorkoutTemplate | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Run logging state
-  const [showRunForm, setShowRunForm] = useState(false);
-  const [runDuration, setRunDuration] = useState(1800);
-  const [runCustomDuration, setRunCustomDuration] = useState("");
-  const [runDistance, setRunDistance] = useState("");
-  const [runDate, setRunDate] = useState(new Date().toISOString().slice(0, 10));
-  const [runNotes, setRunNotes] = useState("");
-
-  // Auto-dismiss the toast.
   useEffect(() => {
     if (!toast) return;
     const id = setTimeout(() => setToast(null), 2500);
@@ -79,34 +62,29 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
     }
   }
 
-  const DEFAULT_KCAL_PER_MIN = 5;
-
-  function kcalFor(durationSeconds: number, kcalPerMin: number): number {
-    return (durationSeconds / 60) * kcalPerMin;
-  }
-
   async function logWorkout(tpl: WorkoutTemplate) {
     const rounds = Math.max(1, tpl.rounds || 1);
-    const workDuration = tpl.exercises.reduce(
-      (sum, e) => sum + (e.duration_seconds || 30), 0,
-    ) * rounds;
-    const restDuration = Math.max(0, rounds - 1) * (tpl.rest_between_rounds || 0);
-    const totalDuration = workDuration + restDuration;
-    const totalKcal = tpl.exercises.reduce(
-      (sum, e) =>
-        sum +
-        kcalFor(
-          e.duration_seconds || 30,
-          e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
-        ),
-      0,
-    ) * rounds;
+    const workDuration =
+      tpl.exercises.reduce((sum, e) => sum + (e.duration_seconds || 30), 0) *
+      rounds;
+    const restDuration =
+      Math.max(0, rounds - 1) * (tpl.rest_between_rounds || 0);
+    const totalKcal =
+      tpl.exercises.reduce(
+        (sum, e) =>
+          sum +
+          kcalFor(
+            e.duration_seconds || 30,
+            e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
+          ),
+        0,
+      ) * rounds;
 
     try {
       await api.createSession({
         template_id: tpl.id,
         template_name: tpl.name || "",
-        total_duration_seconds: totalDuration,
+        total_duration_seconds: workDuration + restDuration,
         total_kcal_estimated: totalKcal,
         exercises: tpl.exercises.map((e, i) => ({
           exercise_id: e.exercise?.id ?? e.exercise_id,
@@ -127,31 +105,6 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
     }
   }
 
-  async function logRun() {
-    const dist = parseFloat(runDistance);
-    const dur = runDuration;
-    if (isNaN(dist) || dist <= 0 || dur <= 0) return;
-
-    try {
-      await api.createRun({
-        duration_seconds: dur,
-        distance_km: dist,
-        date: runDate,
-        notes: runNotes,
-      });
-
-      setToast("Run logged! 🏃");
-      setRunDistance("");
-      setRunNotes("");
-      setRunCustomDuration("");
-      setRunDuration(1800);
-      setShowRunForm(false);
-
-    } catch {
-      setToast("Failed to log run");
-    }
-  }
-
   async function deleteWorkout(id: number, name: string) {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
@@ -162,10 +115,6 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       setToast("Failed to delete workout");
     }
   }
-
-  const pace = runDuration > 0 && parseFloat(runDistance) > 0
-    ? runDuration / parseFloat(runDistance)
-    : null;
 
   return (
     <div className="workout-tab">
@@ -192,122 +141,10 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         </button>
       </div>
 
-      {/* ─── Log a Run Card ─────────────────────────────── */}
+      {/* Log a Run */}
+      <RunLogger onRunLogged={() => onLogWorkout?.()} />
 
-      {!showRunForm ? (
-        <button
-          onClick={() => setShowRunForm(true)}
-          className="w-full bg-surface rounded-xl p-4 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors mb-4 flex items-center gap-3"
-        >
-          <PersonSimpleRun size={22} className="text-accent shrink-0" />
-          <div className="text-left">
-            <p className="text-sm font-semibold text-fg">Log a Run</p>
-            <p className="text-[11px] text-fg/40 mt-0.5">Record a completed run with distance, duration, and pace</p>
-          </div>
-        </button>
-      ) : (
-        <div className="bg-surface rounded-xl p-4 border border-accent/20 mb-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PersonSimpleRun size={18} className="text-accent" />
-              <span className="text-sm font-semibold text-fg">Log a Run</span>
-            </div>
-            <button onClick={() => setShowRunForm(false)} className="text-xs text-fg/40 hover:text-white">Cancel</button>
-          </div>
-
-          {/* Duration quick-select */}
-          <div>
-            <p className="text-xs text-fg/50 mb-1.5">Duration</p>
-            <div className="flex gap-2 flex-wrap">
-              {DURATION_OPTIONS.map((opt) => (
-                <button
-                  key={opt.label}
-                  onClick={() => {
-                    setRunDuration(opt.seconds);
-                    setRunCustomDuration("");
-                  }}
-                  className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                    runDuration === opt.seconds && !runCustomDuration
-                      ? "bg-accent text-bg font-semibold"
-                      : "bg-bg text-fg/60 hover:text-white"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            {runDuration === 0 && (
-              <input
-                type="number"
-                value={runCustomDuration}
-                onChange={(e) => {
-                  setRunCustomDuration(e.target.value);
-                  setRunDuration((parseInt(e.target.value) || 0) * 60);
-                }}
-                placeholder="Minutes"
-                className="mt-2 w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
-              />
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs text-fg/50 mb-1">Distance (km)</p>
-              <input
-                type="number"
-                step="0.1"
-                value={runDistance}
-                onChange={(e) => setRunDistance(e.target.value)}
-                placeholder="e.g. 5.0"
-                className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
-              />
-            </div>
-            <div>
-              <p className="text-xs text-fg/50 mb-1">Date</p>
-              <input
-                type="date"
-                value={runDate}
-                onChange={(e) => setRunDate(e.target.value)}
-                className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
-              />
-            </div>
-          </div>
-
-          {/* Pace preview */}
-          {pace && pace > 0 && (
-            <div className="bg-bg rounded-lg px-3 py-2 flex items-center gap-2 text-sm">
-              <MapTrifold size={16} className="text-accent" />
-              <span className="text-fg/60">Pace:</span>
-              <span className="text-white font-semibold">{formatPace(pace)}</span>
-              <span className="text-fg/40 text-xs ml-auto">
-                {formatDuration(runDuration)} · {parseFloat(runDistance).toFixed(1)}km
-              </span>
-            </div>
-          )}
-
-          <div>
-            <p className="text-xs text-fg/50 mb-1">Notes (optional)</p>
-            <input
-              type="text"
-              value={runNotes}
-              onChange={(e) => setRunNotes(e.target.value)}
-              placeholder="How did it feel?"
-              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
-            />
-          </div>
-
-          <button
-            onClick={logRun}
-            disabled={!runDistance || parseFloat(runDistance) <= 0}
-            className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
-          >
-            Save Run
-          </button>
-        </div>
-      )}
-
-      {/* ─── Workout Templates ──────────────────────────── */}
-
+      {/* Workout Templates */}
       {loading ? (
         <div className="text-center py-8 text-fg/40">Loading...</div>
       ) : error ? (
@@ -325,75 +162,14 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       ) : (
         <div className="space-y-3">
           {templates.map((tpl) => (
-            <div
+            <WorkoutCard
               key={tpl.id}
-              className="bg-surface rounded-xl p-4 border border-fg/5"
-            >
-              <div className="flex items-start justify-between">
-                <div
-                  className="flex-1 cursor-pointer"
-                  onClick={() => onStartWorkout(tpl)}
-                >
-                  <h3 className="font-semibold text-base">{tpl.name}</h3>
-                  {tpl.description && (
-                    <p className="text-fg/50 text-sm mt-1">
-                      {tpl.description}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-fg/40">
-                    <span>{tpl.exercises.length} exercises</span>
-                    {tpl.rounds > 1 && <span>{tpl.rounds} rounds</span>}
-                  </div>
-                  <div className="flex flex-wrap gap-x-3 mt-1.5 text-xs">
-                    <span className="text-fg/50">
-                      Work <span className="font-semibold text-fg/70">{formatDuration(tpl.work_duration_seconds)}</span>
-                    </span>
-                    {tpl.rest_duration_seconds > 0 && (
-                      <span className="text-fg/50">
-                        Rest{" "}
-                        <span className="font-semibold text-fg/70">
-                          {tpl.rounds - 1}&times;{formatDuration(tpl.rest_between_rounds)}
-                        </span>
-                      </span>
-                    )}
-                    <span className="text-accent">
-                      Total <span className="font-semibold">{formatDuration(tpl.total_duration_seconds)}</span>
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-2 ml-3">
-                  <button
-                    onClick={() => openEditor(tpl)}
-                    className="text-fg/30 hover:text-fg/70 transition-colors p-1"
-                    title="Edit"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => deleteWorkout(tpl.id, tpl.name)}
-                    className="text-red-400/40 hover:text-red-400 transition-colors p-1"
-                    title="Delete"
-                  >
-                    <Trash size={18} />
-                  </button>
-                  <button
-                    onClick={() => logWorkout(tpl)}
-                    className="border border-fg/20 text-fg/60 rounded-xl px-3 py-1.5 text-xs font-semibold hover:border-accent/40 hover:text-accent transition-colors"
-                    title="Log this workout as completed"
-                  >
-                    Log
-                  </button>
-                  <button
-                    onClick={() => onStartWorkout(tpl)}
-                    className="bg-accent/20 text-accent rounded-xl px-3 py-1.5 text-xs font-semibold hover:bg-accent/30 transition-colors"
-                  >
-                    Start
-                  </button>
-                </div>
-              </div>
-            </div>
+              template={tpl}
+              onStart={onStartWorkout}
+              onEdit={openEditor}
+              onDelete={deleteWorkout}
+              onLog={logWorkout}
+            />
           ))}
         </div>
       )}
