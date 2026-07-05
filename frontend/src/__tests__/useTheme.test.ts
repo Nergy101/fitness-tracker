@@ -80,7 +80,7 @@ describe("useTheme", () => {
 
   it("cycles system → light → dark → system", async () => {
     localStorageMock.clear();
-    localStorageMock.getItem.mockReturnValue(null);
+    localStorageMock.getItem.mockReturnValue(null as any);
     matchMediaMock.mockReturnValue({
       ...matchMediaMock(),
       matches: false,
