@@ -165,6 +165,11 @@ export interface GoalProgressResponse {
   remaining_kg: number | null;
 }
 
+export interface PushSubscriptionInfo {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
 export interface BodyMeasurementResponse {
   id: number;
   date: string;
@@ -513,4 +518,20 @@ export const api = {
     fetchJSON<void>(`/api/v1/runs/${id}`, { method: "DELETE" }),
   getRunStats: () =>
     fetchJSON<RunStatsResponse>("/api/v1/runs/stats"),
+
+  // ─── Notifications ─────────────────────────────────
+  subscribePush: (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) =>
+    fetchJSON<{ status: string }>("/api/v1/notifications/subscribe", {
+      method: "POST",
+      body: JSON.stringify(subscription),
+    }),
+  unsubscribePush: (endpoint: string) =>
+    fetchJSON<{ status: string }>(
+      `/api/v1/notifications/subscribe?endpoint=${encodeURIComponent(endpoint)}`,
+      { method: "DELETE" },
+    ),
+  sendTestNotification: () =>
+    fetchJSON<{ status: string; sent: number }>("/api/v1/notifications/send", {
+      method: "POST",
+    }),
 };

@@ -145,3 +145,14 @@ class RunEntry(Base):
     date = Column(Date, nullable=False, default=lambda: date.today())
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class PushSubscription(Base):
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    endpoint = Column(Text, nullable=False, unique=True)
+    p256dh = Column(Text, nullable=False)
+    auth = Column(Text, nullable=False)
+    user_agent = Column(String(512), default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

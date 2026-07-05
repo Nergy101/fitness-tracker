@@ -28,6 +28,11 @@ password = "{password}"
 
 [app]
 name = "FitnessTracker"
+
+[notifications]
+private_key = ""
+public_key = ""
+subject = "mailto:cdijk4@gmail.com"
 """
 
 
@@ -57,3 +62,61 @@ ENV_PASSWORD = os.getenv("FITNESS_PASSWORD")
 if ENV_PASSWORD:
     settings.setdefault("auth", {})["password"] = ENV_PASSWORD
     print(f"🔑 Using FITNESS_PASSWORD env var (overriding settings.toml)")
+
+
+def save_settings() -> None:
+    """Persist settings back to settings.toml."""
+    lines = []
+    # Preserve any non-section comments at top
+    if SETTINGS_PATH.exists():
+        with open(SETTINGS_PATH) as f:
+            for line in f:
+                if line.startswith("[") and "=" not in line:
+                    break
+                if line.startswith("#"):
+                    lines.append(line.rstrip())
+    lines.append("")
+    for section, values in settings.items():
+        lines.append(f"[{section}]")
+        for key, value in values.items():
+            if isinstance(value, str):
+                lines.append(f'{key} = "{value}"')
+            else:
+                lines.append(f"{key} = {value}")
+        lines.append("")
+    SETTINGS_PATH.write_text("\n".join(lines) + "\n")
+
+
+def get_or_create_vapid() -> dict[str, str]:
+    """Get existing VAPID keys or generate new ones using ecdsa.
+
+    Returns dict with private_key, public_key, subject.
+    Keys are saved to settings.toml if newly generated.
+    """
+    notif = settings.setdefault("notifications", {})
+    private_key = notif.get("private_key", "")
+    public_key = notif.get("public_key", "")
+    subject = notif.get("subject", "mailto:cdijk4@gmail.com")
+
+    if private_key and public_key:
+        return {"private_key": private_key, "public_key": public_key, "subject": subject}
+
+    # Generate new VAPID keys using py_vapid
+    from py_vapid import Vapid
+    from base64 import urlsafe_b64encode
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
+    v = Vapid()
+    v.generate_keys()
+
+    pub_raw = v.public_key.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+    priv_raw = v.private_key.private_numbers().private_value.to_bytes(32, "big")
+
+    notif["private_key"] = urlsafe_b64encode(priv_raw).rstrip(b"=").decode()
+    notif["public_key"] = urlsafe_b64encode(pub_raw).rstrip(b"=").decode()
+    notif["subject"] = subject
+
+    save_settings()
+    print(f"🔑 Generated VAPID keys and saved to {SETTINGS_PATH}")
+
+    return {"private_key": notif["private_key"], "public_key": notif["public_key"], "subject": subject}
