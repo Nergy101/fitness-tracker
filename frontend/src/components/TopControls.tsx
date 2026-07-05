@@ -3,6 +3,7 @@ import {
   SpeakerHigh,
   SpeakerSlash,
   Sun,
+  SunHorizon,
 } from "@phosphor-icons/react";
 import { useTheme } from "../useTheme";
 import { useAudio } from "../useAudio";
@@ -16,7 +17,7 @@ interface TopControlsProps {
 /** Theme toggle + audio mute, shown in the header and during a workout so both
  *  are always reachable. */
 export default function TopControls({ variant = "header" }: TopControlsProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, mode, cycleMode } = useTheme();
   const { muted, toggleMuted } = useAudio();
   const { locale, toggleLocale } = useLocale();
 
@@ -26,6 +27,13 @@ export default function TopControls({ variant = "header" }: TopControlsProps) {
     (variant === "overlay"
       ? "text-fg/60 hover:text-fg hover:bg-fg/10"
       : "text-fg/50 hover:text-fg");
+
+  const modeLabel =
+    mode === "system"
+      ? "System theme"
+      : mode === "dark"
+        ? "Switch to system theme"
+        : "Switch to dark mode";
 
   return (
     <div className="flex items-center gap-1">
@@ -50,11 +58,14 @@ export default function TopControls({ variant = "header" }: TopControlsProps) {
         {locale === "dmy" ? "D/M" : "M/D"}
       </button>
       <button
-        onClick={toggleTheme}
-        aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        onClick={cycleMode}
+        aria-label={modeLabel}
         className={btn}
+        title={modeLabel}
       >
-        {theme === "dark" ? (
+        {mode === "system" ? (
+          <SunHorizon size={size} weight="fill" />
+        ) : theme === "dark" ? (
           <Sun size={size} weight="fill" />
         ) : (
           <Moon size={size} weight="fill" />
