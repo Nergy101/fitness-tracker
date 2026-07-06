@@ -155,7 +155,7 @@ test.describe("authenticated", () => {
       .poll(() => pushupImg.evaluate((el: HTMLImageElement) => el.naturalWidth))
       .toBeGreaterThan(0);
 
-    // Unmatched: Burpees has no image -> no <img>, so the Barbell icon (svg) shows.
+    // Unmatched: Burpees has no image -> no <img> tag, fallback letter shows instead.
     await expect(page.getByRole("img", { name: "Burpees", exact: true })).toHaveCount(0);
     await expect(page.getByRole("heading", { name: "Burpees" })).toBeVisible();
   });

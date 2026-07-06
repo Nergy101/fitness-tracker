@@ -41,18 +41,18 @@ export default function ExerciseImage({
       )}
 
       {/* Image (hidden until loaded, then fades in) */}
-      <img
-        src={src ?? ""}
-        alt={alt}
-        loading="lazy"
-        onLoad={onLoad}
-        onError={onError}
-        className={`w-full h-full object-cover transition-opacity duration-300 ${
-          state === "loaded"
-            ? "opacity-100"
-            : "opacity-0 absolute inset-0 pointer-events-none"
-        }`}
-      />
+      {src && (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          onLoad={onLoad}
+          onError={onError}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            state === "loaded" ? "opacity-100" : "opacity-0 absolute inset-0 pointer-events-none"
+          }`}
+        />
+      )}
 
       {/* Error / no-image fallback */}
       {state === "error" && (
