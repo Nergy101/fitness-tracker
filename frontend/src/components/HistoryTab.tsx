@@ -324,7 +324,7 @@ function SessionList({
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2">
-                {session.template_name.startsWith("Run:") && (
+                {session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:") && (
                   <PersonSimpleRun size={16} className="text-accent shrink-0" />
                 )}
                 <h3 className="font-semibold text-sm">{session.template_name}</h3>

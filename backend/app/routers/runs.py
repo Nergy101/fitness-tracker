@@ -18,21 +18,21 @@ def _compute_pace(duration_seconds: int, distance_km: float) -> float:
     return round(duration_seconds / distance_km, 1)
 
 
-def _calc_run_kcal(distance_km: float, db: Session) -> float:
-    """Estimate calories burned using a weight-based formula: 0.97 kcal per kg per km.
-    Falls back to 75kg if no weight data is available."""
+def _calc_run_kcal(distance_km: float, run_type: str, db: Session) -> float:
+    """Estimate calories burned: ~0.97 kcal/kg/km for running, ~0.5 for walking."""
     latest = db.query(WeightEntry).order_by(WeightEntry.date.desc()).first()
     weight_kg = latest.weight_kg if latest else 75.0
-    return round(0.97 * weight_kg * distance_km, 1)
+    factor = 0.5 if run_type == "walk" else 0.97
+    return round(factor * weight_kg * distance_km, 1)
 
 
 def _create_workout_session(run: RunEntry, db: Session) -> None:
     """Create a matching WorkoutSession so runs appear in the unified History tab."""
-    kcal = _calc_run_kcal(run.distance_km, db)
+    kcal = _calc_run_kcal(run.distance_km, run.run_type, db)
 
     session = WorkoutSession(
         template_id=None,
-        template_name=f"Run: {run.distance_km:.1f}km",
+        template_name=f"{'Walk' if run.run_type == 'walk' else 'Run'}: {run.distance_km:.1f}km",
         started_at=datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc),
         finished_at=datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(seconds=run.duration_seconds),
         total_duration_seconds=run.duration_seconds,
@@ -58,8 +58,10 @@ def _delete_workout_session(run: RunEntry, db: Session) -> None:
     """Remove the associated WorkoutSession when a run is deleted."""
     date_start = datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc)
     date_end = date_start + timedelta(days=1)
+    # Search for both "Run:" and "Walk:" prefixed sessions
+    prefix = "Walk:" if run.run_type == "walk" else "Run:"
     sessions = db.query(WorkoutSession).filter(
-        WorkoutSession.template_name.ilike(f"Run: {run.distance_km:.1f}km"),
+        WorkoutSession.template_name.ilike(f"{prefix} {run.distance_km:.1f}km"),
         WorkoutSession.started_at >= date_start,
         WorkoutSession.started_at < date_end,
     ).all()
@@ -80,6 +82,7 @@ def create_run(data: RunEntryCreate, db: Session = Depends(get_db)):
         duration_seconds=data.duration_seconds,
         distance_km=data.distance_km,
         pace_per_km=pace,
+        run_type=data.run_type or "run",
         date=data.date or date.today(),
         notes=data.notes,
     )
@@ -101,6 +104,8 @@ def update_run(run_id: int, data: RunEntryCreate, db: Session = Depends(get_db))
     run.duration_seconds = data.duration_seconds
     run.distance_km = data.distance_km
     run.pace_per_km = _compute_pace(data.duration_seconds, data.distance_km)
+    if data.run_type:
+        run.run_type = data.run_type
     if data.date:
         run.date = data.date
     run.notes = data.notes

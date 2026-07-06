@@ -325,6 +325,7 @@ class RunEntryCreate(BaseModel):
     distance_km: float
     date: DateField = None
     notes: str = ""
+    run_type: str = "run"  # run | walk
 
 
 class RunEntryResponse(BaseModel):
@@ -334,6 +335,7 @@ class RunEntryResponse(BaseModel):
     pace_per_km: Optional[float] = None
     date: date
     notes: str
+    run_type: str = "run"
     created_at: datetime
 
     model_config = {"from_attributes": True}

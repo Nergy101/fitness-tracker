@@ -332,6 +332,7 @@ export interface RunEntryResponse {
   duration_seconds: number;
   distance_km: number;
   pace_per_km: number | null;
+  run_type: string;
   date: string;
   notes: string;
   created_at: string;
@@ -340,6 +341,7 @@ export interface RunEntryResponse {
 export interface RunEntryCreate {
   duration_seconds: number;
   distance_km: number;
+  run_type?: string;
   date?: string;
   notes?: string;
 }

@@ -68,6 +68,13 @@ def ensure_schema() -> None:
                 )
             """))
 
+        if "run_entries" in tables:
+            cols = {c["name"] for c in inspector.get_columns("run_entries")}
+            if "run_type" not in cols:
+                conn.execute(text(
+                    "ALTER TABLE run_entries ADD COLUMN run_type VARCHAR(10) NOT NULL DEFAULT 'run'"
+                ))
+
 
 def get_db():
     db = SessionLocal()

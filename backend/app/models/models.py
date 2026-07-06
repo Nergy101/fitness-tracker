@@ -161,6 +161,7 @@ class RunEntry(Base):
     duration_seconds = Column(Integer, nullable=False)
     distance_km = Column(Float, nullable=False)
     pace_per_km = Column(Float, nullable=True)  # computed: seconds per km
+    run_type = Column(String(10), nullable=False, default="run")  # run | walk
     date = Column(Date, nullable=False, default=lambda: date.today())
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

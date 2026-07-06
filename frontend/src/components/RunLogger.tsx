@@ -28,6 +28,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
   const [runDuration, setRunDuration] = useState(1800);
   const [runCustomDuration, setRunCustomDuration] = useState("");
   const [runDistance, setRunDistance] = useState("");
+  const [runType, setRunType] = useState<"run" | "walk">("run");
   const [runDate, setRunDate] = useState(new Date().toISOString().slice(0, 10));
   const [runNotes, setRunNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
       await api.createRun({
         duration_seconds: dur,
         distance_km: dist,
+        run_type: runType,
         date: runDate,
         notes: runNotes,
       });
@@ -99,13 +101,33 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <PersonSimpleRun size={18} className="text-accent" />
-            <span className="text-sm font-semibold text-fg">Log a Run</span>
+            <span className="text-sm font-semibold text-fg">Log a {runType === "walk" ? "Walk" : "Run"}</span>
           </div>
           <button
             onClick={() => setShowForm(false)}
             className="text-xs text-fg/40 hover:text-fg"
           >
             Cancel
+          </button>
+        </div>
+
+        {/* Run / Walk toggle */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setRunType("run")}
+            className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+              runType === "run" ? "bg-accent text-on-accent font-semibold" : "bg-bg text-fg/60 hover:text-fg"
+            }`}
+          >
+            Run
+          </button>
+          <button
+            onClick={() => setRunType("walk")}
+            className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+              runType === "walk" ? "bg-accent text-on-accent font-semibold" : "bg-bg text-fg/60 hover:text-fg"
+            }`}
+          >
+            Walk
           </button>
         </div>
 
