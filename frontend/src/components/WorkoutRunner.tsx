@@ -408,7 +408,7 @@ export default function WorkoutRunner({
               <h3 className="text-lg font-bold">Swap Exercise</h3>
               <button
                 onClick={() => setShowSwapPicker(false)}
-                className="text-fg/40 hover:text-white text-xl"
+                className="text-fg/40 hover:text-fg text-xl"
               >
                 &times;
               </button>
@@ -428,7 +428,7 @@ export default function WorkoutRunner({
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{ex.name}</p>
+                    <p className="text-sm font-medium text-fg truncate">{ex.name}</p>
                     <p className="text-[10px] text-fg/40 capitalize">{ex.category}</p>
                   </div>
                 </button>

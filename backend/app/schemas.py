@@ -358,6 +358,10 @@ class PrsResponse(BaseModel):
     longest_run_seconds: int | None = None
     longest_run_distance_km: float | None = None
     best_week_distance_km: float | None = None
+    most_kcal_session: float | None = None
+    most_kcal_name: str | None = None
+    longest_workout_seconds: int | None = None
+    longest_workout_name: str | None = None
 
 
 class WeeklyStats(BaseModel):

@@ -103,7 +103,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
           </div>
           <button
             onClick={() => setShowForm(false)}
-            className="text-xs text-fg/40 hover:text-white"
+            className="text-xs text-fg/40 hover:text-fg"
           >
             Cancel
           </button>
@@ -123,7 +123,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
                 className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
                   runDuration === opt.seconds && !runCustomDuration
                     ? "bg-accent text-bg font-semibold"
-                    : "bg-bg text-fg/60 hover:text-white"
+                    : "bg-bg text-fg/60 hover:text-fg"
                 }`}
               >
                 {opt.label}
@@ -172,7 +172,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
           <div className="bg-bg rounded-lg px-3 py-2 flex items-center gap-2 text-sm">
             <MapTrifold size={16} className="text-accent" />
             <span className="text-fg/60">Pace:</span>
-            <span className="text-white font-semibold">{formatPace(pace)}</span>
+            <span className="text-fg font-semibold">{formatPace(pace)}</span>
             <span className="text-fg/40 text-xs ml-auto">
               {formatDuration(runDuration)} · {parseFloat(runDistance).toFixed(1)}km
             </span>

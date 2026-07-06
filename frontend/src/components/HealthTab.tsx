@@ -32,7 +32,7 @@ function bmiColor(cat: string | null): string {
     case "Underweight": return "text-yellow-400";
     case "Overweight": return "text-orange-400";
     case "Obese": return "text-red-400";
-    default: return "text-white/50";
+    default: return "text-fg/50";
   }
 }
 
@@ -139,7 +139,7 @@ export default function HealthTab() {
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">Health Score</p>
+              <p className="text-sm font-semibold text-fg">Health Score</p>
               <p className="text-xs text-fg/50 mt-0.5">{score.spotlight}</p>
             </div>
           </div>
@@ -196,7 +196,7 @@ export default function HealthTab() {
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <p className="text-xs text-fg/40 mb-2">This Week</p>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">
+            <span className="text-2xl font-bold text-fg">
               {stats.avg_7d ? stats.avg_7d.toFixed(1) : "—"}
             </span>
             <span className="text-sm text-fg/40">kg avg</span>
@@ -222,7 +222,7 @@ export default function HealthTab() {
                 <Flame size={28} className="text-orange-400 shrink-0" weight={streak.current_streak >= 7 ? "fill" : "regular"} />
               )}
               <div>
-                <p className="text-sm font-semibold text-white">{streakMsg(streak.current_streak)}</p>
+                <p className="text-sm font-semibold text-fg">{streakMsg(streak.current_streak)}</p>
                 <p className="text-xs text-fg/40 mt-0.5">
                   Best: {streak.best_streak} days
                   {streak.last_logged_date && ` · Last: ${shortDate(streak.last_logged_date)}`}
@@ -267,7 +267,7 @@ export default function HealthTab() {
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center gap-2 mb-3">
             <Trophy size={20} className="text-yellow-400 shrink-0" weight="fill" />
-            <p className="text-sm font-semibold text-white">Personal Records</p>
+            <p className="text-sm font-semibold text-fg">Personal Records</p>
           </div>
 
           {/* Exercise PRs */}
@@ -276,7 +276,7 @@ export default function HealthTab() {
               {prs.by_exercise.slice(0, 10).map((rec, i) => (
                 <div key={i} className="flex items-center justify-between py-1">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium text-white truncate">{rec.exercise_name}</span>
+                    <span className="text-sm font-medium text-fg truncate">{rec.exercise_name}</span>
                   </div>
                   <div className="text-right shrink-0 ml-2">
                     <span className="text-sm font-semibold text-accent">
@@ -297,25 +297,25 @@ export default function HealthTab() {
                 {prs.fastest_5k_seconds && (
                   <div className="bg-bg rounded-lg p-2">
                     <p className="text-fg/50">Fastest 5K</p>
-                    <p className="text-sm font-bold text-white">{formatDuration(prs.fastest_5k_seconds)}</p>
+                    <p className="text-sm font-bold text-fg">{formatDuration(prs.fastest_5k_seconds)}</p>
                   </div>
                 )}
                 {prs.fastest_10k_seconds && (
                   <div className="bg-bg rounded-lg p-2">
                     <p className="text-fg/50">Fastest 10K</p>
-                    <p className="text-sm font-bold text-white">{formatDuration(prs.fastest_10k_seconds)}</p>
+                    <p className="text-sm font-bold text-fg">{formatDuration(prs.fastest_10k_seconds)}</p>
                   </div>
                 )}
                 {prs.longest_run_distance_km && (
                   <div className="bg-bg rounded-lg p-2">
                     <p className="text-fg/50">Longest Run</p>
-                    <p className="text-sm font-bold text-white">{prs.longest_run_distance_km.toFixed(1)} km</p>
+                    <p className="text-sm font-bold text-fg">{prs.longest_run_distance_km.toFixed(1)} km</p>
                   </div>
                 )}
                 {prs.best_week_distance_km != null && prs.best_week_distance_km > 0 && (
                   <div className="bg-bg rounded-lg p-2">
                     <p className="text-fg/50">Best Week</p>
-                    <p className="text-sm font-bold text-white">{(prs.best_week_distance_km).toFixed(1)} km</p>
+                    <p className="text-sm font-bold text-fg">{(prs.best_week_distance_km).toFixed(1)} km</p>
                   </div>
                 )}
               </div>
@@ -333,7 +333,7 @@ export default function HealthTab() {
               <div key={w.id} className="flex items-center justify-between py-1">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-white">{w.weight_kg.toFixed(1)} kg</span>
+                    <span className="text-sm font-medium text-fg">{w.weight_kg.toFixed(1)} kg</span>
                     <span className="text-xs text-fg/40">{shortDate(w.date)}</span>
                   </div>
                   {w.notes && <p className="text-xs text-fg/30 truncate mt-0.5">{w.notes}</p>}
@@ -363,7 +363,7 @@ export default function HealthTab() {
         <div className="flex items-center gap-3">
           <Ruler size={22} className="text-accent shrink-0" />
           <div className="text-left">
-            <span className="text-sm font-semibold text-white">Body Measurements</span>
+            <span className="text-sm font-semibold text-fg">Body Measurements</span>
             <p className="text-[11px] text-fg/40 mt-0.5">Track waist, hips, arms, thighs and see changes over time</p>
           </div>
         </div>
@@ -379,7 +379,7 @@ export default function HealthTab() {
         <div className="flex items-center gap-3">
           <Smiley size={22} className="text-accent shrink-0" />
           <div className="text-left">
-            <span className="text-sm font-semibold text-white">Wellness Check-in</span>
+            <span className="text-sm font-semibold text-fg">Wellness Check-in</span>
             <p className="text-[11px] text-fg/40 mt-0.5">Log your mood, energy, stress, and sleep to spot trends</p>
           </div>
         </div>

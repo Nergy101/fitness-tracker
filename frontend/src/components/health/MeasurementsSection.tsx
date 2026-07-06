@@ -69,7 +69,7 @@ export default function MeasurementsSection() {
             return (
               <div key={f.key} className="flex justify-between items-center py-0.5">
                 <span className="text-fg/50">{f.label}</span>
-                <span className="text-white font-medium">
+                <span className="text-fg font-medium">
                   {val != null ? `${val} cm` : "—"}
                   {delta != null && (
                     <span className={delta >= 0 ? "text-orange-400 ml-1" : "text-green-400 ml-1"}>

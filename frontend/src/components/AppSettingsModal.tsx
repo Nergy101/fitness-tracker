@@ -48,7 +48,7 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">Settings</h2>
-          <button onClick={onClose} className="text-fg/40 hover:text-white text-xl">&times;</button>
+          <button onClick={onClose} className="text-fg/40 hover:text-fg text-xl">&times;</button>
         </div>
 
         <div className="space-y-3.5">

@@ -56,7 +56,7 @@ export default function WellnessSection() {
         <div className="flex gap-3 text-[10px] text-fg/40">
           {trends.weekly_averages.slice(0, 4).reverse().map((w) => (
             <div key={w.week_start} className="flex-1 text-center bg-bg rounded-lg py-1.5">
-              <p className="font-medium text-white">{w.avg_mood ?? "—"}</p>
+              <p className="font-medium text-fg">{w.avg_mood ?? "—"}</p>
               <p>Mood</p>
             </div>
           ))}

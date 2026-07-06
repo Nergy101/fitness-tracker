@@ -99,7 +99,7 @@ function StatCard({
         {icon}
         <span className="text-[10px] text-fg/40">{label}</span>
       </div>
-      <p className="text-lg font-bold text-white">{value}</p>
+      <p className="text-lg font-bold text-fg">{value}</p>
       {sub && <p className="text-[10px] text-fg/30 mt-0.5">{sub}</p>}
     </div>
   );
