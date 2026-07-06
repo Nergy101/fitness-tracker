@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import WorkoutSession, SessionExercise, WorkoutTemplate
-from app.schemas import WorkoutSessionCreate, WorkoutSessionEnd, WorkoutSessionResponse, SessionExerciseResponse
+from app.models.models import WorkoutSession, SessionExercise, WorkoutTemplate, ExerciseLog
+from app.schemas import WorkoutSessionCreate, WorkoutSessionEnd, WorkoutSessionResponse, SessionExerciseResponse, ExerciseLogCreate, ExerciseLogResponse
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 
@@ -20,6 +20,17 @@ def _build_session_response(session: WorkoutSession) -> WorkoutSessionResponse:
             kcal_burned=se.kcal_burned,
             order_index=se.order_index,
             completed=se.completed,
+            logs=[
+                ExerciseLogResponse(
+                    id=log.id,
+                    session_exercise_id=log.session_exercise_id,
+                    weight_kg=log.weight_kg,
+                    reps=log.reps,
+                    set_number=log.set_number,
+                    created_at=log.created_at,
+                )
+                for log in (se.logs or [])
+            ],
         )
         for se in session.exercises
     ]
@@ -109,3 +120,54 @@ def delete_session(session_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Session not found")
     db.delete(session)
     db.commit()
+
+
+@router.post("/{session_id}/exercises/{se_id}/logs", response_model=list[ExerciseLogResponse], status_code=201)
+def create_exercise_logs(
+    session_id: int,
+    se_id: int,
+    logs: list[ExerciseLogCreate],
+    db: Session = Depends(get_db),
+):
+    session_exercise = (
+        db.query(SessionExercise)
+        .filter(SessionExercise.id == se_id, SessionExercise.session_id == session_id)
+        .first()
+    )
+    if not session_exercise:
+        raise HTTPException(status_code=404, detail="Session exercise not found")
+
+    existing = db.query(ExerciseLog).filter(
+        ExerciseLog.session_exercise_id == se_id
+    ).all()
+    if existing:
+        # Replace: delete old logs, insert new ones
+        for el in existing:
+            db.delete(el)
+        db.flush()
+
+    created = []
+    for log_data in logs:
+        el = ExerciseLog(
+            session_exercise_id=se_id,
+            weight_kg=log_data.weight_kg,
+            reps=log_data.reps,
+            set_number=log_data.set_number,
+        )
+        db.add(el)
+        created.append(el)
+
+    db.commit()
+    for el in created:
+        db.refresh(el)
+    return [
+        ExerciseLogResponse(
+            id=el.id,
+            session_exercise_id=el.session_exercise_id,
+            weight_kg=el.weight_kg,
+            reps=el.reps,
+            set_number=el.set_number,
+            created_at=el.created_at,
+        )
+        for el in created
+    ]

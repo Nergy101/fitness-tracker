@@ -404,6 +404,17 @@ function SessionDetail({
                   {ex.exercise_name}
                 </p>
                 <p className="text-xs text-fg/40">{ex.duration_seconds}s</p>
+                {ex.logs && ex.logs.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {ex.logs.map((log, li) => (
+                      <span key={li} className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded">
+                        {log.weight_kg != null ? `${log.weight_kg}kg` : ""}
+                        {log.weight_kg != null && log.reps != null ? " × " : ""}
+                        {log.reps != null ? `${log.reps}r` : ""}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <span className="text-xs text-fg/30">
                 {Math.round(ex.kcal_burned)} kcal

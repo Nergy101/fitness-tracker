@@ -51,6 +51,19 @@ def ensure_schema() -> None:
         # Health tracking tables — ensure they exist (new tables are created by create_all above)
         # Add any additive columns for these tables here in future versions.
 
+        # Exercise logs table (NER-101)
+        if "exercise_logs" not in tables:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS exercise_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_exercise_id INTEGER NOT NULL REFERENCES session_exercises(id) ON DELETE CASCADE,
+                    weight_kg REAL,
+                    reps INTEGER,
+                    set_number INTEGER NOT NULL DEFAULT 1,
+                    created_at TIMESTAMP NOT NULL DEFAULT (datetime('now'))
+                )
+            """))
+
 
 def get_db():
     db = SessionLocal()

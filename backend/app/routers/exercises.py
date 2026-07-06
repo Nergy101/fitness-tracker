@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.database import get_db
-from app.models.models import Exercise
-from app.schemas import ExerciseCreate, ExerciseUpdate, ExerciseResponse
+from app.models.models import Exercise, SessionExercise, ExerciseLog
+from app.schemas import ExerciseCreate, ExerciseUpdate, ExerciseResponse, ExerciseLogResponse
 
 router = APIRouter(prefix="/api/v1/exercises", tags=["exercises"])
 
@@ -53,3 +53,28 @@ def delete_exercise(exercise_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Exercise not found")
     db.delete(exercise)
     db.commit()
+
+
+@router.get("/{exercise_id}/logs", response_model=list[ExerciseLogResponse])
+def get_exercise_logs(exercise_id: int, limit: int = 10, db: Session = Depends(get_db)):
+    """Return the most recent weight/reps logs for an exercise, for progressive overload."""
+    # Join through session_exercises → exercise_logs, filtered by exercise_id
+    logs = (
+        db.query(ExerciseLog)
+        .join(SessionExercise, ExerciseLog.session_exercise_id == SessionExercise.id)
+        .filter(SessionExercise.exercise_id == exercise_id)
+        .order_by(ExerciseLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        ExerciseLogResponse(
+            id=log.id,
+            session_exercise_id=log.session_exercise_id,
+            weight_kg=log.weight_kg,
+            reps=log.reps,
+            set_number=log.set_number,
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]

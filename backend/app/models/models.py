@@ -77,6 +77,20 @@ class SessionExercise(Base):
     completed = Column(Boolean, default=True)
 
     session = relationship("WorkoutSession", back_populates="exercises")
+    logs = relationship("ExerciseLog", back_populates="session_exercise", cascade="all, delete-orphan", order_by="ExerciseLog.set_number")
+
+
+class ExerciseLog(Base):
+    __tablename__ = "exercise_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_exercise_id = Column(Integer, ForeignKey("session_exercises.id"), nullable=False)
+    weight_kg = Column(Float, nullable=True)
+    reps = Column(Integer, nullable=True)
+    set_number = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    session_exercise = relationship("SessionExercise", back_populates="logs")
 
 
 # ─── Health Tracking Models ────────────────────────────────

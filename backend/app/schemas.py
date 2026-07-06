@@ -121,9 +121,27 @@ class SessionExerciseCreate(SessionExerciseBase):
     pass
 
 
+class ExerciseLogCreate(BaseModel):
+    weight_kg: Optional[float] = None
+    reps: Optional[int] = None
+    set_number: int = 1
+
+
+class ExerciseLogResponse(BaseModel):
+    id: int
+    session_exercise_id: int
+    weight_kg: Optional[float] = None
+    reps: Optional[int] = None
+    set_number: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class SessionExerciseResponse(SessionExerciseBase):
     id: int
     session_id: int
+    logs: list[ExerciseLogResponse] = []
 
     model_config = {"from_attributes": True}
 

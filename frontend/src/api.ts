@@ -82,6 +82,22 @@ export interface SessionExercise {
   kcal_burned: number;
   order_index: number;
   completed: boolean;
+  logs: ExerciseLog[];
+}
+
+export interface ExerciseLog {
+  id: number;
+  session_exercise_id: number;
+  weight_kg: number | null;
+  reps: number | null;
+  set_number: number;
+  created_at: string;
+}
+
+export interface ExerciseLogInput {
+  weight_kg: number | null;
+  reps: number | null;
+  set_number: number;
 }
 
 export interface WorkoutSession {
@@ -409,6 +425,10 @@ export const api = {
     }),
   deleteExercise: (id: number) =>
     fetchJSON<void>(`/api/v1/exercises/${id}`, { method: "DELETE" }),
+  getExerciseLogs: (exerciseId: number, limit = 10) =>
+    fetchJSON<ExerciseLog[]>(
+      `/api/v1/exercises/${exerciseId}/logs?limit=${limit}`,
+    ),
 
   // Workouts
   getWorkouts: () => fetchJSON<WorkoutTemplate[]>("/api/v1/workouts"),
@@ -443,6 +463,11 @@ export const api = {
     }),
   deleteSession: (id: number) =>
     fetchJSON<void>(`/api/v1/sessions/${id}`, { method: "DELETE" }),
+  createExerciseLogs: (sessionId: number, seId: number, logs: ExerciseLogInput[]) =>
+    fetchJSON<ExerciseLog[]>(
+      `/api/v1/sessions/${sessionId}/exercises/${seId}/logs`,
+      { method: "POST", body: JSON.stringify(logs) },
+    ),
 
   // ─── Health ──────────────────────────────────────────
 

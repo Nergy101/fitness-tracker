@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api, type Exercise, type WorkoutTemplate } from "../api";
+import { api, type Exercise, type ExerciseLog, type WorkoutTemplate } from "../api";
 import { soundStart, soundRest, soundFinish, speak } from "../sound";
 import {
   ArrowsLeftRightIcon as ArrowsLeftRight,
@@ -56,6 +56,26 @@ export default function WorkoutRunner({
   const indexRef = useRef(0);
   const phaseRef = useRef<Phase>("rest");
   const amrapRoundRef = useRef(1);
+
+  // Exercise logs: key = `${round}-${index}`, value = {weightKg, reps}
+  const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weightKg: string; reps: string }>>({});
+  const [pastLogs, setPastLogs] = useState<Record<number, ExerciseLog[]>>({});
+
+  useEffect(() => {
+    // Fetch last session's logs for each exercise to show hints
+    exercises.forEach((e) => {
+      const exId = e.exercise?.id ?? e.exercise_id;
+      if (exId && !pastLogs[exId]) {
+        api.getExerciseLogs(exId, 1).then((logs) => {
+          setPastLogs((prev) => {
+            if (prev[exId]) return prev;
+            return { ...prev, [exId]: logs };
+          });
+        }).catch(() => {});
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     api.getExercises().then(setAllExercises).catch(() => {});
@@ -253,7 +273,7 @@ export default function WorkoutRunner({
 
     async function saveSession() {
       try {
-        await api.createSession({
+        const session = await api.createSession({
           template_id: workout.id,
           template_name: workout.name || "",
           total_duration_seconds: totalDuration,
@@ -270,6 +290,31 @@ export default function WorkoutRunner({
             completed: true,
           })),
         });
+
+        // Save exercise logs for any exercise that had weight/reps entered
+        const logPromises = session.exercises.map((se) => {
+          // Find all log entries for this exercise by matching exercise_id
+          const logEntries: { weightKg: string; reps: string }[] = [];
+          Object.entries(exerciseLogs).forEach(([key, val]) => {
+            const idx = parseInt(key.split("-")[1], 10);
+            if (exercises[idx]?.exercise_id === se.exercise_id && (val.weightKg || val.reps)) {
+              logEntries.push(val);
+            }
+          });
+          if (logEntries.length > 0) {
+            return api.createExerciseLogs(
+              session.id,
+              se.id,
+              logEntries.map((l, i) => ({
+                weight_kg: l.weightKg ? parseFloat(l.weightKg) : null,
+                reps: l.reps ? parseInt(l.reps, 10) : null,
+                set_number: i + 1,
+              })),
+            ).catch(() => {});
+          }
+          return null;
+        });
+        await Promise.all(logPromises.filter(Boolean));
       } catch (err) {
         console.error("Failed to save session", err);
       }
@@ -308,6 +353,19 @@ export default function WorkoutRunner({
   const currentName = exercises[currentIndex]?.exercise?.name ?? "Exercise";
   const currentImage = exercises[currentIndex]?.exercise?.image_url ?? null;
   const currentDescription = exercises[currentIndex]?.exercise?.description ?? "";
+  const currentExerciseId = exercises[currentIndex]?.exercise?.id ?? exercises[currentIndex]?.exercise_id;
+  const logKey = `${currentRound}-${currentIndex}`;
+  const currentPastHint = useMemo(() => {
+    if (!currentExerciseId) return null;
+    const logs = pastLogs[currentExerciseId];
+    if (!logs || logs.length === 0) return null;
+    const last = logs[0];
+    const parts: string[] = [];
+    if (last.weight_kg != null) parts.push(`${last.weight_kg}kg`);
+    if (last.reps != null) parts.push(`${last.reps} reps`);
+    if (parts.length === 0) return null;
+    return `Last time: ${parts.join(" × ")}`;
+  }, [currentExerciseId, pastLogs]);
   const displayTime = (() => {
     const s = Math.ceil(timer);
     const m = Math.floor(s / 60);
@@ -377,7 +435,10 @@ export default function WorkoutRunner({
             className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
           />
           {currentDescription && (
-            <p className="text-fg/50 text-sm max-w-xs mb-5">{currentDescription}</p>
+            <p className="text-fg/50 text-sm max-w-xs mb-3">{currentDescription}</p>
+          )}
+          {currentPastHint && (
+            <p className="text-accent/70 text-xs mb-4 font-medium">{currentPastHint}</p>
           )}
           <div className="relative w-48 h-48 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
@@ -465,8 +526,39 @@ export default function WorkoutRunner({
             className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
           />
           {currentDescription && (
-            <p className="text-fg/50 text-sm max-w-xs mb-5">{currentDescription}</p>
+            <p className="text-fg/50 text-sm max-w-xs mb-3">{currentDescription}</p>
           )}
+          {currentPastHint && (
+            <p className="text-accent/70 text-xs mb-3 font-medium">{currentPastHint}</p>
+          )}
+          {/* Weight / reps logging */}
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="kg"
+              value={exerciseLogs[logKey]?.weightKg ?? ""}
+              onChange={(e) => setExerciseLogs((prev) => ({
+                ...prev,
+                [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), weightKg: e.target.value },
+              }))}
+              className="w-20 bg-surface border border-fg/10 rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50"
+              aria-label="Weight in kg"
+            />
+            <span className="text-fg/20 text-sm">×</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              placeholder="reps"
+              value={exerciseLogs[logKey]?.reps ?? ""}
+              onChange={(e) => setExerciseLogs((prev) => ({
+                ...prev,
+                [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), reps: e.target.value },
+              }))}
+              className="w-20 bg-surface border border-fg/10 rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50"
+              aria-label="Reps"
+            />
+          </div>
           <div className="relative w-48 h-48 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
