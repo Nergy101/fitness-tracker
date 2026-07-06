@@ -4,6 +4,7 @@ import {
   ClockCounterClockwiseIcon as ClockCounterClockwise,
   DownloadSimpleIcon as DownloadSimple,
   PersonSimpleRunIcon as PersonSimpleRun,
+  PencilSimpleIcon as PencilSimple,
   SmileySadIcon as SmileySad,
   UploadSimpleIcon as UploadSimple,
   CalendarBlankIcon as CalendarBlank,
@@ -296,12 +297,17 @@ function Heatmap({ sessions }: { sessions: WorkoutSession[] }) {
 function SessionList({
   sessions,
   onSelect,
+  onEditDate,
   emptyLabel,
 }: {
   sessions: WorkoutSession[];
   onSelect: (s: WorkoutSession) => void;
+  onEditDate: (s: WorkoutSession) => void;
   emptyLabel: string;
 }) {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+
   if (sessions.length === 0) {
     return (
       <div className="text-center py-10 text-fg/30 text-sm">{emptyLabel}</div>
@@ -323,9 +329,47 @@ function SessionList({
                 )}
                 <h3 className="font-semibold text-sm">{session.template_name}</h3>
               </div>
-              <p className="text-xs text-fg/40 mt-0.5">
-                {formatDate(session.started_at)}
-              </p>
+              {editingId === session.id ? (
+                <input
+                  type="datetime-local"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={() => {
+                    const d = new Date(editValue);
+                    if (!isNaN(d.getTime())) {
+                      api.updateSession(session.id, { started_at: d.toISOString() }).then((updated) => {
+                        onEditDate(updated);
+                      }).catch(() => {});
+                    }
+                    setEditingId(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  className="text-xs bg-bg border border-accent/30 rounded-lg px-2 py-1 mt-0.5 w-48 text-fg outline-none"
+                  autoFocus
+                />
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs text-fg/40 mt-0.5">
+                    {formatDate(session.started_at)}
+                  </p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const d = new Date(session.started_at);
+                      setEditValue(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+                      setEditingId(session.id);
+                    }}
+                    className="text-fg/20 hover:text-accent mt-0.5"
+                    title="Edit date/time"
+                  >
+                    <PencilSimple size={12} />
+                  </button>
+                </div>
+              )}
             </div>
             <span className="text-xs text-fg/30">
               ~{Math.round(session.total_kcal_estimated)} kcal
@@ -617,6 +661,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
         <SessionList
           sessions={sessions}
           onSelect={setDetail}
+          onEditDate={(updated) => setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s))}
           emptyLabel="No sessions yet"
         />
 
@@ -678,6 +723,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
       <SessionList
         sessions={rangeSessions}
         onSelect={setDetail}
+        onEditDate={(updated) => setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s))}
         emptyLabel="No workouts in this range."
       />
 
