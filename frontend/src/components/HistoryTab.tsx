@@ -5,6 +5,7 @@ import {
   DownloadSimpleIcon as DownloadSimple,
   PersonSimpleRunIcon as PersonSimpleRun,
   PencilSimpleIcon as PencilSimple,
+  SneakerIcon as Sneaker,
   SmileySadIcon as SmileySad,
   UploadSimpleIcon as UploadSimple,
   CalendarBlankIcon as CalendarBlank,
@@ -325,9 +326,13 @@ function SessionList({
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2">
-                {session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:") && (
-                  <PersonSimpleRun size={16} className="text-accent shrink-0" />
-                )}
+                {session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:") ? (
+                  session.template_name.startsWith("Walk:") ? (
+                    <Sneaker size={16} className="text-accent shrink-0" />
+                  ) : (
+                    <PersonSimpleRun size={16} className="text-accent shrink-0" />
+                  )
+                ) : null}
                 <h3 className="font-semibold text-sm">{session.template_name}</h3>
               </div>
               {editingId === session.id ? (
