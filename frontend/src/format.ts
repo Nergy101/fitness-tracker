@@ -50,3 +50,11 @@ export function formatDateRelative(dateStr: string | null): string {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+
+/** Convert a datetime-local input value ("2026-07-06T14:00") to a
+ *  timezone-naive ISO string ("2026-07-06T14:00:00") that preserves
+ *  local time instead of converting to UTC like .toISOString() does. */
+export function localISO(datetimeLocalValue: string): string {
+  if (!datetimeLocalValue) return datetimeLocalValue;
+  return datetimeLocalValue + ":00";
+}

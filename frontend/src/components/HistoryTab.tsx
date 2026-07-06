@@ -20,6 +20,7 @@ import {
   formatDateRelative,
   formatDuration,
   formatHours,
+  localISO,
 } from "../format";
 import { shortDate } from "../locale";
 import { useLocale } from "../useLocale";
@@ -335,12 +336,9 @@ function SessionList({
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onBlur={() => {
-                    const d = new Date(editValue);
-                    if (!isNaN(d.getTime())) {
-                      api.updateSession(session.id, { started_at: d.toISOString() }).then((updated) => {
-                        onEditDate(updated);
-                      }).catch(() => {});
-                    }
+                    api.updateSession(session.id, { started_at: localISO(editValue) }).then((updated) => {
+                      onEditDate(updated);
+                    }).catch(() => {});
                     setEditingId(null);
                   }}
                   onClick={(e) => e.stopPropagation()}
@@ -402,13 +400,37 @@ function SessionDetail({
   async function updateStartedAt(value: string) {
     try {
       const updated = await api.updateSession(session.id, {
-        started_at: new Date(value).toISOString(),
+        started_at: localISO(value),
       });
       onUpdate(updated);
     } catch (err) {
       console.error("Failed to update session date", err);
     }
   }
+
+  const sessionStartedAt = new Date(session.started_at);
+  const isRunOrWalk = session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:");
+  const isRun = session.template_name.startsWith("Run:");
+
+  async function toggleRunType() {
+    try {
+      const runs = await api.getRuns();
+      const sessionDay = sessionStartedAt.toISOString().slice(0, 10);
+      const match = runs.find((r) => r.date === sessionDay && r.run_type !== (isRun ? "run" : "walk"));
+      if (match) {
+        await api.updateRun(match.id, {
+          duration_seconds: match.duration_seconds,
+          distance_km: match.distance_km,
+          run_type: isRun ? "walk" : "run",
+        });
+        const updated = await api.getSession(session.id);
+        onUpdate(updated);
+      }
+    } catch (err) {
+      console.error("Failed to toggle run type", err);
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
@@ -487,6 +509,27 @@ function SessionDetail({
             </div>
           ))}
         </div>
+
+        {isRunOrWalk && (
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={toggleRunType}
+              className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                isRun ? "bg-accent text-on-accent font-semibold" : "bg-surface border border-fg/10 text-fg/50"
+              }`}
+            >
+              Run
+            </button>
+            <button
+              onClick={toggleRunType}
+              className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                !isRun ? "bg-accent text-on-accent font-semibold" : "bg-surface border border-fg/10 text-fg/50"
+              }`}
+            >
+              Walk
+            </button>
+          </div>
+        )}
 
         <p className="text-xs text-fg/30 text-center">
           {formatDateRelative(session.started_at)}

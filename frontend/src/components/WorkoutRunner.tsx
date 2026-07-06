@@ -8,7 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
-import { formatDuration } from "../format";
+import { formatDuration, localISO } from "../format";
 
 type Phase = "rest" | "exercise" | "roundrest" | "finished";
 
@@ -290,7 +290,7 @@ export default function WorkoutRunner({
           template_name: workout.name || "",
           total_duration_seconds: totalDuration,
           total_kcal_estimated: totalKcal,
-          started_at: new Date(sessionDate).toISOString(),
+          started_at: localISO(sessionDate),
           exercises: exercises.map((e, i) => ({
             exercise_id: e.exercise?.id ?? e.exercise_id,
             exercise_name: e.exercise?.name || "",
