@@ -11,6 +11,8 @@ const mockTemplate: WorkoutTemplate = {
   time_cap_seconds: null,
   rounds: 3,
   rest_between_rounds: 60,
+  is_pinned: false,
+  pinned_order: null,
   created_at: "2026-07-01T00:00:00Z",
   exercises: [
     {
@@ -60,120 +62,97 @@ describe("WorkoutCard", () => {
   const onEdit = vi.fn();
   const onDelete = vi.fn();
   const onLog = vi.fn();
+  const onTogglePin = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders the workout name", () => {
-    render(
+  function renderCard() {
+    return render(
       <WorkoutCard
         template={mockTemplate}
         onStart={onStart}
         onEdit={onEdit}
         onDelete={onDelete}
         onLog={onLog}
+        onTogglePin={onTogglePin}
       />,
     );
+  }
+
+  it("renders the workout name", () => {
+    renderCard();
     expect(screen.getByText("Full Body")).toBeInTheDocument();
   });
 
   it("renders the description", () => {
-    render(
-      <WorkoutCard
-        template={mockTemplate}
-        onStart={onStart}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onLog={onLog}
-      />,
-    );
+    renderCard();
     expect(screen.getByText("A full body circuit workout")).toBeInTheDocument();
   });
 
   it("renders exercise count and rounds", () => {
-    render(
-      <WorkoutCard
-        template={mockTemplate}
-        onStart={onStart}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onLog={onLog}
-      />,
-    );
+    renderCard();
     expect(screen.getByText("2 exercises")).toBeInTheDocument();
     expect(screen.getByText("3 rounds")).toBeInTheDocument();
   });
 
   it("calls onStart when clicking the card body", () => {
-    render(
-      <WorkoutCard
-        template={mockTemplate}
-        onStart={onStart}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onLog={onLog}
-      />,
-    );
+    renderCard();
     fireEvent.click(screen.getByText("Full Body"));
     expect(onStart).toHaveBeenCalledWith(mockTemplate);
   });
 
   it("calls onStart when clicking the Start button", () => {
-    render(
-      <WorkoutCard
-        template={mockTemplate}
-        onStart={onStart}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onLog={onLog}
-      />,
-    );
+    renderCard();
     fireEvent.click(screen.getByText("Start"));
     expect(onStart).toHaveBeenCalledWith(mockTemplate);
   });
 
   it("calls onLog when clicking Log", () => {
-    render(
-      <WorkoutCard
-        template={mockTemplate}
-        onStart={onStart}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onLog={onLog}
-      />,
-    );
+    renderCard();
     fireEvent.click(screen.getByText("Log"));
     expect(onLog).toHaveBeenCalledWith(mockTemplate);
   });
 
   it("calls onEdit when clicking the edit button", () => {
-    render(
-      <WorkoutCard
-        template={mockTemplate}
-        onStart={onStart}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onLog={onLog}
-      />,
-    );
+    renderCard();
     const editBtn = screen.getByTitle("Edit");
     fireEvent.click(editBtn);
     expect(onEdit).toHaveBeenCalledWith(mockTemplate);
   });
 
   it("calls onDelete when clicking the delete button", () => {
+    renderCard();
+    const deleteBtn = screen.getByTitle("Delete");
+    fireEvent.click(deleteBtn);
+    expect(onDelete).toHaveBeenCalledWith(mockTemplate.id, mockTemplate.name);
+  });
+
+  it("calls onTogglePin when clicking the pin button", () => {
+    renderCard();
+    const pinBtn = screen.getByTitle("Pin workout");
+    fireEvent.click(pinBtn);
+    expect(onTogglePin).toHaveBeenCalledWith(mockTemplate);
+  });
+
+  it("shows filled pin icon and accent border when pinned", () => {
+    const pinned: WorkoutTemplate = {
+      ...mockTemplate,
+      is_pinned: true,
+      pinned_order: 1,
+    };
     render(
       <WorkoutCard
-        template={mockTemplate}
+        template={pinned}
         onStart={onStart}
         onEdit={onEdit}
         onDelete={onDelete}
         onLog={onLog}
+        onTogglePin={onTogglePin}
       />,
     );
-    const deleteBtn = screen.getByTitle("Delete");
-    fireEvent.click(deleteBtn);
-    expect(onDelete).toHaveBeenCalledWith(mockTemplate.id, mockTemplate.name);
+    const pinBtn = screen.getByTitle("Unpin workout");
+    expect(pinBtn).toBeInTheDocument();
   });
 });

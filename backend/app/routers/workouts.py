@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.models.models import WorkoutTemplate, WorkoutTemplateExercise, Exercise
@@ -11,10 +12,15 @@ from app.schemas import (
 router = APIRouter(prefix="/api/v1/workouts", tags=["workouts"])
 
 
+class PinToggle(BaseModel):
+    is_pinned: bool
+
+
 def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateResponse:
     per_round = sum(te.duration_seconds for te in template.exercises)
     work_duration = per_round * template.rounds
-    rest_duration = max(0, template.rounds - 1) * template.rest_between_rounds
+    rest_between = template.rest_between_rounds if template.rest_between_rounds else 0
+    rest_duration = max(0, template.rounds - 1) * rest_between
     ex_responses = []
     for te in template.exercises:
         ex_responses.append(WorkoutTemplateExerciseResponse(
@@ -34,6 +40,8 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
         time_cap_seconds=template.time_cap_seconds,
         rounds=template.rounds,
         rest_between_rounds=template.rest_between_rounds,
+        is_pinned=template.is_pinned or False,
+        pinned_order=template.pinned_order,
         created_at=template.created_at,
         exercises=ex_responses,
         work_duration_seconds=work_duration,
@@ -44,7 +52,11 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
 
 @router.get("", response_model=list[WorkoutTemplateResponse])
 def list_workouts(db: Session = Depends(get_db)):
-    templates = db.query(WorkoutTemplate).order_by(WorkoutTemplate.name).all()
+    templates = db.query(WorkoutTemplate).order_by(
+        WorkoutTemplate.is_pinned.desc(),
+        WorkoutTemplate.pinned_order.asc().nulls_last(),
+        WorkoutTemplate.created_at.desc(),
+    ).all()
     return [_build_template_response(t) for t in templates]
 
 
@@ -59,6 +71,12 @@ def get_workout(workout_id: int, db: Session = Depends(get_db)):
 @router.post("", response_model=WorkoutTemplateResponse, status_code=201)
 def create_workout(data: WorkoutTemplateCreate, db: Session = Depends(get_db)):
     template = WorkoutTemplate(name=data.name, description=data.description, mode=data.mode, time_cap_seconds=data.time_cap_seconds, rounds=data.rounds, rest_between_rounds=data.rest_between_rounds)
+    if data.is_pinned:
+        max_order = db.query(WorkoutTemplate.pinned_order).filter(
+            WorkoutTemplate.is_pinned == True
+        ).order_by(WorkoutTemplate.pinned_order.desc()).first()
+        template.is_pinned = True
+        template.pinned_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
     db.add(template)
     db.flush()
 
@@ -99,6 +117,17 @@ def update_workout(workout_id: int, data: WorkoutTemplateUpdate, db: Session = D
         template.rounds = data.rounds
     if data.rest_between_rounds is not None:
         template.rest_between_rounds = data.rest_between_rounds
+    if data.is_pinned is not None:
+        template.is_pinned = data.is_pinned
+        if data.is_pinned and template.pinned_order is None:
+            max_order = db.query(WorkoutTemplate.pinned_order).filter(
+                WorkoutTemplate.is_pinned == True
+            ).order_by(WorkoutTemplate.pinned_order.desc()).first()
+            template.pinned_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
+        elif not data.is_pinned:
+            template.pinned_order = None
+    if data.pinned_order is not None:
+        template.pinned_order = data.pinned_order
 
     if data.exercises is not None:
         # Remove existing exercises
@@ -120,6 +149,26 @@ def update_workout(workout_id: int, data: WorkoutTemplateUpdate, db: Session = D
                 order_index=ex_data.order_index if ex_data.order_index else i,
             )
             db.add(template_exercise)
+
+    db.commit()
+    db.refresh(template)
+    return _build_template_response(template)
+
+
+@router.patch("/{workout_id}/pin", response_model=WorkoutTemplateResponse)
+def toggle_pin(workout_id: int, data: PinToggle, db: Session = Depends(get_db)):
+    template = db.get(WorkoutTemplate, workout_id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Workout template not found")
+
+    template.is_pinned = data.is_pinned
+    if data.is_pinned and template.pinned_order is None:
+        max_order = db.query(WorkoutTemplate.pinned_order).filter(
+            WorkoutTemplate.is_pinned == True
+        ).order_by(WorkoutTemplate.pinned_order.desc()).first()
+        template.pinned_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
+    elif not data.is_pinned:
+        template.pinned_order = None
 
     db.commit()
     db.refresh(template)

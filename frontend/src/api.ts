@@ -45,6 +45,8 @@ export interface WorkoutTemplate {
   time_cap_seconds: number | null;
   rounds: number;
   rest_between_rounds: number;
+  is_pinned: boolean;
+  pinned_order: number | null;
   created_at: string;
   exercises: TemplateExercise[];
   work_duration_seconds: number;
@@ -422,6 +424,11 @@ export const api = {
     }),
   deleteWorkout: (id: number) =>
     fetchJSON<void>(`/api/v1/workouts/${id}`, { method: "DELETE" }),
+  togglePin: (id: number, isPinned: boolean) =>
+    fetchJSON<WorkoutTemplate>(`/api/v1/workouts/${id}/pin`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_pinned: isPinned }),
+    }),
 
   // Sessions
   getSessions: () => fetchJSON<WorkoutSession[]>("/api/v1/sessions"),

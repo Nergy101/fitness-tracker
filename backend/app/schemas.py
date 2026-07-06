@@ -76,6 +76,8 @@ class WorkoutTemplateBase(BaseModel):
     time_cap_seconds: Optional[int] = None
     rounds: int = 1
     rest_between_rounds: int = 180
+    is_pinned: bool = False
+    pinned_order: Optional[int] = None
 
 
 class WorkoutTemplateCreate(WorkoutTemplateBase):
@@ -89,6 +91,8 @@ class WorkoutTemplateUpdate(BaseModel):
     time_cap_seconds: Optional[int] = None
     rounds: Optional[int] = None
     rest_between_rounds: Optional[int] = None
+    is_pinned: Optional[bool] = None
+    pinned_order: Optional[int] = None
     exercises: Optional[list[WorkoutTemplateExerciseCreate]] = None
 
 

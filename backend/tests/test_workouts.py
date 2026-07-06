@@ -163,3 +163,60 @@ class TestDeleteWorkout:
     def test_delete_missing(self, client: TestClient, auth_headers: dict):
         resp = client.delete("/api/v1/workouts/99999", headers=auth_headers)
         assert resp.status_code == 404
+
+
+class TestTogglePin:
+    URL = "/api/v1/workouts"
+
+    def test_pin_workout(self, client: TestClient, auth_headers: dict, seed_exercise):
+        # Create a workout
+        create = client.post(self.URL, json={
+            "name": "Pin Me",
+            "exercises": [{"exercise_id": seed_exercise.id, "order_index": 0}],
+        }, headers=auth_headers)
+        wid = create.json()["id"]
+        assert create.json()["is_pinned"] is False
+        assert create.json()["pinned_order"] is None
+
+        # Pin it
+        resp = client.patch(f"{self.URL}/{wid}/pin", json={"is_pinned": True}, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["is_pinned"] is True
+        assert resp.json()["pinned_order"] == 1
+
+    def test_unpin_workout(self, client: TestClient, auth_headers: dict, seed_exercise):
+        # Create and pin
+        create = client.post(self.URL, json={
+            "name": "Unpin Me",
+            "is_pinned": True,
+            "exercises": [{"exercise_id": seed_exercise.id, "order_index": 0}],
+        }, headers=auth_headers)
+        wid = create.json()["id"]
+
+        # Unpin
+        resp = client.patch(f"{self.URL}/{wid}/pin", json={"is_pinned": False}, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["is_pinned"] is False
+        assert resp.json()["pinned_order"] is None
+
+    def test_pinned_first_ordering(self, client: TestClient, auth_headers: dict, seed_exercise):
+        # Create three workouts
+        data = {"exercises": [{"exercise_id": seed_exercise.id, "order_index": 0}]}
+        a = client.post(self.URL, json={"name": "Alpha", **data}, headers=auth_headers)
+        b = client.post(self.URL, json={"name": "Beta", **data}, headers=auth_headers)
+        c = client.post(self.URL, json={"name": "Gamma", **data}, headers=auth_headers)
+
+        # Pin Beta
+        client.patch(f"{self.URL}/{b.json()['id']}/pin", json={"is_pinned": True}, headers=auth_headers)
+
+        # List — Beta should be first
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        names = [w["name"] for w in resp.json()]
+        assert names[0] == "Beta"  # pinned first
+        assert "Alpha" in names[1:]
+        assert "Gamma" in names[1:]
+
+    def test_pin_missing(self, client: TestClient, auth_headers: dict):
+        resp = client.patch(f"{self.URL}/99999/pin", json={"is_pinned": True}, headers=auth_headers)
+        assert resp.status_code == 404

@@ -62,6 +62,31 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
     }
   }
 
+  async function togglePin(tpl: WorkoutTemplate) {
+    try {
+      const updated = await api.togglePin(tpl.id, !tpl.is_pinned);
+      setTemplates((prev) =>
+        prev.map((t) => (t.id === updated.id ? updated : t))
+      );
+      setToast(updated.is_pinned ? "Workout pinned 📌" : "Workout unpinned");
+    } catch {
+      setToast("Failed to update pin");
+    }
+  }
+
+  // Sort: pinned first (by pinned_order), then most recent first
+  const sortedTemplates = [...templates].sort((a, b) => {
+    if (a.is_pinned !== b.is_pinned) {
+      return a.is_pinned ? -1 : 1;
+    }
+    if (a.is_pinned && b.is_pinned) {
+      const ao = a.pinned_order ?? 0;
+      const bo = b.pinned_order ?? 0;
+      if (ao !== bo) return ao - bo;
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
   async function logWorkout(tpl: WorkoutTemplate) {
     const rounds = Math.max(1, tpl.rounds || 1);
     const workDuration =
@@ -161,7 +186,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         </div>
       ) : (
         <div className="space-y-3">
-          {templates.map((tpl) => (
+          {sortedTemplates.map((tpl) => (
             <WorkoutCard
               key={tpl.id}
               template={tpl}
@@ -169,6 +194,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
               onEdit={openEditor}
               onDelete={deleteWorkout}
               onLog={logWorkout}
+              onTogglePin={togglePin}
             />
           ))}
         </div>
