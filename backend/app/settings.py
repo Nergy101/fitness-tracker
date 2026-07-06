@@ -43,7 +43,7 @@ def _ensure_settings() -> bool:
     password = _generate_password()
     SETTINGS_PATH.write_text(_generate_default_toml(password))
     print(f"Generated {SETTINGS_PATH} with random password: {password}")
-    print(f"   Change it in {SETTINGS_PATH} and restart the server.")
+    print(f"Change it in {SETTINGS_PATH} and restart the server.")
     return True
 
 

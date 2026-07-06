@@ -5,7 +5,7 @@ node_modules/
 dist/
 .env
 *.db
-.astro/
+*.tsbuildinfo
 settings.toml
 
 # Playwright

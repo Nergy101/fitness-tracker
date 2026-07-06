@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, SmileySad } from "@phosphor-icons/react";
+import Toast from "./Toast";
 import {
   api,
   type Exercise,
@@ -28,12 +29,6 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [showEditor, setShowEditor] = useState(false);
   const [editing, setEditing] = useState<WorkoutTemplate | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), 2500);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   useEffect(() => {
     Promise.all([api.getWorkouts(), api.getExercises()])
@@ -145,14 +140,10 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
     <div className="workout-tab">
       {/* Toast */}
       {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] flex items-center gap-2 bg-accent text-on-accent rounded-full px-4 py-2.5 text-sm font-semibold shadow-lg"
-        >
+        <Toast onDismiss={() => setToast(null)}>
           <CheckCircle size={18} weight="fill" />
           {toast}
-        </div>
+        </Toast>
       )}
 
       {/* Header */}
