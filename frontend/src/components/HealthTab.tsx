@@ -4,7 +4,6 @@ import {
   CaretUpIcon as CaretUp,
   ConfettiIcon as Confetti,
   FlameIcon as Flame,
-  GearIcon as Gear,
   RulerIcon as Ruler,
   SmileyIcon as Smiley,
   TrophyIcon as Trophy,
@@ -15,15 +14,12 @@ import {
   type GoalProgressResponse,
   type HealthScoreResponse,
   type StreakResponse,
-  type UserProfileResponse,
-  type UserProfileUpdate,
   type WeightEntryResponse,
   type WeightStatsResponse,
   type PrsResponse,
 } from "../api";
 import { formatDuration } from "../format";
 import MeasurementsSection from "./health/MeasurementsSection";
-import SettingsModal from "./health/SettingsModal";
 import SimpleChart from "./health/SimpleChart";
 import WellnessSection from "./health/WellnessSection";
 import { shortDate } from "./health/utils";
@@ -55,7 +51,6 @@ function streakMsg(days: number): string {
 
 export default function HealthTab() {
   // Data state
-  const [profile, setProfile] = useState<UserProfileResponse | null>(null);
   const [weights, setWeights] = useState<WeightEntryResponse[]>([]);
   const [stats, setStats] = useState<WeightStatsResponse | null>(null);
   const [streak, setStreak] = useState<StreakResponse | null>(null);
@@ -67,16 +62,14 @@ export default function HealthTab() {
   // UI state
   const [loading, setLoading] = useState(true);
   const [newWeight, setNewWeight] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
   const [showWellness, setShowWellness] = useState(false);
   const [showMeas, setShowMeas] = useState(false);
 
   const loadAll = async () => {
     try {
       const [
-        p, w, s, st, g, b, sc, pr,
+        w, s, st, g, b, sc, pr,
       ] = await Promise.all([
-        api.getProfile(),
         api.getWeightEntries(),
         api.getWeightStats(),
         api.getWeightStreak(),
@@ -85,7 +78,6 @@ export default function HealthTab() {
         api.getHealthScore(),
         api.getPrs(),
       ]);
-      setProfile(p);
       setWeights(w);
       setStats(s);
       setStreak(st);
@@ -115,11 +107,6 @@ export default function HealthTab() {
     loadAll();
   };
 
-  const updateProfile = async (data: UserProfileUpdate) => {
-    await api.updateProfile(data);
-    setShowSettings(false);
-    loadAll();
-  };
 
   if (loading) {
     return <div className="text-center py-8 text-fg/40">Loading health data...</div>;
@@ -128,16 +115,7 @@ export default function HealthTab() {
   return (
     <div className="health-tab space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm text-fg/50 font-medium">Your Health Overview</h2>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="text-fg/30 hover:text-accent transition-colors"
-          title="Health Settings"
-        >
-          <Gear size={20} />
-        </button>
-      </div>
+      <h2 className="text-sm text-fg/50 font-medium">Your Health Overview</h2>
 
       {/* Health Score Card */}
       {score && (
@@ -405,15 +383,6 @@ export default function HealthTab() {
         {showWellness ? <CaretUp size={18} /> : <CaretDown size={18} />}
       </button>
       {showWellness && <WellnessSection />}
-
-      {/* Settings Modal */}
-      {showSettings && profile && (
-        <SettingsModal
-          profile={profile}
-          onSave={updateProfile}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   BarbellIcon as Barbell,
   ChartBarIcon as ChartBar,
+  GearIcon as Gear,
   HeartbeatIcon as Heartbeat,
   PersonSimpleRunIcon as PersonSimpleRun,
   TrendUpIcon as TrendUp,
@@ -13,9 +14,10 @@ import ExercisesTab from "./components/ExercisesTab";
 import HistoryTab from "./components/HistoryTab";
 import HealthTab from "./components/HealthTab";
 import WorkoutRunner from "./components/WorkoutRunner";
-import TopControls from "./components/TopControls";
+import AppSettingsModal from "./components/AppSettingsModal";
 import LoginScreen from "./components/LoginScreen";
 import { getStoredAuth, clearStoredAuth } from "./auth";
+import { useTheme } from "./useTheme";
 import StatisticsTab from "./components/StatisticsTab";
 import ErrorBoundary from "./components/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
@@ -37,6 +39,10 @@ const TABS: Tab[] = [
 ];
 
 export default function App() {
+  // Nothing else mounts theme handling on the main screen (controls live in
+  // the settings modal), so apply the persisted theme from the app root.
+  useTheme();
+
   const [authenticated, setAuthenticated] = useState(() => {
     try {
       return !!getStoredAuth();
@@ -50,6 +56,8 @@ export default function App() {
     null,
   );
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [healthRefreshKey, setHealthRefreshKey] = useState(0);
 
   if (!authenticated) {
     return <LoginScreen onLogin={() => setAuthenticated(true)} />;
@@ -80,7 +88,14 @@ export default function App() {
           <h1 className="text-lg font-bold">{tabTitle}</h1>
           <div className="flex items-center gap-3">
             <span className="text-xs text-fg/40">FitnessTracker</span>
-            <TopControls />
+            <button
+              onClick={() => setShowSettings(true)}
+              aria-label="Settings"
+              title="Settings"
+              className="p-1.5 rounded-lg text-fg/50 hover:text-fg transition-colors"
+            >
+              <Gear size={20} weight="fill" />
+            </button>
             <button
               onClick={() => { clearStoredAuth(); setAuthenticated(false); }}
               className="text-[10px] text-fg/20 hover:text-red-400 transition-colors"
@@ -103,7 +118,7 @@ export default function App() {
             <HistoryTab refreshKey={historyRefreshKey} />
           )}
           {currentTab === "stats" && <StatisticsTab />}
-          {currentTab === "health" && <HealthTab />}
+          {currentTab === "health" && <HealthTab key={healthRefreshKey} />}
         </main>
 
         <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shrink-0">
@@ -120,6 +135,13 @@ export default function App() {
             </button>
           ))}
         </nav>
+
+        {showSettings && (
+          <AppSettingsModal
+            onClose={() => setShowSettings(false)}
+            onHealthSaved={() => setHealthRefreshKey((k) => k + 1)}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );

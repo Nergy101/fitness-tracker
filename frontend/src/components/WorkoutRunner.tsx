@@ -555,7 +555,7 @@ export default function WorkoutRunner({
       )}
 
       <div className="absolute top-4 right-4">
-        <TopControls variant="overlay" />
+        <TopControls />
       </div>
     </div>
   );

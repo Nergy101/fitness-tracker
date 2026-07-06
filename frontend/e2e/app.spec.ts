@@ -310,7 +310,7 @@ test.describe("authenticated", () => {
     expect(imported.started_at.startsWith("2026-06-15")).toBe(true);
   });
 
-  test("theme toggle cycles through system/light/dark", async ({ page }) => {
+  test("theme can be switched from the settings modal", async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => localStorage.removeItem("theme-mode"));
     await page.reload();
@@ -318,18 +318,18 @@ test.describe("authenticated", () => {
     let mode = await page.evaluate(() => localStorage.getItem("theme-mode"));
     expect(mode).toBe("system");
 
-    // Click: system → light (button has aria-label "System theme")
-    await page.locator('button[aria-label="System theme"]').click();
+    // Theme controls live in the settings modal behind the header gear.
+    await page.getByTitle("Settings").click();
+
+    await page.locator('button[aria-label="Light theme"]').click();
     mode = await page.evaluate(() => localStorage.getItem("theme-mode"));
     expect(mode).toBe("light");
 
-    // Click: light → dark (button now has aria-label "Switch to dark mode")
-    await page.locator('button[aria-label="Switch to dark mode"]').click();
+    await page.locator('button[aria-label="Dark theme"]').click();
     mode = await page.evaluate(() => localStorage.getItem("theme-mode"));
     expect(mode).toBe("dark");
 
-    // Click: dark → system
-    await page.locator('button[aria-label="Switch to system theme"]').click();
+    await page.locator('button[aria-label="System theme"]').click();
     mode = await page.evaluate(() => localStorage.getItem("theme-mode"));
     expect(mode).toBe("system");
   });
@@ -381,8 +381,8 @@ test.describe("authenticated", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Health" }).click();
 
-    // Open settings via gear icon
-    await page.getByTitle("Health Settings").click();
+    // Open the app settings via the header gear icon
+    await page.getByTitle("Settings").click();
 
     // Fill in height and birthday. Scope height to its field wrapper — the
     // quick weight-log input behind the modal is also type="number".

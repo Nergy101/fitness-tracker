@@ -7,26 +7,15 @@ import {
 } from "@phosphor-icons/react";
 import { useTheme } from "../useTheme";
 import { useAudio } from "../useAudio";
-import { useLocale } from "../useLocale";
 
-interface TopControlsProps {
-  /** Larger, higher-contrast buttons for the dark fullscreen runner. */
-  variant?: "header" | "overlay";
-}
-
-/** Theme toggle + audio mute, shown in the header and during a workout so both
- *  are always reachable. */
-export default function TopControls({ variant = "header" }: TopControlsProps) {
+/** Quick mute + theme toggles for the fullscreen workout runner, where the
+ *  header settings modal is out of reach. Full settings live in
+ *  AppSettingsModal. */
+export default function TopControls() {
   const { theme, mode, cycleMode } = useTheme();
   const { muted, toggleMuted } = useAudio();
-  const { locale, toggleLocale } = useLocale();
 
-  const size = variant === "overlay" ? 22 : 20;
-  const btn =
-    "p-1.5 rounded-lg transition-colors " +
-    (variant === "overlay"
-      ? "text-fg/60 hover:text-fg hover:bg-fg/10"
-      : "text-fg/50 hover:text-fg");
+  const btn = "p-1.5 rounded-lg transition-colors text-fg/60 hover:text-fg hover:bg-fg/10";
 
   const modeLabel =
     mode === "system"
@@ -44,18 +33,10 @@ export default function TopControls({ variant = "header" }: TopControlsProps) {
         className={btn}
       >
         {muted ? (
-          <SpeakerSlash size={size} weight="fill" />
+          <SpeakerSlash size={22} weight="fill" />
         ) : (
-          <SpeakerHigh size={size} weight="fill" />
+          <SpeakerHigh size={22} weight="fill" />
         )}
-      </button>
-      <button
-        onClick={toggleLocale}
-        aria-label={`Date format ${locale === "dmy" ? "day/month" : "month/day"} — tap to switch`}
-        className={btn + " text-xs font-semibold tabular-nums"}
-        style={{ minWidth: size + 12 }}
-      >
-        {locale === "dmy" ? "D/M" : "M/D"}
       </button>
       <button
         onClick={cycleMode}
@@ -64,11 +45,11 @@ export default function TopControls({ variant = "header" }: TopControlsProps) {
         title={modeLabel}
       >
         {mode === "system" ? (
-          <SunHorizon size={size} weight="fill" />
+          <SunHorizon size={22} weight="fill" />
         ) : theme === "dark" ? (
-          <Sun size={size} weight="fill" />
+          <Sun size={22} weight="fill" />
         ) : (
-          <Moon size={size} weight="fill" />
+          <Moon size={22} weight="fill" />
         )}
       </button>
     </div>
