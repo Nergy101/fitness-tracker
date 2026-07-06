@@ -273,16 +273,27 @@ def goal_progress(db: Session = Depends(get_db)):
     current_w = current.weight_kg
     goal_w = profile.goal_weight_kg
 
-    total_change = abs(start_w - goal_w)
-    so_far = abs(start_w - current_w)
-    progress = (so_far / total_change * 100) if total_change > 0 else 0
+    # Directional progress: if goal is lower than start it's weight loss,
+    # otherwise weight gain. Moving the wrong direction = 0%.
+    if goal_w < start_w:
+        total_to_lose = start_w - goal_w
+        lost_so_far = start_w - current_w
+        progress = (lost_so_far / total_to_lose * 100) if total_to_lose > 0 else 0
+    elif goal_w > start_w:
+        total_to_gain = goal_w - start_w
+        gained_so_far = current_w - start_w
+        progress = (gained_so_far / total_to_gain * 100) if total_to_gain > 0 else 0
+    else:
+        progress = 0
+
+    progress = min(max(round(progress, 1), 0), 100)
     remaining = round(goal_w - current_w, 1)
 
     return GoalProgressResponse(
         start_weight_kg=start_w,
         current_weight_kg=current_w,
         goal_weight_kg=goal_w,
-        progress_percentage=min(round(progress, 1), 100),
+        progress_percentage=progress,
         remaining_kg=remaining,
     )
 

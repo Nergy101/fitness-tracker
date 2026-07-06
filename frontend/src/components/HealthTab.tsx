@@ -331,13 +331,16 @@ export default function HealthTab() {
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {weights.slice(0, 20).map((w) => (
               <div key={w.id} className="flex items-center justify-between py-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-white">{w.weight_kg.toFixed(1)} kg</span>
-                  <span className="text-xs text-fg/40">{shortDate(w.date)}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-white">{w.weight_kg.toFixed(1)} kg</span>
+                    <span className="text-xs text-fg/40">{shortDate(w.date)}</span>
+                  </div>
+                  {w.notes && <p className="text-xs text-fg/30 truncate mt-0.5">{w.notes}</p>}
                 </div>
                 <button
                   onClick={() => deleteWeight(w.id)}
-                  className="text-xs text-red-400/50 hover:text-red-400"
+                  className="text-xs text-red-400/50 hover:text-red-400 shrink-0 ml-2"
                 >
                   del
                 </button>
