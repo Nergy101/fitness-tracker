@@ -375,8 +375,8 @@ export default function WorkoutEditor({
                   <ExerciseImage
                     src={ex.image_url}
                     alt={ex.name}
-                    iconSize={14}
                     className="w-8 h-8 rounded-md shrink-0"
+                    category={ex.category}
                   />
                   <span className="truncate">{ex.name}</span>
                 </span>

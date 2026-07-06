@@ -165,8 +165,8 @@ export default function ExercisesTab() {
                 <ExerciseImage
                   src={ex.image_url}
                   alt={ex.name}
-                  iconSize={22}
                   className="w-14 h-14 rounded-lg shrink-0 border border-fg/5"
+                  category={ex.category}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">

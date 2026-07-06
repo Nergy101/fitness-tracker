@@ -440,8 +440,8 @@ export default function WorkoutRunner({
           <ExerciseImage
             src={currentImage}
             alt={currentName}
-            iconSize={48}
             className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
+            category={exercises[currentIndex]?.exercise?.category}
           />
           {currentDescription && (
             <p className="text-fg/50 text-sm max-w-xs mb-3">{currentDescription}</p>
@@ -534,8 +534,8 @@ export default function WorkoutRunner({
           <ExerciseImage
             src={currentImage}
             alt={currentName}
-            iconSize={48}
             className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
+            category={exercises[currentIndex]?.exercise?.category}
           />
           {currentDescription && (
             <p className="text-fg/50 text-sm max-w-xs mb-3">{currentDescription}</p>
