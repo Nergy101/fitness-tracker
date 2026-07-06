@@ -465,6 +465,11 @@ export const api = {
     }),
   deleteSession: (id: number) =>
     fetchJSON<void>(`/api/v1/sessions/${id}`, { method: "DELETE" }),
+  updateSession: (id: number, data: { started_at: string }) =>
+    fetchJSON<WorkoutSession>(`/api/v1/sessions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
   createExerciseLogs: (sessionId: number, seId: number, logs: ExerciseLogInput[]) =>
     fetchJSON<ExerciseLog[]>(
       `/api/v1/sessions/${sessionId}/exercises/${seId}/logs`,

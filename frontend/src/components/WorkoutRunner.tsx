@@ -60,6 +60,10 @@ export default function WorkoutRunner({
   // Exercise logs: key = `${round}-${index}`, value = {weightKg, reps}
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weightKg: string; reps: string }>>({});
   const [pastLogs, setPastLogs] = useState<Record<number, ExerciseLog[]>>({});
+  const [sessionDate, setSessionDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  });
 
   useEffect(() => {
     // Fetch last session's logs for each exercise to show hints
@@ -286,6 +290,7 @@ export default function WorkoutRunner({
           template_name: workout.name || "",
           total_duration_seconds: totalDuration,
           total_kcal_estimated: totalKcal,
+          started_at: new Date(sessionDate).toISOString(),
           exercises: exercises.map((e, i) => ({
             exercise_id: e.exercise?.id ?? e.exercise_id,
             exercise_name: e.exercise?.name || "",
@@ -637,6 +642,16 @@ export default function WorkoutRunner({
               {amrapRounds} round{amrapRounds !== 1 ? "s" : ""} in {formatDuration(timeCap)}
             </p>
           )}
+
+          <div className="mb-5 w-full max-w-xs">
+            <label className="text-xs text-fg/40 block mb-1.5">When was this workout?</label>
+            <input
+              type="datetime-local"
+              value={sessionDate}
+              onChange={(e) => setSessionDate(e.target.value)}
+              className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm text-fg outline-none focus:border-accent/50"
+            />
+          </div>
 
           <button
             onClick={onFinish}

@@ -16,7 +16,6 @@ import {
 } from "../api";
 import {
   formatDate,
-  formatDateFull,
   formatDateRelative,
   formatDuration,
   formatHours,
@@ -345,10 +344,27 @@ function SessionList({
 function SessionDetail({
   session,
   onClose,
+  onUpdate,
 }: {
   session: WorkoutSession;
   onClose: () => void;
+  onUpdate: (updated: WorkoutSession) => void;
 }) {
+  function toLocalDatetimeLocal(iso: string) {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+
+  async function updateStartedAt(value: string) {
+    try {
+      const updated = await api.updateSession(session.id, {
+        started_at: new Date(value).toISOString(),
+      });
+      onUpdate(updated);
+    } catch (err) {
+      console.error("Failed to update session date", err);
+    }
+  }
   return (
     <div
       className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
@@ -389,7 +405,12 @@ function SessionDetail({
         </div>
 
         <p className="text-xs text-fg/40 mb-3">
-          {formatDateFull(session.started_at)}
+          <input
+            type="datetime-local"
+            defaultValue={toLocalDatetimeLocal(session.started_at)}
+            onBlur={(e) => updateStartedAt(e.target.value)}
+            className="w-full bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-xs text-fg outline-none focus:border-accent/50"
+          />
         </p>
 
         <div className="space-y-1.5 mb-4">
@@ -600,7 +621,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
         />
 
         {detail && (
-          <SessionDetail session={detail} onClose={() => setDetail(null)} />
+          <SessionDetail session={detail} onClose={() => setDetail(null)} onUpdate={(updated) => { setDetail(updated); setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s)); }} />
         )}
       </div>
     );
@@ -701,7 +722,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
       </div>
 
       {detail && (
-        <SessionDetail session={detail} onClose={() => setDetail(null)} />
+        <SessionDetail session={detail} onClose={() => setDetail(null)} onUpdate={(updated) => { setDetail(updated); setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s)); }} />
       )}
     </div>
   );

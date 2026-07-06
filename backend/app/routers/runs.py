@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import RunEntry, WorkoutSession, SessionExercise
+from app.models.models import RunEntry, WorkoutSession, SessionExercise, WeightEntry
 from app.schemas import (
     RunEntryCreate, RunEntryResponse, RunStatsResponse,
 )
@@ -18,11 +18,17 @@ def _compute_pace(duration_seconds: int, distance_km: float) -> float:
     return round(duration_seconds / distance_km, 1)
 
 
+def _calc_run_kcal(distance_km: float, db: Session) -> float:
+    """Estimate calories burned using a weight-based formula: 0.97 kcal per kg per km.
+    Falls back to 75kg if no weight data is available."""
+    latest = db.query(WeightEntry).order_by(WeightEntry.date.desc()).first()
+    weight_kg = latest.weight_kg if latest else 75.0
+    return round(0.97 * weight_kg * distance_km, 1)
+
+
 def _create_workout_session(run: RunEntry, db: Session) -> None:
     """Create a matching WorkoutSession so runs appear in the unified History tab."""
-    kcal_per_min = 10.0  # running ~10 kcal/min
-    duration_min = run.duration_seconds / 60
-    kcal = round(duration_min * kcal_per_min, 1)
+    kcal = _calc_run_kcal(run.distance_km, db)
 
     session = WorkoutSession(
         template_id=None,
