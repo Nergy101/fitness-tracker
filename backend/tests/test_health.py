@@ -364,7 +364,7 @@ class TestHealthScore:
         resp = client.get(self.URL, headers=auth_headers)
         data = resp.json()
         assert data["score"] == 0.0
-        assert data["spotlight"] == "Log your first weight to start tracking progress 🚀"
+        assert data["spotlight"] == "Log your first weight to start tracking progress"
 
     def test_partial_data(self, client: TestClient, auth_headers: dict):
         # Add weight and height

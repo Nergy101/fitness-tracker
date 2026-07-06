@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ClockCounterClockwise,
   DownloadSimple,
+  PersonSimpleRun,
   SmileySad,
   UploadSimple,
   CalendarBlank,
@@ -319,7 +320,7 @@ function SessionList({
             <div>
               <div className="flex items-center gap-2">
                 {session.template_name.startsWith("Run:") && (
-                  <span className="text-accent text-sm">🏃</span>
+                  <PersonSimpleRun size={16} className="text-accent shrink-0" />
                 )}
                 <h3 className="font-semibold text-sm">{session.template_name}</h3>
               </div>

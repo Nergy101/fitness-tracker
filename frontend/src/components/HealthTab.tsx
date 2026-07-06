@@ -2,8 +2,14 @@ import { useEffect, useState } from "react";
 import {
   CaretDown,
   CaretUp,
+  Check,
+  Confetti,
   Gear,
   Smiley,
+  SmileyMeh,
+  SmileySad,
+  SmileySticker,
+  SmileyWink,
   Ruler,
   Flame,
   Trophy,
@@ -281,9 +287,13 @@ export default function HealthTab() {
           </div>
           {goal.remaining_kg != null && (
             <p className="text-xs text-fg/40 mt-1">
-              {goal.remaining_kg > 0
-                ? `${Math.abs(goal.remaining_kg).toFixed(1)} kg to go`
-                : "Goal reached! 🎉"}
+              {goal.remaining_kg > 0 ? (
+                `${Math.abs(goal.remaining_kg).toFixed(1)} kg to go`
+              ) : (
+                <span className="inline-flex items-center gap-1">
+                  Goal reached! <Confetti size={14} weight="fill" className="text-accent" />
+                </span>
+              )}
             </p>
           )}
         </div>
@@ -620,7 +630,13 @@ function SettingsModal({
                     disabled={pushLoading}
                     className="flex-1 bg-accent/20 text-accent rounded-lg py-1.5 text-xs font-medium hover:bg-accent/30 transition-colors disabled:opacity-50"
                   >
-                    {testSent ? "✓ Sent!" : "Send Test"}
+                    {testSent ? (
+                      <span className="inline-flex items-center justify-center gap-1">
+                        <Check size={12} weight="bold" /> Sent!
+                      </span>
+                    ) : (
+                      "Send Test"
+                    )}
                   </button>
                   <button
                     onClick={handleDisablePush}
@@ -951,12 +967,14 @@ function WellnessSection() {
     api.getWellnessTrends().then(setTrends);
   };
 
-  const emoji = (val: number) => {
-    if (val <= 1) return "😔";
-    if (val <= 2) return "😐";
-    if (val <= 3) return "🙂";
-    if (val <= 4) return "😊";
-    return "🤩";
+  const moodIcon = (val: number) => {
+    const MoodFace =
+      val <= 1 ? SmileySad
+      : val <= 2 ? SmileyMeh
+      : val <= 3 ? Smiley
+      : val <= 4 ? SmileyWink
+      : SmileySticker;
+    return <MoodFace size={14} weight="fill" className="inline align-[-2px] text-accent" />;
   };
 
   const latest = entries[0];
@@ -965,7 +983,7 @@ function WellnessSection() {
     <div className="bg-surface rounded-xl p-4 border border-fg/5 space-y-3">
       {latest && (
         <div className="text-xs text-fg/50 mb-1">
-          Last: Mood {emoji(latest.mood ?? 3)} {latest.mood}/5 ·
+          Last: Mood {moodIcon(latest.mood ?? 3)} {latest.mood}/5 ·
           Energy {latest.energy}/5 ·
           Stress {latest.stress}/5 ·
           Sleep {latest.sleep_hours?.toFixed(1)}h
@@ -986,7 +1004,7 @@ function WellnessSection() {
 
       <div className="space-y-2">
         <div>
-          <p className="text-xs text-fg/50 mb-1">Mood: {emoji(mood)}</p>
+          <p className="text-xs text-fg/50 mb-1">Mood: {moodIcon(mood)}</p>
           <input type="range" min="1" max="5" value={mood} onChange={(e) => setMood(parseInt(e.target.value))}
             className="w-full accent-accent" />
         </div>

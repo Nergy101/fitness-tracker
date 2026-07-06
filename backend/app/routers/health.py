@@ -452,9 +452,9 @@ def health_score(db: Session = Depends(get_db)):
         bmi_score_val = _bmi_score(bmi, profile)
         score += bmi_score_val
         if 18.5 <= bmi <= 24.9:
-            spotlight = "Your BMI is in the healthy range — keep it up! 🟢"
+            spotlight = "Your BMI is in the healthy range — keep it up!"
         elif bmi >= 30:
-            spotlight = "Let's work on that BMI — every workout counts! 💪"
+            spotlight = "Let's work on that BMI — every workout counts!"
 
     # Workout consistency (0-30)
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
@@ -464,16 +464,16 @@ def health_score(db: Session = Depends(get_db)):
     workout_score_val = min(session_count * 3, 30)
     score += workout_score_val
     if not spotlight and session_count >= 10:
-        spotlight = f"🔥 {session_count} workouts in 30 days — crushing it!"
+        spotlight = f"{session_count} workouts in 30 days — crushing it!"
     elif not spotlight and session_count >= 5:
-        spotlight = f"💪 {session_count} workouts this month — solid consistency!"
+        spotlight = f"{session_count} workouts this month — solid consistency!"
 
     # Streak component (0-15)
     streak_info = weight_streak(db)
     streak_score_val = min(streak_info.current_streak * 0.5, 15)
     score += streak_score_val
     if not spotlight and streak_info.current_streak >= 7:
-        spotlight = f"🔥 {streak_info.current_streak}-day logging streak — amazing!"
+        spotlight = f"{streak_info.current_streak}-day logging streak — amazing!"
     elif not spotlight and streak_info.current_streak >= 3:
         spotlight = f"{streak_info.current_streak}-day streak — keep it going!"
 
@@ -482,9 +482,9 @@ def health_score(db: Session = Depends(get_db)):
     measurement_score_val = min(meas_count * 2, 15)
     score += measurement_score_val
     if not spotlight and meas_count >= 3:
-        spotlight = "Tracking measurements — that's dedication! 📏"
+        spotlight = "Tracking measurements — that's dedication!"
     elif not spotlight:
-        spotlight = "Log your first weight to start tracking progress 🚀"
+        spotlight = "Log your first weight to start tracking progress"
 
     score = round(min(score, 100), 1)
 
@@ -551,8 +551,8 @@ def get_bmi(db: Session = Depends(get_db)):
 
     messages = {
         "Underweight": "Consider speaking with a healthcare provider about a healthy weight plan.",
-        "Normal": "Great work maintaining a healthy BMI! 🟢",
-        "Overweight": "Small changes can make a big difference — you've got this! 💪",
+        "Normal": "Great work maintaining a healthy BMI!",
+        "Overweight": "Small changes can make a big difference — you've got this!",
         "Obese": "Every workout counts — start small and stay consistent!",
     }
 

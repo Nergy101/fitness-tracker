@@ -42,7 +42,7 @@ def _ensure_settings() -> bool:
         return False
     password = _generate_password()
     SETTINGS_PATH.write_text(_generate_default_toml(password))
-    print(f"🔑 Generated {SETTINGS_PATH} with random password: {password}")
+    print(f"Generated {SETTINGS_PATH} with random password: {password}")
     print(f"   Change it in {SETTINGS_PATH} and restart the server.")
     return True
 
@@ -61,7 +61,7 @@ settings = load_settings()
 ENV_PASSWORD = os.getenv("FITNESS_PASSWORD")
 if ENV_PASSWORD:
     settings.setdefault("auth", {})["password"] = ENV_PASSWORD
-    print(f"🔑 Using FITNESS_PASSWORD env var (overriding settings.toml)")
+    print("Using FITNESS_PASSWORD env var (overriding settings.toml)")
 
 
 def save_settings() -> None:
@@ -117,6 +117,6 @@ def get_or_create_vapid() -> dict[str, str]:
     notif["subject"] = subject
 
     save_settings()
-    print(f"🔑 Generated VAPID keys and saved to {SETTINGS_PATH}")
+    print(f"Generated VAPID keys and saved to {SETTINGS_PATH}")
 
     return {"private_key": notif["private_key"], "public_key": notif["public_key"], "subject": subject}

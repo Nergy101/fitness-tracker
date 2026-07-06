@@ -68,7 +68,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       setTemplates((prev) =>
         prev.map((t) => (t.id === updated.id ? updated : t))
       );
-      setToast(updated.is_pinned ? "Workout pinned 📌" : "Workout unpinned");
+      setToast(updated.is_pinned ? "Workout pinned" : "Workout unpinned");
     } catch {
       setToast("Failed to update pin");
     }
@@ -123,7 +123,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
           completed: true,
         })),
       });
-      setToast("Workout logged! ✓");
+      setToast("Workout logged!");
       onLogWorkout?.();
     } catch {
       setToast("Failed to log workout");

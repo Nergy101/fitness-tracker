@@ -141,7 +141,7 @@ def send_workout_complete(db: Session = Depends(get_db)):
     """Fire-and-forget: send 'workout complete' notification to all subscriptions."""
     subs = db.query(PushSubscription).all()
     payload = {
-        "title": "Workout Complete! 💪",
+        "title": "Workout Complete!",
         "body": "Great job! Your workout session has been recorded.",
         "icon": "/icon-192.png",
         "badge": "/badge-72.png",

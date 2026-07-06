@@ -44,7 +44,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
         notes: runNotes,
       });
 
-      setToast("Run logged! 🏃");
+      setToast("Run logged!");
       setRunDistance("");
       setRunNotes("");
       setRunCustomDuration("");
@@ -70,6 +70,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
             aria-live="polite"
             className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] flex items-center gap-2 bg-accent text-on-accent rounded-full px-4 py-2.5 text-sm font-semibold shadow-lg"
           >
+            <PersonSimpleRun size={18} weight="fill" />
             {toast}
           </div>
         )}
@@ -97,6 +98,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
           aria-live="polite"
           className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] flex items-center gap-2 bg-accent text-on-accent rounded-full px-4 py-2.5 text-sm font-semibold shadow-lg"
         >
+          <PersonSimpleRun size={18} weight="fill" />
           {toast}
         </div>
       )}

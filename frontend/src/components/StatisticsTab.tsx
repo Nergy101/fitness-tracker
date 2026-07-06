@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
+  Barbell,
   ChartBar,
   Fire,
   CalendarBlank,
+  Plant,
+  RocketLaunch,
+  TrendDown,
   TrendUp,
   Scales,
   PersonSimpleRun,
+  type Icon,
 } from "@phosphor-icons/react";
 import {
   api,
@@ -118,33 +125,33 @@ export default function StatisticsTab() {
     return <div className="text-center py-8 text-fg/40">Failed to load stats.</div>;
   }
 
-  const insightLines: string[] = [];
+  const insightLines: { icon: Icon; text: string }[] = [];
   if (stats.current_month_vs_previous_pct != null) {
     const pct = stats.current_month_vs_previous_pct;
     if (pct > 0) {
-      insightLines.push(`📈 You exercised ${Math.round(pct)}% more this month than last!`);
+      insightLines.push({ icon: TrendUp, text: `You exercised ${Math.round(pct)}% more this month than last!` });
     } else if (pct < 0) {
-      insightLines.push(`📉 Your workout time dropped ${Math.round(Math.abs(pct))}% this month.`);
+      insightLines.push({ icon: TrendDown, text: `Your workout time dropped ${Math.round(Math.abs(pct))}% this month.` });
     } else {
-      insightLines.push(`📊 Your workout volume is steady this month.`);
+      insightLines.push({ icon: ChartBar, text: "Your workout volume is steady this month." });
     }
   }
   if (stats.consistency_score_pct > 0) {
     const cons = stats.consistency_score_pct;
-    if (cons >= 80) insightLines.push(`🔥 ${cons}% consistency — you're on fire!`);
-    else if (cons >= 50) insightLines.push(`💪 ${cons}% consistency — keep showing up!`);
-    else insightLines.push(`🌱 ${cons}% consistency — start small, stay steady!`);
+    if (cons >= 80) insightLines.push({ icon: Fire, text: `${cons}% consistency — you're on fire!` });
+    else if (cons >= 50) insightLines.push({ icon: Barbell, text: `${cons}% consistency — keep showing up!` });
+    else insightLines.push({ icon: Plant, text: `${cons}% consistency — start small, stay steady!` });
   }
   if (stats.avg_weight_change_kg != null) {
     const w = stats.avg_weight_change_kg;
     if (w < 0) {
-      insightLines.push(`⬇️ Your weight dropped ${Math.abs(w).toFixed(1)} kg this month.`);
+      insightLines.push({ icon: ArrowDown, text: `Your weight dropped ${Math.abs(w).toFixed(1)} kg this month.` });
     } else if (w > 0) {
-      insightLines.push(`⬆️ Your weight increased ${w.toFixed(1)} kg this month.`);
+      insightLines.push({ icon: ArrowUp, text: `Your weight increased ${w.toFixed(1)} kg this month.` });
     }
   }
   if (stats.total_sessions_all === 0) {
-    insightLines.push("🚀 Complete your first workout to see stats!");
+    insightLines.push({ icon: RocketLaunch, text: "Complete your first workout to see stats!" });
   }
 
   return (
@@ -158,9 +165,10 @@ export default function StatisticsTab() {
       {/* Insight cards */}
       {insightLines.length > 0 && (
         <div className="space-y-1.5">
-          {insightLines.map((line, i) => (
-            <p key={i} className="text-xs text-fg/70 bg-surface rounded-lg px-3 py-2 border border-fg/5">
-              {line}
+          {insightLines.map(({ icon: InsightIcon, text }, i) => (
+            <p key={i} className="flex items-center gap-1.5 text-xs text-fg/70 bg-surface rounded-lg px-3 py-2 border border-fg/5">
+              <InsightIcon size={14} className="text-accent shrink-0" />
+              {text}
             </p>
           ))}
         </div>
