@@ -408,15 +408,18 @@ function SessionDetail({
     }
   }
 
-  const sessionStartedAt = new Date(session.started_at);
   const isRunOrWalk = session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:");
   const isRun = session.template_name.startsWith("Run:");
 
   async function toggleRunType() {
     try {
       const runs = await api.getRuns();
-      const sessionDay = sessionStartedAt.toISOString().slice(0, 10);
-      const match = runs.find((r) => r.date === sessionDay && r.run_type !== (isRun ? "run" : "walk"));
+      const distMatch = session.template_name.match(/(\d+\.\d+)km/);
+      const targetDist = distMatch ? parseFloat(distMatch[1]) : null;
+      const match = runs.find((r) => {
+        if (targetDist !== null && Math.abs(r.distance_km - targetDist) > 0.05) return false;
+        return r.run_type === (isRun ? "run" : "walk");
+      });
       if (match) {
         await api.updateRun(match.id, {
           duration_seconds: match.duration_seconds,
