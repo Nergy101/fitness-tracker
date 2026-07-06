@@ -24,6 +24,7 @@ interface EditorRow {
   exercise_name: string;
   duration_seconds: number;
   rest_after_seconds: number;
+  superset_group: number | null;
 }
 
 // Unique row keys; module-level so lazy state init stays ref-free.
@@ -41,6 +42,7 @@ function rowsFromTemplate(
     exercise_name: e.exercise?.name ?? "",
     duration_seconds: e.duration_seconds || 30,
     rest_after_seconds: e.rest_after_seconds || 0,
+    superset_group: e.superset_group ?? null,
   }));
 }
 
@@ -98,6 +100,7 @@ export default function WorkoutEditor({
         exercise_name: ex.name,
         duration_seconds: ex.default_duration_seconds || 30,
         rest_after_seconds: 0,
+        superset_group: null,
       },
     ]);
     setShowPicker(false);
@@ -130,6 +133,27 @@ export default function WorkoutEditor({
     setRows((prev) => prev.filter((r) => r.key !== key));
   }
 
+  function togglePair(i: number) {
+    setRows((prev) => {
+      if (i >= prev.length - 1) return prev;
+      const next = prev.slice();
+      const a = next[i], b = next[i + 1];
+      // If already paired together, ungroup both
+      if (a.superset_group != null && a.superset_group === b.superset_group) {
+        a.superset_group = null;
+        b.superset_group = null;
+      } else {
+        // Find a new group number not used in this workout
+        const used = new Set(next.map((r) => r.superset_group).filter(Boolean) as number[]);
+        let gid = 1;
+        while (used.has(gid)) gid++;
+        a.superset_group = gid;
+        b.superset_group = gid;
+      }
+      return next;
+    });
+  }
+
   async function save() {
     if (!name.trim()) return;
     setSaving(true);
@@ -145,6 +169,7 @@ export default function WorkoutEditor({
           duration_seconds: r.duration_seconds || 30,
           rest_after_seconds: r.rest_after_seconds || 0,
           order_index: i,
+          superset_group: r.superset_group ?? null,
         })),
         ...(mode === "amrap" ? { time_cap_seconds: timeCap } : {}),
       };
@@ -374,11 +399,25 @@ export default function WorkoutEditor({
               Add exercises to build your workout
             </div>
           )}
-          {rows.map((item, i) => (
+          {rows.map((item, i) => {
+            const isGrouped = item.superset_group != null;
+            const isLastInGroup = isGrouped && (i === rows.length - 1 || rows[i + 1]?.superset_group !== item.superset_group);
+            const isFirstInGroup = isGrouped && (i === 0 || rows[i - 1]?.superset_group !== item.superset_group);
+
+            return (
             <div
               key={item.key}
-              className="bg-surface rounded-xl px-3 py-2 flex items-center gap-2 border border-fg/5"
+              className={`bg-surface rounded-xl px-3 py-2 flex items-center gap-2 border ${
+                isGrouped ? "border-accent/30 border-l-2" : "border-fg/5"
+              }`}
             >
+              {isFirstInGroup && (
+                <span className="text-[10px] font-bold text-accent/70 w-4 text-center leading-none -mr-1">
+                  SS
+                </span>
+              )}
+              {isGrouped && !isFirstInGroup && <span className="w-4 -mr-1" />}
+
               <button
                 onClick={() => move(i, -1)}
                 disabled={i === 0}
@@ -412,7 +451,7 @@ export default function WorkoutEditor({
                     unit="s"
                     ariaLabel={`${item.exercise_name} duration`}
                   />
-                  {!isEmom && (
+                  {!isEmom && !(isGrouped && !isLastInGroup) && (
                     <Stepper
                       value={item.rest_after_seconds}
                       onChange={(v) => setRest(item.key, v)}
@@ -427,6 +466,17 @@ export default function WorkoutEditor({
               </div>
 
               <button
+                onClick={() => togglePair(i)}
+                disabled={i === rows.length - 1}
+                className="text-fg/20 hover:text-accent disabled:opacity-20 p-0.5"
+                title={isGrouped && rows[i + 1]?.superset_group === item.superset_group ? "Ungroup" : "Pair with next"}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 3v18M18 3v18M3 6h18M3 18h18" />
+                </svg>
+              </button>
+
+              <button
                 onClick={() => removeRow(item.key)}
                 className="text-red-400/50 hover:text-red-400 p-0.5"
                 title="Remove"
@@ -436,7 +486,8 @@ export default function WorkoutEditor({
                 </svg>
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="border-t border-fg/10 pt-3 flex items-center justify-between">

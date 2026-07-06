@@ -165,8 +165,16 @@ export default function WorkoutRunner({
     function advanceFrom(round: number, i: number) {
       clear();
       if (i < totalExercises - 1) {
-        soundRest();
-        startRest(round, i + 1);
+        // Skip rest if next exercise is in the same superset group
+        const curGroup = exercises[i]?.superset_group;
+        const nextGroup = exercises[i + 1]?.superset_group;
+        if (curGroup != null && curGroup === nextGroup) {
+          soundStart();
+          startExercise(round, i + 1);
+        } else {
+          soundRest();
+          startRest(round, i + 1);
+        }
       } else if (isAmrap) {
         // AMRAP: loop back to exercise 0, increment amrap round
         soundRest();
@@ -354,6 +362,7 @@ export default function WorkoutRunner({
   const currentImage = exercises[currentIndex]?.exercise?.image_url ?? null;
   const currentDescription = exercises[currentIndex]?.exercise?.description ?? "";
   const currentExerciseId = exercises[currentIndex]?.exercise?.id ?? exercises[currentIndex]?.exercise_id;
+  const currentSupersetGroup = exercises[currentIndex]?.superset_group ?? null;
   const logKey = `${currentRound}-${currentIndex}`;
   const currentPastHint = useMemo(() => {
     if (!currentExerciseId) return null;
@@ -502,6 +511,9 @@ export default function WorkoutRunner({
         <div className="flex flex-col items-center justify-center h-full px-6 text-center">
           <p className="text-fg/50 text-sm mb-2">
             {isAmrap ? `Round ${amrapRounds}` : isEmom ? `Exercise ${currentIndex + 1} of ${totalExercises}` : `Exercise ${currentIndex + 1} of ${totalExercises}`}
+            {currentSupersetGroup && (
+              <span className="text-accent/70 ml-1.5 font-semibold text-xs">SS</span>
+            )}
             {!isAmrap && !isEmom && rounds > 1 && (
               <span className="text-accent"> &middot; Round {currentRound + 1}/{rounds}</span>
             )}

@@ -55,6 +55,7 @@ class WorkoutTemplateExerciseBase(BaseModel):
     duration_seconds: int = 30
     rest_after_seconds: int = 0
     order_index: int = 0
+    superset_group: Optional[int] = None
 
 
 class WorkoutTemplateExerciseCreate(WorkoutTemplateExerciseBase):

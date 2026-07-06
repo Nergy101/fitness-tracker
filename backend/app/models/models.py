@@ -45,6 +45,7 @@ class WorkoutTemplateExercise(Base):
     duration_seconds = Column(Integer, default=30)
     rest_after_seconds = Column(Integer, default=0)
     order_index = Column(Integer, nullable=False)
+    superset_group = Column(Integer, nullable=True)
 
     template = relationship("WorkoutTemplate", back_populates="exercises")
     exercise = relationship("Exercise")

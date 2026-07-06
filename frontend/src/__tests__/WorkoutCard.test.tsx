@@ -22,6 +22,7 @@ const mockTemplate: WorkoutTemplate = {
       duration_seconds: 30,
       rest_after_seconds: 0,
       order_index: 0,
+      superset_group: null,
       exercise: {
         id: 100,
         name: "Push-ups",
@@ -40,6 +41,7 @@ const mockTemplate: WorkoutTemplate = {
       duration_seconds: 45,
       rest_after_seconds: 0,
       order_index: 1,
+      superset_group: null,
       exercise: {
         id: 101,
         name: "Squats",

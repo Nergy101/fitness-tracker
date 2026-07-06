@@ -36,6 +36,7 @@ export interface TemplateExercise {
   duration_seconds: number;
   rest_after_seconds: number;
   order_index: number;
+  superset_group: number | null;
   exercise: Exercise | null;
 }
 
@@ -61,6 +62,7 @@ export interface TemplateExerciseInput {
   duration_seconds: number;
   rest_after_seconds: number;
   order_index: number;
+  superset_group?: number | null;
 }
 
 export interface WorkoutTemplateInput {

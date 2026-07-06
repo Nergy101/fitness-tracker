@@ -47,6 +47,10 @@ def ensure_schema() -> None:
                 conn.execute(text(
                     "ALTER TABLE workout_template_exercises ADD COLUMN rest_after_seconds INTEGER NOT NULL DEFAULT 0"
                 ))
+            if "superset_group" not in cols:
+                conn.execute(text(
+                    "ALTER TABLE workout_template_exercises ADD COLUMN superset_group INTEGER"
+                ))
 
         # Health tracking tables — ensure they exist (new tables are created by create_all above)
         # Add any additive columns for these tables here in future versions.

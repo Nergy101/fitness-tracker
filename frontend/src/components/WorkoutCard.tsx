@@ -59,6 +59,9 @@ export default function WorkoutCard({
             )}
             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-fg/40">
               <span>{template.exercises.length} exercises</span>
+              {template.exercises.some((e) => e.superset_group != null) && (
+                <span className="text-accent/60">superset</span>
+              )}
               {template.rounds > 1 && <span>{template.rounds} rounds</span>}
             </div>
             <div className="flex flex-wrap gap-x-3 mt-1.5 text-xs">
