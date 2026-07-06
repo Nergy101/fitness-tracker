@@ -1,9 +1,6 @@
-import math
 from datetime import date, datetime, timezone, timedelta
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -32,7 +29,7 @@ def personal_records(db: Session = Depends(get_db)):
 
     # Compute per-exercise PRs from session exercises (longest duration)
     exercises_data = db.query(SessionExercise).filter(
-        SessionExercise.completed == True
+        SessionExercise.completed
     ).all()
 
     pr_map: dict[str, tuple[float, str, int, int | None]] = {}  # name -> (max_duration, date, session_id, id)

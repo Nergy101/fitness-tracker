@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { WifiSlash } from "@phosphor-icons/react";
+import { WifiSlashIcon as WifiSlash } from "@phosphor-icons/react";
 
 export default function OfflineBanner() {
   const [offline, setOffline] = useState(!navigator.onLine);

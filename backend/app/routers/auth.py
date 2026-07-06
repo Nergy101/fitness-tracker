@@ -3,10 +3,9 @@
 import base64
 import hashlib
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional
 
 from app.settings import settings
 

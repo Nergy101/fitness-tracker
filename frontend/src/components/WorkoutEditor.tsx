@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   api,
   type Exercise,
   type WorkoutTemplate,
+  type WorkoutTemplateInput,
 } from "../api";
 import ExerciseImage from "./ExerciseImage";
 import Stepper from "./Stepper";
@@ -24,6 +25,10 @@ interface EditorRow {
   duration_seconds: number;
   rest_after_seconds: number;
 }
+
+// Unique row keys; module-level so lazy state init stays ref-free.
+let keySeq = 0;
+const nextKey = () => keySeq++;
 
 function rowsFromTemplate(
   workout: WorkoutTemplate | null,
@@ -53,8 +58,6 @@ export default function WorkoutEditor({
   onClose,
 }: WorkoutEditorProps) {
   const isEditing = Boolean(workout?.id);
-  const keyRef = useRef(0);
-  const nextKey = () => keyRef.current++;
 
   const [name, setName] = useState(workout?.name ?? "");
   const [description, setDescription] = useState(workout?.description ?? "");
@@ -131,7 +134,7 @@ export default function WorkoutEditor({
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const payload: any = {
+      const payload: WorkoutTemplateInput = {
         name,
         description,
         mode,
@@ -143,10 +146,8 @@ export default function WorkoutEditor({
           rest_after_seconds: r.rest_after_seconds || 0,
           order_index: i,
         })),
+        ...(mode === "amrap" ? { time_cap_seconds: timeCap } : {}),
       };
-      if (mode === "amrap") {
-        payload.time_cap_seconds = timeCap;
-      }
       if (isEditing && workout) {
         await api.updateWorkout(workout.id, payload);
       } else {

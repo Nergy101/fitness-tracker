@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import {
-  ArrowDown,
-  ArrowUp,
-  Barbell,
-  ChartBar,
-  Fire,
-  CalendarBlank,
-  Plant,
-  RocketLaunch,
-  TrendDown,
-  TrendUp,
-  Scales,
-  PersonSimpleRun,
+  ArrowDownIcon as ArrowDown,
+  ArrowUpIcon as ArrowUp,
+  BarbellIcon as Barbell,
+  ChartBarIcon as ChartBar,
+  FireIcon as Fire,
+  CalendarBlankIcon as CalendarBlank,
+  PlantIcon as Plant,
+  RocketLaunchIcon as RocketLaunch,
+  TrendDownIcon as TrendDown,
+  TrendUpIcon as TrendUp,
+  ScalesIcon as Scales,
+  PersonSimpleRunIcon as PersonSimpleRun,
   type Icon,
 } from "@phosphor-icons/react";
 import {
@@ -26,30 +26,30 @@ const ACCENT = "var(--accent)";
 
 // ─── Bar Chart Component ───────────────────────────────────
 
-function BarChart({
+function BarChart<T>({
   data,
-  valueKey,
-  labelKey,
+  value,
+  label,
   color,
   height = 80,
   maxValue,
 }: {
-  data: any[];
-  valueKey: string;
-  labelKey: string;
+  data: T[];
+  value: (d: T) => number;
+  label: (d: T) => string;
   color: string;
   height?: number;
   maxValue?: number;
 }) {
   if (data.length === 0) return null;
-  const max = maxValue ?? Math.max(1, ...data.map((d) => d[valueKey]));
+  const max = maxValue ?? Math.max(1, ...data.map(value));
   const wPerBar = 28;
   const w = Math.max(wPerBar * data.length, wPerBar);
 
   return (
     <svg viewBox={`0 0 ${w} ${height + 20}`} className="w-full" style={{ maxHeight: height + 20 }}>
       {data.map((d, i) => {
-        const val = d[valueKey] ?? 0;
+        const val = value(d);
         const barH = (val / max) * height;
         const x = i * wPerBar + 2;
         const y = height - barH;
@@ -71,7 +71,7 @@ function BarChart({
               className="fill-fg/30"
               fontSize="8"
             >
-              {d[labelKey]?.slice(5) ?? ""}
+              {label(d).slice(5)}
             </text>
           </g>
         );
@@ -212,8 +212,8 @@ export default function StatisticsTab() {
           </div>
           <BarChart
             data={[...stats.workout_volume_weekly].reverse()}
-            valueKey="total_minutes"
-            labelKey="week_start"
+            value={(d) => d.total_minutes}
+            label={(d) => d.week_start}
             color={ACCENT}
           />
           {stats.current_month_vs_previous_pct != null && (
@@ -237,8 +237,8 @@ export default function StatisticsTab() {
           </div>
           <BarChart
             data={[...stats.run_distance_weekly].reverse()}
-            valueKey="total_distance_km"
-            labelKey="week_start"
+            value={(d) => d.total_distance_km}
+            label={(d) => d.week_start}
             color="#38bdf8"
           />
         </div>

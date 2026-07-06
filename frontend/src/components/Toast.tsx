@@ -10,7 +10,9 @@ interface ToastProps {
 export default function Toast({ onDismiss, duration = 2500, children }: ToastProps) {
   // Keep the latest callback without restarting the timer on parent re-renders.
   const dismissRef = useRef(onDismiss);
-  dismissRef.current = onDismiss;
+  useEffect(() => {
+    dismissRef.current = onDismiss;
+  });
 
   useEffect(() => {
     const id = setTimeout(() => dismissRef.current(), duration);

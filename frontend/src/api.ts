@@ -1,6 +1,8 @@
 // Typed client for the FitnessTracker FastAPI backend.
 // Mirrors backend/app/schemas.py.
 
+import { getStoredAuth, clearStoredAuth } from "./auth";
+
 // Empty string → same-origin relative requests (Docker: nginx proxies /api to
 // the backend). Unset → localhost:8000 for `npm run dev` convenience.
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -354,7 +356,7 @@ async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> 
   };
 
   // Attach auth token if stored
-  const token = localStorage.getItem("fitness_auth");
+  const token = getStoredAuth();
   if (token) {
     headers["Authorization"] = `Basic ${token}`;
   }
@@ -367,7 +369,7 @@ async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> 
   let res: Response;
   try {
     res = await doFetch();
-  } catch (err) {
+  } catch {
     // Only retry if it looks like a network error, not an abort/timeout.
     await new Promise((r) => setTimeout(r, 1000));
     res = await doFetch();
@@ -375,7 +377,7 @@ async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> 
 
   // Handle 401 — clear auth and redirect to login
   if (res.status === 401) {
-    localStorage.removeItem("fitness_auth");
+    clearStoredAuth();
     window.location.reload();
     throw new Error("Session expired");
   }

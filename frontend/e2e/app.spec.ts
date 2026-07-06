@@ -593,7 +593,7 @@ test.describe("authenticated", () => {
     await expect(page.getByText("Run: 5.0km").first()).toBeVisible();
   });
 
-  test("run stats endpoint returns correct aggregates", async ({ page, request }) => {
+  test("run stats endpoint returns correct aggregates", async ({ request }) => {
     // Seed two runs via API
     await request.post(`${API_URL}/api/v1/runs`, {
       data: { duration_seconds: 1800, distance_km: 5.0, date: "2026-07-01" },

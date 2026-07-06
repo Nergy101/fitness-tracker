@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import {
-  CaretLeft,
-  CaretRight,
-  ArrowClockwise,
-  X,
+  CaretLeftIcon as CaretLeft,
+  CaretRightIcon as CaretRight,
+  ArrowClockwiseIcon as ArrowClockwise,
+  XIcon as X,
 } from "@phosphor-icons/react";
 import type { WorkoutSession } from "../api";
 import { formatDuration } from "../format";

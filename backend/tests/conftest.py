@@ -14,15 +14,13 @@ os.environ["FITNESS_PASSWORD"] = "test-password-123"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from collections.abc import Generator
-from datetime import date, datetime, timezone
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 # These imports trigger app startup (table creation on the in-memory DB)
-from app.database import Base, get_db, engine as app_engine
+from app.database import get_db, engine as app_engine
 from app.main import app
 from app.models.models import Exercise
 

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import {
-  Barbell,
-  ChartBar,
-  Heartbeat,
-  PersonSimpleRun,
-  TrendUp,
+  BarbellIcon as Barbell,
+  ChartBarIcon as ChartBar,
+  HeartbeatIcon as Heartbeat,
+  PersonSimpleRunIcon as PersonSimpleRun,
+  TrendUpIcon as TrendUp,
   type Icon,
 } from "@phosphor-icons/react";
 import { type WorkoutTemplate } from "./api";
@@ -14,7 +14,8 @@ import HistoryTab from "./components/HistoryTab";
 import HealthTab from "./components/HealthTab";
 import WorkoutRunner from "./components/WorkoutRunner";
 import TopControls from "./components/TopControls";
-import LoginScreen, { getStoredAuth, clearStoredAuth } from "./components/LoginScreen";
+import LoginScreen from "./components/LoginScreen";
+import { getStoredAuth, clearStoredAuth } from "./auth";
 import StatisticsTab from "./components/StatisticsTab";
 import ErrorBoundary from "./components/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";

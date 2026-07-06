@@ -1,4 +1,4 @@
-.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed seed-fake-history remove-fake-history build e2e clean help
+.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed seed-fake-history remove-fake-history build lint lint-backend lint-frontend e2e clean help
 
 # ─── Config ──────────────────────────────────────────────
 
@@ -96,6 +96,14 @@ build: frontend/node_modules ## Build the frontend for production
 e2e: $(STAMP) frontend/node_modules ## Run the Playwright end-to-end suite
 	cd frontend && npx playwright install chromium
 	cd frontend && npm run test:e2e
+
+lint: lint-backend lint-frontend ## Lint backend (ruff) and frontend (eslint)
+
+lint-backend: $(STAMP)
+	cd backend && $(VENV_PY) -m ruff check .
+
+lint-frontend: frontend/node_modules
+	cd frontend && npm run lint
 
 # ─── Clean ───────────────────────────────────────────────
 

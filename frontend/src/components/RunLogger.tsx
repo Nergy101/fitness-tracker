@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PersonSimpleRun, MapTrifold } from "@phosphor-icons/react";
+import { PersonSimpleRunIcon as PersonSimpleRun, MapTrifoldIcon as MapTrifold } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";

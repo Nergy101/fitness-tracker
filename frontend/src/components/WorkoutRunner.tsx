@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Exercise, type WorkoutTemplate } from "../api";
 import { soundStart, soundRest, soundFinish, speak } from "../sound";
 import {
-  ArrowsLeftRight,
-  SkipForward,
-  X,
+  ArrowsLeftRightIcon as ArrowsLeftRight,
+  SkipForwardIcon as SkipForward,
+  XIcon as X,
 } from "@phosphor-icons/react";
 import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
@@ -302,7 +302,7 @@ export default function WorkoutRunner({
       if (amrapInterval) clearInterval(amrapInterval);
       if (emomInterval) clearInterval(emomInterval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/refs -- swapKeyRef.current is bumped before a forced re-render; reading it here re-arms the timer engine only on swap
   }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, isAmrap, isEmom, timeCap, swapKeyRef.current]);
 
   const currentName = exercises[currentIndex]?.exercise?.name ?? "Exercise";

@@ -1,6 +1,6 @@
 """Tests for Run CRUD + Stats endpoints."""
 
-from datetime import date, timedelta
+from datetime import date
 from fastapi.testclient import TestClient
 
 

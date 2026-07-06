@@ -202,9 +202,9 @@ class TestTogglePin:
     def test_pinned_first_ordering(self, client: TestClient, auth_headers: dict, seed_exercise):
         # Create three workouts
         data = {"exercises": [{"exercise_id": seed_exercise.id, "order_index": 0}]}
-        a = client.post(self.URL, json={"name": "Alpha", **data}, headers=auth_headers)
+        client.post(self.URL, json={"name": "Alpha", **data}, headers=auth_headers)
         b = client.post(self.URL, json={"name": "Beta", **data}, headers=auth_headers)
-        c = client.post(self.URL, json={"name": "Gamma", **data}, headers=auth_headers)
+        client.post(self.URL, json={"name": "Gamma", **data}, headers=auth_headers)
 
         # Pin Beta
         client.patch(f"{self.URL}/{b.json()['id']}/pin", json={"is_pinned": True}, headers=auth_headers)

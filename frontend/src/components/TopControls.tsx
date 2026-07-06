@@ -1,9 +1,9 @@
 import {
-  Moon,
-  SpeakerHigh,
-  SpeakerSlash,
-  Sun,
-  SunHorizon,
+  MoonIcon as Moon,
+  SpeakerHighIcon as SpeakerHigh,
+  SpeakerSlashIcon as SpeakerSlash,
+  SunIcon as Sun,
+  SunHorizonIcon as SunHorizon,
 } from "@phosphor-icons/react";
 import { useTheme } from "../useTheme";
 import { useAudio } from "../useAudio";

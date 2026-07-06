@@ -1,4 +1,4 @@
-import { Trash, PushPin } from "@phosphor-icons/react";
+import { TrashIcon as Trash, PushPinIcon as PushPin } from "@phosphor-icons/react";
 import { type WorkoutTemplate } from "../api";
 import { formatDuration } from "../format";
 

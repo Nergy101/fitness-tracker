@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { SmileySad } from "@phosphor-icons/react";
+import { SmileySadIcon as SmileySad } from "@phosphor-icons/react";
 import {
   api,
   type Category,

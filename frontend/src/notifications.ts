@@ -32,7 +32,9 @@ async function getSWRegistration(): Promise<ServiceWorkerRegistration | null> {
 
 // ─── Public API ─────────────────────────────────────────
 
-export function getNotificationStatus(): "granted" | "denied" | "prompt" | "unsupported" {
+export type NotificationStatus = "granted" | "denied" | "prompt" | "unsupported";
+
+export function getNotificationStatus(): NotificationStatus {
   if (!("Notification" in window)) return "unsupported";
   return Notification.permission as "granted" | "denied" | "prompt";
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Barbell } from "@phosphor-icons/react";
+import { BarbellIcon as Barbell } from "@phosphor-icons/react";
 
 interface ExerciseImageProps {
   src: string | null;

@@ -1,15 +1,12 @@
-import math
 from datetime import date, datetime, timezone, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.database import get_db
 from app.models.models import RunEntry, WorkoutSession, SessionExercise
 from app.schemas import (
     RunEntryCreate, RunEntryResponse, RunStatsResponse,
-    WorkoutSessionCreate,
 )
 
 router = APIRouter(prefix="/api/v1/runs", tags=["runs"])

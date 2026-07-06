@@ -1,4 +1,4 @@
-import { Minus, Plus } from "@phosphor-icons/react";
+import { MinusIcon as Minus, PlusIcon as Plus } from "@phosphor-icons/react";
 
 interface StepperProps {
   value: number;

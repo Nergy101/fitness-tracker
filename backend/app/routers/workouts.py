@@ -73,7 +73,7 @@ def create_workout(data: WorkoutTemplateCreate, db: Session = Depends(get_db)):
     template = WorkoutTemplate(name=data.name, description=data.description, mode=data.mode, time_cap_seconds=data.time_cap_seconds, rounds=data.rounds, rest_between_rounds=data.rest_between_rounds)
     if data.is_pinned:
         max_order = db.query(WorkoutTemplate.pinned_order).filter(
-            WorkoutTemplate.is_pinned == True
+            WorkoutTemplate.is_pinned
         ).order_by(WorkoutTemplate.pinned_order.desc()).first()
         template.is_pinned = True
         template.pinned_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
@@ -121,7 +121,7 @@ def update_workout(workout_id: int, data: WorkoutTemplateUpdate, db: Session = D
         template.is_pinned = data.is_pinned
         if data.is_pinned and template.pinned_order is None:
             max_order = db.query(WorkoutTemplate.pinned_order).filter(
-                WorkoutTemplate.is_pinned == True
+                WorkoutTemplate.is_pinned
             ).order_by(WorkoutTemplate.pinned_order.desc()).first()
             template.pinned_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
         elif not data.is_pinned:
@@ -164,7 +164,7 @@ def toggle_pin(workout_id: int, data: PinToggle, db: Session = Depends(get_db)):
     template.is_pinned = data.is_pinned
     if data.is_pinned and template.pinned_order is None:
         max_order = db.query(WorkoutTemplate.pinned_order).filter(
-            WorkoutTemplate.is_pinned == True
+            WorkoutTemplate.is_pinned
         ).order_by(WorkoutTemplate.pinned_order.desc()).first()
         template.pinned_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
     elif not data.is_pinned:

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle, SmileySad } from "@phosphor-icons/react";
+import { CheckCircleIcon as CheckCircle, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import {
   api,

@@ -1,20 +1,8 @@
 import { useState } from "react";
-import { Heartbeat, Eye, EyeSlash } from "@phosphor-icons/react";
+import { HeartbeatIcon as Heartbeat, EyeIcon as Eye, EyeSlashIcon as EyeSlash } from "@phosphor-icons/react";
+import { setStoredAuth } from "../auth";
 
-const AUTH_KEY = "fitness_auth";
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
-
-export function getStoredAuth(): string | null {
-  return localStorage.getItem(AUTH_KEY);
-}
-
-export function setStoredAuth(token: string) {
-  localStorage.setItem(AUTH_KEY, token);
-}
-
-export function clearStoredAuth() {
-  localStorage.removeItem(AUTH_KEY);
-}
 
 interface LoginScreenProps {
   onLogin: () => void;

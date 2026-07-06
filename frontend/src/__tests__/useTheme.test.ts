@@ -5,7 +5,7 @@ import { renderHook, act } from "@testing-library/react";
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
-    getItem: vi.fn((key: string) => store[key] ?? null),
+    getItem: vi.fn((key: string): string | null => store[key] ?? null),
     setItem: vi.fn((key: string, value: string) => { store[key] = value; }),
     removeItem: vi.fn((key: string) => { delete store[key]; }),
     clear: vi.fn(() => { store = {}; }),
@@ -50,7 +50,7 @@ describe("useTheme", () => {
       ...matchMediaMock(),
       matches: true,
     });
-    localStorageMock.getItem.mockReturnValue(null as any); // force no stored value
+    localStorageMock.getItem.mockReturnValue(null); // force no stored value
 
     // Must re-import to pick up the new matchMedia
     vi.resetModules();
@@ -80,7 +80,7 @@ describe("useTheme", () => {
 
   it("cycles system → light → dark → system", async () => {
     localStorageMock.clear();
-    localStorageMock.getItem.mockReturnValue(null as any);
+    localStorageMock.getItem.mockReturnValue(null);
     matchMediaMock.mockReturnValue({
       ...matchMediaMock(),
       matches: false,

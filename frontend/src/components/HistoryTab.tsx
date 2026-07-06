@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft,
-  ClockCounterClockwise,
-  DownloadSimple,
-  PersonSimpleRun,
-  SmileySad,
-  UploadSimple,
-  CalendarBlank,
+  ArrowLeftIcon as ArrowLeft,
+  ClockCounterClockwiseIcon as ClockCounterClockwise,
+  DownloadSimpleIcon as DownloadSimple,
+  PersonSimpleRunIcon as PersonSimpleRun,
+  SmileySadIcon as SmileySad,
+  UploadSimpleIcon as UploadSimple,
+  CalendarBlankIcon as CalendarBlank,
 } from "@phosphor-icons/react";
 import {
   api,
