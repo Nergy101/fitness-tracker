@@ -376,6 +376,9 @@ class WeeklyActivityStats(BaseModel):
     walk_minutes: float
     run_km: float
     walk_km: float
+    workout_kcal: float
+    run_kcal: float
+    walk_kcal: float
 
 
 class StatsOverviewResponse(BaseModel):

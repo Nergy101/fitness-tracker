@@ -32,13 +32,24 @@ def stats_overview(db: Session = Depends(get_db)):
 
     workouts = [s for s in sessions if not is_run_mirror(s)]
 
-    # Weekly activity, split by type (last 12 weeks with any activity)
+    # Weekly activity, split by type (last 12 weeks with any activity).
+    # Kcal for runs/walks lives on their mirror sessions; workout kcal on
+    # real sessions.
     weekly: dict[str, dict[str, float]] = defaultdict(
-        lambda: {"workout_min": 0.0, "run_min": 0.0, "walk_min": 0.0, "run_km": 0.0, "walk_km": 0.0}
+        lambda: {
+            "workout_min": 0.0, "run_min": 0.0, "walk_min": 0.0,
+            "run_km": 0.0, "walk_km": 0.0,
+            "workout_kcal": 0.0, "run_kcal": 0.0, "walk_kcal": 0.0,
+        }
     )
-    for s in workouts:
+    for s in sessions:
         wk = _monday_of(_session_date(s)).isoformat()
-        weekly[wk]["workout_min"] += (s.total_duration_seconds or 0) / 60
+        if is_run_mirror(s):
+            kind = "walk" if (s.template_name or "").startswith("Walk:") else "run"
+            weekly[wk][f"{kind}_kcal"] += s.total_kcal_estimated or 0.0
+        else:
+            weekly[wk]["workout_min"] += (s.total_duration_seconds or 0) / 60
+            weekly[wk]["workout_kcal"] += s.total_kcal_estimated or 0.0
     for r in runs:
         wk = _monday_of(r.date).isoformat()
         kind = "walk" if r.run_type == "walk" else "run"
@@ -53,6 +64,9 @@ def stats_overview(db: Session = Depends(get_db)):
             walk_minutes=round(weekly[wk]["walk_min"], 1),
             run_km=round(weekly[wk]["run_km"], 2),
             walk_km=round(weekly[wk]["walk_km"], 2),
+            workout_kcal=round(weekly[wk]["workout_kcal"], 1),
+            run_kcal=round(weekly[wk]["run_kcal"], 1),
+            walk_kcal=round(weekly[wk]["walk_kcal"], 1),
         )
         for wk in sorted(weekly.keys(), reverse=True)[:12]
     ]

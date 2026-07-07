@@ -281,3 +281,126 @@ class TestStatsOverviewKcal:
         assert stats["total_kcal_burned"] == expected_kcal, (
             f"Expected {expected_kcal} for walk, got {stats['total_kcal_burned']}"
         )
+
+
+# ---------------------------------------------------------------------------
+# 5. Per-week kcal split (run_kcal / walk_kcal / workout_kcal in activity_weekly)
+# ---------------------------------------------------------------------------
+
+
+class TestStatsOverviewWeeklyKcalSplit:
+    """run_kcal / walk_kcal / workout_kcal fields inside weekly buckets are
+    populated by the right source and do NOT leak into each other."""
+
+    def test_run_populates_run_kcal_only(self, client: TestClient, auth_headers: dict):
+        """A run entry's mirror session kcal lands in run_kcal only.
+
+        Formula: round(0.97 * 75.0 * 5.0, 1) == 363.8 (default weight, no WeightEntry).
+        walk_kcal and workout_kcal must remain zero — no cross-contamination.
+        """
+        distance_km = 5.0
+        resp = client.post(
+            RUNS_URL,
+            json={"duration_seconds": 1800, "distance_km": distance_km, "run_type": "run"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 201
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+
+        this_week = _this_week()
+        buckets = {w["week_start"]: w for w in stats["activity_weekly"]}
+        assert this_week in buckets, f"Expected week {this_week!r} in {sorted(buckets)!r}"
+        wk = buckets[this_week]
+
+        expected_run_kcal = round(0.97 * 75.0 * distance_km, 1)  # 363.8
+        assert wk["run_kcal"] == expected_run_kcal, (
+            f"Expected run_kcal={expected_run_kcal}, got {wk['run_kcal']}"
+        )
+        assert wk["walk_kcal"] == 0.0, f"walk_kcal must be 0.0, got {wk['walk_kcal']}"
+        assert wk["workout_kcal"] == 0.0, f"workout_kcal must be 0.0, got {wk['workout_kcal']}"
+
+    def test_walk_populates_walk_kcal_only(self, client: TestClient, auth_headers: dict):
+        """A walk entry's mirror session kcal (factor 0.5) lands in walk_kcal only.
+
+        run_kcal must stay zero — the 'Walk:' prefix routes kcal to walk_kcal, not run_kcal.
+        """
+        distance_km = 4.0
+        resp = client.post(
+            RUNS_URL,
+            json={"duration_seconds": 2400, "distance_km": distance_km, "run_type": "walk"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 201
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+
+        this_week = _this_week()
+        buckets = {w["week_start"]: w for w in stats["activity_weekly"]}
+        assert this_week in buckets, f"Expected week {this_week!r} in {sorted(buckets)!r}"
+        wk = buckets[this_week]
+
+        expected_walk_kcal = round(0.5 * 75.0 * distance_km, 1)  # 150.0
+        assert wk["walk_kcal"] == expected_walk_kcal, (
+            f"Expected walk_kcal={expected_walk_kcal}, got {wk['walk_kcal']}"
+        )
+        assert wk["run_kcal"] == 0.0, f"run_kcal must be 0.0, got {wk['run_kcal']}"
+        assert wk["workout_kcal"] == 0.0, f"workout_kcal must be 0.0, got {wk['workout_kcal']}"
+
+    def test_workout_and_run_kcal_isolated_in_same_week(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Real workout and run in the same week each populate their own kcal field.
+
+        Contracts defended:
+        - workout session's total_kcal_estimated goes to workout_kcal only.
+        - run mirror session's kcal goes to run_kcal only.
+        - walk_kcal stays zero.
+        - Neither bleeds into the other (mirror kcal never lands in workout_kcal;
+          workout kcal never lands in run_kcal).
+        """
+        today_iso = date.today().isoformat()
+        workout_kcal_value = 250.0
+        run_distance_km = 5.0
+
+        # Real (non-mirror) workout session — template_name has no Run:/Walk: prefix.
+        sess_resp = client.post(
+            SESSIONS_URL,
+            json={
+                "template_name": "Strength Training",
+                "total_duration_seconds": 3000,
+                "total_kcal_estimated": workout_kcal_value,
+                "started_at": f"{today_iso}T07:00:00Z",
+                "finished_at": f"{today_iso}T07:50:00Z",
+            },
+            headers=auth_headers,
+        )
+        assert sess_resp.status_code == 201
+
+        # Run — auto-creates a mirror session with run_kcal = round(0.97*75*5, 1).
+        run_resp = client.post(
+            RUNS_URL,
+            json={"duration_seconds": 1800, "distance_km": run_distance_km, "run_type": "run"},
+            headers=auth_headers,
+        )
+        assert run_resp.status_code == 201
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+
+        this_week = _this_week()
+        buckets = {w["week_start"]: w for w in stats["activity_weekly"]}
+        assert this_week in buckets, f"Expected week {this_week!r} in {sorted(buckets)!r}"
+        wk = buckets[this_week]
+
+        expected_run_kcal = round(0.97 * 75.0 * run_distance_km, 1)  # 363.8
+        assert wk["workout_kcal"] == workout_kcal_value, (
+            f"workout_kcal must equal the real session's kcal "
+            f"({workout_kcal_value}), got {wk['workout_kcal']}"
+        )
+        assert wk["run_kcal"] == expected_run_kcal, (
+            f"run_kcal must equal the mirror session's kcal "
+            f"({expected_run_kcal}), got {wk['run_kcal']}"
+        )
+        assert wk["walk_kcal"] == 0.0, (
+            f"walk_kcal must be 0.0, got {wk['walk_kcal']}"
+        )

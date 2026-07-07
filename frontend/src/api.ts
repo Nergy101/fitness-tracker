@@ -305,6 +305,9 @@ export interface WeeklyActivityStat {
   walk_minutes: number;
   run_km: number;
   walk_km: number;
+  workout_kcal: number;
+  run_kcal: number;
+  walk_kcal: number;
 }
 
 export interface StatsOverviewResponse {
