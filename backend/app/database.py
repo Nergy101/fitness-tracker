@@ -27,10 +27,15 @@ def run_migrations() -> None:
     # File-based DB — use Alembic for proper migration tracking
     import os
     import subprocess
+    import sys
+
+    # Prefer the venv's alembic binary (CI/E2E), fall back to system PATH
+    venv_bin = os.path.join(os.path.dirname(sys.executable), "alembic")
+    alembic_bin = venv_bin if os.path.isfile(venv_bin) else "alembic"
 
     backend_dir = os.path.join(os.path.dirname(__file__), "..")
     subprocess.run(
-        ["alembic", "upgrade", "head"],
+        [alembic_bin, "upgrade", "head"],
         cwd=backend_dir,
         check=True,
         capture_output=True,
