@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 from app.config import DATABASE_URL
@@ -11,69 +11,29 @@ class Base(DeclarativeBase):
     pass
 
 
-def ensure_schema() -> None:
-    """Apply lightweight, additive migrations that create_all can't handle
-    (it never alters existing tables). Idempotent and safe to call on startup."""
-    inspector = inspect(engine)
-    tables = set(inspector.get_table_names())
-    with engine.begin() as conn:
-        if "workout_templates" in tables:
-            cols = {c["name"] for c in inspector.get_columns("workout_templates")}
-            if "rounds" not in cols:
-                conn.execute(text(
-                    "ALTER TABLE workout_templates ADD COLUMN rounds INTEGER NOT NULL DEFAULT 1"
-                ))
-            if "rest_between_rounds" not in cols:
-                conn.execute(text(
-                    "ALTER TABLE workout_templates ADD COLUMN rest_between_rounds INTEGER NOT NULL DEFAULT 180"
-                ))
-            if "mode" not in cols:
-                conn.execute(text(
-                    "ALTER TABLE workout_templates ADD COLUMN mode VARCHAR(20) NOT NULL DEFAULT 'circuit'"
-                ))
-            if "time_cap_seconds" not in cols:
-                conn.execute(text(
-                    "ALTER TABLE workout_templates ADD COLUMN time_cap_seconds INTEGER"
-                ))
-        if "exercises" in tables:
-            cols = {c["name"] for c in inspector.get_columns("exercises")}
-            if "image_url" not in cols:
-                conn.execute(text(
-                    "ALTER TABLE exercises ADD COLUMN image_url VARCHAR(512)"
-                ))
-        if "workout_template_exercises" in tables:
-            cols = {c["name"] for c in inspector.get_columns("workout_template_exercises")}
-            if "rest_after_seconds" not in cols:
-                conn.execute(text(
-                    "ALTER TABLE workout_template_exercises ADD COLUMN rest_after_seconds INTEGER NOT NULL DEFAULT 0"
-                ))
-            if "superset_group" not in cols:
-                conn.execute(text(
-                    "ALTER TABLE workout_template_exercises ADD COLUMN superset_group INTEGER"
-                ))
+def run_migrations() -> None:
+    """Apply all pending Alembic migrations on startup.
 
-        # Health tracking tables — ensure they exist (new tables are created by create_all above)
-        # Add any additive columns for these tables here in future versions.
+    For in-memory SQLite (used in tests), falls back to create_all since
+    each connection creates a separate in-memory database.
+    """
+    if DATABASE_URL.endswith(":memory:") or DATABASE_URL == "sqlite://":
+        # In-memory DB — use SQLAlchemy's create_all directly
+        # Import models so Base.metadata knows all tables
+        import app.models.models  # noqa: F401
+        Base.metadata.create_all(bind=engine)
+        return
 
-        # Exercise logs table (NER-101)
-        if "exercise_logs" not in tables:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS exercise_logs (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_exercise_id INTEGER NOT NULL REFERENCES session_exercises(id) ON DELETE CASCADE,
-                    weight_kg REAL,
-                    reps INTEGER,
-                    set_number INTEGER NOT NULL DEFAULT 1,
-                    created_at TIMESTAMP NOT NULL DEFAULT (datetime('now'))
-                )
-            """))
+    # File-based DB — use Alembic for proper migration tracking
+    import subprocess, os, sys
 
-        if "run_entries" in tables:
-            cols = {c["name"] for c in inspector.get_columns("run_entries")}
-            if "run_type" not in cols:
-                conn.execute(text(
-                    "ALTER TABLE run_entries ADD COLUMN run_type VARCHAR(10) NOT NULL DEFAULT 'run'"
-                ))
+    backend_dir = os.path.join(os.path.dirname(__file__), "..")
+    subprocess.run(
+        ["alembic", "upgrade", "head"],
+        cwd=backend_dir,
+        check=True,
+        capture_output=True,
+    )
 
 
 def get_db():

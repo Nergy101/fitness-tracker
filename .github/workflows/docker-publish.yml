@@ -36,6 +36,11 @@ jobs:
           pip install ruff
           python -m ruff check .
 
+      - name: Validate migrations
+        run: |
+          cd backend
+          python scripts/validate_migrations.py
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -71,6 +76,14 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
+
+      - name: Verify migrations apply cleanly
+        run: |
+          cd backend
+          rm -f /tmp/ci_test.db
+          DATABASE_URL=sqlite:////tmp/ci_test.db alembic upgrade head
+          DATABASE_URL=sqlite:////tmp/ci_test.db alembic downgrade -1
+          DATABASE_URL=sqlite:////tmp/ci_test.db alembic upgrade head  # re-apply to confirm round-trip
 
       - name: Run tests
         run: |
