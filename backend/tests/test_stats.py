@@ -16,7 +16,6 @@ Contracts defended:
 
 from datetime import date, timedelta
 
-import pytest
 from fastapi.testclient import TestClient
 
 RUNS_URL = "/api/v1/runs"
