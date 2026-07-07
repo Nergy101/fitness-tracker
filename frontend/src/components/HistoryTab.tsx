@@ -7,6 +7,7 @@ import {
   PencilSimpleIcon as PencilSimple,
   SneakerIcon as Sneaker,
   SmileySadIcon as SmileySad,
+  TrashIcon as Trash,
   UploadSimpleIcon as UploadSimple,
   CalendarBlankIcon as CalendarBlank,
 } from "@phosphor-icons/react";
@@ -300,11 +301,13 @@ function SessionList({
   sessions,
   onSelect,
   onEditDate,
+  onDelete,
   emptyLabel,
 }: {
   sessions: WorkoutSession[];
   onSelect: (s: WorkoutSession) => void;
   onEditDate: (s: WorkoutSession) => void;
+  onDelete: (s: WorkoutSession) => void;
   emptyLabel: string;
 }) {
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -374,9 +377,22 @@ function SessionList({
                 </div>
               )}
             </div>
-            <span className="text-xs text-fg/30">
-              ~{Math.round(session.total_kcal_estimated)} kcal
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-fg/30">
+                ~{Math.round(session.total_kcal_estimated)} kcal
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(session);
+                }}
+                className="text-fg/20 hover:text-red-400 transition-colors"
+                title="Delete session"
+                aria-label="Delete session"
+              >
+                <Trash size={14} />
+              </button>
+            </div>
           </div>
           <div className="flex gap-3 mt-2 text-xs text-fg/50">
             <span>{formatDuration(session.total_duration_seconds)}</span>
@@ -692,6 +708,15 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
     );
   }
 
+  async function handleDelete(session: WorkoutSession) {
+    try {
+      await api.deleteSession(session.id);
+      setSessions((prev) => prev.filter((s) => s.id !== session.id));
+    } catch {
+      setError("Failed to delete session");
+    }
+  }
+
   // ── All-time view ──────────────────────────────────────
   if (view === "all") {
     return (
@@ -713,6 +738,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
           sessions={sessions}
           onSelect={setDetail}
           onEditDate={(updated) => setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s))}
+          onDelete={handleDelete}
           emptyLabel="No sessions yet"
         />
 
@@ -775,6 +801,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
         sessions={rangeSessions}
         onSelect={setDetail}
         onEditDate={(updated) => setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s))}
+        onDelete={handleDelete}
         emptyLabel="No workouts in this range."
       />
 
