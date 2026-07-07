@@ -46,16 +46,19 @@ interface StackSegment<T> {
   value: (d: T) => number;
 }
 
-/** Weekly bars where each bar stacks one segment per activity type. */
+/** Weekly bars where each bar stacks one segment per activity type, with a
+ *  y-axis (gridlines + unit-formatted tick labels) so values are readable. */
 function StackedBarChart<T>({
   data,
   segments,
   label,
+  formatValue,
   height = 80,
 }: {
   data: T[];
   segments: StackSegment<T>[];
   label: (d: T) => string;
+  formatValue: (v: number) => string;
   height?: number;
 }) {
   if (data.length === 0) return null;
@@ -64,12 +67,27 @@ function StackedBarChart<T>({
     ...data.map((d) => segments.reduce((sum, seg) => sum + seg.value(d), 0)),
   );
   const wPerBar = 28;
-  const w = Math.max(wPerBar * data.length, wPerBar);
+  const gutter = 30; // left space for the y-axis labels
+  const w = gutter + Math.max(wPerBar * data.length, wPerBar);
+  const ticks = [max, max / 2];
 
   return (
     <svg viewBox={`0 0 ${w} ${height + 20}`} className="w-full" style={{ maxHeight: height + 20 }}>
+      {ticks.map((t) => {
+        const y = height - (t / max) * height;
+        return (
+          <g key={t}>
+            <line x1={gutter} y1={y} x2={w} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
+            {/* Clamp so the top tick's text isn't clipped by the viewBox edge */}
+            <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+              {formatValue(t)}
+            </text>
+          </g>
+        );
+      })}
+      <line x1={gutter} y1={height} x2={w} y2={height} className="stroke-fg/10" strokeWidth="0.5" />
       {data.map((d, i) => {
-        const x = i * wPerBar + 2;
+        const x = gutter + i * wPerBar + 2;
         const parts = segments
           .map((seg) => ({ color: seg.color, val: seg.value(d) }))
           .filter((p) => p.val > 0);
@@ -475,6 +493,7 @@ export default function StatisticsTab() {
               { color: ACTIVITY_COLORS.walk, value: (d: WeeklyActivityStat) => d.walk_minutes },
             ]}
             label={(d) => d.week_start}
+            formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
           />
           <ActivityLegend kinds={["workout", "run", "walk"]} />
           {stats.current_month_vs_previous_pct != null && (
@@ -500,6 +519,7 @@ export default function StatisticsTab() {
               { color: ACTIVITY_COLORS.walk, value: (d: WeeklyActivityStat) => d.walk_kcal },
             ]}
             label={(d) => d.week_start}
+            formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
           />
           <ActivityLegend kinds={["workout", "run", "walk"]} />
         </ChartCard>
@@ -518,6 +538,7 @@ export default function StatisticsTab() {
               { color: ACTIVITY_COLORS.walk, value: (d: WeeklyActivityStat) => d.walk_km },
             ]}
             label={(d) => d.week_start}
+            formatValue={(v) => `${Math.round(v * 10) / 10}km`}
           />
           <ActivityLegend kinds={["run", "walk"]} />
         </ChartCard>
