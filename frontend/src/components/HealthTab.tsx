@@ -23,6 +23,7 @@ import MeasurementsSection from "./health/MeasurementsSection";
 import SimpleChart from "./health/SimpleChart";
 import WellnessSection from "./health/WellnessSection";
 import { shortDate } from "./health/utils";
+import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
 
 // ─── Helpers ───────────────────────────────────────────────
 
@@ -45,6 +46,86 @@ function streakMsg(days: number): string {
   if (days >= 3) return "3-day streak!";
   if (days > 0) return `${days}-day streak`;
   return "Log today to start a streak!";
+}
+
+function RecordGroup({
+  kind,
+  records,
+}: {
+  kind: ActivityKind;
+  records: { label: string; value: string | null }[];
+}) {
+  const filled = records.filter((r): r is { label: string; value: string } => r.value != null);
+  if (filled.length === 0) return null;
+  const KindIcon = ACTIVITY_ICONS[kind];
+  return (
+    <div className="mb-3 last:mb-0">
+      <p className="flex items-center gap-1.5 text-xs text-fg/40 mb-1.5">
+        <KindIcon size={14} className="shrink-0" style={{ color: ACTIVITY_COLORS[kind] }} />
+        {ACTIVITY_LABELS[kind]}
+      </p>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        {filled.map((r) => (
+          <div key={r.label} className="bg-bg rounded-lg p-2">
+            <p className="text-fg/50">{r.label}</p>
+            <p className="text-sm font-bold text-fg">{r.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Activity-level personal records: runs / walks / workouts, color-coded
+ *  like the History and Stats charts. */
+function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
+  const runRecords = [
+    { label: "Longest (distance)", value: prs.longest_run_km ? `${prs.longest_run_km.toFixed(1)} km` : null },
+    { label: "Longest (time)", value: prs.longest_run_seconds ? formatDuration(prs.longest_run_seconds) : null },
+    { label: "Fastest 5K", value: prs.fastest_5k_seconds ? formatDuration(prs.fastest_5k_seconds) : null },
+    { label: "Fastest 10K", value: prs.fastest_10k_seconds ? formatDuration(prs.fastest_10k_seconds) : null },
+    { label: "Best pace", value: prs.best_pace_seconds_per_km ? `${formatDuration(prs.best_pace_seconds_per_km)} /km` : null },
+    { label: "Most kcal", value: prs.most_kcal_run ? `${Math.round(prs.most_kcal_run)} kcal` : null },
+    { label: "Best week", value: prs.best_week_run_km ? `${prs.best_week_run_km.toFixed(1)} km` : null },
+  ];
+  const walkRecords = [
+    { label: "Longest (distance)", value: prs.longest_walk_km ? `${prs.longest_walk_km.toFixed(1)} km` : null },
+    { label: "Longest (time)", value: prs.longest_walk_seconds ? formatDuration(prs.longest_walk_seconds) : null },
+    { label: "Most kcal", value: prs.most_kcal_walk ? `${Math.round(prs.most_kcal_walk)} kcal` : null },
+  ];
+  const workoutRecords = [
+    { label: "Longest (time)", value: prs.longest_workout_seconds ? formatDuration(prs.longest_workout_seconds) : null },
+    { label: "Most kcal", value: prs.most_kcal_workout ? `${Math.round(prs.most_kcal_workout)} kcal` : null },
+    { label: "Most exercises", value: prs.most_exercises_workout ? String(prs.most_exercises_workout) : null },
+  ];
+
+  const hasAny =
+    [...runRecords, ...walkRecords, ...workoutRecords].some((r) => r.value != null) ||
+    prs.longest_streak_days > 0;
+  if (!hasAny) return null;
+
+  return (
+    <div className="bg-surface rounded-xl p-4 border border-fg/5">
+      <div className="flex items-center gap-2 mb-3">
+        <Trophy size={20} className="text-yellow-400 shrink-0" weight="fill" />
+        <p className="text-sm font-semibold text-fg">Personal Records</p>
+      </div>
+      <RecordGroup kind="run" records={runRecords} />
+      <RecordGroup kind="walk" records={walkRecords} />
+      <RecordGroup kind="workout" records={workoutRecords} />
+      {prs.longest_streak_days > 0 && (
+        <div className="flex items-center justify-between border-t border-fg/5 pt-2 mt-3">
+          <p className="flex items-center gap-1.5 text-xs text-fg/50">
+            <Flame size={14} className="text-orange-400 shrink-0" weight="fill" />
+            Longest activity streak
+          </p>
+          <p className="text-sm font-bold text-fg">
+            {prs.longest_streak_days} day{prs.longest_streak_days === 1 ? "" : "s"}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Main Component ────────────────────────────────────────
@@ -263,66 +344,7 @@ export default function HealthTab() {
       )}
 
       {/* Personal Records */}
-      {prs && (prs.by_exercise.length > 0 || prs.fastest_5k_seconds) && (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
-          <div className="flex items-center gap-2 mb-3">
-            <Trophy size={20} className="text-yellow-400 shrink-0" weight="fill" />
-            <p className="text-sm font-semibold text-fg">Personal Records</p>
-          </div>
-
-          {/* Exercise PRs */}
-          {prs.by_exercise.length > 0 && (
-            <div className="space-y-1.5 mb-3">
-              {prs.by_exercise.slice(0, 10).map((rec, i) => (
-                <div key={i} className="flex items-center justify-between py-1">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-medium text-fg truncate">{rec.exercise_name}</span>
-                  </div>
-                  <div className="text-right shrink-0 ml-2">
-                    <span className="text-sm font-semibold text-accent">
-                      {rec.unit === "seconds" ? formatDuration(rec.value) : rec.value.toFixed(1) + " " + rec.unit}
-                    </span>
-                    {rec.date && <span className="text-[10px] text-fg/40 block">{shortDate(rec.date)}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Run PRs */}
-          {(prs.fastest_5k_seconds || prs.fastest_10k_seconds) && (
-            <div className="border-t border-fg/5 pt-2 mt-2">
-              <p className="text-xs text-fg/40 mb-1.5">Run Records</p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {prs.fastest_5k_seconds && (
-                  <div className="bg-bg rounded-lg p-2">
-                    <p className="text-fg/50">Fastest 5K</p>
-                    <p className="text-sm font-bold text-fg">{formatDuration(prs.fastest_5k_seconds)}</p>
-                  </div>
-                )}
-                {prs.fastest_10k_seconds && (
-                  <div className="bg-bg rounded-lg p-2">
-                    <p className="text-fg/50">Fastest 10K</p>
-                    <p className="text-sm font-bold text-fg">{formatDuration(prs.fastest_10k_seconds)}</p>
-                  </div>
-                )}
-                {prs.longest_run_distance_km && (
-                  <div className="bg-bg rounded-lg p-2">
-                    <p className="text-fg/50">Longest Run</p>
-                    <p className="text-sm font-bold text-fg">{prs.longest_run_distance_km.toFixed(1)} km</p>
-                  </div>
-                )}
-                {prs.best_week_distance_km != null && prs.best_week_distance_km > 0 && (
-                  <div className="bg-bg rounded-lg p-2">
-                    <p className="text-fg/50">Best Week</p>
-                    <p className="text-sm font-bold text-fg">{(prs.best_week_distance_km).toFixed(1)} km</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {prs && <PersonalRecordsCard prs={prs} />}
 
       {/* Weight History */}
       {weights.length > 0 && (

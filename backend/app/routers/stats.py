@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import WorkoutSession, RunEntry, WeightEntry
+from app.models.models import WorkoutSession, RunEntry, WeightEntry, is_run_mirror
 from app.schemas import StatsOverviewResponse, WeeklyActivityStats
 
 router = APIRouter(prefix="/api/v1/stats", tags=["stats"])
@@ -13,14 +13,6 @@ router = APIRouter(prefix="/api/v1/stats", tags=["stats"])
 
 def _monday_of(d: date) -> date:
     return d - timedelta(days=d.weekday())
-
-
-def _is_run_mirror(s: WorkoutSession) -> bool:
-    """Sessions auto-created by the runs router to surface runs/walks in the
-    History tab ("Run: 5.0km" / "Walk: 3.2km"). Their time is already counted
-    via RunEntry rows, so exclude them from workout aggregates to avoid
-    double-counting in the stacked activity chart."""
-    return s.template_id is None and (s.template_name or "").startswith(("Run:", "Walk:"))
 
 
 def _session_date(s: WorkoutSession) -> date:
@@ -38,7 +30,7 @@ def stats_overview(db: Session = Depends(get_db)):
     # session covers workouts and runs alike.
     total_kcal = sum(s.total_kcal_estimated for s in sessions)
 
-    workouts = [s for s in sessions if not _is_run_mirror(s)]
+    workouts = [s for s in sessions if not is_run_mirror(s)]
 
     # Weekly activity, split by type (last 12 weeks with any activity)
     weekly: dict[str, dict[str, float]] = defaultdict(

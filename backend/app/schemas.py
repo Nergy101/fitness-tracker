@@ -344,26 +344,27 @@ class RunEntryResponse(BaseModel):
 # ─── PR / Stats Schemas ────────────────────────────────────
 
 
-class PersonalRecord(BaseModel):
-    exercise_name: str
-    value: float
-    unit: str
-    date: str
-    id: int | None = None
-    session_id: int | None = None
-
-
 class PrsResponse(BaseModel):
-    by_exercise: list[PersonalRecord] = []
+    """Activity-level personal records, split by type (runs / walks /
+    workouts) rather than per-exercise."""
+    # Runs
+    longest_run_km: float | None = None
+    longest_run_seconds: int | None = None
     fastest_5k_seconds: int | None = None
     fastest_10k_seconds: int | None = None
-    longest_run_seconds: int | None = None
-    longest_run_distance_km: float | None = None
-    best_week_distance_km: float | None = None
-    most_kcal_session: float | None = None
-    most_kcal_name: str | None = None
+    best_pace_seconds_per_km: float | None = None
+    most_kcal_run: float | None = None
+    best_week_run_km: float | None = None
+    # Walks
+    longest_walk_km: float | None = None
+    longest_walk_seconds: int | None = None
+    most_kcal_walk: float | None = None
+    # Workouts
     longest_workout_seconds: int | None = None
-    longest_workout_name: str | None = None
+    most_kcal_workout: float | None = None
+    most_exercises_workout: int | None = None
+    # Overall
+    longest_streak_days: int = 0
 
 
 class WeeklyActivityStats(BaseModel):

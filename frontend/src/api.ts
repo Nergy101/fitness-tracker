@@ -277,22 +277,25 @@ export interface BmiResponse {
   age: number | null;
 }
 
-export interface PersonalRecord {
-  exercise_name: string;
-  value: number;
-  unit: string;
-  date: string;
-  id: number | null;
-  session_id: number | null;
-}
-
 export interface PrsResponse {
-  by_exercise: PersonalRecord[];
+  // Runs
+  longest_run_km: number | null;
+  longest_run_seconds: number | null;
   fastest_5k_seconds: number | null;
   fastest_10k_seconds: number | null;
-  longest_run_seconds: number | null;
-  longest_run_distance_km: number | null;
-  best_week_distance_km: number | null;
+  best_pace_seconds_per_km: number | null;
+  most_kcal_run: number | null;
+  best_week_run_km: number | null;
+  // Walks
+  longest_walk_km: number | null;
+  longest_walk_seconds: number | null;
+  most_kcal_walk: number | null;
+  // Workouts
+  longest_workout_seconds: number | null;
+  most_kcal_workout: number | null;
+  most_exercises_workout: number | null;
+  // Overall
+  longest_streak_days: number;
 }
 
 export interface WeeklyActivityStat {

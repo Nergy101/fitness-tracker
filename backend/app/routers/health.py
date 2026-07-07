@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import (
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin, WorkoutSession,
-    SessionExercise, RunEntry,
+    RunEntry, is_run_mirror,
 )
 from app.schemas import (
     UserProfileResponse, UserProfileUpdate,
@@ -23,70 +23,86 @@ router = APIRouter(prefix="/api/v1/health", tags=["health"])
 # ─── Personal Records ────────────────────────────────────────
 
 
+# Ignore sub-1km runs when ranking pace: a 200m dash produces a meaningless
+# "record" pace.
+MIN_PACE_DISTANCE_KM = 1.0
+
+
+def _longest_streak(days: set[date]) -> int:
+    """Longest run of consecutive calendar days with any activity."""
+    best = 0
+    for d in days:
+        if d - timedelta(days=1) in days:
+            continue  # not a streak start
+        length = 1
+        while d + timedelta(days=length) in days:
+            length += 1
+        best = max(best, length)
+    return best
+
+
 @router.get("/prs", response_model=PrsResponse)
 def personal_records(db: Session = Depends(get_db)):
-    from app.schemas import PrsResponse, PersonalRecord
+    """Activity-level personal records: runs, walks, and fitness workouts."""
+    entries = db.query(RunEntry).all()
+    sessions = db.query(WorkoutSession).all()
 
-    # Compute per-exercise PRs from session exercises (longest duration)
-    exercises_data = db.query(SessionExercise).filter(
-        SessionExercise.completed
-    ).all()
+    prs = PrsResponse()
 
-    pr_map: dict[str, tuple[float, str, int, int | None]] = {}  # name -> (max_duration, date, session_id, id)
-    for se in exercises_data:
-        name = se.exercise_name or "Unknown"
-        dur = se.duration_seconds
-        if name not in pr_map or dur > pr_map[name][0]:
-            # Find session date
-            session = db.query(WorkoutSession).filter(WorkoutSession.id == se.session_id).first()
-            date_str = session.started_at.strftime("%Y-%m-%d") if session else ""
-            pr_map[name] = (dur, date_str, se.session_id, se.exercise_id)
+    runs = [e for e in entries if e.run_type != "walk"]
+    walks = [e for e in entries if e.run_type == "walk"]
 
-    by_exercise = [
-        PersonalRecord(
-            exercise_name=name,
-            value=float(val[0]),
-            unit="seconds",
-            date=val[1],
-            session_id=val[2],
-            id=val[3],
-        )
-        for name, val in sorted(pr_map.items())
-    ]
-
-    # Run PRs (reuse from runs router)
-    run_entries = db.query(RunEntry).all()
-    fastest_5k = None
-    fastest_10k = None
-    longest_run = None
-    best_week_dist = 0.0
-
-    if run_entries:
-        for e in run_entries:
+    if runs:
+        prs.longest_run_km = max(e.distance_km for e in runs)
+        prs.longest_run_seconds = max(e.duration_seconds for e in runs)
+        paced = [e.pace_per_km for e in runs if e.pace_per_km and e.distance_km >= MIN_PACE_DISTANCE_KM]
+        if paced:
+            prs.best_pace_seconds_per_km = min(paced)
+        for e in runs:
             if 4.5 <= e.distance_km <= 5.5:
-                if fastest_5k is None or e.duration_seconds < fastest_5k:
-                    fastest_5k = e.duration_seconds
+                if prs.fastest_5k_seconds is None or e.duration_seconds < prs.fastest_5k_seconds:
+                    prs.fastest_5k_seconds = e.duration_seconds
             if 9.5 <= e.distance_km <= 10.5:
-                if fastest_10k is None or e.duration_seconds < fastest_10k:
-                    fastest_10k = e.duration_seconds
-        sorted_by_dist = sorted(run_entries, key=lambda e: e.distance_km, reverse=True)
-        if sorted_by_dist:
-            longest_run = sorted_by_dist[0]
-
-        sorted_dates = sorted(set(e.date for e in run_entries))
-        for d in sorted_dates:
+                if prs.fastest_10k_seconds is None or e.duration_seconds < prs.fastest_10k_seconds:
+                    prs.fastest_10k_seconds = e.duration_seconds
+        # Best rolling 7-day window of run distance
+        best_week = 0.0
+        for d in sorted(set(e.date for e in runs)):
             window_end = d + timedelta(days=7)
-            week_dist = sum(e.distance_km for e in run_entries if d <= e.date <= window_end)
-            best_week_dist = max(best_week_dist, week_dist)
+            best_week = max(best_week, sum(e.distance_km for e in runs if d <= e.date <= window_end))
+        prs.best_week_run_km = round(best_week, 1)
 
-    return PrsResponse(
-        by_exercise=by_exercise,
-        fastest_5k_seconds=fastest_5k,
-        fastest_10k_seconds=fastest_10k,
-        longest_run_seconds=longest_run.duration_seconds if longest_run else None,
-        longest_run_distance_km=longest_run.distance_km if longest_run else None,
-        best_week_distance_km=best_week_dist,
-    )
+    if walks:
+        prs.longest_walk_km = max(e.distance_km for e in walks)
+        prs.longest_walk_seconds = max(e.duration_seconds for e in walks)
+
+    # Kcal records come from sessions: run/walk kcal lives on the mirror
+    # session the runs router creates, workout kcal on real sessions.
+    workouts = []
+    for s in sessions:
+        if not is_run_mirror(s):
+            workouts.append(s)
+            continue
+        kcal = s.total_kcal_estimated or 0.0
+        if s.template_name.startswith("Walk:"):
+            if kcal > (prs.most_kcal_walk or 0.0):
+                prs.most_kcal_walk = kcal
+        elif kcal > (prs.most_kcal_run or 0.0):
+            prs.most_kcal_run = kcal
+
+    if workouts:
+        prs.longest_workout_seconds = max(s.total_duration_seconds or 0 for s in workouts)
+        prs.most_kcal_workout = max(s.total_kcal_estimated or 0.0 for s in workouts)
+        prs.most_exercises_workout = max(len(s.exercises) for s in workouts)
+
+    # Longest streak of consecutive days with any activity (runs, walks, or
+    # workouts — mirrors share their run's date, so including them is harmless).
+    active_days = {e.date for e in entries}
+    for s in sessions:
+        active_days.add(s.started_at.date() if hasattr(s.started_at, "date") else s.started_at)
+    prs.longest_streak_days = _longest_streak(active_days)
+
+    return prs
 
 
 def _get_or_create_profile(db: Session) -> UserProfile:
