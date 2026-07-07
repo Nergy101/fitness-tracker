@@ -3,6 +3,8 @@ import { api, type Exercise, type ExerciseLog, type WorkoutTemplate } from "../a
 import { soundStart, soundRest, soundFinish, speak } from "../sound";
 import {
   ArrowsLeftRightIcon as ArrowsLeftRight,
+  PauseCircleIcon as PauseCircle,
+  PlayCircleIcon as PlayCircle,
   SkipForwardIcon as SkipForward,
   XIcon as X,
 } from "@phosphor-icons/react";
@@ -34,6 +36,12 @@ export default function WorkoutRunner({
   const [exercises, setExercises] = useState(workout.exercises);
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [showSwapPicker, setShowSwapPicker] = useState(false);
+  const [swapSearch, setSwapSearch] = useState("");
+
+  const filteredSwapExercises = useMemo(() => {
+    const q = swapSearch.toLowerCase();
+    return allExercises.filter((ex) => !q || ex.name.toLowerCase().includes(q));
+  }, [allExercises, swapSearch]);
   const totalExercises = exercises.length;
   const mode = workout.mode || "circuit";
   const isAmrap = mode === "amrap";
@@ -56,6 +64,22 @@ export default function WorkoutRunner({
   const indexRef = useRef(0);
   const phaseRef = useRef<Phase>("rest");
   const amrapRoundRef = useRef(1);
+  const pauseOffsetRef = useRef(0);
+  const pauseStartRef = useRef(0);
+  const pausedRef = useRef(false);
+  const [paused, setPaused] = useState(false);
+
+  function doPause() {
+    pausedRef.current = true;
+    pauseStartRef.current = Date.now();
+    setPaused(true);
+  }
+
+  function doResume() {
+    pauseOffsetRef.current += Date.now() - pauseStartRef.current;
+    pausedRef.current = false;
+    setPaused(false);
+  }
 
   // Exercise logs: key = `${round}-${index}`, value = {weightKg, reps}
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weightKg: string; reps: string }>>({});
@@ -125,6 +149,13 @@ export default function WorkoutRunner({
   const swapKeyRef = useRef(0);
 
   useEffect(() => {
+    // Helper: compute elapsed seconds accounting for pause offsets
+    function calcElapsed(startTime: number): number {
+      const now = Date.now();
+      const liveOffset = pausedRef.current ? now - pauseStartRef.current : 0;
+      return (now - startTime - pauseOffsetRef.current - liveOffset) / 1000;
+    }
+
     let intervalId: ReturnType<typeof setInterval> | undefined;
     const clear = () => {
       if (intervalId !== undefined) {
@@ -155,7 +186,7 @@ export default function WorkoutRunner({
         startExercise(round, i);
       };
       intervalId = setInterval(() => {
-        const elapsed = (Date.now() - restStart) / 1000;
+        const elapsed = calcElapsed(restStart);
         setRestCountdown(Math.max(0, Math.ceil(restSec - elapsed)));
         setRestProgress(Math.min(1, elapsed / restSec));
         if (elapsed >= restSec) {
@@ -215,7 +246,7 @@ export default function WorkoutRunner({
         startExercise(nextRound, 0);
       };
       intervalId = setInterval(() => {
-        const elapsed = (Date.now() - restStart) / 1000;
+        const elapsed = calcElapsed(restStart);
         setRestCountdown(Math.max(0, Math.ceil(restBetween - elapsed)));
         setRestProgress(Math.min(1, elapsed / restBetween));
         if (elapsed >= restBetween) {
@@ -240,7 +271,7 @@ export default function WorkoutRunner({
       clear();
       advanceRef.current = () => advanceFrom(round, i);
       intervalId = setInterval(() => {
-        const elapsed = (Date.now() - start) / 1000;
+        const elapsed = calcElapsed(start);
         setTimer(Math.max(0, dur - elapsed));
         setTimerProgress(Math.min(1, elapsed / dur));
         if (elapsed >= dur) advanceFrom(round, i);
@@ -253,7 +284,7 @@ export default function WorkoutRunner({
     if (isAmrap) {
       const amrapStart = Date.now();
       amrapInterval = setInterval(() => {
-        const elapsed = (Date.now() - amrapStart) / 1000;
+        const elapsed = calcElapsed(amrapStart);
         if (elapsed >= timeCap) {
           if (amrapInterval) clearInterval(amrapInterval);
           clear();
@@ -271,7 +302,7 @@ export default function WorkoutRunner({
     if (isEmom) {
       emomStart = Date.now();
       emomInterval = setInterval(() => {
-        const elapsed = (Date.now() - emomStart) / 1000;
+        const elapsed = calcElapsed(emomStart);
         const currentMinute = Math.floor(elapsed / 60);
         if (currentMinute >= totalExercises) {
           if (emomInterval) clearInterval(emomInterval);
@@ -398,7 +429,7 @@ export default function WorkoutRunner({
       {showSwapPicker && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
-          onClick={() => setShowSwapPicker(false)}
+          onClick={() => { setShowSwapPicker(false); setSwapSearch(""); }}
         >
           <div
             className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 border border-fg/10 max-h-[70vh] flex flex-col"
@@ -407,32 +438,44 @@ export default function WorkoutRunner({
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Swap Exercise</h3>
               <button
-                onClick={() => setShowSwapPicker(false)}
+                onClick={() => { setShowSwapPicker(false); setSwapSearch(""); }}
                 className="text-fg/40 hover:text-fg text-xl"
               >
                 &times;
               </button>
             </div>
+            <input
+              type="text"
+              placeholder="Search exercises..."
+              value={swapSearch}
+              onChange={(e) => setSwapSearch(e.target.value)}
+              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none mb-3 focus:border-accent/50"
+            />
             <div className="flex-1 overflow-y-auto space-y-1">
-              {allExercises.map((ex) => (
-                <button
-                  key={ex.id}
-                  onClick={() => doSwap(ex)}
-                  className="w-full text-left bg-bg rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-fg/5 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-fg/5 flex items-center justify-center shrink-0 overflow-hidden">
-                    {ex.image_url ? (
-                      <img src={ex.image_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-fg/30 text-lg font-bold">{ex.name.charAt(0)}</span>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-fg truncate">{ex.name}</p>
-                    <p className="text-[10px] text-fg/40 capitalize">{ex.category}</p>
-                  </div>
-                </button>
-              ))}
+              {filteredSwapExercises.map((ex) => (
+              <button
+                key={ex.id}
+                onClick={() => doSwap(ex)}
+                className="w-full text-left bg-bg rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-fg/5 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-lg bg-fg/5 flex items-center justify-center shrink-0 overflow-hidden">
+                  {ex.image_url ? (
+                    <img src={ex.image_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-fg/30 text-lg font-bold">{ex.name.charAt(0)}</span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-fg truncate">{ex.name}</p>
+                  <p className="text-[10px] text-fg/40 capitalize">{ex.category}</p>
+                </div>
+              </button>
+            ))}
+              {filteredSwapExercises.length === 0 && allExercises.length > 0 && (
+                <div className="text-xs text-fg/30 text-center py-4">
+                  No exercises match
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -471,12 +514,21 @@ export default function WorkoutRunner({
             </div>
           </div>
           <p className="text-fg/30 text-sm mb-4">Get ready...</p>
-          <button
-            onClick={() => advanceRef.current()}
-            className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-          >
-            <SkipForward size={16} weight="fill" /> Skip rest
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => advanceRef.current()}
+              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+            >
+              <SkipForward size={16} weight="fill" /> Skip rest
+            </button>
+            <button
+              onClick={() => (paused ? doResume() : doPause())}
+              className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
+            >
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+              {paused ? "Resume" : "Pause"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -503,12 +555,21 @@ export default function WorkoutRunner({
             </div>
           </div>
           <p className="text-fg/30 text-sm mb-4">Catch your breath</p>
-          <button
-            onClick={() => advanceRef.current()}
-            className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-          >
-            <SkipForward size={16} weight="fill" /> Skip rest
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => advanceRef.current()}
+              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+            >
+              <SkipForward size={16} weight="fill" /> Skip rest
+            </button>
+            <button
+              onClick={() => (paused ? doResume() : doPause())}
+              className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
+            >
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+              {paused ? "Resume" : "Pause"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -559,7 +620,8 @@ export default function WorkoutRunner({
                 ...prev,
                 [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), weightKg: e.target.value },
               }))}
-              className="w-20 bg-surface border border-fg/10 rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50"
+              disabled={paused}
+              className="w-20 bg-surface border border-fg/10 rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40"
               aria-label="Weight in kg"
             />
             <span className="text-fg/20 text-sm">×</span>
@@ -572,7 +634,8 @@ export default function WorkoutRunner({
                 ...prev,
                 [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), reps: e.target.value },
               }))}
-              className="w-20 bg-surface border border-fg/10 rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50"
+              disabled={paused}
+              className="w-20 bg-surface border border-fg/10 rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40"
               aria-label="Reps"
             />
           </div>
@@ -597,12 +660,21 @@ export default function WorkoutRunner({
             <p className="text-fg/30 text-xs mb-1">Rounds completed: {amrapRounds}</p>
           )}
           <p className="text-fg/30 text-sm">{isAmrap ? "Go!" : isEmom ? "Go!" : "Go!"}</p>
-          <button
-            onClick={() => advanceRef.current()}
-            className="mt-4 inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-          >
-            <SkipForward size={16} weight="fill" /> Skip
-          </button>
+          <div className="flex items-center gap-3 mt-4">
+            <button
+              onClick={() => advanceRef.current()}
+              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+            >
+              <SkipForward size={16} weight="fill" /> Skip
+            </button>
+            <button
+              onClick={() => (paused ? doResume() : doPause())}
+              className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
+            >
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+              {paused ? "Resume" : "Pause"}
+            </button>
+          </div>
         </div>
       )}
 
