@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends
@@ -5,13 +6,25 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.models import WorkoutSession, RunEntry, WeightEntry
-from app.schemas import StatsOverviewResponse, WeeklyStats
+from app.schemas import StatsOverviewResponse, WeeklyActivityStats
 
 router = APIRouter(prefix="/api/v1/stats", tags=["stats"])
 
 
 def _monday_of(d: date) -> date:
     return d - timedelta(days=d.weekday())
+
+
+def _is_run_mirror(s: WorkoutSession) -> bool:
+    """Sessions auto-created by the runs router to surface runs/walks in the
+    History tab ("Run: 5.0km" / "Walk: 3.2km"). Their time is already counted
+    via RunEntry rows, so exclude them from workout aggregates to avoid
+    double-counting in the stacked activity chart."""
+    return s.template_id is None and (s.template_name or "").startswith(("Run:", "Walk:"))
+
+
+def _session_date(s: WorkoutSession) -> date:
+    return s.started_at.date() if hasattr(s.started_at, "date") else s.started_at
 
 
 @router.get("/overview", response_model=StatsOverviewResponse)
@@ -21,57 +34,42 @@ def stats_overview(db: Session = Depends(get_db)):
     weights = db.query(WeightEntry).order_by(WeightEntry.date.asc()).all()
 
     today = date.today()
+    # Mirror sessions carry the run/walk kcal estimate, so summing every
+    # session covers workouts and runs alike.
     total_kcal = sum(s.total_kcal_estimated for s in sessions)
 
-    # Weekly workout volume (last 12 weeks)
-    week_buckets: dict[str, list[WorkoutSession]] = {}
-    for s in sessions:
-        d = s.started_at.date() if hasattr(s.started_at, 'date') else s.started_at
-        wk = _monday_of(d).isoformat()
-        if wk not in week_buckets:
-            week_buckets[wk] = []
-        week_buckets[wk].append(s)
+    workouts = [s for s in sessions if not _is_run_mirror(s)]
 
-    workout_volume = []
-    for wk in sorted(week_buckets.keys(), reverse=True)[:12]:
-        items = week_buckets[wk]
-        total_min = sum(s.total_duration_seconds for s in items) / 60
-        total_k = sum(s.total_kcal_estimated for s in items)
-        workout_volume.append(WeeklyStats(
-            week_start=wk,
-            total_minutes=round(total_min, 1),
-            total_kcal=round(total_k, 1),
-            total_sessions=len(items),
-            total_distance_km=0.0,
-        ))
-
-    # Weekly run distance
-    run_week_buckets: dict[str, list[RunEntry]] = {}
+    # Weekly activity, split by type (last 12 weeks with any activity)
+    weekly: dict[str, dict[str, float]] = defaultdict(
+        lambda: {"workout_min": 0.0, "run_min": 0.0, "walk_min": 0.0, "run_km": 0.0, "walk_km": 0.0}
+    )
+    for s in workouts:
+        wk = _monday_of(_session_date(s)).isoformat()
+        weekly[wk]["workout_min"] += (s.total_duration_seconds or 0) / 60
     for r in runs:
         wk = _monday_of(r.date).isoformat()
-        if wk not in run_week_buckets:
-            run_week_buckets[wk] = []
-        run_week_buckets[wk].append(r)
+        kind = "walk" if r.run_type == "walk" else "run"
+        weekly[wk][f"{kind}_min"] += r.duration_seconds / 60
+        weekly[wk][f"{kind}_km"] += r.distance_km
 
-    run_distance = []
-    for wk in sorted(run_week_buckets.keys(), reverse=True)[:12]:
-        items = run_week_buckets[wk]
-        total_dist = sum(r.distance_km for r in items)
-        total_min = sum(r.duration_seconds for r in items) / 60
-        total_k = sum(r.duration_seconds / 60 * 10.0 for r in items)
-        run_distance.append(WeeklyStats(
+    activity_weekly = [
+        WeeklyActivityStats(
             week_start=wk,
-            total_minutes=round(total_min, 1),
-            total_kcal=round(total_k, 1),
-            total_sessions=len(items),
-            total_distance_km=round(total_dist, 2),
-        ))
+            workout_minutes=round(weekly[wk]["workout_min"], 1),
+            run_minutes=round(weekly[wk]["run_min"], 1),
+            walk_minutes=round(weekly[wk]["walk_min"], 1),
+            run_km=round(weekly[wk]["run_km"], 2),
+            walk_km=round(weekly[wk]["walk_km"], 2),
+        )
+        for wk in sorted(weekly.keys(), reverse=True)[:12]
+    ]
 
     # Consistency score: % of days exercised in last 30 days
     thirty_days_ago = today - timedelta(days=30)
     session_dates = set()
     for s in sessions:
-        d = s.started_at.date() if hasattr(s.started_at, 'date') else s.started_at
+        d = _session_date(s)
         if d >= thirty_days_ago:
             session_dates.add(d)
     for r in runs:
@@ -88,11 +86,11 @@ def stats_overview(db: Session = Depends(get_db)):
 
     current_minutes = sum(
         s.total_duration_seconds for s in sessions
-        if (s.started_at.date() if hasattr(s.started_at, 'date') else s.started_at) >= current_month_start
+        if _session_date(s) >= current_month_start
     ) / 60
     prev_minutes = sum(
         s.total_duration_seconds for s in sessions
-        if prev_month_start <= (s.started_at.date() if hasattr(s.started_at, 'date') else s.started_at) < current_month_start
+        if prev_month_start <= _session_date(s) < current_month_start
     ) / 60
 
     vs_prev = None
@@ -106,12 +104,12 @@ def stats_overview(db: Session = Depends(get_db)):
         avg_weight_change = round(this_month_weights[-1].weight_kg - this_month_weights[0].weight_kg, 2)
 
     return StatsOverviewResponse(
-        workout_volume_weekly=workout_volume,
-        run_distance_weekly=run_distance,
+        activity_weekly=activity_weekly,
         total_kcal_burned=round(total_kcal, 1),
         consistency_score_pct=consistency_pct,
-        total_sessions_all=len(sessions),
-        total_runs=len(runs),
+        total_sessions_all=len(workouts),
+        total_runs=sum(1 for r in runs if r.run_type != "walk"),
+        total_walks=sum(1 for r in runs if r.run_type == "walk"),
         current_month_minutes=round(current_minutes, 1),
         previous_month_minutes=round(prev_minutes, 1),
         current_month_vs_previous_pct=vs_prev,

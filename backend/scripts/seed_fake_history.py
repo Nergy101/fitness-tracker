@@ -15,7 +15,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.database import SessionLocal, engine, Base, ensure_schema  # noqa: E402
+from app.database import SessionLocal  # noqa: E402
 from app.models.models import (  # noqa: E402
     WorkoutTemplate,
     WorkoutSession,
@@ -67,9 +67,7 @@ def _session_from_template(tpl: WorkoutTemplate, started_at: datetime) -> Workou
 
 
 def seed_fake_history() -> None:
-    Base.metadata.create_all(bind=engine)
-    ensure_schema()
-    # Guarantee exercises + templates exist first.
+    # Guarantee schema (via migrations), exercises + templates exist first.
     seed()
 
     rng = random.Random(1337)  # deterministic
@@ -114,8 +112,6 @@ def seed_fake_history() -> None:
 
 def clear_history() -> None:
     """Delete all workout sessions (removes fake and real history alike)."""
-    Base.metadata.create_all(bind=engine)
-    ensure_schema()
     db = SessionLocal()
     try:
         removed = db.query(WorkoutSession).count()

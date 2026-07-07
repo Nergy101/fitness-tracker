@@ -7,6 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import type { WorkoutSession } from "../api";
 import { formatDuration } from "../format";
+import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind } from "../activity";
 
 // ─── Helpers ──────────────────────────────────────────────
 
@@ -162,10 +163,11 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
                   </span>
                   {hasWorkout && (
                     <div className="flex gap-0.5 mt-0.5">
-                      {cell.sessions.slice(0, 3).map((_, i) => (
+                      {cell.sessions.slice(0, 3).map((s, i) => (
                         <span
                           key={i}
-                          className="w-1 h-1 rounded-full bg-accent"
+                          className="w-1 h-1 rounded-full"
+                          style={{ background: ACTIVITY_COLORS[activityKind(s.template_name)] }}
                         />
                       ))}
                     </div>
@@ -221,14 +223,20 @@ function DayDetail({
       </div>
 
       <div className="space-y-2">
-        {day.sessions.map((session) => (
+        {day.sessions.map((session) => {
+          const kind = activityKind(session.template_name);
+          const KindIcon = ACTIVITY_ICONS[kind];
+          return (
           <div
             key={session.id}
             className="bg-bg rounded-lg p-3 border border-fg/5"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium">{session.template_name}</p>
+                <p className="text-sm font-medium flex items-center gap-1.5">
+                  <KindIcon size={14} className="shrink-0" style={{ color: ACTIVITY_COLORS[kind] }} />
+                  {session.template_name}
+                </p>
                 <p className="text-xs text-fg/40 mt-0.5">
                   {new Date(session.started_at).toLocaleTimeString(undefined, {
                     hour: "2-digit",
@@ -245,7 +253,8 @@ function DayDetail({
               <span>{session.exercises.length} exercises</span>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

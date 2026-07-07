@@ -10,8 +10,11 @@ export function formatDuration(seconds: number): string {
 
 export function formatHours(minutes: number): string {
   if (!minutes) return "0m";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
+  // Round first: fractional input (e.g. 289.6) otherwise leaks float noise
+  // like "49.60000000000002m" into the UI.
+  const whole = Math.round(minutes);
+  const h = Math.floor(whole / 60);
+  const m = whole % 60;
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }

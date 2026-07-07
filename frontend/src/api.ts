@@ -295,21 +295,22 @@ export interface PrsResponse {
   best_week_distance_km: number | null;
 }
 
-export interface WeeklyStat {
+export interface WeeklyActivityStat {
   week_start: string;
-  total_minutes: number;
-  total_kcal: number;
-  total_sessions: number;
-  total_distance_km: number;
+  workout_minutes: number;
+  run_minutes: number;
+  walk_minutes: number;
+  run_km: number;
+  walk_km: number;
 }
 
 export interface StatsOverviewResponse {
-  workout_volume_weekly: WeeklyStat[];
-  run_distance_weekly: WeeklyStat[];
+  activity_weekly: WeeklyActivityStat[];
   total_kcal_burned: number;
   consistency_score_pct: number;
   total_sessions_all: number;
   total_runs: number;
+  total_walks: number;
   current_month_minutes: number;
   previous_month_minutes: number;
   current_month_vs_previous_pct: number | null;

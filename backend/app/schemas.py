@@ -366,21 +366,24 @@ class PrsResponse(BaseModel):
     longest_workout_name: str | None = None
 
 
-class WeeklyStats(BaseModel):
+class WeeklyActivityStats(BaseModel):
+    """One week of activity, split by type so charts can stack without
+    double-counting (run/walk mirror sessions are excluded from workouts)."""
     week_start: str
-    total_minutes: float
-    total_kcal: float
-    total_sessions: int
-    total_distance_km: float
+    workout_minutes: float
+    run_minutes: float
+    walk_minutes: float
+    run_km: float
+    walk_km: float
 
 
 class StatsOverviewResponse(BaseModel):
-    workout_volume_weekly: list[WeeklyStats] = []
-    run_distance_weekly: list[WeeklyStats] = []
+    activity_weekly: list[WeeklyActivityStats] = []
     total_kcal_burned: float = 0.0
     consistency_score_pct: float = 0.0
     total_sessions_all: int = 0
     total_runs: int = 0
+    total_walks: int = 0
     current_month_minutes: float = 0.0
     previous_month_minutes: float = 0.0
     current_month_vs_previous_pct: float | None = None

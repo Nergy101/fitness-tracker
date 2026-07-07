@@ -8,6 +8,7 @@ import {
   CalendarBlankIcon as CalendarBlank,
   PlantIcon as Plant,
   RocketLaunchIcon as RocketLaunch,
+  SneakerIcon as Sneaker,
   TrendDownIcon as TrendDown,
   TrendUpIcon as TrendUp,
   ScalesIcon as Scales,
@@ -17,53 +18,66 @@ import {
 import {
   api,
   type StatsOverviewResponse,
+  type WeeklyActivityStat,
 } from "../api";
+import { ACTIVITY_COLORS } from "../activity";
+import ActivityLegend from "./ActivityLegend";
 import { formatHours } from "../format";
 
-// ─── Color palette ─────────────────────────────────────────
+// ─── Stacked Bar Chart ─────────────────────────────────────
 
-const ACCENT = "var(--accent)";
+interface StackSegment<T> {
+  color: string;
+  value: (d: T) => number;
+}
 
-// ─── Bar Chart Component ───────────────────────────────────
-
-function BarChart<T>({
+/** Weekly bars where each bar stacks one segment per activity type. */
+function StackedBarChart<T>({
   data,
-  value,
+  segments,
   label,
-  color,
   height = 80,
-  maxValue,
 }: {
   data: T[];
-  value: (d: T) => number;
+  segments: StackSegment<T>[];
   label: (d: T) => string;
-  color: string;
   height?: number;
-  maxValue?: number;
 }) {
   if (data.length === 0) return null;
-  const max = maxValue ?? Math.max(1, ...data.map(value));
+  const max = Math.max(
+    1,
+    ...data.map((d) => segments.reduce((sum, seg) => sum + seg.value(d), 0)),
+  );
   const wPerBar = 28;
   const w = Math.max(wPerBar * data.length, wPerBar);
 
   return (
     <svg viewBox={`0 0 ${w} ${height + 20}`} className="w-full" style={{ maxHeight: height + 20 }}>
       {data.map((d, i) => {
-        const val = value(d);
-        const barH = (val / max) * height;
         const x = i * wPerBar + 2;
-        const y = height - barH;
+        const parts = segments
+          .map((seg) => ({ color: seg.color, val: seg.value(d) }))
+          .filter((p) => p.val > 0);
+        let yCursor = height;
         return (
           <g key={i}>
-            <rect
-              x={x}
-              y={y}
-              width={wPerBar - 4}
-              height={Math.max(barH, 1)}
-              rx={2}
-              fill={color}
-              opacity={0.8}
-            />
+            {parts.map((p, j) => {
+              const barH = Math.max((p.val / max) * height, 1);
+              yCursor -= barH;
+              const isTop = j === parts.length - 1;
+              return (
+                <rect
+                  key={j}
+                  x={x}
+                  y={yCursor}
+                  width={wPerBar - 4}
+                  height={barH}
+                  rx={isTop ? 2 : 0}
+                  fill={p.color}
+                  opacity={0.8}
+                />
+              );
+            })}
             <text
               x={x + (wPerBar - 4) / 2}
               y={height + 12}
@@ -154,6 +168,9 @@ export default function StatisticsTab() {
     insightLines.push({ icon: RocketLaunch, text: "Complete your first workout to see stats!" });
   }
 
+  const weeks = [...stats.activity_weekly].reverse();
+  const hasDistance = weeks.some((w) => w.run_km + w.walk_km > 0);
+
   return (
     <div className="stats-tab space-y-4">
       {/* Header */}
@@ -185,12 +202,11 @@ export default function StatisticsTab() {
           icon={<CalendarBlank size={14} className="text-accent" />}
           label="Consistency (30d)"
           value={`${stats.consistency_score_pct}%`}
-          sub={`${stats.total_sessions_all} total workouts`}
         />
         <StatCard
-          icon={<PersonSimpleRun size={14} className="text-blue-400" />}
-          label="Total runs"
-          value={String(stats.total_runs)}
+          icon={<Barbell size={14} style={{ color: ACTIVITY_COLORS.workout }} />}
+          label="Total workouts"
+          value={String(stats.total_sessions_all)}
         />
         <StatCard
           icon={<Scales size={14} className="text-purple-400" />}
@@ -201,21 +217,35 @@ export default function StatisticsTab() {
               : "—"
           }
         />
+        <StatCard
+          icon={<PersonSimpleRun size={14} style={{ color: ACTIVITY_COLORS.run }} />}
+          label="Total runs"
+          value={String(stats.total_runs)}
+        />
+        <StatCard
+          icon={<Sneaker size={14} style={{ color: ACTIVITY_COLORS.walk }} />}
+          label="Total walks"
+          value={String(stats.total_walks)}
+        />
       </div>
 
-      {/* Workout volume bar chart */}
-      {stats.workout_volume_weekly.length > 0 && (
+      {/* Weekly activity: workouts + runs + walks stacked */}
+      {weeks.length > 0 && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center gap-1.5 mb-2">
             <TrendUp size={16} className="text-accent" />
-            <p className="text-xs text-fg/40">Workout Volume (weekly min)</p>
+            <p className="text-xs text-fg/40">Weekly Activity (min)</p>
           </div>
-          <BarChart
-            data={[...stats.workout_volume_weekly].reverse()}
-            value={(d) => d.total_minutes}
+          <StackedBarChart
+            data={weeks}
+            segments={[
+              { color: ACTIVITY_COLORS.workout, value: (d: WeeklyActivityStat) => d.workout_minutes },
+              { color: ACTIVITY_COLORS.run, value: (d: WeeklyActivityStat) => d.run_minutes },
+              { color: ACTIVITY_COLORS.walk, value: (d: WeeklyActivityStat) => d.walk_minutes },
+            ]}
             label={(d) => d.week_start}
-            color={ACCENT}
           />
+          <ActivityLegend kinds={["workout", "run", "walk"]} />
           {stats.current_month_vs_previous_pct != null && (
             <div className="flex justify-between mt-2 text-[10px] text-fg/40">
               <span>This month: {formatHours(stats.current_month_minutes)}</span>
@@ -228,19 +258,22 @@ export default function StatisticsTab() {
         </div>
       )}
 
-      {/* Run distance bar chart */}
-      {stats.run_distance_weekly.length > 0 && (
+      {/* Weekly distance: runs + walks stacked */}
+      {hasDistance && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center gap-1.5 mb-2">
-            <PersonSimpleRun size={16} className="text-blue-400" />
-            <p className="text-xs text-fg/40">Weekly Run Distance (km)</p>
+            <PersonSimpleRun size={16} style={{ color: ACTIVITY_COLORS.run }} />
+            <p className="text-xs text-fg/40">Weekly Distance (km)</p>
           </div>
-          <BarChart
-            data={[...stats.run_distance_weekly].reverse()}
-            value={(d) => d.total_distance_km}
+          <StackedBarChart
+            data={weeks}
+            segments={[
+              { color: ACTIVITY_COLORS.run, value: (d: WeeklyActivityStat) => d.run_km },
+              { color: ACTIVITY_COLORS.walk, value: (d: WeeklyActivityStat) => d.walk_km },
+            ]}
             label={(d) => d.week_start}
-            color="#38bdf8"
           />
+          <ActivityLegend kinds={["run", "walk"]} />
         </div>
       )}
     </div>

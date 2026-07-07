@@ -3,9 +3,7 @@ import {
   ArrowLeftIcon as ArrowLeft,
   ClockCounterClockwiseIcon as ClockCounterClockwise,
   DownloadSimpleIcon as DownloadSimple,
-  PersonSimpleRunIcon as PersonSimpleRun,
   PencilSimpleIcon as PencilSimple,
-  SneakerIcon as Sneaker,
   SmileySadIcon as SmileySad,
   TrashIcon as Trash,
   UploadSimpleIcon as UploadSimple,
@@ -26,6 +24,8 @@ import {
 } from "../format";
 import { shortDate } from "../locale";
 import { useLocale } from "../useLocale";
+import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind, type ActivityKind } from "../activity";
+import ActivityLegend from "./ActivityLegend";
 import CalendarView from "./CalendarView";
 
 // Bump when the export shape changes so future imports can migrate old files.
@@ -108,37 +108,55 @@ function StatsGrid({ sessions }: { sessions: WorkoutSession[] }) {
   );
 }
 
-/** Bars per weekday (Mon–Sun) showing how many workouts landed on each day. */
+/** Bars per weekday (Mon–Sun), stacked by activity type. */
 function WeekdayChart({ sessions }: { sessions: WorkoutSession[] }) {
   const buckets = useMemo(() => {
-    const counts = new Array(7).fill(0);
+    const counts = Array.from({ length: 7 }, () => ({ workout: 0, run: 0, walk: 0 }));
     for (const s of sessions) {
       const day = new Date(s.started_at).getDay(); // 0=Sun
-      counts[(day + 6) % 7]++;
+      counts[(day + 6) % 7][activityKind(s.template_name)]++;
     }
     return counts;
   }, [sessions]);
-  const max = Math.max(1, ...buckets);
+  const max = Math.max(1, ...buckets.map((b) => b.workout + b.run + b.walk));
 
   return (
-    <div className="flex items-end gap-1.5 h-20">
-      {buckets.map((count, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-          <span
-            className={`text-[10px] font-semibold ${count > 0 ? "text-accent" : "text-transparent"}`}
-          >
-            {count}
-          </span>
-          <div
-            className="w-full rounded-t-sm transition-all"
-            style={{
-              height: `${count > 0 ? 6 + (count / max) * 46 : 3}px`,
-              background: count > 0 ? "var(--accent)" : "var(--track)",
-            }}
-          />
-          <span className="text-[10px] text-fg/30">{WEEKDAY_LABELS[i]}</span>
-        </div>
-      ))}
+    <div>
+      <div className="flex items-end gap-1.5 h-20">
+        {buckets.map((b, i) => {
+          const total = b.workout + b.run + b.walk;
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+              <span
+                className={`text-[10px] font-semibold ${total > 0 ? "text-fg/60" : "text-transparent"}`}
+              >
+                {total}
+              </span>
+              <div
+                className="w-full rounded-t-sm overflow-hidden flex flex-col justify-end transition-all"
+                style={{
+                  height: `${total > 0 ? 6 + (total / max) * 46 : 3}px`,
+                  background: total > 0 ? undefined : "var(--track)",
+                }}
+              >
+                {(["walk", "run", "workout"] as const).map((kind) =>
+                  b[kind] > 0 ? (
+                    <div
+                      key={kind}
+                      style={{
+                        height: `${(b[kind] / total) * 100}%`,
+                        background: ACTIVITY_COLORS[kind],
+                      }}
+                    />
+                  ) : null,
+                )}
+              </div>
+              <span className="text-[10px] text-fg/30">{WEEKDAY_LABELS[i]}</span>
+            </div>
+          );
+        })}
+      </div>
+      <ActivityLegend kinds={["workout", "run", "walk"]} />
     </div>
   );
 }
@@ -148,11 +166,15 @@ function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function countsByDay(sessions: WorkoutSession[]): Map<string, number> {
-  const m = new Map<string, number>();
+type DayCounts = Record<ActivityKind, number>;
+
+function countsByDay(sessions: WorkoutSession[]): Map<string, DayCounts> {
+  const m = new Map<string, DayCounts>();
   for (const s of sessions) {
     const k = dayKey(new Date(s.started_at));
-    m.set(k, (m.get(k) ?? 0) + 1);
+    const c = m.get(k) ?? { workout: 0, run: 0, walk: 0 };
+    c[activityKind(s.template_name)]++;
+    m.set(k, c);
   }
   return m;
 }
@@ -173,14 +195,15 @@ function DayBars({
   const days = useMemo(() => {
     const byDay = countsByDay(sessions);
     const now = new Date();
-    const items: { key: string; count: number; label: string; date: Date }[] = [];
+    const empty: DayCounts = { workout: 0, run: 0, walk: 0 };
+    const items: { key: string; counts: DayCounts; label: string; date: Date }[] = [];
     if (mode === "week") {
       const monday = new Date(now);
       monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
       for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
-        items.push({ key: dayKey(d), count: byDay.get(dayKey(d)) ?? 0, label: SINGLE_LETTER[i], date: d });
+        items.push({ key: dayKey(d), counts: byDay.get(dayKey(d)) ?? empty, label: SINGLE_LETTER[i], date: d });
       }
     } else {
       for (let i = 6; i >= 0; i--) {
@@ -188,7 +211,7 @@ function DayBars({
         d.setDate(now.getDate() - i);
         items.push({
           key: dayKey(d),
-          count: byDay.get(dayKey(d)) ?? 0,
+          counts: byDay.get(dayKey(d)) ?? empty,
           label: SINGLE_LETTER[(d.getDay() + 6) % 7],
           date: d,
         });
@@ -196,39 +219,55 @@ function DayBars({
     }
     return { items, todayKey: dayKey(now) };
   }, [sessions, mode]);
-  const max = Math.max(1, ...days.items.map((d) => d.count));
+  const max = Math.max(1, ...days.items.map((d) => d.counts.workout + d.counts.run + d.counts.walk));
 
   return (
-    <div className="flex items-end gap-1.5 h-24">
-      {days.items.map((d) => {
-        const today = d.key === days.todayKey;
-        return (
-          <div key={d.key} className="flex-1 flex flex-col items-center gap-0.5">
-            <span
-              className={`text-[10px] font-semibold ${d.count > 0 ? "text-accent" : "text-transparent"}`}
-            >
-              {d.count}
-            </span>
-            <div
-              className="w-full rounded-t-sm transition-all"
-              style={{
-                height: `${d.count > 0 ? 6 + (d.count / max) * 40 : 3}px`,
-                background: d.count > 0 ? "var(--accent)" : "var(--track)",
-              }}
-            />
-            <span
-              className={`text-[10px] leading-tight ${today ? "text-fg font-bold" : "text-fg/30"}`}
-            >
-              {d.label}
-            </span>
-            <span
-              className={`text-[9px] leading-tight ${today ? "text-fg/70" : "text-fg/25"}`}
-            >
-              {shortDate(d.date, locale)}
-            </span>
-          </div>
-        );
-      })}
+    <div>
+      <div className="flex items-end gap-1.5 h-24">
+        {days.items.map((d) => {
+          const today = d.key === days.todayKey;
+          const total = d.counts.workout + d.counts.run + d.counts.walk;
+          return (
+            <div key={d.key} className="flex-1 flex flex-col items-center gap-0.5">
+              <span
+                className={`text-[10px] font-semibold ${total > 0 ? "text-fg/60" : "text-transparent"}`}
+              >
+                {total}
+              </span>
+              <div
+                className="w-full rounded-t-sm overflow-hidden flex flex-col justify-end transition-all"
+                style={{
+                  height: `${total > 0 ? 6 + (total / max) * 40 : 3}px`,
+                  background: total > 0 ? undefined : "var(--track)",
+                }}
+              >
+                {(["walk", "run", "workout"] as const).map((kind) =>
+                  d.counts[kind] > 0 ? (
+                    <div
+                      key={kind}
+                      style={{
+                        height: `${(d.counts[kind] / total) * 100}%`,
+                        background: ACTIVITY_COLORS[kind],
+                      }}
+                    />
+                  ) : null,
+                )}
+              </div>
+              <span
+                className={`text-[10px] leading-tight ${today ? "text-fg font-bold" : "text-fg/30"}`}
+              >
+                {d.label}
+              </span>
+              <span
+                className={`text-[9px] leading-tight ${today ? "text-fg/70" : "text-fg/25"}`}
+              >
+                {shortDate(d.date, locale)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <ActivityLegend kinds={["workout", "run", "walk"]} />
     </div>
   );
 }
@@ -260,7 +299,8 @@ function Heatmap({ sessions }: { sessions: WorkoutSession[] }) {
       for (let i = 0; i < 7; i++) {
         const k = dayKey(cursor);
         const inRange = cursor >= windowStart && cursor <= today;
-        row.push({ key: k, count: inRange ? byDay.get(k) ?? 0 : 0, inRange });
+        const c = byDay.get(k);
+        row.push({ key: k, count: inRange && c ? c.workout + c.run + c.walk : 0, inRange });
         cursor.setDate(cursor.getDate() + 1);
       }
       rows.push(row);
@@ -320,7 +360,10 @@ function SessionList({
   }
   return (
     <div className="space-y-2">
-      {sessions.map((session) => (
+      {sessions.map((session) => {
+        const kind = activityKind(session.template_name);
+        const KindIcon = ACTIVITY_ICONS[kind];
+        return (
         <div
           key={session.id}
           className="bg-surface rounded-xl p-4 border border-fg/5 cursor-pointer hover:border-accent/30 transition-colors"
@@ -329,13 +372,7 @@ function SessionList({
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2">
-                {session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:") ? (
-                  session.template_name.startsWith("Walk:") ? (
-                    <Sneaker size={16} className="text-accent shrink-0" />
-                  ) : (
-                    <PersonSimpleRun size={16} className="text-accent shrink-0" />
-                  )
-                ) : null}
+                <KindIcon size={16} className="shrink-0" style={{ color: ACTIVITY_COLORS[kind] }} />
                 <h3 className="font-semibold text-sm">{session.template_name}</h3>
               </div>
               {editingId === session.id ? (
@@ -399,7 +436,8 @@ function SessionList({
             <span>{session.exercises.length} exercises</span>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
