@@ -3,8 +3,7 @@
 # Run this on the production server, or let CI auto-deploy after build.
 set -euo pipefail
 
-cd /opt/fitness-tracker
+cd /root/code/fitness-tracker
 docker compose pull
-docker compose up -d --remove-orphans
-docker image prune -f
+docker compose up -d
 echo "✅ FitnessTracker updated and running."

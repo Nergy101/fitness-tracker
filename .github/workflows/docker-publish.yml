@@ -202,17 +202,28 @@ jobs:
     needs: [publish]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    environment: production
+    environment:
+      name: Production
+      url: https://fitness.nergy.space
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+      - name: Get Known Hosts
+        run: echo "KNOWN_HOSTS=$(ssh-keyscan -H ${{ secrets.SSH_HOST }})" >> $GITHUB_ENV
+
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}
+          name: github-actions
+          known_hosts: ${{ env.KNOWN_HOSTS }}
+          if_key_exists: replace
+
+      - name: Pull and start on server
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || '22' }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /opt/fitness-tracker
+            cd /root/code/fitness-tracker
             docker compose pull
-            docker compose up -d --remove-orphans
-            docker image prune -f
+            docker compose up -d
