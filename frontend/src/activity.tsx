@@ -22,7 +22,7 @@ export const ACTIVITY_ICONS: Record<ActivityKind, Icon> = {
 };
 
 export const ACTIVITY_COLORS: Record<ActivityKind, string> = {
-  workout: "var(--accent)",
+  workout: "#fb923c", // orange-400
   run: "#38bdf8", // sky-400
   walk: "#4ade80", // green-400
 };
