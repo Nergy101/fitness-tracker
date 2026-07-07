@@ -10,6 +10,7 @@ import { useAudio } from "../useAudio";
 import { useLocale } from "../useLocale";
 import type { DateLocale } from "../locale";
 import HealthSettingsSection from "./health/HealthSettingsSection";
+import BackupSection from "./BackupSection";
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; ariaLabel: string }[] = [
   { mode: "system", label: "System", ariaLabel: "System theme" },
@@ -126,6 +127,11 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
                 onClose();
               }}
             />
+          </div>
+
+          {/* Backups */}
+          <div className="border-t border-fg/10 pt-3.5">
+            <BackupSection />
           </div>
         </div>
       </div>

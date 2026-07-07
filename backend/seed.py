@@ -7,7 +7,7 @@ database that was seeded by an older version.
 import json
 from pathlib import Path
 
-from app.database import SessionLocal, engine, Base, ensure_schema
+from app.database import SessionLocal, engine, Base, run_migrations
 from app.models.models import Exercise, WorkoutTemplate, WorkoutTemplateExercise
 
 SEED_EXERCISES = [
@@ -269,8 +269,7 @@ SEED_WORKOUTS = [
 
 
 def seed():
-    Base.metadata.create_all(bind=engine)
-    ensure_schema()
+    run_migrations()
     db = SessionLocal()
     try:
         # Image mapping (produced by scripts/import_exercise_images.py). Absent
