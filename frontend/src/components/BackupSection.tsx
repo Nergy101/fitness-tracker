@@ -63,8 +63,8 @@ export default function BackupSection() {
       });
       setConfig(updated);
       showMsg("Settings saved");
-    } catch (e: any) {
-      showMsg(e.message ?? "Save failed");
+    } catch (e: unknown) {
+      showMsg(e instanceof Error ? e.message : "Save failed");
     } finally {
       setLoading(false);
     }
@@ -82,8 +82,8 @@ export default function BackupSection() {
       const result: BackupResultResponse = await api.createBackup();
       showMsg(`Backup created: ${result.filename} (${formatBytes(result.size_bytes)})`);
       loadData();
-    } catch (e: any) {
-      showMsg(e.message ?? "Backup failed");
+    } catch (e: unknown) {
+      showMsg(e instanceof Error ? e.message : "Backup failed");
     } finally {
       setLoading(false);
     }
@@ -96,8 +96,8 @@ export default function BackupSection() {
       const result = await api.restoreBackup(filename);
       showMsg(`Restored from ${filename}. Safety backup: ${result.safety_backup}`);
       loadData();
-    } catch (e: any) {
-      showMsg(e.message ?? "Restore failed");
+    } catch (e: unknown) {
+      showMsg(e instanceof Error ? e.message : "Restore failed");
     } finally {
       setLoading(false);
     }
