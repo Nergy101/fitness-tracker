@@ -65,7 +65,10 @@ export default function App() {
 
   if (runningWorkout) {
     return (
-      <div className="fixed inset-0 z-50 pt-[env(safe-area-inset-top)]">
+      <div
+        className="fixed inset-0 z-50"
+        style={{ paddingTop: "max(env(safe-area-inset-top), 56px)" }}
+      >
         <WorkoutRunner
           workout={runningWorkout}
           onFinish={() => {
