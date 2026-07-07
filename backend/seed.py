@@ -7,7 +7,7 @@ database that was seeded by an older version.
 import json
 from pathlib import Path
 
-from app.database import SessionLocal, engine, Base, run_migrations
+from app.database import SessionLocal, run_migrations
 from app.models.models import Exercise, WorkoutTemplate, WorkoutTemplateExercise
 
 SEED_EXERCISES = [

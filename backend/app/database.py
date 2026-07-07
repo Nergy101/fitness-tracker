@@ -25,7 +25,8 @@ def run_migrations() -> None:
         return
 
     # File-based DB — use Alembic for proper migration tracking
-    import subprocess, os, sys
+    import os
+    import subprocess
 
     backend_dir = os.path.join(os.path.dirname(__file__), "..")
     subprocess.run(

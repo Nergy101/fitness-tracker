@@ -1,8 +1,7 @@
 """Backup and restore router — JSON dumps of all data tables."""
 
 import json
-import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -59,7 +58,7 @@ def _row_to_dict(row) -> dict:
 def _serialize_val(val):
     if isinstance(val, datetime):
         return val.isoformat()
-    if isinstance(val, (date := __import__("datetime").date)):
+    if isinstance(val, date):
         return val.isoformat()
     return val
 
