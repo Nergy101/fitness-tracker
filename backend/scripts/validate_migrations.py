@@ -15,8 +15,10 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = BACKEND_DIR / "alembic" / "versions"
 
-# Files where create_all is allowed (guarded in-memory fallback for tests)
-ALLOWED_FILES = {"database.py", "seed_fake_history.py"}
+# Files where create_all is allowed: guarded in-memory fallback (database.py,
+# seed_fake_history.py) and the migration tests, which use create_all to
+# simulate legacy pre-Alembic databases.
+ALLOWED_FILES = {"database.py", "seed_fake_history.py", "test_migrations.py"}
 
 
 def check_migration_reversibility() -> list[str]:
