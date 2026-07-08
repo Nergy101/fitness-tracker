@@ -137,7 +137,7 @@ function HealthSettingsForm({
           className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50" />
       </div>
       <div>
-        <label className="text-xs text-fg/50 block mb-1">Reminder Time</label>
+        <label className="text-xs text-fg/50 block mb-1">Daily workout reminder at</label>
         <input type="time" value={form.reminder_time}
           onChange={(e) => setForm({ ...form, reminder_time: e.target.value })}
           className="w-full min-w-0 bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50 box-border" />
