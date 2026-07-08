@@ -21,6 +21,7 @@ import { useTheme } from "./useTheme";
 import StatisticsTab from "./components/StatisticsTab";
 import ErrorBoundary from "./components/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
+import { useHashRoute } from "./useHashRoute";
 
 type TabId = "workout" | "exercises" | "history" | "health" | "stats";
 
@@ -38,6 +39,8 @@ const TABS: Tab[] = [
   { id: "health", label: "Health", icon: Heartbeat },
 ];
 
+const TAB_IDS: readonly TabId[] = TABS.map((t) => t.id);
+
 export default function App() {
   // Nothing else mounts theme handling on the main screen (controls live in
   // the settings modal), so apply the persisted theme from the app root.
@@ -51,7 +54,7 @@ export default function App() {
       return false;
     }
   });
-  const [currentTab, setCurrentTab] = useState<TabId>("workout");
+  const [currentTab, setCurrentTab] = useHashRoute<TabId>(TAB_IDS, "workout");
   const [runningWorkout, setRunningWorkout] = useState<WorkoutTemplate | null>(
     null,
   );
