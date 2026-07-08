@@ -38,8 +38,8 @@ type RangeKey = "week" | "7d" | "30d";
 
 const RANGES: { key: RangeKey; label: string }[] = [
   { key: "week", label: "This week" },
-  { key: "7d", label: "Last 7 days" },
-  { key: "30d", label: "Last 30 days" },
+  { key: "7d", label: "7 Days" },
+  { key: "30d", label: "30 Days" },
 ];
 
 function rangeStart(key: RangeKey): Date {

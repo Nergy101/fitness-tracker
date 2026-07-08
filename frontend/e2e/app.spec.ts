@@ -238,7 +238,7 @@ test.describe("authenticated", () => {
 
     // Range pills present; the session shows in the default (Last 7 days) range.
     await expect(page.getByRole("button", { name: "This week" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Last 30 days" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "30 Days" })).toBeVisible();
     await expect(page.getByText("E2E History").first()).toBeVisible();
 
     // Drill into all-time and back.
