@@ -2,7 +2,7 @@
 
 A complete fitness PWA — track workouts, runs, health metrics, and wellness. Works on any device. Installable, offline-capable, dark/light theme.
 
-**Live:** [fitness.nergy.space](https://fitness.nergy.space)
+**Live:** [fit.nergy.space](https://fit.nergy.space)
 
 **Stack:** React 19 + TypeScript + Vite + Tailwind CSS 4 (frontend) · FastAPI + SQLAlchemy + SQLite + Alembic (backend) · Docker Compose + Nginx · GitHub Actions CI/CD
 

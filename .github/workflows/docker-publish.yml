@@ -204,7 +204,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: Production
-      url: https://fitness.nergy.space
+      url: https://fit.nergy.space
     steps:
       - name: Get Known Hosts
         run: echo "KNOWN_HOSTS=$(ssh-keyscan -H ${{ secrets.SSH_HOST }})" >> $GITHUB_ENV
