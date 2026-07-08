@@ -13,12 +13,11 @@ import type { DateLocale } from "../locale";
 import HealthSettingsSection from "./health/HealthSettingsSection";
 import BackupSection from "./BackupSection";
 
-type SettingsTab = "general" | "health" | "backups";
+type SettingsTab = "general" | "health";
 
 const SUB_TABS: { id: SettingsTab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "health", label: "Health" },
-  { id: "backups", label: "Backups" },
 ];
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; ariaLabel: string }[] = [
@@ -153,6 +152,11 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
                   className="accent-accent"
                 />
               </label>
+
+              {/* Backups */}
+              <div className="border-t border-fg/10 pt-3.5">
+                <BackupSection />
+              </div>
             </div>
           )}
 
@@ -167,8 +171,6 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
               />
             </div>
           )}
-
-          {subTab === "backups" && <BackupSection />}
         </div>
       </div>
     </div>
