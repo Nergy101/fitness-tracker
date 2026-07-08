@@ -1,7 +1,8 @@
 """Backup and restore router — JSON dumps of all data tables."""
 
 import json
-from datetime import date, datetime, timezone
+import logging
+from datetime import date, datetime, time, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,13 +10,15 @@ from pydantic import BaseModel
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
-from app.database import engine, get_db
+from app.database import get_db
 from app.models.models import (
     Exercise, WorkoutTemplate, WorkoutTemplateExercise,
     WorkoutSession, SessionExercise, ExerciseLog,
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin,
-    RunEntry, PushSubscription,
+    RunEntry, PushSubscription, HealthMetric, HealthWorkout,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["backup"])
 
@@ -56,9 +59,12 @@ def _row_to_dict(row) -> dict:
 
 
 def _serialize_val(val):
+    # NB: datetime must be checked before date (it's a date subclass);
+    # time is neither — forgetting it made json.dumps 500 on any profile
+    # with a reminder_time set.
     if isinstance(val, datetime):
         return val.isoformat()
-    if isinstance(val, date):
+    if isinstance(val, (date, time)):
         return val.isoformat()
     return val
 
@@ -69,7 +75,7 @@ def _dump_tables(db: Session) -> dict:
         Exercise, WorkoutTemplate, WorkoutTemplateExercise,
         WorkoutSession, SessionExercise, ExerciseLog,
         UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin,
-        RunEntry, PushSubscription,
+        RunEntry, PushSubscription, HealthMetric, HealthWorkout,
     ]
     tables = {}
     for model in models:
@@ -163,7 +169,10 @@ def update_backup_config(data: BackupConfigUpdate):
 @router.post("/backup", response_model=BackupResultResponse)
 def create_backup(db: Session = Depends(get_db)):
     backup_dir = _get_backup_dir()
-    result = _do_backup(db, backup_dir)
+    try:
+        result = _do_backup(db, backup_dir)
+    except OSError as e:
+        raise HTTPException(400, f"Backup location '{backup_dir}' is not writable: {e}")
     # Update last_backup timestamp in config
     config = _load_config()
     config["last_backup"] = datetime.now(timezone.utc).isoformat()
@@ -209,23 +218,33 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
         raise HTTPException(400, "Backup file contains no table data")
 
     # Pre-restore safety backup
-    safety_result = _do_backup(db, backup_dir)
+    try:
+        safety_result = _do_backup(db, backup_dir)
+    except OSError as e:
+        raise HTTPException(400, f"Backup location '{backup_dir}' is not writable: {e}")
 
-    # Table order matters for FK constraints — delete children first
+    # Table order matters for FK constraints — delete children first. Only
+    # tables present in the backup are truncated, so restoring a file from
+    # before a table existed (e.g. pre-Apple-Health backups) leaves that
+    # table's current rows alone instead of wiping them.
     delete_order = [
         "exercise_logs", "session_exercises", "workout_sessions",
         "workout_template_exercises", "workout_templates",
         "push_subscriptions", "run_entries", "wellness_checkins",
         "body_measurements", "weight_entries", "user_profiles", "exercises",
+        "health_metrics", "health_workouts",
     ]
 
-    inspector = inspect(engine)
+    # Inspect through the session's own connection: a separate engine
+    # connection sees a different (empty) database under in-memory SQLite,
+    # which silently skipped every DELETE and made re-inserts collide.
+    inspector = inspect(db.get_bind())
     existing_tables = set(inspector.get_table_names())
 
     try:
         # Truncate in order
         for tname in delete_order:
-            if tname in existing_tables:
+            if tname in existing_tables and tname in tables_data:
                 db.execute(text(f"DELETE FROM {tname}"))
 
         # Insert from backup data (reverse order for FK parents first)
@@ -234,6 +253,7 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
             "wellness_checkins", "run_entries", "push_subscriptions",
             "workout_templates", "workout_template_exercises",
             "workout_sessions", "session_exercises", "exercise_logs",
+            "health_metrics", "health_workouts",
         ]
 
         for tname in insert_order:
@@ -250,6 +270,7 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
         db.commit()
     except Exception:
         db.rollback()
+        logger.exception("Restore of %s failed", req.filename)
         raise HTTPException(500, "Restore failed — data has been rolled back. A safety backup was created.")
 
     return {

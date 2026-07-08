@@ -9,6 +9,10 @@ dist/
 .astro/
 settings.toml
 
+# Runtime backup artifacts (written by the backup endpoints)
+backend/backups/
+backend/backup_config.json
+
 # Playwright
 /frontend/test-results/
 /frontend/playwright-report/
