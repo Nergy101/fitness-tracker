@@ -331,12 +331,12 @@ export default function HealthTab() {
           </div>
           {goal.remaining_kg != null && (
             <p className="text-xs text-fg/40 mt-1">
-              {goal.remaining_kg > 0 ? (
-                `${Math.abs(goal.remaining_kg).toFixed(1)} kg to go`
-              ) : (
+              {(goal.progress_percentage ?? 0) >= 100 ? (
                 <span className="inline-flex items-center gap-1">
                   Goal reached! <Confetti size={14} weight="fill" className="text-accent" />
                 </span>
+              ) : (
+                `${Math.abs(goal.remaining_kg).toFixed(1)} kg to go`
               )}
             </p>
           )}
