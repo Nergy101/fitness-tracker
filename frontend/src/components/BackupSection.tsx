@@ -38,13 +38,11 @@ export default function BackupSection() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
-  const [locationInput, setLocationInput] = useState("");
 
   const loadData = useCallback(async () => {
     try {
       const [cfg, bkps] = await Promise.all([api.getBackupConfig(), api.listBackups()]);
       setConfig(cfg);
-      setLocationInput(cfg.location);
       setBackups(bkps);
     } catch {
       // offline / backend not available
@@ -52,23 +50,6 @@ export default function BackupSection() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  const handleUpdateConfig = async () => {
-    if (!config) return;
-    setLoading(true);
-    try {
-      const updated = await api.updateBackupConfig({
-        location: locationInput || undefined,
-        interval: config.interval,
-      });
-      setConfig(updated);
-      showMsg("Settings saved");
-    } catch (e: unknown) {
-      showMsg(e instanceof Error ? e.message : "Save failed");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleIntervalChange = async (interval: string) => {
     if (!config) return;
@@ -112,20 +93,10 @@ export default function BackupSection() {
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-fg/40">Backups</p>
-
-      {/* Location */}
-      <div className="flex gap-2 items-center">
-        <input
-          type="text"
-          value={locationInput}
-          onChange={(e) => setLocationInput(e.target.value)}
-          onBlur={handleUpdateConfig}
-          placeholder="./backups"
-          aria-label="Backup location"
-          className="flex-1 bg-bg border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/25 focus:outline-none focus:border-accent/30"
-        />
-      </div>
+      {/* Location (read-only from settings.toml) */}
+      <p className="text-xs text-fg/30">
+        Saving to: <span className="text-fg/50 font-mono">{config.location}</span>
+      </p>
 
       {/* Interval */}
       <div className="flex gap-1.5">

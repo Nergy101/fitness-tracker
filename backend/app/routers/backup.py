@@ -1,4 +1,9 @@
-"""Backup and restore router — JSON dumps of all data tables."""
+"""Backup and restore router — JSON dumps of all data tables.
+
+Backup path comes from settings.toml ([backup] path) and cannot be
+changed via the API. Only the interval (disabled/daily/weekly) and
+the last_backup timestamp are managed through the settings endpoint.
+"""
 
 import json
 import logging
@@ -17,6 +22,7 @@ from app.models.models import (
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin,
     RunEntry, PushSubscription, HealthMetric, HealthWorkout,
 )
+from app.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +30,6 @@ router = APIRouter(prefix="/api/v1", tags=["backup"])
 
 CONFIG_FILENAME = "backup_config.json"
 CONFIG_PATH = Path(CONFIG_FILENAME)  # stored in backend working directory
-DEFAULT_BACKUP_DIR = "./backups"
 BACKUP_VERSION = "1.0"
 
 # ─── Helpers ──────────────────────────────────────────────
@@ -44,9 +49,17 @@ def _save_config(config: dict) -> None:
 
 
 def _get_backup_dir() -> Path:
-    """Read backup directory from config, or return default."""
-    config = _load_config()
-    return Path(config.get("location", DEFAULT_BACKUP_DIR))
+    """Read backup directory from settings.toml [backup] path.
+
+    FITNESS_BACKUP_PATH env var overrides settings.toml (for tests/Docker).
+    """
+    import os
+    env_path = os.getenv("FITNESS_BACKUP_PATH")
+    if env_path:
+        return Path(env_path)
+    backup_settings = settings.get("backup", {})
+    path = backup_settings.get("path", "/backups")
+    return Path(path)
 
 
 def _table_name(model) -> str:
@@ -59,9 +72,6 @@ def _row_to_dict(row) -> dict:
 
 
 def _serialize_val(val):
-    # NB: datetime must be checked before date (it's a date subclass);
-    # time is neither — forgetting it made json.dumps 500 on any profile
-    # with a reminder_time set.
     if isinstance(val, datetime):
         return val.isoformat()
     if isinstance(val, (date, time)):
@@ -105,14 +115,13 @@ def _do_backup(db: Session, backup_dir: Path) -> dict:
 
 
 class BackupConfigResponse(BaseModel):
-    location: str
-    interval: str  # disabled, daily, weekly
+    location: str      # read-only, from settings.toml
+    interval: str      # disabled, daily, weekly (settable via API)
     last_backup: str | None = None
 
 
 class BackupConfigUpdate(BaseModel):
-    location: str | None = None
-    interval: str | None = None  # disabled, daily, weekly
+    interval: str | None = None  # only field the frontend can change
 
 
 class BackupResultResponse(BaseModel):
@@ -140,7 +149,7 @@ class RestoreRequest(BaseModel):
 def get_backup_config():
     config = _load_config()
     return BackupConfigResponse(
-        location=config.get("location", DEFAULT_BACKUP_DIR),
+        location=str(_get_backup_dir()),
         interval=config.get("interval", "disabled"),
         last_backup=config.get("last_backup"),
     )
@@ -149,15 +158,13 @@ def get_backup_config():
 @router.put("/settings/backup", response_model=BackupConfigResponse)
 def update_backup_config(data: BackupConfigUpdate):
     config = _load_config()
-    if data.location is not None:
-        config["location"] = data.location
     if data.interval is not None:
         if data.interval not in ("disabled", "daily", "weekly"):
             raise HTTPException(400, "interval must be disabled, daily, or weekly")
         config["interval"] = data.interval
     _save_config(config)
     return BackupConfigResponse(
-        location=config.get("location", DEFAULT_BACKUP_DIR),
+        location=str(_get_backup_dir()),
         interval=config.get("interval", "disabled"),
         last_backup=config.get("last_backup"),
     )
@@ -223,10 +230,6 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
     except OSError as e:
         raise HTTPException(400, f"Backup location '{backup_dir}' is not writable: {e}")
 
-    # Table order matters for FK constraints — delete children first. Only
-    # tables present in the backup are truncated, so restoring a file from
-    # before a table existed (e.g. pre-Apple-Health backups) leaves that
-    # table's current rows alone instead of wiping them.
     delete_order = [
         "exercise_logs", "session_exercises", "workout_sessions",
         "workout_template_exercises", "workout_templates",
@@ -235,19 +238,14 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
         "health_metrics", "health_workouts",
     ]
 
-    # Inspect through the session's own connection: a separate engine
-    # connection sees a different (empty) database under in-memory SQLite,
-    # which silently skipped every DELETE and made re-inserts collide.
     inspector = inspect(db.get_bind())
     existing_tables = set(inspector.get_table_names())
 
     try:
-        # Truncate in order
         for tname in delete_order:
             if tname in existing_tables and tname in tables_data:
                 db.execute(text(f"DELETE FROM {tname}"))
 
-        # Insert from backup data (reverse order for FK parents first)
         insert_order = [
             "exercises", "user_profiles", "weight_entries", "body_measurements",
             "wellness_checkins", "run_entries", "push_subscriptions",

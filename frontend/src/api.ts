@@ -396,7 +396,6 @@ export interface BackupConfigResponse {
 }
 
 export interface BackupConfigUpdate {
-  location?: string | null;
   interval?: string | null;
 }
 

@@ -33,6 +33,9 @@ name = "FitnessTracker"
 private_key = ""
 public_key = ""
 subject = "mailto:cdijk4@gmail.com"
+
+[backup]
+path = "/backups"
 """
 
 

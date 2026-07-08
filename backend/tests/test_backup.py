@@ -12,6 +12,8 @@ Verified contracts:
 """
 import datetime as dt
 import json
+import os
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -27,9 +29,10 @@ INSIGHTS_URL = "/api/v1/import/insights"
 
 
 def _point_in(tmp_path, client, auth_headers):
-    """Point the backup location at an isolated temp dir."""
-    resp = client.put(CONFIG_URL, json={"location": str(tmp_path / "backups")}, headers=auth_headers)
-    assert resp.status_code == 200
+    """Point the backup location at an isolated temp dir via env var."""
+    backup_dir = str(tmp_path / "backups")
+    os.environ["FITNESS_BACKUP_PATH"] = backup_dir
+    return backup_dir
 
 
 def _import_sample(client, auth_headers):
@@ -78,8 +81,7 @@ class TestCreateBackup:
         """A location that can't be created is a client error, not a 500."""
         blocker = tmp_path / "blocker"
         blocker.write_text("")  # a file where a directory must go
-        resp = client.put(CONFIG_URL, json={"location": str(blocker / "backups")}, headers=auth_headers)
-        assert resp.status_code == 200
+        os.environ["FITNESS_BACKUP_PATH"] = str(blocker / "backups")
 
         resp = client.post(BACKUP_URL, headers=auth_headers)
         assert resp.status_code == 400
@@ -92,12 +94,11 @@ class TestRestore:
     ):
         """Restoring a file created before the health tables existed must not
         truncate them — only tables present in the file are replaced."""
-        _point_in(tmp_path, client, auth_headers)
+        backup_dir = _point_in(tmp_path, client, auth_headers)
 
         # A minimal old-format backup: no health_* keys at all.
-        backup_dir = tmp_path / "backups"
-        backup_dir.mkdir(parents=True)
-        (backup_dir / "fitness-tracker-backup-2026-01-01T00-00-00.json").write_text(json.dumps({
+        os.makedirs(backup_dir, exist_ok=True)
+        (Path(backup_dir) / "fitness-tracker-backup-2026-01-01T00-00-00.json").write_text(json.dumps({
             "version": "1.0", "created_at": "2026-01-01T00:00:00+00:00",
             "tables": {"weight_entries": []},
         }))
