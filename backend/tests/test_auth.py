@@ -67,6 +67,13 @@ class TestAuthMiddleware:
         resp = client.get(self.PROTECTED_URL, headers=auth_headers)
         assert resp.status_code == 200  # empty list is fine
 
+    def test_protected_bare_password_token(self, client: TestClient):
+        """A Basic token of just the password (no 'user:' prefix) is accepted,
+        since the username is ignored — matches hand-configured automation headers."""
+        token = base64.b64encode(TEST_PASSWORD.encode()).decode()
+        resp = client.get(self.PROTECTED_URL, headers={"Authorization": f"Basic {token}"})
+        assert resp.status_code == 200
+
     def test_protected_no_bearer_prefix(self, client: TestClient):
         """Missing 'Basic ' prefix (wrong scheme) returns 401."""
         raw = f"fitness:{TEST_PASSWORD}"

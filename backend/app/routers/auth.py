@@ -65,12 +65,15 @@ async def auth_middleware(request: Request, call_next):
 
         try:
             decoded = base64.b64decode(auth_header[6:]).decode()
-            _username, password = decoded.split(":", 1)
         except Exception:
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid authorization format"},
             )
+        # The username is ignored (only the password gates access), so accept
+        # both a standard "user:password" token and a bare "password" token —
+        # the latter is what hand-configured automation headers often send.
+        password = decoded.split(":", 1)[1] if ":" in decoded else decoded
 
         if not _check_password(password):
             return JSONResponse(
