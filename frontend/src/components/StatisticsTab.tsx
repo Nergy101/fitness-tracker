@@ -318,9 +318,10 @@ function ChartCard({
 // ─── Health Trend Card ─────────────────────────────────────
 
 /** One imported Apple Health metric as a trend line, with icon, latest value,
- *  and average over the window. Renders nothing below 2 points. */
+ *  and average over the window. Shows the card even with a single point
+ *  (just no line chart until there are 2+). */
 function HealthTrendChart({ series }: { series: HealthSeries }) {
-  if (series.points.length < 2) return null;
+  if (series.points.length === 0) return null;
   const meta = HEALTH_META[series.metric] ?? { icon: Pulse, color: "var(--accent)" };
   const MetricIcon = meta.icon;
   const latest = series.points[series.points.length - 1].value;
@@ -331,11 +332,18 @@ function HealthTrendChart({ series }: { series: HealthSeries }) {
       title={series.label}
       sub={`${formatHealthValue(series.metric, latest)} ${series.unit} · avg ${formatHealthValue(series.metric, avg)}`}
     >
-      <LineChart
-        points={series.points.map((p) => ({ label: p.date.slice(5), value: p.value }))}
-        color={meta.color}
-        formatValue={(v) => formatHealthValue(series.metric, v)}
-      />
+      {series.points.length >= 2 && (
+        <LineChart
+          points={series.points.map((p) => ({ label: p.date.slice(5), value: p.value }))}
+          color={meta.color}
+          formatValue={(v) => formatHealthValue(series.metric, v)}
+        />
+      )}
+      {series.points.length === 1 && (
+        <p className="text-[10px] text-fg/30 text-center py-2">
+          More data needed for trend — keep syncing
+        </p>
+      )}
     </ChartCard>
   );
 }
@@ -638,7 +646,7 @@ export default function StatisticsTab() {
       )}
 
       {/* Apple Health vitals (imported) */}
-      {health && health.series.some((s) => s.points.length >= 2) && (
+      {health && health.series.length > 0 && (
         <>
           <div className="flex items-center gap-2 pt-1">
             <Heart size={18} className="text-red-400" weight="fill" />
