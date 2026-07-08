@@ -21,8 +21,9 @@ import sys
 from sqlalchemy import create_engine, inspect, text
 
 # conftest.py already imported app modules; these are cache hits.
-from app.database import Base, PRE_ALEMBIC_BASELINE
+from app.database import Base
 import app.models.models  # noqa: F401 — ensures Base.metadata is fully populated
+from app.models.models import HealthMetric, HealthWorkout  # noqa: F401
 
 # backend/ directory — alembic.ini lives here and '' in sys.path resolves here.
 BACKEND_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
@@ -35,6 +36,28 @@ def _db_url(db_path) -> str:
     """Absolute SQLite URL.  str(db_path) starts with '/', so three slashes
     in the scheme plus the leading '/' of the path gives the required four."""
     return f"sqlite:///{db_path}"
+
+
+def _alembic_head() -> str:
+    """Current Alembic head revision, derived by parsing the migration files.
+    (Importing `alembic` in-process fails here: the local backend/alembic/
+    migrations dir shadows the installed package on sys.path.)"""
+    import glob
+    import re
+
+    revisions, down_revisions = set(), set()
+    for path in glob.glob(os.path.join(BACKEND_DIR, "alembic", "versions", "*.py")):
+        with open(path) as fh:
+            txt = fh.read()
+        r = re.search(r'^revision\b.*?=\s*[\'"]([0-9a-fA-F]+)[\'"]', txt, re.M)
+        d = re.search(r'^down_revision\b.*?=\s*[\'"]([0-9a-fA-F]+)[\'"]', txt, re.M)
+        if r:
+            revisions.add(r.group(1))
+        if d:
+            down_revisions.add(d.group(1))
+    heads = revisions - down_revisions
+    assert len(heads) == 1, f"expected a single head, found {heads}"
+    return heads.pop()
 
 
 def _run(db_path) -> subprocess.CompletedProcess:
@@ -75,6 +98,11 @@ class TestRunMigrations:
         setup_engine = create_engine(url)
         try:
             Base.metadata.create_all(bind=setup_engine)
+            # An old release predates the health_* tables; drop them so the DB
+            # faithfully matches a pre-Alembic BASELINE schema (adoption then
+            # stamps baseline and `upgrade head` creates them).
+            HealthMetric.__table__.drop(bind=setup_engine)
+            HealthWorkout.__table__.drop(bind=setup_engine)
             with setup_engine.connect() as conn:
                 conn.execute(
                     text(
@@ -97,8 +125,12 @@ class TestRunMigrations:
                 version = conn.execute(
                     text("SELECT version_num FROM alembic_version")
                 ).scalar()
-                assert version == PRE_ALEMBIC_BASELINE, (
-                    f"Expected stamp {PRE_ALEMBIC_BASELINE!r}, got {version!r}"
+                head = _alembic_head()
+                assert version == head, (
+                    f"Expected head stamp {head!r}, got {version!r}"
+                )
+                assert "health_metrics" in inspect(verify_engine).get_table_names(), (
+                    "post-baseline migration did not run during adoption"
                 )
 
                 count = conn.execute(
@@ -122,6 +154,8 @@ class TestRunMigrations:
         setup_engine = create_engine(url)
         try:
             Base.metadata.create_all(bind=setup_engine)
+            HealthMetric.__table__.drop(bind=setup_engine)
+            HealthWorkout.__table__.drop(bind=setup_engine)
             with setup_engine.connect() as conn:
                 # alembic_version with Alembic's real DDL but zero rows.
                 conn.execute(
@@ -152,8 +186,12 @@ class TestRunMigrations:
                 version = conn.execute(
                     text("SELECT version_num FROM alembic_version")
                 ).scalar()
-                assert version == PRE_ALEMBIC_BASELINE, (
-                    f"Expected stamp {PRE_ALEMBIC_BASELINE!r}, got {version!r}"
+                head = _alembic_head()
+                assert version == head, (
+                    f"Expected head stamp {head!r}, got {version!r}"
+                )
+                assert "health_metrics" in inspect(verify_engine).get_table_names(), (
+                    "post-baseline migration did not run during adoption"
                 )
 
                 count = conn.execute(
@@ -186,8 +224,9 @@ class TestRunMigrations:
                 version = conn.execute(
                     text("SELECT version_num FROM alembic_version")
                 ).scalar()
-            assert version == PRE_ALEMBIC_BASELINE, (
-                f"Expected head stamp {PRE_ALEMBIC_BASELINE!r}, got {version!r}"
+            head = _alembic_head()
+            assert version == head, (
+                f"Expected head stamp {head!r}, got {version!r}"
             )
         finally:
             verify_engine.dispose()

@@ -6,8 +6,12 @@ import {
   ChartBarIcon as ChartBar,
   ChartPieSliceIcon as ChartPieSlice,
   FireIcon as Fire,
+  FootprintsIcon as Footprints,
   CalendarBlankIcon as CalendarBlank,
+  HeartIcon as Heart,
+  MoonIcon as Moon,
   PlantIcon as Plant,
+  PulseIcon as Pulse,
   RocketLaunchIcon as RocketLaunch,
   SneakerIcon as Sneaker,
   TimerIcon as Timer,
@@ -21,6 +25,8 @@ import {
 import {
   api,
   type GoalProgressResponse,
+  type HealthInsightsResponse,
+  type HealthSeries,
   type RunEntryResponse,
   type StatsOverviewResponse,
   type WeeklyActivityStat,
@@ -31,6 +37,22 @@ import ActivityLegend from "./ActivityLegend";
 import { formatHours } from "../format";
 
 const WEIGHT_COLOR = "#c084fc"; // purple-400 — matches the weight stat card icon
+
+// Per-metric presentation for imported Apple Health series.
+const HEALTH_META: Record<string, { icon: Icon; color: string }> = {
+  resting_heart_rate: { icon: Heart, color: "#f87171" },   // red-400
+  vo2_max: { icon: Pulse, color: "#2dd4bf" },              // teal-400
+  step_count: { icon: Footprints, color: "#60a5fa" },      // blue-400
+  sleep_analysis: { icon: Moon, color: "#818cf8" },        // indigo-400
+  active_energy: { icon: Fire, color: "#f59e0b" },         // amber-500
+  apple_exercise_time: { icon: Timer, color: "#34d399" },  // emerald-400
+};
+
+function formatHealthValue(metric: string, v: number): string {
+  if (metric === "step_count") return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v));
+  if (metric === "vo2_max" || metric === "sleep_analysis") return v.toFixed(1);
+  return String(Math.round(v));
+}
 
 /** Seconds-per-km as "m:ss" (e.g. 324 → "5:24"). */
 function formatPace(secondsPerKm: number): string {
@@ -153,8 +175,11 @@ function LineChart({
     lo = Math.min(lo, reference.value);
     hi = Math.max(hi, reference.value);
   }
+  const trueMin = Math.min(...values, reference?.value ?? Infinity);
   const pad = (hi - lo) * 0.12 || 1;
-  lo -= pad;
+  // Don't pad the floor below zero for non-negative series (e.g. steps that
+  // dip near 0) — a negative axis label reads as nonsense.
+  lo = trueMin >= 0 ? Math.max(0, lo - pad) : lo - pad;
   hi += pad;
   const range = hi - lo;
   const px = (i: number) => 24 + (i / (points.length - 1)) * (w - 30);
@@ -290,6 +315,31 @@ function ChartCard({
   );
 }
 
+// ─── Health Trend Card ─────────────────────────────────────
+
+/** One imported Apple Health metric as a trend line, with icon, latest value,
+ *  and average over the window. Renders nothing below 2 points. */
+function HealthTrendChart({ series }: { series: HealthSeries }) {
+  if (series.points.length < 2) return null;
+  const meta = HEALTH_META[series.metric] ?? { icon: Pulse, color: "var(--accent)" };
+  const MetricIcon = meta.icon;
+  const latest = series.points[series.points.length - 1].value;
+  const avg = series.points.reduce((s, p) => s + p.value, 0) / series.points.length;
+  return (
+    <ChartCard
+      icon={<MetricIcon size={16} style={{ color: meta.color }} />}
+      title={series.label}
+      sub={`${formatHealthValue(series.metric, latest)} ${series.unit} · avg ${formatHealthValue(series.metric, avg)}`}
+    >
+      <LineChart
+        points={series.points.map((p) => ({ label: p.date.slice(5), value: p.value }))}
+        color={meta.color}
+        formatValue={(v) => formatHealthValue(series.metric, v)}
+      />
+    </ChartCard>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────
 
 export default function StatisticsTab() {
@@ -297,6 +347,7 @@ export default function StatisticsTab() {
   const [runs, setRuns] = useState<RunEntryResponse[]>([]);
   const [weightEntries, setWeightEntries] = useState<WeightEntryResponse[]>([]);
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
+  const [health, setHealth] = useState<HealthInsightsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -305,12 +356,14 @@ export default function StatisticsTab() {
       api.getRuns().catch(() => [] as RunEntryResponse[]),
       api.getWeightEntries().catch(() => [] as WeightEntryResponse[]),
       api.getGoalProgress().catch(() => null),
+      api.getHealthInsights(120).catch(() => null),
     ])
-      .then(([overview, runList, weights, goalProgress]) => {
+      .then(([overview, runList, weights, goalProgress, healthInsights]) => {
         setStats(overview);
         setRuns(runList);
         setWeightEntries(weights);
         setGoal(goalProgress);
+        setHealth(healthInsights);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -582,6 +635,19 @@ export default function StatisticsTab() {
             }
           />
         </ChartCard>
+      )}
+
+      {/* Apple Health vitals (imported) */}
+      {health && health.series.some((s) => s.points.length >= 2) && (
+        <>
+          <div className="flex items-center gap-2 pt-1">
+            <Heart size={18} className="text-red-400" weight="fill" />
+            <h3 className="text-sm font-semibold">Apple Health</h3>
+          </div>
+          {health.series.map((s) => (
+            <HealthTrendChart key={s.metric} series={s} />
+          ))}
+        </>
       )}
     </div>
   );

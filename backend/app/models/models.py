@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, date
 from sqlalchemy import (
-    Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean, Date, Time
+    Column, Integer, String, Text, Float, DateTime, ForeignKey, Boolean, Date, Time,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -184,3 +185,45 @@ class PushSubscription(Base):
     auth = Column(Text, nullable=False)
     user_agent = Column(String(512), default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class HealthMetric(Base):
+    """A single daily data point from an Apple Health / Health Auto Export
+    sync. One row per (metric_name, date) — re-importing the same day upserts
+    in place, so regular syncs stay idempotent. Scalar metrics store `qty`;
+    richer shapes (heart rate min/max/avg, sleep stages) keep the full point
+    in `data`."""
+    __tablename__ = "health_metrics"
+    __table_args__ = (UniqueConstraint("metric_name", "date", name="uq_health_metric_name_date"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    metric_name = Column(String(64), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    units = Column(String(32), default="")
+    qty = Column(Float, nullable=True)          # scalar value (avg for heart_rate, totalSleep for sleep)
+    data = Column(Text, nullable=True)          # full original point as JSON, for multi-field metrics
+    source = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class HealthWorkout(Base):
+    """A workout imported from Apple Health. Keyed on the export's own UUID
+    (`external_id`) so re-imports upsert. Scalar summary in columns; the full
+    (list-stripped) payload in `data`. Kept separate from app-native sessions
+    to avoid double-counting in activity stats."""
+    __tablename__ = "health_workouts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    external_id = Column(String(64), nullable=False, unique=True, index=True)
+    name = Column(String(128), default="")
+    location = Column(String(64), nullable=True)
+    start = Column(DateTime, nullable=True)
+    end = Column(DateTime, nullable=True)
+    duration_seconds = Column(Float, nullable=True)
+    distance_km = Column(Float, nullable=True)
+    active_energy_kj = Column(Float, nullable=True)
+    total_energy_kj = Column(Float, nullable=True)
+    avg_heart_rate = Column(Float, nullable=True)
+    max_heart_rate = Column(Float, nullable=True)
+    data = Column(Text, nullable=True)          # scalar fields as JSON (list-valued keys stripped)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

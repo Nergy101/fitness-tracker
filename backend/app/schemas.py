@@ -407,3 +407,30 @@ class RunStatsResponse(BaseModel):
     longest_run_seconds: Optional[int] = None
     longest_run_distance_km: Optional[float] = None
     monthly_breakdown: list[dict] = []
+
+
+# ─── Apple Health import ───────────────────────────────────
+
+
+class HealthImportResult(BaseModel):
+    metrics_imported: int = 0
+    workouts_imported: int = 0
+    metric_types: int = 0
+    earliest: str | None = None
+    latest: str | None = None
+
+
+class HealthPoint(BaseModel):
+    date: str
+    value: float
+
+
+class HealthSeries(BaseModel):
+    metric: str
+    label: str
+    unit: str
+    points: list[HealthPoint] = []
+
+
+class HealthInsightsResponse(BaseModel):
+    series: list[HealthSeries] = []

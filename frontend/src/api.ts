@@ -323,6 +323,22 @@ export interface StatsOverviewResponse {
   avg_weight_change_kg: number | null;
 }
 
+export interface HealthPoint {
+  date: string;
+  value: number;
+}
+
+export interface HealthSeries {
+  metric: string;
+  label: string;
+  unit: string;
+  points: HealthPoint[];
+}
+
+export interface HealthInsightsResponse {
+  series: HealthSeries[];
+}
+
 export interface HealthScoreResponse {
   score: number;
   bmi_score: number;
@@ -588,6 +604,10 @@ export const api = {
   // Stats
   getStatsOverview: () =>
     fetchJSON<StatsOverviewResponse>("/api/v1/stats/overview"),
+
+  // Apple Health insights (imported via /api/v1/import/data)
+  getHealthInsights: (days = 120) =>
+    fetchJSON<HealthInsightsResponse>(`/api/v1/import/insights?days=${days}`),
 
   // ─── Runs ───────────────────────────────────────────
 
