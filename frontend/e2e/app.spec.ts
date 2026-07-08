@@ -384,6 +384,9 @@ test.describe("authenticated", () => {
     // Open the app settings via the header gear icon
     await page.getByTitle("Settings").click();
 
+    // Switch to the Health sub-tab (the pill inside settings, not the bottom nav)
+    await page.locator("button.rounded-full").filter({ hasText: "Health" }).click();
+
     // Fill in height and birthday. Scope height to its field wrapper — the
     // quick weight-log input behind the modal is also type="number".
     await page
