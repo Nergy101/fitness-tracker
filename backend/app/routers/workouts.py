@@ -43,6 +43,8 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
         rest_between_rounds=template.rest_between_rounds,
         is_pinned=template.is_pinned or False,
         pinned_order=template.pinned_order,
+        warmup_seconds=template.warmup_seconds or 0,
+        cooldown_seconds=template.cooldown_seconds or 0,
         created_at=template.created_at,
         exercises=ex_responses,
         work_duration_seconds=work_duration,
@@ -71,7 +73,7 @@ def get_workout(workout_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=WorkoutTemplateResponse, status_code=201)
 def create_workout(data: WorkoutTemplateCreate, db: Session = Depends(get_db)):
-    template = WorkoutTemplate(name=data.name, description=data.description, mode=data.mode, time_cap_seconds=data.time_cap_seconds, rounds=data.rounds, rest_between_rounds=data.rest_between_rounds)
+    template = WorkoutTemplate(name=data.name, description=data.description, mode=data.mode, time_cap_seconds=data.time_cap_seconds, rounds=data.rounds, rest_between_rounds=data.rest_between_rounds, warmup_seconds=data.warmup_seconds, cooldown_seconds=data.cooldown_seconds)
     if data.is_pinned:
         max_order = db.query(WorkoutTemplate.pinned_order).filter(
             WorkoutTemplate.is_pinned
@@ -130,6 +132,10 @@ def update_workout(workout_id: int, data: WorkoutTemplateUpdate, db: Session = D
             template.pinned_order = None
     if data.pinned_order is not None:
         template.pinned_order = data.pinned_order
+    if data.warmup_seconds is not None:
+        template.warmup_seconds = data.warmup_seconds
+    if data.cooldown_seconds is not None:
+        template.cooldown_seconds = data.cooldown_seconds
 
     if data.exercises is not None:
         # Remove existing exercises

@@ -12,7 +12,7 @@ import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 import { formatDuration, localISO } from "../format";
 
-type Phase = "rest" | "exercise" | "roundrest" | "finished";
+type Phase = "warmup" | "cooldown" | "rest" | "exercise" | "roundrest" | "finished";
 
 const DEFAULT_REST = 5;
 const DEFAULT_KCAL_PER_MIN = 5;
@@ -49,6 +49,8 @@ export default function WorkoutRunner({
   const rounds = isAmrap ? 999 : Math.max(1, workout.rounds || 1);
   const restBetween = Math.max(0, workout.rest_between_rounds || 0);
   const timeCap = workout.time_cap_seconds || 1200;
+  const warmupSeconds = workout.warmup_seconds || 0;
+  const cooldownSeconds = workout.cooldown_seconds || 0;
 
   const [phase, setPhase] = useState<Phase>("rest");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -88,6 +90,10 @@ export default function WorkoutRunner({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   });
+
+  // Breathing cycle for cooldown: 4s inhale, 4s exhale
+  const [breathPhase, setBreathPhase] = useState<"inhale" | "exhale">("inhale");
+  const [breathProgress, setBreathProgress] = useState(0);
 
   useEffect(() => {
     // Fetch last session's logs for each exercise to show hints
@@ -164,6 +170,91 @@ export default function WorkoutRunner({
       }
     };
 
+    function startWarmup() {
+      if (warmupSeconds <= 0) {
+        // No warmup, go straight to rest before first exercise
+        startRest(0, 0);
+        return;
+      }
+      roundRef.current = 0;
+      indexRef.current = 0;
+      phaseRef.current = "warmup";
+      setPhase("warmup");
+      setCurrentRound(0);
+      setCurrentIndex(0);
+      speak("Warmup");
+      setTimer(warmupSeconds);
+      setTimerProgress(0);
+      const start = Date.now();
+      clear();
+      advanceRef.current = () => {
+        clear();
+        soundStart();
+        startRest(0, 0);
+      };
+      intervalId = setInterval(() => {
+        const elapsed = calcElapsed(start);
+        setTimer(Math.max(0, warmupSeconds - elapsed));
+        setTimerProgress(Math.min(1, elapsed / warmupSeconds));
+        if (elapsed >= warmupSeconds) {
+          clear();
+          soundStart();
+          startRest(0, 0);
+        }
+      }, 50);
+    }
+
+    function startCooldown() {
+      if (cooldownSeconds <= 0) {
+        finish();
+        return;
+      }
+      roundRef.current = rounds;
+      indexRef.current = totalExercises;
+      phaseRef.current = "cooldown";
+      setPhase("cooldown");
+      setCurrentRound(rounds);
+      setCurrentIndex(totalExercises);
+      speak("Cooldown");
+      setTimer(cooldownSeconds);
+      setTimerProgress(0);
+      const start = Date.now();
+      clear();
+      // Breathing cycle: 4s inhale, 4s exhale
+      let breathStart = Date.now();
+      let isInhale = true;
+      const breathInterval = setInterval(() => {
+        const bElapsed = calcElapsed(breathStart);
+        const cycleSec = bElapsed % 8;
+        if (cycleSec < 4) {
+          if (!isInhale) { isInhale = true; breathStart = Date.now(); }
+          setBreathPhase("inhale");
+          setBreathProgress(cycleSec / 4);
+        } else {
+          if (isInhale) { isInhale = false; breathStart = Date.now(); }
+          setBreathPhase("exhale");
+          setBreathProgress((cycleSec - 4) / 4);
+        }
+      }, 50);
+      advanceRef.current = () => {
+        clear();
+        clearInterval(breathInterval);
+        soundFinish();
+        finish();
+      };
+      intervalId = setInterval(() => {
+        const elapsed = calcElapsed(start);
+        setTimer(Math.max(0, cooldownSeconds - elapsed));
+        setTimerProgress(Math.min(1, elapsed / cooldownSeconds));
+        if (elapsed >= cooldownSeconds) {
+          clear();
+          clearInterval(breathInterval);
+          soundFinish();
+          finish();
+        }
+      }, 50);
+    }
+
     function startRest(round: number, i: number) {
       roundRef.current = round;
       indexRef.current = i;
@@ -220,7 +311,7 @@ export default function WorkoutRunner({
         soundRest();
         startRoundRest(round + 1);
       } else {
-        finish();
+        startCooldown();
       }
     }
 
@@ -379,10 +470,14 @@ export default function WorkoutRunner({
       const p = phaseRef.current;
       if (swapKeyRef.current > 0 && p === "exercise") {
         startExercise(r, i);
+      } else if (swapKeyRef.current > 0 && p === "warmup") {
+        startWarmup();
+      } else if (swapKeyRef.current > 0 && p === "cooldown") {
+        startCooldown();
       } else if (swapKeyRef.current > 0) {
         startRest(r, i);
       } else {
-        startRest(0, 0);
+        startWarmup();
       }
     }
 
@@ -392,7 +487,7 @@ export default function WorkoutRunner({
       if (emomInterval) clearInterval(emomInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/refs -- swapKeyRef.current is bumped before a forced re-render; reading it here re-arms the timer engine only on swap
-  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, isAmrap, isEmom, timeCap, swapKeyRef.current]);
+  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, isAmrap, isEmom, timeCap, warmupSeconds, cooldownSeconds, swapKeyRef.current]);
 
   const currentName = exercises[currentIndex]?.exercise?.name ?? "Exercise";
   const currentImage = exercises[currentIndex]?.exercise?.image_url ?? null;
@@ -481,6 +576,54 @@ export default function WorkoutRunner({
         </div>
       )}
 
+      {phase === "warmup" && (
+        <div
+          className="flex flex-col items-center justify-center h-full px-6 text-center"
+          style={{ "--timer": "#22c55e", background: "linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.02) 60%, transparent 100%)" } as React.CSSProperties}
+        >
+          <p className="text-emerald-400/70 text-sm mb-2 font-medium">Warmup</p>
+          <h2 className="text-2xl font-bold text-emerald-400 mb-6">
+            Get ready to move
+          </h2>
+          <p className="text-fg/40 text-sm max-w-xs mb-4 leading-relaxed">
+            Jumping jacks, arm circles, leg swings, light jogging — loosen up and get the blood flowing.
+          </p>
+          <div className="relative w-48 h-48 mb-6">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
+              <circle
+                cx="50" cy="50" r="42" fill="none"
+                stroke="#22c55e"
+                strokeWidth="6"
+                strokeDasharray={RING}
+                strokeDashoffset={(1 - timerProgress) * RING}
+                strokeLinecap="round"
+                className="transition-all duration-300 ease-linear"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-5xl font-bold text-emerald-400">{displayTime}</span>
+            </div>
+          </div>
+          <p className="text-fg/30 text-sm mb-4">Warming up...</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => advanceRef.current()}
+              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+            >
+              <SkipForward size={16} weight="fill" /> Skip warmup
+            </button>
+            <button
+              onClick={() => (paused ? doResume() : doPause())}
+              className="inline-flex items-center gap-2 text-sm text-emerald-400/60 hover:text-emerald-400 border border-emerald-400/20 hover:border-emerald-400/40 rounded-xl px-5 py-2 transition-colors"
+            >
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+              {paused ? "Resume" : "Pause"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {phase === "rest" && (
         <div className="flex flex-col items-center justify-center h-full px-6 text-center">
           <p className="text-fg/50 text-sm mb-2">Next up</p>
@@ -524,6 +667,67 @@ export default function WorkoutRunner({
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
+            >
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+              {paused ? "Resume" : "Pause"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {phase === "cooldown" && (
+        <div
+          className="flex flex-col items-center justify-center h-full px-6 text-center"
+          style={{ "--timer": "#3b82f6", background: "linear-gradient(180deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.02) 60%, transparent 100%)" } as React.CSSProperties}
+        >
+          <p className="text-blue-400/70 text-sm mb-2 font-medium">Cooldown</p>
+          <h2 className="text-2xl font-bold text-blue-400 mb-6">
+            Breathe and recover
+          </h2>
+          <div className="relative w-48 h-48 mb-4">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
+              <circle
+                cx="50" cy="50" r="42" fill="none"
+                stroke="#3b82f6"
+                strokeWidth="6"
+                strokeDasharray={RING}
+                strokeDashoffset={(1 - timerProgress) * RING}
+                strokeLinecap="round"
+                className="transition-all duration-300 ease-linear"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-4xl font-bold text-blue-400">{displayTime}</span>
+            </div>
+          </div>
+          {/* Breathing cue */}
+          <div className="mb-4">
+            <p
+              className={`text-3xl font-bold transition-all duration-300 ${
+                breathPhase === "inhale" ? "text-blue-300 scale-110" : "text-blue-400/60 scale-100"
+              }`}
+            >
+              {breathPhase === "inhale" ? "Inhale" : "Exhale"}
+            </p>
+            <div className="w-32 h-1.5 bg-fg/10 rounded-full mt-2 mx-auto overflow-hidden">
+              <div
+                className="h-full bg-blue-400/50 rounded-full transition-all duration-300"
+                style={{ width: `${breathProgress * 100}%` }}
+              />
+            </div>
+          </div>
+          <p className="text-fg/30 text-sm mb-4">Cooling down...</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => advanceRef.current()}
+              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+            >
+              <SkipForward size={16} weight="fill" /> Skip cooldown
+            </button>
+            <button
+              onClick={() => (paused ? doResume() : doPause())}
+              className="inline-flex items-center gap-2 text-sm text-blue-400/60 hover:text-blue-400 border border-blue-400/20 hover:border-blue-400/40 rounded-xl px-5 py-2 transition-colors"
             >
               {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
               {paused ? "Resume" : "Pause"}

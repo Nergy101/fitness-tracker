@@ -32,6 +32,8 @@ class WorkoutTemplate(Base):
     rest_between_rounds = Column(Integer, nullable=False, default=180)
     is_pinned = Column(Boolean, default=False)
     pinned_order = Column(Integer, nullable=True)
+    warmup_seconds = Column(Integer, default=0)
+    cooldown_seconds = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     exercises = relationship("WorkoutTemplateExercise", back_populates="template", cascade="all, delete-orphan", order_by="WorkoutTemplateExercise.order_index")

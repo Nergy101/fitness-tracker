@@ -70,6 +70,18 @@ export default function WorkoutEditor({
   const [restBetween, setRestBetween] = useState(
     workout?.rest_between_rounds ?? 180,
   );
+  const [warmupEnabled, setWarmupEnabled] = useState(
+    (workout?.warmup_seconds ?? 0) > 0,
+  );
+  const [warmupSeconds, setWarmupSeconds] = useState(
+    workout?.warmup_seconds || 180,
+  );
+  const [cooldownEnabled, setCooldownEnabled] = useState(
+    (workout?.cooldown_seconds ?? 0) > 0,
+  );
+  const [cooldownSeconds, setCooldownSeconds] = useState(
+    workout?.cooldown_seconds || 120,
+  );
   const [rows, setRows] = useState<EditorRow[]>(() =>
     rowsFromTemplate(workout, nextKey),
   );
@@ -164,6 +176,8 @@ export default function WorkoutEditor({
         mode,
         rounds: Math.max(1, rounds || 1),
         rest_between_rounds: Math.max(0, restBetween || 0),
+        warmup_seconds: warmupEnabled ? warmupSeconds : 0,
+        cooldown_seconds: cooldownEnabled ? cooldownSeconds : 0,
         exercises: rows.map((r, i) => ({
           exercise_id: r.exercise_id,
           duration_seconds: r.duration_seconds || 30,
@@ -348,6 +362,60 @@ export default function WorkoutEditor({
             </div>
           </div>
         )}
+
+        {/* Warmup & Cooldown */}
+        <div className="mb-4 space-y-3">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={warmupEnabled}
+                onChange={(e) => setWarmupEnabled(e.target.checked)}
+                className="w-4 h-4 rounded accent-accent"
+              />
+              <span className="text-sm text-fg/70">Include warmup</span>
+            </label>
+            {warmupEnabled && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={30}
+                  max={600}
+                  step={30}
+                  value={Math.round(warmupSeconds / 60)}
+                  onChange={(e) => setWarmupSeconds((parseInt(e.target.value) || 3) * 60)}
+                  className="w-14 bg-surface border border-fg/10 rounded-lg px-2 py-1 text-xs text-center text-fg outline-none focus:border-accent/50"
+                />
+                <span className="text-xs text-fg/40">min</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={cooldownEnabled}
+                onChange={(e) => setCooldownEnabled(e.target.checked)}
+                className="w-4 h-4 rounded accent-accent"
+              />
+              <span className="text-sm text-fg/70">Include cooldown</span>
+            </label>
+            {cooldownEnabled && (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="number"
+                  min={30}
+                  max={600}
+                  step={30}
+                  value={Math.round(cooldownSeconds / 60)}
+                  onChange={(e) => setCooldownSeconds((parseInt(e.target.value) || 2) * 60)}
+                  className="w-14 bg-surface border border-fg/10 rounded-lg px-2 py-1 text-xs text-center text-fg outline-none focus:border-accent/50"
+                />
+                <span className="text-xs text-fg/40">min</span>
+              </div>
+            )}
+          </div>
+        </div>
 
         <button
           onClick={() => setShowPicker((v) => !v)}

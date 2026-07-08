@@ -50,6 +50,8 @@ export interface WorkoutTemplate {
   rest_between_rounds: number;
   is_pinned: boolean;
   pinned_order: number | null;
+  warmup_seconds: number;
+  cooldown_seconds: number;
   created_at: string;
   exercises: TemplateExercise[];
   work_duration_seconds: number;
@@ -72,6 +74,8 @@ export interface WorkoutTemplateInput {
   time_cap_seconds?: number | null;
   rounds?: number;
   rest_between_rounds?: number;
+  warmup_seconds?: number;
+  cooldown_seconds?: number;
   exercises: TemplateExerciseInput[];
 }
 

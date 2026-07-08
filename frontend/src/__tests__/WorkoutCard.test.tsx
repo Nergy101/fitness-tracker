@@ -13,6 +13,8 @@ const mockTemplate: WorkoutTemplate = {
   rest_between_rounds: 60,
   is_pinned: false,
   pinned_order: null,
+  warmup_seconds: 0,
+  cooldown_seconds: 0,
   created_at: "2026-07-01T00:00:00Z",
   exercises: [
     {
