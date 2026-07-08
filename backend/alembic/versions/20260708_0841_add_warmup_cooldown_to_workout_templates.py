@@ -1,7 +1,7 @@
 """add_warmup_cooldown_to_workout_templates
 
 Revision ID: 83dd52a38bdc
-Revises: 0d4df2102a99
+Revises: 5187c13f60b6
 Create Date: 2026-07-08 08:41:37.514688+00:00
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '83dd52a38bdc'
-down_revision: Union[str, None] = '0d4df2102a99'
+down_revision: Union[str, None] = '5187c13f60b6'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
