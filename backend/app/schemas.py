@@ -424,9 +424,21 @@ class HealthImportResult(BaseModel):
     latest: str | None = None
 
 
+class SleepStages(BaseModel):
+    """Per-stage sleep hours from Health Auto Export; totalSleep (the point's
+    `value`) is deep + core + rem — awake time is reported but not slept."""
+    deep: float | None = None
+    core: float | None = None
+    rem: float | None = None
+    awake: float | None = None
+
+
 class HealthPoint(BaseModel):
     date: str
     value: float
+    min: float | None = None
+    max: float | None = None
+    stages: SleepStages | None = None
 
 
 class HealthSeries(BaseModel):
@@ -438,3 +450,27 @@ class HealthSeries(BaseModel):
 
 class HealthInsightsResponse(BaseModel):
     series: list[HealthSeries] = []
+
+
+class HealthWorkoutSummary(BaseModel):
+    date: str
+    name: str
+    duration_min: float | None = None
+    distance_km: float | None = None
+    energy_kcal: float | None = None
+    avg_hr: float | None = None
+    max_hr: float | None = None
+
+
+class HealthWorkoutsResponse(BaseModel):
+    workouts: list[HealthWorkoutSummary] = []
+
+
+class DailyActivityPoint(BaseModel):
+    date: str
+    minutes: float
+    kcal: float
+
+
+class DailyActivityResponse(BaseModel):
+    days: list[DailyActivityPoint] = []

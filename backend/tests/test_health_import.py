@@ -443,6 +443,455 @@ class TestInsightsEndpoint:
 
 
 # ---------------------------------------------------------------------------
+# 6. Heart Rate range band in /insights
+# ---------------------------------------------------------------------------
+
+
+class TestInsightsHeartRateBand:
+    IMPORT_URL = "/api/v1/import/data"
+    INSIGHTS_URL = "/api/v1/import/insights"
+
+    def test_series_present_with_correct_value_min_max(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """heart_rate series carries value=Avg, min/max from stored data JSON."""
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("heart_rate", "bpm", [
+                _hr_point(0, avg=72.0, min_bpm=45.0, max_bpm=160.0),
+            ])),
+            headers=auth_headers,
+        )
+
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        assert resp.status_code == 200
+        series_by_metric = {s["metric"]: s for s in resp.json()["series"]}
+        assert "heart_rate" in series_by_metric
+        pt = series_by_metric["heart_rate"]["points"][0]
+        assert pt["value"] == 72.0
+        assert pt["min"] == 45.0
+        assert pt["max"] == 160.0
+
+    def test_series_label_and_unit(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """heart_rate series carries label='Heart Rate' and unit='bpm'."""
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("heart_rate", "bpm", [_hr_point(0, avg=68.0)])),
+            headers=auth_headers,
+        )
+
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        series_by_metric = {s["metric"]: s for s in resp.json()["series"]}
+        hr = series_by_metric["heart_rate"]
+        assert hr["label"] == "Heart Rate"
+        assert hr["unit"] == "bpm"
+
+    def test_min_max_null_when_point_has_no_min_max_keys(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """If the stored data JSON has no Min/Max fields, both come back as null."""
+        # Craft a point with only Avg — no Min, no Max.
+        bare_point = {"date": _date_str(0), "Avg": 68.0, "source": "Apple Watch"}
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("heart_rate", "bpm", [bare_point])),
+            headers=auth_headers,
+        )
+
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        series_by_metric = {s["metric"]: s for s in resp.json()["series"]}
+        assert "heart_rate" in series_by_metric
+        pt = series_by_metric["heart_rate"]["points"][0]
+        assert pt["min"] is None
+        assert pt["max"] is None
+
+    def test_scalar_series_points_have_null_min_max(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Non-range series (e.g. step_count) expose min=null and max=null on
+        every point — they are not range bands."""
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("step_count", "count", [_scalar_point(0, 9000)])),
+            headers=auth_headers,
+        )
+
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        series_by_metric = {s["metric"]: s for s in resp.json()["series"]}
+        pt = series_by_metric["step_count"]["points"][0]
+        assert pt["min"] is None
+        assert pt["max"] is None
+
+    def test_heart_rate_series_absent_when_no_heart_rate_rows(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """heart_rate series is omitted when there are no heart_rate rows in
+        the DB — only series with data are returned."""
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("step_count", "count", [_scalar_point(0, 9000)])),
+            headers=auth_headers,
+        )
+
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        returned = {s["metric"] for s in resp.json()["series"]}
+        assert "heart_rate" not in returned
+        assert "step_count" in returned
+
+    def test_days_window_excludes_old_heart_rate_rows(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """HR points outside the days window are excluded; points inside appear."""
+        old_date = date.today() - timedelta(days=200)
+        old_point = {
+            "date": old_date.strftime(_FMT),
+            "Avg": 75.0, "Min": 50.0, "Max": 170.0,
+            "source": "Apple Watch",
+        }
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("heart_rate", "bpm", [
+                old_point,
+                _hr_point(0, avg=72.0, min_bpm=45.0, max_bpm=160.0),
+            ])),
+            headers=auth_headers,
+        )
+
+        resp = client.get(self.INSIGHTS_URL + "?days=30", headers=auth_headers)
+        assert resp.status_code == 200
+        series_by_metric = {s["metric"]: s for s in resp.json()["series"]}
+        assert "heart_rate" in series_by_metric
+        point_dates = {p["date"] for p in series_by_metric["heart_rate"]["points"]}
+        assert old_date.isoformat() not in point_dates
+        assert date.today().isoformat() in point_dates
+
+
+# ---------------------------------------------------------------------------
+# 7. Workout summaries endpoint
+# ---------------------------------------------------------------------------
+
+
+class TestHealthWorkoutsEndpoint:
+    IMPORT_URL = "/api/v1/import/data"
+    WORKOUTS_URL = "/api/v1/import/workouts"
+
+    def _import(self, client, auth_headers, entry: dict):
+        payload = {"data": {"metrics": [], "workouts": [entry]}}
+        resp = client.post(self.IMPORT_URL, json=payload, headers=auth_headers)
+        assert resp.status_code == 200
+        return resp
+
+    def test_empty_db_returns_empty_list(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """No workouts imported → response body is {"workouts": []}."""
+        resp = client.get(self.WORKOUTS_URL, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json() == {"workouts": []}
+
+    def test_happy_path_field_mapping(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """All summary fields map correctly from the imported workout row."""
+        entry = {
+            "id": "W-HAPPY",
+            "name": "Cycling",
+            "start": _date_str(1),
+            "end": _date_str(0),
+            "duration": 3000.0,                                    # → 50.0 min
+            "distance": {"qty": 25.0, "units": "km"},
+            "activeEnergyBurned": {"qty": 1600.0, "units": "kJ"},  # → 382.4 kcal
+            "avgHeartRate": {"qty": 140.0, "units": "bpm"},
+            "maxHeartRate": {"qty": 175.0, "units": "bpm"},
+        }
+        self._import(client, auth_headers, entry)
+
+        resp = client.get(self.WORKOUTS_URL, headers=auth_headers)
+        assert resp.status_code == 200
+        workouts = resp.json()["workouts"]
+        assert len(workouts) == 1
+        w = workouts[0]
+        assert w["date"] == (date.today() - timedelta(days=1)).isoformat()
+        assert w["name"] == "Cycling"
+        assert w["duration_min"] == 50.0
+        assert w["distance_km"] == 25.0
+        assert w["energy_kcal"] == 382.4
+        assert w["avg_hr"] == 140.0
+        assert w["max_hr"] == 175.0
+
+    def test_duration_seconds_to_minutes_rounded_one_dp(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """duration_min = round(duration_seconds / 60, 1); fractional seconds
+        are preserved to one decimal place."""
+        entry = {
+            "id": "W-DUR",
+            "name": "Yoga",
+            "start": _date_str(0),
+            "end": _date_str(0),
+            "duration": 2567.0,  # 2567 / 60 = 42.783... → 42.8
+        }
+        self._import(client, auth_headers, entry)
+
+        resp = client.get(self.WORKOUTS_URL, headers=auth_headers)
+        w = resp.json()["workouts"][0]
+        assert w["duration_min"] == round(2567.0 / 60, 1)  # 42.8
+
+    def test_kj_to_kcal_conversion(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """1600 kJ stored with units='kJ' → energy_kcal = round(1600/4.184, 1) = 382.4."""
+        entry = {
+            "id": "W-KJ",
+            "name": "Run",
+            "start": _date_str(0),
+            "end": _date_str(0),
+            "duration": 1800.0,
+            "activeEnergyBurned": {"qty": 1600.0, "units": "kJ"},
+        }
+        self._import(client, auth_headers, entry)
+
+        resp = client.get(self.WORKOUTS_URL, headers=auth_headers)
+        w = resp.json()["workouts"][0]
+        assert w["energy_kcal"] == 382.4
+
+    def test_kcal_passthrough(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """500 kcal with units='kcal' is returned as 500.0 — no conversion applied."""
+        entry = {
+            "id": "W-KCAL",
+            "name": "Walk",
+            "start": _date_str(0),
+            "end": _date_str(0),
+            "duration": 1800.0,
+            "activeEnergyBurned": {"qty": 500.0, "units": "kcal"},
+        }
+        self._import(client, auth_headers, entry)
+
+        resp = client.get(self.WORKOUTS_URL, headers=auth_headers)
+        w = resp.json()["workouts"][0]
+        assert w["energy_kcal"] == 500.0
+
+    def test_missing_scalars_returned_as_null(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Workout without distance/energy/hr fields returns null for those columns."""
+        entry = {
+            "id": "W-NULLS",
+            "name": "Meditation",
+            "start": _date_str(0),
+            "end": _date_str(0),
+            "duration": 600.0,
+            # no distance, no energy, no hr fields
+        }
+        self._import(client, auth_headers, entry)
+
+        resp = client.get(self.WORKOUTS_URL, headers=auth_headers)
+        w = resp.json()["workouts"][0]
+        assert w["distance_km"] is None
+        assert w["energy_kcal"] is None
+        assert w["avg_hr"] is None
+        assert w["max_hr"] is None
+
+    def test_ordered_by_start_ascending(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Workouts are returned oldest-first regardless of import order."""
+        # Import in non-ascending order: 3-ago, 5-ago, 1-ago
+        for ext_id, days_ago in [("W-MID", 3), ("W-OLD", 5), ("W-NEW", 1)]:
+            self._import(client, auth_headers, {
+                "id": ext_id,
+                "name": ext_id,
+                "start": _date_str(days_ago),
+                "end": _date_str(days_ago),
+                "duration": 1200.0,
+            })
+
+        resp = client.get(self.WORKOUTS_URL, headers=auth_headers)
+        dates = [w["date"] for w in resp.json()["workouts"]]
+        assert dates == sorted(dates), f"Expected ascending order, got {dates}"
+
+    def test_days_window_excludes_old_workouts(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Workouts started before the days window are not returned."""
+        old_date = date.today() - timedelta(days=200)
+        self._import(client, auth_headers, {
+            "id": "W-OLD",
+            "name": "OldRun",
+            "start": old_date.strftime(_FMT),
+            "end": old_date.strftime(_FMT),
+            "duration": 1800.0,
+        })
+        self._import(client, auth_headers, {
+            "id": "W-RECENT",
+            "name": "RecentRun",
+            "start": _date_str(1),
+            "end": _date_str(0),
+            "duration": 1800.0,
+        })
+
+        resp = client.get(self.WORKOUTS_URL + "?days=30", headers=auth_headers)
+        assert resp.status_code == 200
+        returned_names = {w["name"] for w in resp.json()["workouts"]}
+        assert "OldRun" not in returned_names
+        assert "RecentRun" in returned_names
+
+    def test_null_start_workout_excluded(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Workout entries with no parseable start date are excluded from results."""
+        # No "start" key → _parse_dt(None) → start=NULL → filtered by endpoint
+        self._import(client, auth_headers, {
+            "id": "W-NOSTART",
+            "name": "UnstartedWorkout",
+            "duration": 1200.0,
+        })
+        # A valid workout for contrast
+        self._import(client, auth_headers, {
+            "id": "W-WITHSTART",
+            "name": "StartedWorkout",
+            "start": _date_str(0),
+            "end": _date_str(0),
+            "duration": 1200.0,
+        })
+
+        resp = client.get(self.WORKOUTS_URL, headers=auth_headers)
+        names = {w["name"] for w in resp.json()["workouts"]}
+        assert "UnstartedWorkout" not in names
+        assert "StartedWorkout" in names
+
+
+# ---------------------------------------------------------------------------
+# Sleep-stage breakdown in insights
+# ---------------------------------------------------------------------------
+
+
+def _staged_sleep_point(days_ago: int, deep: float, core: float, rem: float, awake: float) -> dict:
+    return {
+        "date": _date_str(days_ago),
+        "totalSleep": round(deep + core + rem, 2),
+        "deep": deep, "core": core, "rem": rem, "awake": awake,
+        "source": "Apple Watch",
+    }
+
+
+class TestInsightsSleepStages:
+    IMPORT_URL = "/api/v1/import/data"
+    INSIGHTS_URL = "/api/v1/import/insights"
+
+    def _sleep_series(self, client, auth_headers, *points):
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("sleep_analysis", "hr", list(points))),
+            headers=auth_headers,
+        )
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        assert resp.status_code == 200
+        return {s["metric"]: s for s in resp.json()["series"]}["sleep_analysis"]
+
+    def test_staged_point_round_trips_stage_hours(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """A point with a stage breakdown returns deep/core/rem/awake."""
+        series = self._sleep_series(
+            client, auth_headers, _staged_sleep_point(0, deep=1.1, core=4.5, rem=1.6, awake=0.3)
+        )
+        pt = series["points"][0]
+        assert pt["stages"] == {"deep": 1.1, "core": 4.5, "rem": 1.6, "awake": 0.3}
+        assert pt["value"] == 7.2  # totalSleep = deep + core + rem
+
+    def test_totals_only_point_has_null_stages(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """iPhone-only sources report just totalSleep — stages stays null."""
+        series = self._sleep_series(client, auth_headers, _sleep_point(0, total_sleep=7.25))
+        assert series["points"][0]["stages"] is None
+
+    def test_partial_stages_keep_missing_fields_null(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """A numeric core with the other stages absent still yields a stages
+        object (nulls for the missing fields)."""
+        point = {"date": _date_str(0), "totalSleep": 6.0, "core": 6.0}
+        series = self._sleep_series(client, auth_headers, point)
+        assert series["points"][0]["stages"] == {"deep": None, "core": 6.0, "rem": None, "awake": None}
+
+    def test_awake_only_point_has_null_stages(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """awake alone is not a sleep breakdown — stages stays null."""
+        point = {"date": _date_str(0), "totalSleep": 6.0, "awake": 0.4}
+        series = self._sleep_series(client, auth_headers, point)
+        assert series["points"][0]["stages"] is None
+
+    def test_non_numeric_stage_values_treated_as_missing(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """String stage values don't crash the endpoint or leak through."""
+        point = {"date": _date_str(0), "totalSleep": 6.0, "deep": "n/a", "core": 4.0}
+        series = self._sleep_series(client, auth_headers, point)
+        assert series["points"][0]["stages"] == {"deep": None, "core": 4.0, "rem": None, "awake": None}
+
+    def test_scalar_series_points_have_null_stages(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Non-sleep metrics always return stages: null."""
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("step_count", "count", [_scalar_point(0, 9000)])),
+            headers=auth_headers,
+        )
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        steps = {s["metric"]: s for s in resp.json()["series"]}["step_count"]
+        assert steps["points"][0]["stages"] is None
+
+
+# ---------------------------------------------------------------------------
+# Aggregated-format fallback: {Min, Max, Avg} points without a plain qty
+# ---------------------------------------------------------------------------
+
+
+class TestAggregatedAvgFallback:
+    IMPORT_URL = "/api/v1/import/data"
+    INSIGHTS_URL = "/api/v1/import/insights"
+
+    def test_avg_only_point_stored_and_served(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Health Auto Export's aggregated format has no qty for any metric.
+        The Avg field must be used so imports don't silently store NULL and
+        leave every insight series empty."""
+        point = {"date": _date_str(0), "Avg": 52.4, "Min": 48.0, "Max": 58.0}
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("resting_heart_rate", "bpm", [point])),
+            headers=auth_headers,
+        )
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        series = {s["metric"]: s for s in resp.json()["series"]}
+        assert "resting_heart_rate" in series
+        assert series["resting_heart_rate"]["points"][0]["value"] == 52.4
+
+    def test_plain_qty_still_wins_over_avg(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """When both qty and Avg exist, qty is authoritative."""
+        point = {"date": _date_str(0), "qty": 51.0, "Avg": 99.0}
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("resting_heart_rate", "bpm", [point])),
+            headers=auth_headers,
+        )
+        resp = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        series = {s["metric"]: s for s in resp.json()["series"]}
+        assert series["resting_heart_rate"]["points"][0]["value"] == 51.0
+
+
+# ---------------------------------------------------------------------------
 # 6. Auth
 # ---------------------------------------------------------------------------
 

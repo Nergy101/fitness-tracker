@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.models import WorkoutSession, RunEntry, WeightEntry, is_run_mirror
-from app.schemas import StatsOverviewResponse, WeeklyActivityStats
+from app.schemas import (
+    DailyActivityPoint, DailyActivityResponse, StatsOverviewResponse, WeeklyActivityStats,
+)
 
 router = APIRouter(prefix="/api/v1/stats", tags=["stats"])
 
@@ -121,3 +123,25 @@ def stats_overview(db: Session = Depends(get_db)):
         current_month_vs_previous_pct=vs_prev,
         avg_weight_change_kg=avg_weight_change,
     )
+
+
+@router.get("/daily-activity", response_model=DailyActivityResponse)
+def daily_activity(days: int = 120, db: Session = Depends(get_db)):
+    """Native training load per day (minutes + kcal) for the most recent
+    `days` window. Run/walk mirror sessions carry their run's time and kcal,
+    so summing every session covers all activity without double-counting."""
+    cutoff = date.today() - timedelta(days=max(days, 1))
+    sessions = db.query(WorkoutSession).order_by(WorkoutSession.started_at.asc()).all()
+
+    per_day: dict[date, dict[str, float]] = defaultdict(lambda: {"minutes": 0.0, "kcal": 0.0})
+    for s in sessions:
+        d = _session_date(s)
+        if d < cutoff:
+            continue
+        per_day[d]["minutes"] += (s.total_duration_seconds or 0) / 60
+        per_day[d]["kcal"] += s.total_kcal_estimated or 0.0
+
+    return DailyActivityResponse(days=[
+        DailyActivityPoint(date=d.isoformat(), minutes=round(v["minutes"], 1), kcal=round(v["kcal"], 1))
+        for d, v in sorted(per_day.items())
+    ])

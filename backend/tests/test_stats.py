@@ -14,14 +14,18 @@ Contracts defended:
   the latest logged weight entry).
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.models.models import WorkoutSession
 
 RUNS_URL = "/api/v1/runs"
 SESSIONS_URL = "/api/v1/sessions"
 WEIGHT_URL = "/api/v1/health/weight"
 OVERVIEW_URL = "/api/v1/stats/overview"
+DAILY_ACTIVITY_URL = "/api/v1/stats/daily-activity"
 
 
 def _monday_of(d: date) -> str:
@@ -404,3 +408,118 @@ class TestStatsOverviewWeeklyKcalSplit:
         assert wk["walk_kcal"] == 0.0, (
             f"walk_kcal must be 0.0, got {wk['walk_kcal']}"
         )
+
+
+# ---------------------------------------------------------------------------
+# 6. Daily Activity
+# ---------------------------------------------------------------------------
+
+
+def _session_dt(days_ago: int = 0, hour: int = 10) -> datetime:
+    """Naive datetime at a fixed hour on a date N days ago (UTC-agnostic for
+    in-memory SQLite testing)."""
+    d = date.today() - timedelta(days=days_ago)
+    return datetime(d.year, d.month, d.day, hour, 0, 0)
+
+
+class TestDailyActivityEndpoint:
+    def test_empty_db_returns_empty_days(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """No sessions → {"days": []}."""
+        resp = client.get(DAILY_ACTIVITY_URL, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json() == {"days": []}
+
+    def test_same_day_aggregation(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Two sessions on the same calendar day accumulate: 2400s+1200s = 60.0 min,
+        310+150 = 460.0 kcal. Verified contract from the spec."""
+        db.add(WorkoutSession(
+            template_name="Strength",
+            started_at=_session_dt(0, hour=8),
+            total_duration_seconds=2400,
+            total_kcal_estimated=310.0,
+        ))
+        db.add(WorkoutSession(
+            template_name="Yoga",
+            started_at=_session_dt(0, hour=18),
+            total_duration_seconds=1200,
+            total_kcal_estimated=150.0,
+        ))
+        db.commit()
+
+        resp = client.get(DAILY_ACTIVITY_URL, headers=auth_headers)
+        assert resp.status_code == 200
+        days = resp.json()["days"]
+        assert len(days) == 1
+        assert days[0]["date"] == date.today().isoformat()
+        assert days[0]["minutes"] == 60.0
+        assert days[0]["kcal"] == 460.0
+
+    def test_multiple_days_sorted_ascending(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Sessions on distinct days produce one row per day, oldest first."""
+        for days_ago in (3, 1, 2):
+            db.add(WorkoutSession(
+                template_name="Workout",
+                started_at=_session_dt(days_ago),
+                total_duration_seconds=1800,
+                total_kcal_estimated=200.0,
+            ))
+        db.commit()
+
+        resp = client.get(DAILY_ACTIVITY_URL, headers=auth_headers)
+        assert resp.status_code == 200
+        result = resp.json()["days"]
+        dates = [r["date"] for r in result]
+        assert len(dates) == 3
+        assert dates == sorted(dates), f"Expected ascending order, got {dates}"
+
+    def test_window_cutoff_excludes_old_sessions(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Sessions older than the `days` window are excluded; recent ones appear."""
+        db.add(WorkoutSession(
+            template_name="OldSession",
+            started_at=_session_dt(200),
+            total_duration_seconds=1800,
+            total_kcal_estimated=100.0,
+        ))
+        db.add(WorkoutSession(
+            template_name="RecentSession",
+            started_at=_session_dt(1),
+            total_duration_seconds=1800,
+            total_kcal_estimated=100.0,
+        ))
+        db.commit()
+
+        resp = client.get(DAILY_ACTIVITY_URL + "?days=30", headers=auth_headers)
+        assert resp.status_code == 200
+        result_dates = {r["date"] for r in resp.json()["days"]}
+        old_date_iso = (date.today() - timedelta(days=200)).isoformat()
+        recent_date_iso = (date.today() - timedelta(days=1)).isoformat()
+        assert old_date_iso not in result_dates
+        assert recent_date_iso in result_dates
+
+    def test_none_duration_and_kcal_treated_as_zero(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Sessions with NULL duration and kcal contribute 0 to the day totals;
+        the day still appears with minutes=0.0 and kcal=0.0."""
+        db.add(WorkoutSession(
+            template_name="Incomplete",
+            started_at=_session_dt(0),
+            total_duration_seconds=None,
+            total_kcal_estimated=None,
+        ))
+        db.commit()
+
+        resp = client.get(DAILY_ACTIVITY_URL, headers=auth_headers)
+        assert resp.status_code == 200
+        days = resp.json()["days"]
+        assert len(days) == 1
+        assert days[0]["minutes"] == 0.0
+        assert days[0]["kcal"] == 0.0

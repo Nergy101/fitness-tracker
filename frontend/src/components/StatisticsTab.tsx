@@ -34,6 +34,8 @@ import {
 } from "../api";
 import { ACTIVITY_COLORS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
 import ActivityLegend from "./ActivityLegend";
+import ChartCard from "./ChartCard";
+import AppleHealthCharts from "./health/AppleHealthCharts";
 import { formatHours } from "../format";
 
 const WEIGHT_COLOR = "#c084fc"; // purple-400 — matches the weight stat card icon
@@ -158,12 +160,15 @@ function LineChart({
   color,
   formatValue,
   reference,
+  overlay,
   height = 90,
 }: {
   points: { label: string; value: number }[];
   color: string;
   formatValue: (v: number) => string;
   reference?: { value: number; label: string };
+  /** Same-length smoothed series (e.g. 7-day rolling average), drawn dashed. */
+  overlay?: number[];
   height?: number;
 }) {
   if (points.length < 2) return null;
@@ -204,6 +209,16 @@ function LineChart({
             {reference.label}
           </text>
         </g>
+      )}
+      {overlay && overlay.length === points.length && (
+        <polyline
+          points={overlay.map((v, i) => `${px(i)},${py(v)}`).join(" ")}
+          fill="none"
+          stroke={color}
+          strokeWidth="1"
+          strokeDasharray="3 3"
+          opacity={0.55}
+        />
       )}
       <polyline
         points={points.map((p, i) => `${px(i)},${py(p.value)}`).join(" ")}
@@ -290,42 +305,31 @@ function StatCard({
 
 // ─── Chart Card ─────────────────────────────────────────────
 
-function ChartCard({
-  icon,
-  title,
-  sub,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  sub?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          {icon}
-          <p className="text-xs text-fg/40">{title}</p>
-        </div>
-        {sub && <p className="text-[10px] text-fg/30">{sub}</p>}
-      </div>
-      {children}
-    </div>
-  );
-}
+// ChartCard lives in ./ChartCard.tsx (shared with the Apple Health charts).
 
 // ─── Health Trend Card ─────────────────────────────────────
 
 /** One imported Apple Health metric as a trend line, with icon, latest value,
  *  and average over the window. Shows the card even with a single point
- *  (just no line chart until there are 2+). */
+ *  (just no line chart until there are 2+). Metric-specific extras: a dashed
+ *  7-day rolling average for noisy daily series, and Apple's 30-minute ring
+ *  goal on exercise minutes. */
+const ROLLING_AVG_METRICS = new Set(["resting_heart_rate", "step_count"]);
+
+function rollingAvg(values: number[], window: number): number[] {
+  return values.map((_, i) => {
+    const slice = values.slice(Math.max(0, i - window + 1), i + 1);
+    return slice.reduce((s, v) => s + v, 0) / slice.length;
+  });
+}
+
 function HealthTrendChart({ series }: { series: HealthSeries }) {
   if (series.points.length === 0) return null;
   const meta = HEALTH_META[series.metric] ?? { icon: Pulse, color: "var(--accent)" };
   const MetricIcon = meta.icon;
   const latest = series.points[series.points.length - 1].value;
   const avg = series.points.reduce((s, p) => s + p.value, 0) / series.points.length;
+  const values = series.points.map((p) => p.value);
   return (
     <ChartCard
       icon={<MetricIcon size={16} style={{ color: meta.color }} />}
@@ -337,6 +341,8 @@ function HealthTrendChart({ series }: { series: HealthSeries }) {
           points={series.points.map((p) => ({ label: p.date.slice(5), value: p.value }))}
           color={meta.color}
           formatValue={(v) => formatHealthValue(series.metric, v)}
+          overlay={ROLLING_AVG_METRICS.has(series.metric) ? rollingAvg(values, 7) : undefined}
+          reference={series.metric === "apple_exercise_time" ? { value: 30, label: "goal 30 min" } : undefined}
         />
       )}
       {series.points.length === 1 && (
@@ -645,16 +651,21 @@ export default function StatisticsTab() {
         </ChartCard>
       )}
 
-      {/* Apple Health vitals (imported) */}
+      {/* Apple Health vitals (imported). Sleep and heart_rate get specialized
+          charts (stage stack, min–max band) in AppleHealthCharts; the rest
+          render as generic trend lines. */}
       {health && health.series.length > 0 && (
         <>
           <div className="flex items-center gap-2 pt-1">
             <Heart size={18} className="text-red-400" weight="fill" />
             <h3 className="text-sm font-semibold">Apple Health</h3>
           </div>
-          {health.series.map((s) => (
-            <HealthTrendChart key={s.metric} series={s} />
-          ))}
+          {health.series
+            .filter((s) => s.metric !== "sleep_analysis" && s.metric !== "heart_rate")
+            .map((s) => (
+              <HealthTrendChart key={s.metric} series={s} />
+            ))}
+          <AppleHealthCharts series={health.series} weightEntries={weightEntries} />
         </>
       )}
     </div>

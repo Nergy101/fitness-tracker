@@ -377,6 +377,7 @@ export default function HealthTab() {
         <SimpleChart entries={weights} />
       )}
 
+
       {/* Body Measurements */}
       <button
         onClick={() => setShowMeas(!showMeas)}

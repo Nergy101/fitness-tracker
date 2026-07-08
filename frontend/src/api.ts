@@ -327,9 +327,20 @@ export interface StatsOverviewResponse {
   avg_weight_change_kg: number | null;
 }
 
+export interface SleepStages {
+  deep: number | null;
+  core: number | null;
+  rem: number | null;
+  awake: number | null;
+}
+
 export interface HealthPoint {
   date: string;
   value: number;
+  min: number | null;
+  max: number | null;
+  /** Only populated on sleep_analysis points with a stage breakdown. */
+  stages: SleepStages | null;
 }
 
 export interface HealthSeries {
@@ -341,6 +352,30 @@ export interface HealthSeries {
 
 export interface HealthInsightsResponse {
   series: HealthSeries[];
+}
+
+export interface HealthWorkoutSummary {
+  date: string;
+  name: string;
+  duration_min: number | null;
+  distance_km: number | null;
+  energy_kcal: number | null;
+  avg_hr: number | null;
+  max_hr: number | null;
+}
+
+export interface HealthWorkoutsResponse {
+  workouts: HealthWorkoutSummary[];
+}
+
+export interface DailyActivityPoint {
+  date: string;
+  minutes: number;
+  kcal: number;
+}
+
+export interface DailyActivityResponse {
+  days: DailyActivityPoint[];
 }
 
 export interface HealthScoreResponse {
@@ -608,10 +643,16 @@ export const api = {
   // Stats
   getStatsOverview: () =>
     fetchJSON<StatsOverviewResponse>("/api/v1/stats/overview"),
+  getDailyActivity: (days = 120) =>
+    fetchJSON<DailyActivityResponse>(`/api/v1/stats/daily-activity?days=${days}`),
+
 
   // Apple Health insights (imported via /api/v1/import/data)
   getHealthInsights: (days = 120) =>
     fetchJSON<HealthInsightsResponse>(`/api/v1/import/insights?days=${days}`),
+  getHealthWorkouts: (days = 120) =>
+    fetchJSON<HealthWorkoutsResponse>(`/api/v1/import/workouts?days=${days}`),
+
 
   // ─── Runs ───────────────────────────────────────────
 
