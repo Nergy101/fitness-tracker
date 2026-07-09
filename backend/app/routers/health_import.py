@@ -93,14 +93,70 @@ def _chunked_upsert(db: Session, model, rows: list[dict], index_elements: list[s
     return len(rows)
 
 
+# Metrics whose points are per-interval amounts: multiple points on one
+# calendar day ADD UP (an hourly export has ~24 of them). Everything else is
+# a gauge — same-day points average instead.
+_CUMULATIVE = {
+    "step_count", "active_energy", "basal_energy_burned", "apple_exercise_time",
+    "apple_stand_time", "flights_climbed", "walking_running_distance", "distance",
+    "swimming_distance", "cycling_distance",
+}
+
+# Sleep stage keys that sum across same-day fragments.
+_SLEEP_STAGE_KEYS = ("totalSleep", "deep", "core", "rem", "awake", "asleep", "inBed")
+
+
+def _merge_day_points(name: str, points: list[dict]) -> tuple[float | None, dict]:
+    """Collapse all of a day's points into one (qty, extras) pair.
+
+    Health Auto Export's aggregation setting decides how many points a day
+    has: "Days" gives one (merge is the identity), "Hours"/"Minutes" give
+    many. Keeping only the last one made a 3k-step day read as the final
+    interval's 11 steps.
+    """
+    if len(points) == 1:
+        pt = points[0]
+        extra = {k: v for k, v in pt.items() if k not in ("date", "source", "qty")}
+        return _metric_qty(name, pt), extra
+
+    qtys = [q for q in (_metric_qty(name, p) for p in points) if q is not None]
+    if not qtys:
+        qty = None
+    elif name in _CUMULATIVE or name == "sleep_analysis":
+        qty = sum(qtys)
+    else:
+        qty = sum(qtys) / len(qtys)
+
+    # Merged extras: keep the shapes downstream readers rely on.
+    extra: dict = {}
+    if name == "heart_rate":
+        mins = [p["Min"] for p in points if isinstance(p.get("Min"), (int, float))]
+        maxs = [p["Max"] for p in points if isinstance(p.get("Max"), (int, float))]
+        if mins:
+            extra["Min"] = min(mins)
+        if maxs:
+            extra["Max"] = max(maxs)
+        if qty is not None:
+            extra["Avg"] = qty
+    elif name == "sleep_analysis":
+        for key in _SLEEP_STAGE_KEYS:
+            vals = [p[key] for p in points if isinstance(p.get(key), (int, float))]
+            if vals:
+                extra[key] = round(sum(vals), 4)
+    else:
+        extra = {k: v for k, v in points[-1].items() if k not in ("date", "source", "qty")}
+    return qty, extra
+
+
 @router.post("/data", response_model=HealthImportResult)
 def import_data(payload: dict = Body(...), db: Session = Depends(get_db)):
     """Ingest a Health Auto Export document. Idempotent: metrics upsert on
     (metric_name, date), workouts on their UUID — safe to call on every sync."""
     data = payload.get("data", payload) if isinstance(payload, dict) else {}
 
-    # ── Metrics ──
-    metric_rows: dict[tuple[str, date], dict] = {}
+    # ── Metrics ── group every point by calendar day, then collapse.
+    day_points: dict[tuple[str, date], list[dict]] = {}
+    day_meta: dict[tuple[str, date], dict] = {}
     for m in data.get("metrics", []) or []:
         name = m.get("name")
         if not name:
@@ -111,15 +167,20 @@ def import_data(payload: dict = Body(...), db: Session = Depends(get_db)):
             if dt is None:
                 continue
             d = dt.date()
-            extra = {k: v for k, v in pt.items() if k not in ("date", "source", "qty")}
-            metric_rows[(name, d)] = {
-                "metric_name": name,
-                "date": d,
-                "units": units,
-                "qty": _metric_qty(name, pt),
-                "data": json.dumps(extra) if extra else None,
-                "source": pt.get("source"),
-            }
+            day_points.setdefault((name, d), []).append(pt)
+            day_meta[(name, d)] = {"units": units, "source": pt.get("source")}
+
+    metric_rows: dict[tuple[str, date], dict] = {}
+    for (name, d), pts in day_points.items():
+        qty, extra = _merge_day_points(name, pts)
+        metric_rows[(name, d)] = {
+            "metric_name": name,
+            "date": d,
+            "units": day_meta[(name, d)]["units"],
+            "qty": qty,
+            "data": json.dumps(extra) if extra else None,
+            "source": day_meta[(name, d)]["source"],
+        }
 
     # ── Workouts ──
     workout_rows: dict[str, dict] = {}

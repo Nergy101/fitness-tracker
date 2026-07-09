@@ -891,6 +891,228 @@ class TestAggregatedAvgFallback:
         assert series["resting_heart_rate"]["points"][0]["value"] == 51.0
 
 
+
+# ---------------------------------------------------------------------------
+# 8. Same-day point merging
+# ---------------------------------------------------------------------------
+
+
+def _point_at_hour(days_ago: int, hour: int, qty: float) -> dict:
+    """Scalar point at an explicit hour on the given calendar day (UTC)."""
+    d = date.today() - timedelta(days=days_ago)
+    return {"date": f"{d.strftime('%Y-%m-%d')} {hour:02d}:00:00 +0000", "qty": qty, "source": "iPhone"}
+
+
+def _hr_point_at_hour(
+    days_ago: int, hour: int, avg: float, min_bpm: float = 45.0, max_bpm: float = 160.0
+) -> dict:
+    """heart_rate point at an explicit hour on the given calendar day (UTC)."""
+    d = date.today() - timedelta(days=days_ago)
+    return {
+        "date": f"{d.strftime('%Y-%m-%d')} {hour:02d}:00:00 +0000",
+        "Avg": avg, "Min": min_bpm, "Max": max_bpm, "source": "Apple Watch",
+    }
+
+
+def _staged_sleep_point_at_hour(
+    days_ago: int, hour: int, deep: float, core: float, rem: float, awake: float
+) -> dict:
+    """sleep_analysis point with stage breakdown at an explicit hour."""
+    d = date.today() - timedelta(days=days_ago)
+    total = round(deep + core + rem, 4)
+    return {
+        "date": f"{d.strftime('%Y-%m-%d')} {hour:02d}:00:00 +0000",
+        "totalSleep": total, "deep": deep, "core": core, "rem": rem, "awake": awake,
+        "source": "Apple Watch",
+    }
+
+
+class TestSameDayPointMerging:
+    """POST /api/v1/import/data collapses multiple same-day points per metric:
+    cumulative metrics sum; gauge metrics average; heart_rate keeps min/max;
+    sleep fragments sum stage keys; re-posting the same payload is idempotent."""
+
+    IMPORT_URL = "/api/v1/import/data"
+    INSIGHTS_URL = "/api/v1/import/insights"
+
+    def test_step_count_hourly_points_sum(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Three hourly step_count points on the same day collapse to their sum."""
+        pts = [
+            _point_at_hour(0, 8, 500.0),
+            _point_at_hour(0, 12, 1200.0),
+            _point_at_hour(0, 16, 800.0),
+        ]
+        resp = client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("step_count", "count", pts)),
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+
+        rows = db.query(HealthMetric).filter(HealthMetric.metric_name == "step_count").all()
+        assert len(rows) == 1
+        assert rows[0].qty == 2500.0
+
+    def test_active_energy_hourly_points_sum_and_visible_in_insights(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Hourly active_energy points sum to one DB row AND appear in /insights.
+
+        Regression: the original last-write-wins logic stored only the last
+        interval (e.g. 150 kJ of a 450 kJ day), so the series appeared empty
+        to the frontend unless the final hourly chunk was unusually large.
+        """
+        pts = [
+            _point_at_hour(0, 8, 100.0),
+            _point_at_hour(0, 12, 200.0),
+            _point_at_hour(0, 16, 150.0),
+        ]
+        resp = client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("active_energy", "kJ", pts)),
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+
+        # One row with full daily total, not just the last interval
+        rows = db.query(HealthMetric).filter(HealthMetric.metric_name == "active_energy").all()
+        assert len(rows) == 1
+        assert rows[0].qty == 450.0
+
+        # /insights surfaces the metric (kJ → kcal conversion applied)
+        resp_i = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        assert resp_i.status_code == 200
+        series = {s["metric"]: s for s in resp_i.json()["series"]}
+        assert "active_energy" in series
+        pt = series["active_energy"]["points"][0]
+        assert pt["value"] == round(450.0 / 4.184, 2)
+
+    def test_gauge_metric_averages_on_same_day(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Same-day respiratory_rate points (a gauge, not cumulative) collapse
+        to their mean, not their sum."""
+        pts = [
+            _point_at_hour(0, 8, 15.0),
+            _point_at_hour(0, 12, 17.0),
+            _point_at_hour(0, 16, 19.0),
+        ]
+        resp = client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("respiratory_rate", "breaths/min", pts)),
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+
+        rows = db.query(HealthMetric).filter(HealthMetric.metric_name == "respiratory_rate").all()
+        assert len(rows) == 1
+        assert rows[0].qty == 17.0  # (15 + 17 + 19) / 3
+
+    def test_heart_rate_multi_point_merge_min_max_avg_in_insights(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Two heart_rate points on the same day: stored qty = mean(Avg);
+        stored data JSON gets Min = min(Mins), Max = max(Maxes);
+        /insights band point correctly surfaces all three."""
+        pts = [
+            _hr_point_at_hour(0, 8,  avg=70.0, min_bpm=45.0, max_bpm=130.0),
+            _hr_point_at_hour(0, 16, avg=90.0, min_bpm=55.0, max_bpm=180.0),
+        ]
+        resp = client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("heart_rate", "bpm", pts)),
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+
+        rows = db.query(HealthMetric).filter(HealthMetric.metric_name == "heart_rate").all()
+        assert len(rows) == 1
+        assert rows[0].qty == 80.0  # (70 + 90) / 2
+
+        stored = json.loads(rows[0].data)
+        assert stored["Min"] == 45.0    # min of [45, 55]
+        assert stored["Max"] == 180.0   # max of [130, 180]
+        assert stored["Avg"] == 80.0
+
+        # /insights heart_rate band reflects merged values
+        resp_i = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        series = {s["metric"]: s for s in resp_i.json()["series"]}
+        assert "heart_rate" in series
+        pt = series["heart_rate"]["points"][0]
+        assert pt["value"] == 80.0
+        assert pt["min"] == 45.0
+        assert pt["max"] == 180.0
+
+    def test_sleep_fragments_sum_including_stages(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Two sleep_analysis fragments for the same night: totalSleep sums;
+        each stage key (deep/core/rem/awake) also sums; /insights reflects both."""
+        # Fragment 1: totalSleep = 0.5 + 2.0 + 0.5 = 3.0
+        # Fragment 2: totalSleep = 1.0 + 2.5 + 0.5 = 4.0
+        pts = [
+            _staged_sleep_point_at_hour(0, 0, deep=0.5, core=2.0, rem=0.5, awake=0.2),
+            _staged_sleep_point_at_hour(0, 4, deep=1.0, core=2.5, rem=0.5, awake=0.3),
+        ]
+        resp = client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("sleep_analysis", "hr", pts)),
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+
+        rows = db.query(HealthMetric).filter(HealthMetric.metric_name == "sleep_analysis").all()
+        assert len(rows) == 1
+        assert rows[0].qty == 7.0  # 3.0 + 4.0
+
+        # /insights exposes summed stages
+        resp_i = client.get(self.INSIGHTS_URL, headers=auth_headers)
+        series = {s["metric"]: s for s in resp_i.json()["series"]}
+        assert "sleep_analysis" in series
+        pt = series["sleep_analysis"]["points"][0]
+        assert pt["value"] == 7.0
+        stages = pt["stages"]
+        assert stages is not None
+        assert stages["deep"] == 1.5   # 0.5 + 1.0
+        assert stages["core"] == 4.5   # 2.0 + 2.5
+        assert stages["rem"] == 1.0    # 0.5 + 0.5
+
+    def test_repost_same_multi_point_payload_yields_same_stored_qty(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Re-posting the identical multi-point payload produces the same
+        aggregated qty — the upsert overwrites with an equal sum, never doubles."""
+        pts = [
+            _point_at_hour(0, 8, 500.0),
+            _point_at_hour(0, 12, 1200.0),
+            _point_at_hour(0, 16, 800.0),
+        ]
+        payload = _payload(_metric("step_count", "count", pts))
+
+        client.post(self.IMPORT_URL, json=payload, headers=auth_headers)
+        client.post(self.IMPORT_URL, json=payload, headers=auth_headers)
+
+        rows = db.query(HealthMetric).filter(HealthMetric.metric_name == "step_count").all()
+        assert len(rows) == 1
+        assert rows[0].qty == 2500.0  # not 5000.0
+
+    def test_single_point_per_day_is_identity(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """A single point per day takes the fast-path and passes through untouched."""
+        resp = client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("step_count", "count", [_scalar_point(0, 5000.0)])),
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+
+        rows = db.query(HealthMetric).filter(HealthMetric.metric_name == "step_count").all()
+        assert len(rows) == 1
+        assert rows[0].qty == 5000.0
+
 # ---------------------------------------------------------------------------
 # 6. Auth
 # ---------------------------------------------------------------------------
