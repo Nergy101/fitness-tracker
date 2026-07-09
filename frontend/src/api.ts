@@ -541,6 +541,10 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ is_pinned: isPinned }),
     }),
+  duplicateWorkout: (id: number) =>
+    fetchJSON<WorkoutTemplate>(`/api/v1/workouts/${id}/duplicate`, {
+      method: "POST",
+    }),
 
   // Sessions
   getSessions: () => fetchJSON<WorkoutSession[]>("/api/v1/sessions"),

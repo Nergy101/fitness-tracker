@@ -64,6 +64,7 @@ const mockTemplate: WorkoutTemplate = {
 describe("WorkoutCard", () => {
   const onStart = vi.fn();
   const onEdit = vi.fn();
+  const onClone = vi.fn();
   const onDelete = vi.fn();
   const onLog = vi.fn();
   const onTogglePin = vi.fn();
@@ -78,6 +79,7 @@ describe("WorkoutCard", () => {
         template={mockTemplate}
         onStart={onStart}
         onEdit={onEdit}
+        onClone={onClone}
         onDelete={onDelete}
         onLog={onLog}
         onTogglePin={onTogglePin}
@@ -126,6 +128,13 @@ describe("WorkoutCard", () => {
     expect(onEdit).toHaveBeenCalledWith(mockTemplate);
   });
 
+  it("calls onClone when clicking the duplicate button", () => {
+    renderCard();
+    const cloneBtn = screen.getByTitle("Duplicate");
+    fireEvent.click(cloneBtn);
+    expect(onClone).toHaveBeenCalledWith(mockTemplate);
+  });
+
   it("calls onDelete when clicking the delete button", () => {
     renderCard();
     const deleteBtn = screen.getByTitle("Delete");
@@ -151,6 +160,7 @@ describe("WorkoutCard", () => {
         template={pinned}
         onStart={onStart}
         onEdit={onEdit}
+        onClone={onClone}
         onDelete={onDelete}
         onLog={onLog}
         onTogglePin={onTogglePin}

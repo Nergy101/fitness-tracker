@@ -138,6 +138,17 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
     }
   }
 
+  async function cloneWorkout(tpl: WorkoutTemplate) {
+    try {
+      const clone = await api.duplicateWorkout(tpl.id);
+      setTemplates((prev) => [...prev, clone]);
+      setToast(`Duplicated as "${clone.name}"`);
+      openEditor(clone);
+    } catch {
+      setToast("Failed to duplicate workout");
+    }
+  }
+
   return (
     <div className="workout-tab">
       {/* Toast */}
@@ -185,6 +196,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
               template={tpl}
               onStart={onStartWorkout}
               onEdit={openEditor}
+              onClone={cloneWorkout}
               onDelete={deleteWorkout}
               onLog={logWorkout}
               onTogglePin={togglePin}

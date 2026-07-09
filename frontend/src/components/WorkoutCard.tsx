@@ -1,4 +1,4 @@
-import { TrashIcon as Trash, PushPinIcon as PushPin } from "@phosphor-icons/react";
+import { TrashIcon as Trash, PushPinIcon as PushPin, CopyIcon as Copy } from "@phosphor-icons/react";
 import { type WorkoutTemplate } from "../api";
 import { formatDuration } from "../format";
 
@@ -6,6 +6,7 @@ interface WorkoutCardProps {
   template: WorkoutTemplate;
   onStart: (tpl: WorkoutTemplate) => void;
   onEdit: (tpl: WorkoutTemplate) => void;
+  onClone: (tpl: WorkoutTemplate) => void;
   onDelete: (id: number, name: string) => void;
   onLog: (tpl: WorkoutTemplate) => void;
   onTogglePin: (tpl: WorkoutTemplate) => void;
@@ -15,6 +16,7 @@ export default function WorkoutCard({
   template,
   onStart,
   onEdit,
+  onClone,
   onDelete,
   onLog,
   onTogglePin,
@@ -111,6 +113,14 @@ export default function WorkoutCard({
             >
               <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
             </svg>
+          </button>
+          <button
+            onClick={() => onClone(template)}
+            className="text-fg/30 hover:text-fg/70 transition-colors p-1"
+            title="Duplicate"
+            aria-label="Duplicate workout"
+          >
+            <Copy size={18} />
           </button>
           <button
             onClick={() => onDelete(template.id, template.name)}

@@ -220,3 +220,106 @@ class TestTogglePin:
     def test_pin_missing(self, client: TestClient, auth_headers: dict):
         resp = client.patch(f"{self.URL}/99999/pin", json={"is_pinned": True}, headers=auth_headers)
         assert resp.status_code == 404
+
+class TestDuplicateWorkout:
+    BASE = "/api/v1/workouts"
+
+    def _create_template(self, client: TestClient, auth_headers: dict,
+                         name: str, exercises: list, **kwargs) -> dict:
+        payload = {"name": name, "exercises": exercises, **kwargs}
+        resp = client.post(self.BASE, json=payload, headers=auth_headers)
+        assert resp.status_code == 201
+        return resp.json()
+
+    def test_not_found(self, client: TestClient, auth_headers: dict):
+        resp = client.post(f"{self.BASE}/99999/duplicate", headers=auth_headers)
+        assert resp.status_code == 404
+
+    def test_success_copies_fields(self, client: TestClient, auth_headers: dict, seed_exercises):
+        ex0, ex1 = seed_exercises[0], seed_exercises[1]
+        source = self._create_template(client, auth_headers, "Full Body", [
+            {"exercise_id": ex0.id, "duration_seconds": 30, "rest_after_seconds": 15,
+             "order_index": 0},
+            {"exercise_id": ex1.id, "duration_seconds": 45, "rest_after_seconds": 0,
+             "order_index": 1},
+        ], description="All rounder", rounds=3, rest_between_rounds=45,
+           warmup_seconds=60, cooldown_seconds=30, time_cap_seconds=600)
+        src_id = source["id"]
+
+        resp = client.post(f"{self.BASE}/{src_id}/duplicate", headers=auth_headers)
+        assert resp.status_code == 201
+        clone = resp.json()
+
+        assert clone["id"] != src_id
+        assert clone["name"] == "Full Body (Copy)"
+        assert clone["description"] == source["description"]
+        assert clone["mode"] == source["mode"]
+        assert clone["rounds"] == source["rounds"]
+        assert clone["rest_between_rounds"] == source["rest_between_rounds"]
+        assert clone["warmup_seconds"] == source["warmup_seconds"]
+        assert clone["cooldown_seconds"] == source["cooldown_seconds"]
+        assert clone["time_cap_seconds"] == source["time_cap_seconds"]
+
+        src_exs = sorted(source["exercises"], key=lambda e: e["order_index"])
+        clone_exs = sorted(clone["exercises"], key=lambda e: e["order_index"])
+        assert len(clone_exs) == len(src_exs)
+        for src_ex, clone_ex in zip(src_exs, clone_exs):
+            assert clone_ex["exercise_id"] == src_ex["exercise_id"]
+            assert clone_ex["duration_seconds"] == src_ex["duration_seconds"]
+            assert clone_ex["rest_after_seconds"] == src_ex["rest_after_seconds"]
+            assert clone_ex["order_index"] == src_ex["order_index"]
+
+    def test_naming_increment(self, client: TestClient, auth_headers: dict, seed_exercise):
+        source = self._create_template(client, auth_headers, "Full Body", [
+            {"exercise_id": seed_exercise.id, "duration_seconds": 30, "order_index": 0},
+        ])
+
+        copy1 = client.post(f"{self.BASE}/{source['id']}/duplicate",
+                            headers=auth_headers).json()
+        assert copy1["name"] == "Full Body (Copy)"
+
+        copy2 = client.post(f"{self.BASE}/{copy1['id']}/duplicate",
+                            headers=auth_headers).json()
+        assert copy2["name"] == "Full Body (Copy 2)"
+
+        copy3 = client.post(f"{self.BASE}/{copy2['id']}/duplicate",
+                            headers=auth_headers).json()
+        assert copy3["name"] == "Full Body (Copy 3)"
+
+    def test_clone_is_unpinned_when_source_is_pinned(self, client: TestClient, auth_headers: dict, seed_exercise):
+        source = self._create_template(client, auth_headers, "Pinned Workout", [
+            {"exercise_id": seed_exercise.id, "duration_seconds": 30, "order_index": 0},
+        ])
+        src_id = source["id"]
+
+        pin_resp = client.patch(f"{self.BASE}/{src_id}/pin",
+                                json={"is_pinned": True}, headers=auth_headers)
+        assert pin_resp.status_code == 200
+        assert pin_resp.json()["is_pinned"] is True
+
+        resp = client.post(f"{self.BASE}/{src_id}/duplicate", headers=auth_headers)
+        assert resp.status_code == 201
+        clone = resp.json()
+
+        assert clone["is_pinned"] is False
+        assert clone["pinned_order"] is None
+
+    def test_source_unchanged_after_duplicate(self, client: TestClient, auth_headers: dict, seed_exercises):
+        ex0, ex1 = seed_exercises[0], seed_exercises[1]
+        source = self._create_template(client, auth_headers, "Original", [
+            {"exercise_id": ex0.id, "duration_seconds": 30, "order_index": 0},
+            {"exercise_id": ex1.id, "duration_seconds": 45, "order_index": 1},
+        ])
+        src_id = source["id"]
+
+        client.post(f"{self.BASE}/{src_id}/duplicate", headers=auth_headers)
+
+        get_resp = client.get(f"{self.BASE}/{src_id}", headers=auth_headers)
+        assert get_resp.status_code == 200
+        fetched = get_resp.json()
+        assert fetched["name"] == "Original"
+        assert len(fetched["exercises"]) == 2
+
+        list_resp = client.get(self.BASE, headers=auth_headers)
+        assert list_resp.status_code == 200
+        assert len(list_resp.json()) == 2

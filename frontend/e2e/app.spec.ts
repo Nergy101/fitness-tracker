@@ -113,6 +113,39 @@ test.describe("authenticated", () => {
     await expect(page.getByPlaceholder("Workout name...")).toHaveCount(0);
   });
 
+  test("duplicate button clones a workout and opens the editor", async ({ page, request }) => {
+    // 1. Create a uniquely-named source template via API.
+    await createFastWorkout(request, "E2E Clone Src", 2, 2, 30, _authHeaders);
+
+    // 2. Navigate to Workouts tab and confirm the source card is visible.
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "E2E Clone Src", exact: true }).first()).toBeVisible();
+
+    // 3. Scope the Duplicate button to that card (seeded templates also have Duplicate buttons).
+    //    The card root div carries both `rounded-xl` and `p-4`; inner divs do not, so this
+    //    filter narrows to exactly the card element rather than all its ancestor divs.
+    const srcCard = page.locator("div.rounded-xl.p-4").filter({
+      has: page.getByRole("heading", { name: "E2E Clone Src", exact: true }),
+    });
+    await srcCard.getByRole("button", { name: "Duplicate workout" }).click();
+
+    // 4. Success toast confirms the clone name.
+    await expect(page.getByRole("status")).toContainText('Duplicated as "E2E Clone Src (Copy)"');
+
+    // 5. Editor opened pre-filled with the clone name.
+    await expect(page.getByPlaceholder("Workout name...")).toHaveValue("E2E Clone Src (Copy)");
+
+    // 6. API confirms both templates exist and the clone has the same exercise count.
+    const listRes = await request.get(`${API_URL}/api/v1/workouts`, { headers: _authHeaders });
+    expect(listRes.ok()).toBeTruthy();
+    const templates: Array<{ name: string; exercises: unknown[] }> = await listRes.json();
+    const src = templates.find((t) => t.name === "E2E Clone Src");
+    const clone = templates.find((t) => t.name === "E2E Clone Src (Copy)");
+    expect(src).toBeTruthy();
+    expect(clone).toBeTruthy();
+    expect(clone!.exercises.length).toBe(src!.exercises.length);
+  });
+
   test("exercises tab loads the full seeded catalog", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Exercises" }).click();

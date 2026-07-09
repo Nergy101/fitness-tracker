@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -101,6 +103,49 @@ def create_workout(data: WorkoutTemplateCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(template)
     return _build_template_response(template)
+
+
+def _next_copy_name(name: str) -> str:
+    """Derive the clone name. Appends " (Copy)"; if the source already ends in
+    " (Copy)" or " (Copy N)", bumps to the next number."""
+    match = re.search(r"^(.*?) \(Copy(?: (\d+))?\)$", name)
+    if match:
+        base = match.group(1)
+        current = int(match.group(2)) if match.group(2) else 1
+        return f"{base} (Copy {current + 1})"
+    return f"{name} (Copy)"
+
+
+@router.post("/{workout_id}/duplicate", response_model=WorkoutTemplateResponse, status_code=201)
+def duplicate_workout(workout_id: int, db: Session = Depends(get_db)):
+    source = db.get(WorkoutTemplate, workout_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Workout template not found")
+    # Clone starts unpinned regardless of the source's pin state.
+    clone = WorkoutTemplate(
+        name=_next_copy_name(source.name),
+        description=source.description,
+        mode=source.mode,
+        time_cap_seconds=source.time_cap_seconds,
+        rounds=source.rounds,
+        rest_between_rounds=source.rest_between_rounds,
+        warmup_seconds=source.warmup_seconds,
+        cooldown_seconds=source.cooldown_seconds,
+    )
+    db.add(clone)
+    db.flush()
+    for te in source.exercises:
+        db.add(WorkoutTemplateExercise(
+            template_id=clone.id,
+            exercise_id=te.exercise_id,
+            duration_seconds=te.duration_seconds,
+            rest_after_seconds=te.rest_after_seconds,
+            order_index=te.order_index,
+            superset_group=te.superset_group,
+        ))
+    db.commit()
+    db.refresh(clone)
+    return _build_template_response(clone)
 
 
 @router.put("/{workout_id}", response_model=WorkoutTemplateResponse)
