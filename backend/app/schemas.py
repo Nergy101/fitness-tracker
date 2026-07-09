@@ -413,6 +413,26 @@ class RunStatsResponse(BaseModel):
     monthly_breakdown: list[dict] = []
 
 
+# ─── Boxing Schemas ──────────────────────────────────────────
+
+class BoxingEntryCreate(BaseModel):
+    duration_seconds: int
+    kcal_per_min: float = 10.0
+    date: DateField = None
+    notes: str = ""
+
+
+class BoxingEntryResponse(BaseModel):
+    id: int
+    duration_seconds: int
+    kcal_per_min: float
+    date: date
+    notes: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # ─── Apple Health import ───────────────────────────────────
 
 

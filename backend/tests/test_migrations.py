@@ -23,7 +23,7 @@ from sqlalchemy import create_engine, inspect, text
 # conftest.py already imported app modules; these are cache hits.
 from app.database import Base
 import app.models.models  # noqa: F401 — ensures Base.metadata is fully populated
-from app.models.models import HealthMetric, HealthWorkout  # noqa: F401
+from app.models.models import HealthMetric, HealthWorkout, BoxingEntry  # noqa: F401
 
 # backend/ directory — alembic.ini lives here and '' in sys.path resolves here.
 BACKEND_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
@@ -103,6 +103,7 @@ class TestRunMigrations:
             # stamps baseline and `upgrade head` creates them).
             HealthMetric.__table__.drop(bind=setup_engine)
             HealthWorkout.__table__.drop(bind=setup_engine)
+            BoxingEntry.__table__.drop(bind=setup_engine)
             with setup_engine.connect() as conn:
                 conn.execute(
                     text(
@@ -156,6 +157,7 @@ class TestRunMigrations:
             Base.metadata.create_all(bind=setup_engine)
             HealthMetric.__table__.drop(bind=setup_engine)
             HealthWorkout.__table__.drop(bind=setup_engine)
+            BoxingEntry.__table__.drop(bind=setup_engine)
             with setup_engine.connect() as conn:
                 # alembic_version with Alembic's real DDL but zero rows.
                 conn.execute(

@@ -208,6 +208,20 @@ class HealthMetric(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class BoxingEntry(Base):
+    """A standalone boxing workout log. Mirrors into WorkoutSession with a
+    'Boxing:' prefix so it appears in the unified History tab and activity
+    stats as an orange workout entry."""
+    __tablename__ = "boxing_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    duration_seconds = Column(Integer, nullable=False)
+    kcal_per_min = Column(Float, nullable=False, default=10.0)
+    date = Column(Date, nullable=False, default=lambda: date.today())
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class HealthWorkout(Base):
     """A workout imported from Apple Health. Keyed on the export's own UUID
     (`external_id`) so re-imports upsert. Scalar summary in columns; the full

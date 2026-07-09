@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import CORS_ORIGINS
 from app.database import run_migrations
-from app.routers import exercises, workouts, sessions, health, runs, auth, stats, notifications, backup, health_import
+from app.routers import exercises, workouts, sessions, health, runs, auth, stats, notifications, backup, health_import, boxing
 
 # Apply any pending schema migrations on startup.
 run_migrations()
@@ -31,6 +31,7 @@ app.include_router(stats.router)
 app.include_router(notifications.router)
 app.include_router(backup.router)
 app.include_router(health_import.router)
+app.include_router(boxing.router)
 
 
 @app.get("/api/health")

@@ -8,6 +8,7 @@ import {
 } from "../api";
 import WorkoutEditor from "./WorkoutEditor";
 import RunLogger from "./RunLogger";
+import BoxingLogger from "./BoxingLogger";
 import WorkoutCard from "./WorkoutCard";
 
 interface WorkoutTabProps {
@@ -172,6 +173,9 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
 
       {/* Log a Run */}
       <RunLogger onRunLogged={() => onLogWorkout?.()} />
+
+      {/* Log Boxing */}
+      <BoxingLogger onWorkoutLogged={() => onLogWorkout?.()} />
 
       {/* Workout Templates */}
       {loading ? (

@@ -455,6 +455,24 @@ export interface RunStatsResponse {
   monthly_breakdown: MonthlyBreakdown[];
 }
 
+// ─── Boxing Types ───────────────────────────────────────
+
+export interface BoxingEntryResponse {
+  id: number;
+  duration_seconds: number;
+  kcal_per_min: number;
+  date: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface BoxingEntryCreate {
+  duration_seconds: number;
+  kcal_per_min?: number;
+  date?: string;
+  notes?: string;
+}
+
 async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -674,6 +692,22 @@ export const api = {
     fetchJSON<void>(`/api/v1/runs/${id}`, { method: "DELETE" }),
   getRunStats: () =>
     fetchJSON<RunStatsResponse>("/api/v1/runs/stats"),
+
+  // ─── Boxing ─────────────────────────────────────────
+
+  getBoxing: () => fetchJSON<BoxingEntryResponse[]>("/api/v1/boxing"),
+  createBoxing: (data: BoxingEntryCreate) =>
+    fetchJSON<BoxingEntryResponse>("/api/v1/boxing", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateBoxing: (id: number, data: BoxingEntryCreate) =>
+    fetchJSON<BoxingEntryResponse>(`/api/v1/boxing/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteBoxing: (id: number) =>
+    fetchJSON<void>(`/api/v1/boxing/${id}`, { method: "DELETE" }),
 
   // ─── Notifications ─────────────────────────────────
   subscribePush: (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) =>
