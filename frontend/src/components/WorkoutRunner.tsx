@@ -939,7 +939,7 @@ export default function WorkoutRunner({
       )}
 
       {phase !== "finished" && (
-        <div className="absolute top-4 left-4">
+        <div className="absolute top-6 left-4">
           <button
             onClick={onCancel}
             className="inline-flex items-center gap-1.5 text-fg/40 hover:text-fg/70 text-sm px-3 py-1.5"
@@ -949,7 +949,7 @@ export default function WorkoutRunner({
         </div>
       )}
 
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-6 right-4">
         <TopControls />
       </div>
     </div>

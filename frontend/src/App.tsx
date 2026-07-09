@@ -67,7 +67,7 @@ export default function App() {
     return (
       <div
         className="fixed inset-0 z-50"
-        style={{ paddingTop: "max(env(safe-area-inset-top), 56px)" }}
+        style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
       >
         <WorkoutRunner
           workout={runningWorkout}
