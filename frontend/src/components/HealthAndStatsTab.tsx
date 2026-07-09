@@ -684,7 +684,7 @@ export default function HealthAndStatsTab() {
         </div>
 
         {/* Log Weight */}
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
+        <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-2 sm:col-span-1">
           <p className="text-xs text-fg/40 mb-2">Log Weight</p>
           <div className="flex gap-2">
             <input
