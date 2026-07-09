@@ -439,7 +439,7 @@ test.describe("authenticated", () => {
     await page.getByRole("button", { name: "Health" }).click();
 
     // Health/Stats combined tab loads — summary cards visible
-    await expect(page.getByText("Total kcal burned").first()).toBeVisible();
+    await expect(page.getByText("Total kcal").first()).toBeVisible();
   });
 
   // --- Health Tab ---
