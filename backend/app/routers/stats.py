@@ -73,19 +73,60 @@ def stats_overview(db: Session = Depends(get_db)):
         for wk in sorted(weekly.keys(), reverse=True)[:12]
     ]
 
-    # Consistency score: % of days exercised in last 30 days
+    # Consistency score: ≥3 workout/run days per week = 100%.
+    # Walk km add bonus % on top (1% per km).
     thirty_days_ago = today - timedelta(days=30)
-    session_dates = set()
+
+    # Collect qualifying days (workouts + runs, excluding walks) and walk km.
+    workout_run_days: set[date] = set()
     for s in sessions:
         d = _session_date(s)
-        if d >= thirty_days_ago:
-            session_dates.add(d)
+        if d < thirty_days_ago:
+            continue
+        if is_run_mirror(s):
+            # Walk mirror sessions don't count toward the 3/week target.
+            if not (s.template_name or "").startswith("Walk:"):
+                workout_run_days.add(d)
+        else:
+            workout_run_days.add(d)
     for r in runs:
-        if r.date >= thirty_days_ago:
-            session_dates.add(r.date)
+        if r.date >= thirty_days_ago and r.run_type != "walk":
+            workout_run_days.add(r.date)
 
-    days_in_window = 30
-    consistency_pct = round((len(session_dates) / days_in_window) * 100, 1)
+    # Walk km in the 30-day window for bonus percentage.
+    walk_km = sum(
+        r.distance_km for r in runs
+        if r.date >= thirty_days_ago and r.run_type == "walk"
+    )
+
+    # Divide the 30-day window into calendar weeks (Mon–Sun).
+    # Count weeks where ≥3 days had a workout/run.
+    week_start = _monday_of(thirty_days_ago)
+    qualifying_weeks = 0
+    total_weeks = 0
+    cursor = week_start
+    while cursor <= today:
+        week_end = cursor + timedelta(days=6)
+        days_in_week = sum(
+            1 for d in workout_run_days
+            if cursor <= d <= min(week_end, today)
+        )
+        # For partial weeks (start or end of window), prorate the 3-day target
+        # by the fraction of the week that falls inside the 30-day window.
+        week_window_start = max(cursor, thirty_days_ago)
+        week_window_end = min(week_end, today)
+        window_days = (week_window_end - week_window_start).days + 1
+        if window_days <= 0:
+            cursor = week_end + timedelta(days=1)
+            continue
+        target = max(1, round(3 * window_days / 7))
+        total_weeks += 1
+        if days_in_week >= target:
+            qualifying_weeks += 1
+        cursor = week_end + timedelta(days=1)
+
+    base_pct = round((qualifying_weeks / max(total_weeks, 1)) * 100, 1)
+    consistency_pct = round(base_pct + walk_km, 1)
 
     # Monthly comparison
     current_month_start = today.replace(day=1)
