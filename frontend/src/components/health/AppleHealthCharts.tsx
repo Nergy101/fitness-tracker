@@ -139,9 +139,10 @@ export default function AppleHealthCharts({
 
   // ── Heart-rate range band ─────────────────────────────────────────────────
   const hrRaw = pts("heart_rate");
-  const hrBandPts: BandPt[] = hrRaw
-    .filter((p) => p.min != null && p.max != null)
-    .map((p, i) => ({ x: i, avg: p.value, min: p.min as number, max: p.max as number }));
+  const hrBanded = hrRaw.filter((p) => p.min != null && p.max != null);
+  const hrBandPts: BandPt[] = hrBanded.map((p, i) => ({
+    x: i, avg: p.value, min: p.min as number, max: p.max as number,
+  }));
   const hrLatest = hrRaw.length ? hrRaw[hrRaw.length - 1].value : null;
 
   // ── Workout intensity scatter ─────────────────────────────────────────────
@@ -241,7 +242,7 @@ export default function AppleHealthCharts({
           sub={`avg ${Math.round(hrLatest!)} bpm`}
         >
           {hrBandPts.length >= 2 ? (
-            <BandChart points={hrBandPts} color="#f472b6" />
+            <BandChart points={hrBandPts} color="#f472b6" xLabels={threeXLabels(hrBanded)} />
           ) : (
             <p className="text-[10px] text-fg/30 text-center py-2">{SYNC_HINT}</p>
           )}
@@ -273,6 +274,7 @@ export default function AppleHealthCharts({
             lineColor="#fb923c"
             barLabel="Activity min"
             lineLabel="Resting HR"
+            xLabels={threeXLabels(recoveryDates.map((date) => ({ date })))}
           />
         </ChartCard>
       )}
@@ -286,6 +288,7 @@ export default function AppleHealthCharts({
             lineColor="#a78bfa"
             barLabel="Sleep (h)"
             lineLabel="Mood (1–5)"
+            xLabels={threeXLabels(sleepRaw)}
           />
         </ChartCard>
       )}
@@ -299,6 +302,7 @@ export default function AppleHealthCharts({
             lineColor="#c084fc"
             barLabel="Energy (kcal)"
             lineLabel="Weight (kg)"
+            xLabels={threeXLabels(energyRaw)}
           />
         </ChartCard>
       )}

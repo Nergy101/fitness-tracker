@@ -36,6 +36,7 @@ import { ACTIVITY_COLORS, ACTIVITY_LABELS, type ActivityKind } from "../activity
 import ActivityLegend from "./ActivityLegend";
 import ChartCard from "./ChartCard";
 import AppleHealthCharts from "./health/AppleHealthCharts";
+import { niceTicks } from "./health/ticks"
 import { formatHours } from "../format";
 
 const WEIGHT_COLOR = "#c084fc"; // purple-400 — matches the weight stat card icon
@@ -191,8 +192,22 @@ function LineChart({
   const py = (v: number) => height - ((v - lo) / range) * height;
   const labelIdxs = [0, Math.floor((points.length - 1) / 2), points.length - 1];
 
+  const ticks = niceTicks(lo, hi, 4);
+
   return (
     <svg viewBox={`0 0 ${w} ${height + 18}`} className="w-full" style={{ maxHeight: height + 18 }}>
+      {ticks.map((t) => {
+        const y = py(t);
+        if (y < 5 || y > height - 1) return null;
+        return (
+          <g key={t}>
+            <line x1={24} y1={y} x2={w} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
+            <text x={20} y={y + 2.5} textAnchor="end" className="fill-fg/30" fontSize="8">
+              {formatValue(t)}
+            </text>
+          </g>
+        );
+      })}
       {reference && (
         <g>
           <line
@@ -236,8 +251,6 @@ function LineChart({
           {points[idx].label}
         </text>
       ))}
-      <text x="0" y="10" className="fill-fg/30" fontSize="8">{formatValue(hi)}</text>
-      <text x="0" y={height - 2} className="fill-fg/30" fontSize="8">{formatValue(lo)}</text>
     </svg>
   );
 }
