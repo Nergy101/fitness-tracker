@@ -40,7 +40,6 @@ import {
   type PrsResponse,
   type RunEntryResponse,
   type StatsOverviewResponse,
-  type StreakResponse,
   type WeeklyActivityStat,
   type WeightEntryResponse,
   type WeightStatsResponse,
@@ -89,17 +88,6 @@ function bmiColor(cat: string | null): string {
     case "Obese": return "text-red-400";
     default: return "text-fg/50";
   }
-}
-
-function streakMsg(days: number): string {
-  if (days >= 90) return "Legendary streak!";
-  if (days >= 30) return "Month streak!";
-  if (days >= 21) return "21 days — unstoppable!";
-  if (days >= 14) return "Two weeks strong!";
-  if (days >= 7) return "Week streak!";
-  if (days >= 3) return "3-day streak!";
-  if (days > 0) return `${days}-day streak`;
-  return "Log today to start a streak!";
 }
 
 // ─── Stacked Bar Chart ─────────────────────────────────────
@@ -439,8 +427,7 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
   ];
 
   const hasAny =
-    [...runRecords, ...walkRecords, ...workoutRecords].some((r) => r.value != null) ||
-    prs.longest_streak_days > 0;
+    [...runRecords, ...walkRecords, ...workoutRecords].some((r) => r.value != null);
   if (!hasAny) return null;
 
   return (
@@ -452,17 +439,6 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
       <RecordGroup kind="run" records={runRecords} />
       <RecordGroup kind="walk" records={walkRecords} />
       <RecordGroup kind="workout" records={workoutRecords} />
-      {prs.longest_streak_days > 0 && (
-        <div className="flex items-center justify-between border-t border-fg/5 pt-2 mt-3">
-          <p className="flex items-center gap-1.5 text-xs text-fg/50">
-            <Flame size={14} className="text-orange-400 shrink-0" weight="fill" />
-            Longest activity streak (2-day gap)
-          </p>
-          <p className="text-sm font-bold text-fg">
-            {prs.longest_streak_days} day{prs.longest_streak_days === 1 ? "" : "s"}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -480,7 +456,6 @@ export default function HealthAndStatsTab() {
   // Health data
   const [weights, setWeights] = useState<WeightEntryResponse[]>([]);
   const [weightStats, setWeightStats] = useState<WeightStatsResponse | null>(null);
-  const [streak, setStreak] = useState<StreakResponse | null>(null);
   const [bmi, setBmi] = useState<BmiResponse | null>(null);
   const [score, setScore] = useState<HealthScoreResponse | null>(null);
   const [prs, setPrs] = useState<PrsResponse | null>(null);
@@ -495,7 +470,7 @@ export default function HealthAndStatsTab() {
     try {
       const [
         overview, runList, wEntries, goalProgress, healthInsights,
-        ws, wStats, st, b, sc, pr,
+        ws, wStats, b, sc, pr,
       ] = await Promise.all([
         api.getStatsOverview(),
         api.getRuns().catch(() => [] as RunEntryResponse[]),
@@ -504,7 +479,6 @@ export default function HealthAndStatsTab() {
         api.getHealthInsights(120).catch(() => null),
         api.getWeightEntries(),
         api.getWeightStats(),
-        api.getWeightStreak(),
         api.getBmi(),
         api.getHealthScore(),
         api.getPrs(),
@@ -516,7 +490,6 @@ export default function HealthAndStatsTab() {
       setHealth(healthInsights);
       setWeights(ws);
       setWeightStats(wStats);
-      setStreak(st);
       setBmi(b);
       setScore(sc);
       setPrs(pr);
@@ -792,22 +765,16 @@ export default function HealthAndStatsTab() {
         </div>
       )}
 
-      {/* Weight Logging Streak */}
-      {streak && (
+      {/* Activity Streak */}
+      {prs && prs.longest_streak_days > 0 && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {streak.current_streak >= 30 ? (
-                <Trophy size={28} className="text-yellow-400 shrink-0" />
-              ) : (
-                <Flame size={28} className="text-orange-400 shrink-0" weight={streak.current_streak >= 7 ? "fill" : "regular"} />
-              )}
+              <Flame size={28} className="text-orange-400 shrink-0" weight="fill" />
               <div>
-                <p className="text-xs text-fg/40 mb-0.5">Weight Logging Streak</p>
-                <p className="text-sm font-semibold text-fg">{streakMsg(streak.current_streak)}</p>
-                <p className="text-xs text-fg/40 mt-0.5">
-                  Best: {streak.best_streak} days
-                  {streak.last_logged_date && ` · Last: ${shortDate(streak.last_logged_date)}`}
+                <p className="text-xs text-fg/40 mb-0.5">Activity Streak (2-day gap)</p>
+                <p className="text-sm font-semibold text-fg">
+                  {prs.longest_streak_days} day{prs.longest_streak_days === 1 ? "" : "s"} — best ever
                 </p>
               </div>
             </div>
