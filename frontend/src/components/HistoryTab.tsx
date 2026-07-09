@@ -1,638 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeftIcon as ArrowLeft,
   ClockCounterClockwiseIcon as ClockCounterClockwise,
-  DownloadSimpleIcon as DownloadSimple,
-  PencilSimpleIcon as PencilSimple,
   SmileySadIcon as SmileySad,
-  TrashIcon as Trash,
-  UploadSimpleIcon as UploadSimple,
-  CalendarBlankIcon as CalendarBlank,
 } from "@phosphor-icons/react";
-import {
-  api,
-  type SessionExerciseInput,
-  type WorkoutSession,
-  type WorkoutSessionInput,
-} from "../api";
-import {
-  formatDate,
-  formatDateRelative,
-  formatDuration,
-  formatHours,
-  localISO,
-} from "../format";
-import { shortDate } from "../locale";
-import { useLocale } from "../useLocale";
-import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind, type ActivityKind } from "../activity";
-import ActivityLegend from "./ActivityLegend";
+import { api, type WorkoutSession } from "../api";
 import CalendarView from "./CalendarView";
-
-// Bump when the export shape changes so future imports can migrate old files.
-const HISTORY_EXPORT_VERSION = 1;
-
-// Monday-first weekday labels; map JS getDay() (0=Sun) via (day + 6) % 7.
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-type RangeKey = "week" | "7d" | "30d";
-
-const RANGES: { key: RangeKey; label: string }[] = [
-  { key: "week", label: "This week" },
-  { key: "7d", label: "7 Days" },
-  { key: "30d", label: "30 Days" },
-];
-
-function rangeStart(key: RangeKey): Date {
-  const now = new Date();
-  if (key === "week") {
-    const d = new Date(now);
-    d.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // back to Monday
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
-  const days = key === "7d" ? 7 : 30;
-  const d = new Date(now);
-  d.setDate(now.getDate() - days);
-  return d;
-}
-
-interface Stats {
-  totalSessions: number;
-  totalMinutes: number;
-  totalKcal: number;
-  avgDuration: number;
-}
-
-function computeStats(sessions: WorkoutSession[]): Stats {
-  const totalSessions = sessions.length;
-  const totalMinutes = sessions.reduce(
-    (s, i) => s + Math.round((i.total_duration_seconds || 0) / 60),
-    0,
-  );
-  const totalKcal = sessions.reduce(
-    (s, i) => s + (i.total_kcal_estimated || 0),
-    0,
-  );
-  const avgDuration =
-    totalSessions > 0 ? Math.round(totalMinutes / totalSessions) * 60 : 0;
-  return { totalSessions, totalMinutes, totalKcal, avgDuration };
-}
-
-function StatsGrid({ sessions }: { sessions: WorkoutSession[] }) {
-  const stats = computeStats(sessions);
-  return (
-    <div className="grid grid-cols-4 gap-2 mb-3">
-      <div className="text-center">
-        <p className="text-lg font-bold text-fg">{stats.totalSessions}</p>
-        <p className="text-[10px] text-fg/40">Workouts</p>
-      </div>
-      <div className="text-center">
-        <p className="text-lg font-bold text-fg">
-          {formatHours(stats.totalMinutes)}
-        </p>
-        <p className="text-[10px] text-fg/40">Total Time</p>
-      </div>
-      <div className="text-center">
-        <p className="text-lg font-bold text-accent">
-          {Math.round(stats.totalKcal)}
-        </p>
-        <p className="text-[10px] text-fg/40">Kcal</p>
-      </div>
-      <div className="text-center">
-        <p className="text-lg font-bold text-fg">
-          {formatDuration(stats.avgDuration)}
-        </p>
-        <p className="text-[10px] text-fg/40">Avg</p>
-      </div>
-    </div>
-  );
-}
-
-/** Bars per weekday (Mon–Sun), stacked by activity type. */
-function WeekdayChart({ sessions }: { sessions: WorkoutSession[] }) {
-  const buckets = useMemo(() => {
-    const counts = Array.from({ length: 7 }, () => ({ workout: 0, run: 0, walk: 0 }));
-    for (const s of sessions) {
-      const day = new Date(s.started_at).getDay(); // 0=Sun
-      counts[(day + 6) % 7][activityKind(s.template_name)]++;
-    }
-    return counts;
-  }, [sessions]);
-  const max = Math.max(1, ...buckets.map((b) => b.workout + b.run + b.walk));
-
-  return (
-    <div>
-      <div className="flex items-end gap-1.5 h-20">
-        {buckets.map((b, i) => {
-          const total = b.workout + b.run + b.walk;
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-              <span
-                className={`text-[10px] font-semibold ${total > 0 ? "text-fg/60" : "text-transparent"}`}
-              >
-                {total}
-              </span>
-              <div
-                className="w-full rounded-t-sm overflow-hidden flex flex-col justify-end transition-all"
-                style={{
-                  height: `${total > 0 ? 6 + (total / max) * 46 : 3}px`,
-                  background: total > 0 ? undefined : "var(--track)",
-                }}
-              >
-                {(["walk", "run", "workout"] as const).map((kind) =>
-                  b[kind] > 0 ? (
-                    <div
-                      key={kind}
-                      style={{
-                        height: `${(b[kind] / total) * 100}%`,
-                        background: ACTIVITY_COLORS[kind],
-                      }}
-                    />
-                  ) : null,
-                )}
-              </div>
-              <span className="text-[10px] text-fg/30">{WEEKDAY_LABELS[i]}</span>
-            </div>
-          );
-        })}
-      </div>
-      <ActivityLegend kinds={["workout", "run", "walk"]} />
-    </div>
-  );
-}
-
-// Local-time YYYY-MM-DD key (avoids UTC off-by-one at day boundaries).
-function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-type DayCounts = Record<ActivityKind, number>;
-
-function countsByDay(sessions: WorkoutSession[]): Map<string, DayCounts> {
-  const m = new Map<string, DayCounts>();
-  for (const s of sessions) {
-    const k = dayKey(new Date(s.started_at));
-    const c = m.get(k) ?? { workout: 0, run: 0, walk: 0 };
-    c[activityKind(s.template_name)]++;
-    m.set(k, c);
-  }
-  return m;
-}
-
-const SINGLE_LETTER = ["M", "T", "W", "T", "F", "S", "S"];
-
-/** Per-date bars with weekday letter + short date underneath. "week" shows
- *  Mon–Sun of the current week; "7d" shows a rolling window ending today
- *  (today rightmost). */
-function DayBars({
-  sessions,
-  mode,
-}: {
-  sessions: WorkoutSession[];
-  mode: "week" | "7d";
-}) {
-  const { locale } = useLocale();
-  const days = useMemo(() => {
-    const byDay = countsByDay(sessions);
-    const now = new Date();
-    const empty: DayCounts = { workout: 0, run: 0, walk: 0 };
-    const items: { key: string; counts: DayCounts; label: string; date: Date }[] = [];
-    if (mode === "week") {
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        items.push({ key: dayKey(d), counts: byDay.get(dayKey(d)) ?? empty, label: SINGLE_LETTER[i], date: d });
-      }
-    } else {
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(now.getDate() - i);
-        items.push({
-          key: dayKey(d),
-          counts: byDay.get(dayKey(d)) ?? empty,
-          label: SINGLE_LETTER[(d.getDay() + 6) % 7],
-          date: d,
-        });
-      }
-    }
-    return { items, todayKey: dayKey(now) };
-  }, [sessions, mode]);
-  const max = Math.max(1, ...days.items.map((d) => d.counts.workout + d.counts.run + d.counts.walk));
-
-  return (
-    <div>
-      <div className="flex items-end gap-1.5 h-24">
-        {days.items.map((d) => {
-          const today = d.key === days.todayKey;
-          const total = d.counts.workout + d.counts.run + d.counts.walk;
-          return (
-            <div key={d.key} className="flex-1 flex flex-col items-center gap-0.5">
-              <span
-                className={`text-[10px] font-semibold ${total > 0 ? "text-fg/60" : "text-transparent"}`}
-              >
-                {total}
-              </span>
-              <div
-                className="w-full rounded-t-sm overflow-hidden flex flex-col justify-end transition-all"
-                style={{
-                  height: `${total > 0 ? 6 + (total / max) * 40 : 3}px`,
-                  background: total > 0 ? undefined : "var(--track)",
-                }}
-              >
-                {(["walk", "run", "workout"] as const).map((kind) =>
-                  d.counts[kind] > 0 ? (
-                    <div
-                      key={kind}
-                      style={{
-                        height: `${(d.counts[kind] / total) * 100}%`,
-                        background: ACTIVITY_COLORS[kind],
-                      }}
-                    />
-                  ) : null,
-                )}
-              </div>
-              <span
-                className={`text-[10px] leading-tight ${today ? "text-fg font-bold" : "text-fg/30"}`}
-              >
-                {d.label}
-              </span>
-              <span
-                className={`text-[9px] leading-tight ${today ? "text-fg/70" : "text-fg/25"}`}
-              >
-                {shortDate(d.date, locale)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      <ActivityLegend kinds={["workout", "run", "walk"]} />
-    </div>
-  );
-}
-
-// GitHub-style intensity: transparent-ish → full accent as count rises.
-function cellColor(count: number): string {
-  if (count <= 0) return "var(--track)";
-  const pct = [45, 65, 85, 100][Math.min(count - 1, 3)];
-  return `color-mix(in srgb, var(--accent) ${pct}%, transparent)`;
-}
-
-/** 30-day contribution heatmap: columns = weekdays (Mon–Sun), rows = weeks,
- *  latest week at the bottom. Weekday letters label the columns. */
-function Heatmap({ sessions }: { sessions: WorkoutSession[] }) {
-  const weeks = useMemo(() => {
-    const byDay = countsByDay(sessions);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const windowStart = new Date(today);
-    windowStart.setDate(today.getDate() - 29); // 30-day window incl. today
-    // Grid starts on the Monday on/before windowStart.
-    const gridStart = new Date(windowStart);
-    gridStart.setDate(windowStart.getDate() - ((windowStart.getDay() + 6) % 7));
-
-    const rows: { key: string; count: number; inRange: boolean }[][] = [];
-    const cursor = new Date(gridStart);
-    while (cursor <= today) {
-      const row: { key: string; count: number; inRange: boolean }[] = [];
-      for (let i = 0; i < 7; i++) {
-        const k = dayKey(cursor);
-        const inRange = cursor >= windowStart && cursor <= today;
-        const c = byDay.get(k);
-        row.push({ key: k, count: inRange && c ? c.workout + c.run + c.walk : 0, inRange });
-        cursor.setDate(cursor.getDate() + 1);
-      }
-      rows.push(row);
-    }
-    return rows;
-  }, [sessions]);
-
-  return (
-    <div>
-      <div className="grid grid-cols-7 gap-1 mb-1">
-        {SINGLE_LETTER.map((l, i) => (
-          <span key={i} className="text-[10px] text-fg/30 text-center">
-            {l}
-          </span>
-        ))}
-      </div>
-      <div className="flex flex-col gap-1">
-        {weeks.map((row, r) => (
-          <div key={r} className="grid grid-cols-7 gap-1">
-            {row.map((cell) => (
-              <div
-                key={cell.key}
-                title={`${cell.key}: ${cell.count} workout${cell.count === 1 ? "" : "s"}`}
-                className="aspect-square rounded-sm"
-                style={{
-                  background: cell.inRange ? cellColor(cell.count) : "transparent",
-                }}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SessionList({
-  sessions,
-  onSelect,
-  onEditDate,
-  onDelete,
-  emptyLabel,
-}: {
-  sessions: WorkoutSession[];
-  onSelect: (s: WorkoutSession) => void;
-  onEditDate: (s: WorkoutSession) => void;
-  onDelete: (s: WorkoutSession) => void;
-  emptyLabel: string;
-}) {
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState("");
-
-  if (sessions.length === 0) {
-    return (
-      <div className="text-center py-10 text-fg/30 text-sm">{emptyLabel}</div>
-    );
-  }
-  return (
-    <div className="space-y-2">
-      {sessions.map((session) => {
-        const kind = activityKind(session.template_name);
-        const KindIcon = ACTIVITY_ICONS[kind];
-        return (
-        <div
-          key={session.id}
-          className="bg-surface rounded-xl p-4 border border-fg/5 cursor-pointer hover:border-accent/30 transition-colors"
-          onClick={() => onSelect(session)}
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <KindIcon size={16} className="shrink-0" style={{ color: ACTIVITY_COLORS[kind] }} />
-                <h3 className="font-semibold text-sm">{session.template_name}</h3>
-              </div>
-              {editingId === session.id ? (
-                <input
-                  type="datetime-local"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onBlur={() => {
-                    api.updateSession(session.id, { started_at: localISO(editValue) }).then((updated) => {
-                      onEditDate(updated);
-                    }).catch(() => {});
-                    setEditingId(null);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                    if (e.key === "Escape") setEditingId(null);
-                  }}
-                  className="text-xs bg-bg border border-accent/30 rounded-lg px-2 py-1 mt-0.5 w-48 text-fg outline-none"
-                  autoFocus
-                />
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs text-fg/40 mt-0.5">
-                    {formatDate(session.started_at)}
-                  </p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const d = new Date(session.started_at);
-                      setEditValue(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
-                      setEditingId(session.id);
-                    }}
-                    className="text-fg/20 hover:text-accent mt-0.5"
-                    title="Edit date/time"
-                  >
-                    <PencilSimple size={12} />
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-fg/30">
-                ~{Math.round(session.total_kcal_estimated)} kcal
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(session);
-                }}
-                className="text-fg/20 hover:text-red-400 transition-colors"
-                title="Delete session"
-                aria-label="Delete session"
-              >
-                <Trash size={14} />
-              </button>
-            </div>
-          </div>
-          <div className="flex gap-3 mt-2 text-xs text-fg/50">
-            <span>{formatDuration(session.total_duration_seconds)}</span>
-            <span>{session.exercises.length} exercises</span>
-          </div>
-        </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function SessionDetail({
-  session,
-  onClose,
-  onUpdate,
-}: {
-  session: WorkoutSession;
-  onClose: () => void;
-  onUpdate: (updated: WorkoutSession) => void;
-}) {
-  function toLocalDatetimeLocal(iso: string) {
-    const d = new Date(iso);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  }
-
-  async function updateStartedAt(value: string) {
-    try {
-      const updated = await api.updateSession(session.id, {
-        started_at: localISO(value),
-      });
-      onUpdate(updated);
-    } catch (err) {
-      console.error("Failed to update session date", err);
-    }
-  }
-
-  const isRunOrWalk = session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:");
-  const isRun = session.template_name.startsWith("Run:");
-
-  async function toggleRunType() {
-    try {
-      const runs = await api.getRuns();
-      const distMatch = session.template_name.match(/(\d+\.\d+)km/);
-      const targetDist = distMatch ? parseFloat(distMatch[1]) : null;
-      const match = runs.find((r) => {
-        if (targetDist !== null && Math.abs(r.distance_km - targetDist) > 0.05) return false;
-        return r.run_type === (isRun ? "run" : "walk");
-      });
-      if (match) {
-        await api.updateRun(match.id, {
-          duration_seconds: match.duration_seconds,
-          distance_km: match.distance_km,
-          run_type: isRun ? "walk" : "run",
-        });
-        const updated = await api.getSession(session.id);
-        onUpdate(updated);
-      }
-    } catch (err) {
-      console.error("Failed to toggle run type", err);
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 border border-fg/10 max-h-[85vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">{session.template_name}</h2>
-          <button
-            onClick={onClose}
-            className="text-fg/40 hover:text-fg/70 text-xl leading-none"
-          >
-            &times;
-          </button>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="bg-surface rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-fg">
-              {formatDuration(session.total_duration_seconds)}
-            </p>
-            <p className="text-[10px] text-fg/40">Duration</p>
-          </div>
-          <div className="bg-surface rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-fg">
-              {session.exercises.length}
-            </p>
-            <p className="text-[10px] text-fg/40">Exercises</p>
-          </div>
-          <div className="bg-surface rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-accent">
-              {Math.round(session.total_kcal_estimated)}
-            </p>
-            <p className="text-[10px] text-fg/40">Kcal</p>
-          </div>
-        </div>
-
-        <p className="text-xs text-fg/40 mb-3">
-          <input
-            type="datetime-local"
-            defaultValue={toLocalDatetimeLocal(session.started_at)}
-            onBlur={(e) => updateStartedAt(e.target.value)}
-            className="w-full bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-xs text-fg outline-none focus:border-accent/50"
-          />
-        </p>
-
-        <div className="space-y-1.5 mb-4">
-          {session.exercises.map((ex, i) => (
-            <div
-              key={ex.id}
-              className="flex items-center gap-3 bg-surface rounded-lg p-2.5"
-            >
-              <span className="text-xs text-fg/30 w-5 text-right">{i + 1}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {ex.exercise_name}
-                </p>
-                <p className="text-xs text-fg/40">{ex.duration_seconds}s</p>
-                {ex.logs && ex.logs.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {ex.logs.map((log, li) => (
-                      <span key={li} className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded">
-                        {log.weight_kg != null ? `${log.weight_kg}kg` : ""}
-                        {log.weight_kg != null && log.reps != null ? " × " : ""}
-                        {log.reps != null ? `${log.reps}r` : ""}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <span className="text-xs text-fg/30">
-                {Math.round(ex.kcal_burned)} kcal
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {isRunOrWalk && (
-          <div className="flex gap-2 mb-3">
-            <button
-              onClick={toggleRunType}
-              className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                isRun ? "bg-accent text-on-accent font-semibold" : "bg-surface border border-fg/10 text-fg/50"
-              }`}
-            >
-              Run
-            </button>
-            <button
-              onClick={toggleRunType}
-              className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                !isRun ? "bg-accent text-on-accent font-semibold" : "bg-surface border border-fg/10 text-fg/50"
-              }`}
-            >
-              Walk
-            </button>
-          </div>
-        )}
-
-        <p className="text-xs text-fg/30 text-center">
-          {formatDateRelative(session.started_at)}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// Convert one raw imported object into a session payload, tolerating partial
-// data (external JSON is untrusted). Returns null when it isn't session-shaped.
-function toSessionInput(raw: unknown): WorkoutSessionInput | null {
-  if (!raw || typeof raw !== "object") return null;
-  const o = raw as Record<string, unknown>;
-  if (typeof o.template_name !== "string") return null;
-
-  const exercisesRaw = Array.isArray(o.exercises) ? o.exercises : [];
-  const exercises: SessionExerciseInput[] = exercisesRaw.map((e, i) => {
-    const ex = (e && typeof e === "object" ? e : {}) as Record<string, unknown>;
-    return {
-      exercise_id: typeof ex.exercise_id === "number" ? ex.exercise_id : null,
-      exercise_name: typeof ex.exercise_name === "string" ? ex.exercise_name : "",
-      duration_seconds: typeof ex.duration_seconds === "number" ? ex.duration_seconds : 0,
-      kcal_burned: typeof ex.kcal_burned === "number" ? ex.kcal_burned : 0,
-      order_index: typeof ex.order_index === "number" ? ex.order_index : i,
-      completed: ex.completed !== false,
-    };
-  });
-
-  return {
-    template_id: typeof o.template_id === "number" ? o.template_id : null,
-    template_name: o.template_name,
-    total_duration_seconds:
-      typeof o.total_duration_seconds === "number" ? o.total_duration_seconds : 0,
-    total_kcal_estimated:
-      typeof o.total_kcal_estimated === "number" ? o.total_kcal_estimated : 0,
-    exercises,
-    started_at: typeof o.started_at === "string" ? o.started_at : null,
-    finished_at: typeof o.finished_at === "string" ? o.finished_at : null,
-  };
-}
+import DateRangeFilter from "./history/DateRangeFilter";
+import DayBars from "./history/DayBars";
+import HeatmapChart from "./history/HeatmapChart";
+import ImportExport from "./history/ImportExport";
+import SessionDetail from "./history/SessionDetail";
+import SessionList from "./history/SessionList";
+import StatsGrid from "./history/StatsGrid";
+import WeekdayBarChart from "./history/WeekdayBarChart";
+import { rangeStart, type RangeKey } from "./history/utils";
 
 interface HistoryTabProps {
   refreshKey: number;
@@ -646,8 +28,6 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   const [range, setRange] = useState<RangeKey>("7d");
   const [view, setView] = useState<"range" | "all">("range");
   const [calendar, setCalendar] = useState(false);
-  const [importing, setImporting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -675,52 +55,16 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
     return sessions.filter((s) => new Date(s.started_at).getTime() >= start);
   }, [sessions, range, view]);
 
-  function exportSessions() {
-    const payload = {
-      version: HISTORY_EXPORT_VERSION,
-      exported_at: new Date().toISOString(),
-      sessions,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `fitness-history-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  function updateSession(updated: WorkoutSession) {
+    setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   }
 
-  async function importSessions(file: File) {
-    setImporting(true);
-    setError(null);
+  async function handleDelete(session: WorkoutSession) {
     try {
-      const parsed: unknown = JSON.parse(await file.text());
-      // Accept the versioned envelope { version, sessions: [...] } or a bare
-      // array (pre-versioning exports).
-      let rows: unknown[] = [];
-      if (Array.isArray(parsed)) {
-        rows = parsed;
-      } else if (parsed && typeof parsed === "object") {
-        const env = parsed as Record<string, unknown>;
-        if (Array.isArray(env.sessions)) rows = env.sessions;
-      }
-      const payloads = rows
-        .map(toSessionInput)
-        .filter((p): p is WorkoutSessionInput => p !== null);
-      if (payloads.length === 0) {
-        setError("No valid sessions found in that file.");
-        return;
-      }
-      for (const p of payloads) {
-        await api.createSession(p);
-      }
-      setSessions(await api.getSessions());
+      await api.deleteSession(session.id);
+      setSessions((prev) => prev.filter((s) => s.id !== session.id));
     } catch {
-      setError("Could not import that file.");
-    } finally {
-      setImporting(false);
+      setError("Failed to delete session");
     }
   }
 
@@ -746,14 +90,16 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
     );
   }
 
-  async function handleDelete(session: WorkoutSession) {
-    try {
-      await api.deleteSession(session.id);
-      setSessions((prev) => prev.filter((s) => s.id !== session.id));
-    } catch {
-      setError("Failed to delete session");
-    }
-  }
+  const detailModal = detail && (
+    <SessionDetail
+      session={detail}
+      onClose={() => setDetail(null)}
+      onUpdate={(updated) => {
+        setDetail(updated);
+        updateSession(updated);
+      }}
+    />
+  );
 
   // ── All-time view ──────────────────────────────────────
   if (view === "all") {
@@ -769,20 +115,18 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
         <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
           <p className="text-sm font-semibold mb-3">All time</p>
           <StatsGrid sessions={sessions} />
-          <WeekdayChart sessions={sessions} />
+          <WeekdayBarChart sessions={sessions} />
         </div>
 
         <SessionList
           sessions={sessions}
           onSelect={setDetail}
-          onEditDate={(updated) => setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s))}
+          onEditDate={updateSession}
           onDelete={handleDelete}
           emptyLabel="No sessions yet"
         />
 
-        {detail && (
-          <SessionDetail session={detail} onClose={() => setDetail(null)} onUpdate={(updated) => { setDetail(updated); setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s)); }} />
-        )}
+        {detailModal}
       </div>
     );
   }
@@ -790,33 +134,15 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   // ── Range view ─────────────────────────────────────────
   return (
     <div className="history-tab">
-      {/* Look-back range selector */}
-      <div className="flex gap-2 mb-4">
-        {RANGES.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => { setRange(r.key); setCalendar(false); }}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-              range === r.key && !calendar
-                ? "bg-accent text-on-accent"
-                : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
-            }`}
-          >
-            {r.label}
-          </button>
-        ))}
-        <button
-          onClick={() => setCalendar(!calendar)}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-            calendar
-              ? "bg-accent text-on-accent"
-              : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
-          }`}
-        >
-          <CalendarBlank size={16} className="inline mr-1" />
-          Calendar
-        </button>
-      </div>
+      <DateRangeFilter
+        range={range}
+        calendar={calendar}
+        onRangeChange={(key) => {
+          setRange(key);
+          setCalendar(false);
+        }}
+        onToggleCalendar={() => setCalendar((c) => !c)}
+      />
 
       {/* Activity + summary — chart depends on the mode. */}
       {calendar ? (
@@ -827,7 +153,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
         <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
           <StatsGrid sessions={rangeSessions} />
           {range === "30d" ? (
-            <Heatmap sessions={rangeSessions} />
+            <HeatmapChart sessions={rangeSessions} />
           ) : (
             <DayBars sessions={rangeSessions} mode={range} />
           )}
@@ -838,7 +164,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
       <SessionList
         sessions={rangeSessions}
         onSelect={setDetail}
-        onEditDate={(updated) => setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s))}
+        onEditDate={updateSession}
         onDelete={handleDelete}
         emptyLabel="No workouts in this range."
       />
@@ -853,39 +179,13 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
       </button>
 
       {/* Import / export all history as JSON */}
-      <div className="flex gap-2 mt-2">
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={importing}
-          className="flex-1 flex items-center justify-center gap-1.5 text-sm text-fg/60 hover:text-fg border border-fg/10 rounded-xl py-3 transition-colors disabled:opacity-50"
-        >
-          <UploadSimple size={16} weight="bold" />
-          {importing ? "Importing..." : "Import"}
-        </button>
-        <button
-          onClick={exportSessions}
-          disabled={sessions.length === 0}
-          className="flex-1 flex items-center justify-center gap-1.5 text-sm text-fg/60 hover:text-fg border border-fg/10 rounded-xl py-3 transition-colors disabled:opacity-50"
-        >
-          <DownloadSimple size={16} weight="bold" />
-          Export
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json,.json"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) void importSessions(file);
-            e.target.value = ""; // allow re-importing the same file
-          }}
-        />
-      </div>
+      <ImportExport
+        sessions={sessions}
+        onImported={setSessions}
+        onError={setError}
+      />
 
-      {detail && (
-        <SessionDetail session={detail} onClose={() => setDetail(null)} onUpdate={(updated) => { setDetail(updated); setSessions((prev) => prev.map((s) => s.id === updated.id ? updated : s)); }} />
-      )}
+      {detailModal}
     </div>
   );
 }
