@@ -210,6 +210,59 @@ test.describe("authenticated", () => {
     await expect(page.getByText("Workout Complete!")).toBeVisible({ timeout: 15_000 });
   });
 
+  test("warmup and cooldown phases run in the workout runner", async ({
+    page,
+    request,
+  }) => {
+    // Create a workout with warmup and cooldown via API
+    const exRes = await request.get(`${API_URL}/api/v1/exercises`, { headers: _authHeaders });
+    const exercises = await exRes.json();
+    const picked = [{ exercise_id: exercises[0].id, duration_seconds: 2, order_index: 0 }];
+
+    const res = await request.post(`${API_URL}/api/v1/workouts`, {
+      data: {
+        name: "E2E Warmup Cooldown",
+        description: "e2e warmup/cooldown test",
+        rounds: 1,
+        rest_between_rounds: 0,
+        warmup_seconds: 2,
+        cooldown_seconds: 2,
+        exercises: picked,
+      },
+      headers: _authHeaders,
+    });
+    expect(res.status()).toBe(201);
+    const workout = await res.json();
+    // total = 1 exercise x 2s + 2s warmup + 2s cooldown = 6s
+    expect(workout.total_duration_seconds).toBe(6);
+
+    await page.goto("/");
+    await page.getByText("E2E Warmup Cooldown", { exact: true }).click();
+
+    // Warmup phase should show
+    await expect(page.getByText("Warmup", { exact: true })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Get ready to move")).toBeVisible();
+
+    // Wait for warmup to finish (2s), then rest, then exercise, then cooldown
+    await expect(page.getByText("Cooldown", { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText("Breathe and recover")).toBeVisible();
+
+    // Wait for cooldown to finish and session to save
+    await expect(page.getByText("Workout Complete!")).toBeVisible({ timeout: 15000 });
+
+    // Verify session saved with correct total (including warmup + cooldown)
+    const sessions = await (
+      await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })
+    ).json();
+    const mine = sessions.find(
+      (s: { template_name: string }) => s.template_name === "E2E Warmup Cooldown",
+    );
+    expect(mine).toBeTruthy();
+    // The runner uses its own totalDuration which includes warmup/cooldown
+    // 1 exercise x 2s = 2s work, no rest between rounds = 0, warmup 2s, cooldown 2s = 6s
+    expect(mine.total_duration_seconds).toBe(6);
+  });
+
   test("history range selector and all-time drill-down", async ({ page, request }) => {
     // Seed one session directly so History has data to show.
     const res = await request.post(`${API_URL}/api/v1/sessions`, {

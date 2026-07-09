@@ -89,6 +89,8 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       rounds;
     const restDuration =
       Math.max(0, rounds - 1) * (tpl.rest_between_rounds || 0);
+    const warmupDuration = tpl.warmup_seconds || 0;
+    const cooldownDuration = tpl.cooldown_seconds || 0;
     const totalKcal =
       tpl.exercises.reduce(
         (sum, e) =>
@@ -104,7 +106,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       await api.createSession({
         template_id: tpl.id,
         template_name: tpl.name || "",
-        total_duration_seconds: workDuration + restDuration,
+        total_duration_seconds: workDuration + restDuration + warmupDuration + cooldownDuration,
         total_kcal_estimated: totalKcal,
         exercises: tpl.exercises.map((e, i) => ({
           exercise_id: e.exercise?.id ?? e.exercise_id,

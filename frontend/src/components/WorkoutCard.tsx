@@ -63,6 +63,12 @@ export default function WorkoutCard({
                 <span className="text-accent/60">superset</span>
               )}
               {template.rounds > 1 && <span>{template.rounds} rounds</span>}
+              {template.warmup_seconds > 0 && (
+                <span className="text-orange-400/70">🔥 warmup</span>
+              )}
+              {template.cooldown_seconds > 0 && (
+                <span className="text-blue-400/70">🧊 cooldown</span>
+              )}
             </div>
             <div className="flex flex-wrap gap-x-3 mt-1.5 text-xs">
               <span className="text-fg/50">

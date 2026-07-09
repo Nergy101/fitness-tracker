@@ -49,7 +49,7 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
         exercises=ex_responses,
         work_duration_seconds=work_duration,
         rest_duration_seconds=rest_duration,
-        total_duration_seconds=work_duration + rest_duration,
+        total_duration_seconds=work_duration + rest_duration + (template.warmup_seconds or 0) + (template.cooldown_seconds or 0),
     )
 
 

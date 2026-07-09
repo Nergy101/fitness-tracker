@@ -122,7 +122,7 @@ export default function WorkoutRunner({
     [exercises, rounds, isAmrap],
   );
   const restDuration = Math.max(0, rounds - 1) * restBetween;
-  const totalDuration = isAmrap ? timeCap : workDuration + restDuration;
+  const totalDuration = isAmrap ? timeCap : workDuration + restDuration + warmupSeconds + cooldownSeconds;
 
   const totalKcal = useMemo(
     () =>
