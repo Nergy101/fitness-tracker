@@ -10,6 +10,7 @@ import {
   ChartPieSliceIcon as ChartPieSlice,
   ConfettiIcon as Confetti,
   FireIcon as Fire,
+  FlagBannerIcon as FlagBanner,
   FlameIcon as Flame,
   FootprintsIcon as Footprints,
   HeartIcon as Heart,
@@ -455,7 +456,7 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
         <div className="flex items-center justify-between border-t border-fg/5 pt-2 mt-3">
           <p className="flex items-center gap-1.5 text-xs text-fg/50">
             <Flame size={14} className="text-orange-400 shrink-0" weight="fill" />
-            Longest activity streak
+            Longest activity streak (2-day gap)
           </p>
           <p className="text-sm font-bold text-fg">
             {prs.longest_streak_days} day{prs.longest_streak_days === 1 ? "" : "s"}
@@ -641,7 +642,9 @@ export default function HealthAndStatsTab() {
         <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-3 sm:col-span-1">
           {goal?.goal_weight_kg ? (
             <>
-              <p className="text-xs text-fg/40 mb-2">Goal Progress</p>
+              <p className="text-xs text-fg/40 mb-2 flex items-center gap-1.5">
+                <FlagBanner size={14} className="text-accent shrink-0" />
+                Goal Progress</p>
               <div className="w-full bg-bg rounded-full h-3 mb-2">
                 <div
                   className="bg-accent h-full rounded-full transition-all"
@@ -707,6 +710,29 @@ export default function HealthAndStatsTab() {
         </div>
       </div>
 
+      {/* ── Quick Stats: consistency, kcal, weight trend ── */}
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard
+          icon={<CalendarBlank size={14} className="text-accent" />}
+          label="Consistency (30d)"
+          value={`${stats?.consistency_score_pct ?? 0}%`}
+        />
+        <StatCard
+          icon={<Fire size={14} className="text-orange-400" />}
+          label="Total kcal"
+          value={(stats?.total_kcal_burned ?? 0).toLocaleString()}
+        />
+        <StatCard
+          icon={<Scales size={14} className="text-purple-400" />}
+          label="Weight chg (mo)"
+          value={
+            stats?.avg_weight_change_kg != null
+              ? `${stats.avg_weight_change_kg > 0 ? "+" : ""}${stats.avg_weight_change_kg.toFixed(1)} kg`
+              : "—"
+          }
+        />
+      </div>
+
       {/* Health Score */}
       {score && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
@@ -762,7 +788,7 @@ export default function HealthAndStatsTab() {
         </div>
       )}
 
-      {/* Streak */}
+      {/* Weight Logging Streak */}
       {streak && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center justify-between">
@@ -773,6 +799,7 @@ export default function HealthAndStatsTab() {
                 <Flame size={28} className="text-orange-400 shrink-0" weight={streak.current_streak >= 7 ? "fill" : "regular"} />
               )}
               <div>
+                <p className="text-xs text-fg/40 mb-0.5">Weight Logging Streak</p>
                 <p className="text-sm font-semibold text-fg">{streakMsg(streak.current_streak)}</p>
                 <p className="text-xs text-fg/40 mt-0.5">
                   Best: {streak.best_streak} days
@@ -800,30 +827,11 @@ export default function HealthAndStatsTab() {
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-2">
-        <StatCard
-          icon={<Fire size={14} className="text-orange-400" />}
-          label="Total kcal burned"
-          value={stats.total_kcal_burned.toLocaleString()}
-        />
-        <StatCard
-          icon={<CalendarBlank size={14} className="text-accent" />}
-          label="Consistency (30d)"
-          value={`${stats.consistency_score_pct}%`}
-        />
+      <div className="grid grid-cols-3 gap-2">
         <StatCard
           icon={<Barbell size={14} style={{ color: ACTIVITY_COLORS.workout }} />}
           label="Total workouts"
           value={String(stats.total_sessions_all)}
-        />
-        <StatCard
-          icon={<Scales size={14} className="text-purple-400" />}
-          label="Weight change (month)"
-          value={
-            stats.avg_weight_change_kg != null
-              ? `${stats.avg_weight_change_kg > 0 ? "+" : ""}${stats.avg_weight_change_kg.toFixed(1)} kg`
-              : "—"
-          }
         />
         <StatCard
           icon={<PersonSimpleRun size={14} style={{ color: ACTIVITY_COLORS.run }} />}

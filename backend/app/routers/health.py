@@ -29,14 +29,28 @@ MIN_PACE_DISTANCE_KM = 1.0
 
 
 def _longest_streak(days: set[date]) -> int:
-    """Longest run of consecutive calendar days with any activity."""
+    """Longest run of days with at most 1 rest day between any two activity
+    days (a '2-day gap streak'). Activity on Mon and Wed counts as a streak of
+    3 calendar days (Mon–Wed); Mon and Thu has a 2-day gap and breaks."""
+    if not days:
+        return 0
     best = 0
-    for d in days:
-        if d - timedelta(days=1) in days:
-            continue  # not a streak start
-        length = 1
-        while d + timedelta(days=length) in days:
-            length += 1
+    for d in sorted(days):
+        if d - timedelta(days=1) in days or d - timedelta(days=2) in days:
+            continue  # not a streak start (preceded within 1 gap day)
+        length = 1  # count the streak-start day
+        cursor = d
+        while True:
+            next_day = cursor + timedelta(days=1)
+            if next_day in days:
+                length += 1
+                cursor = next_day
+            elif cursor + timedelta(days=2) in days:
+                # One rest day + one training day: add 2 calendar days.
+                length += 2
+                cursor = cursor + timedelta(days=2)
+            else:
+                break
         best = max(best, length)
     return best
 
@@ -243,25 +257,41 @@ def weight_streak(db: Session = Depends(get_db)):
     unique_dates = sorted(set(e.date for e in entries), reverse=True)
     last = unique_dates[0]
 
+    # Current streak: allow at most 1 gap day (2-day gap streak).
     current = 0
     today = date.today()
     if last == today or last == today - timedelta(days=1):
         current = 1
+        cursor = last
         for i in range(1, len(unique_dates)):
-            if (unique_dates[i - 1] - unique_dates[i]).days == 1:
+            gap = (cursor - unique_dates[i]).days
+            if gap == 1:
                 current += 1
+                cursor = unique_dates[i]
+            elif gap == 2:
+                current += 2  # rest day + training day
+                cursor = unique_dates[i]
             else:
                 break
 
+    # Best streak: same 2-day gap logic.
     best = 0
-    run = 1
-    for i in range(1, len(unique_dates)):
-        if (unique_dates[i - 1] - unique_dates[i]).days == 1:
-            run += 1
-        else:
-            best = max(best, run)
-            run = 1
-    best = max(best, run) if unique_dates else 0
+    if unique_dates:
+        run = 1
+        cursor = unique_dates[-1]  # start from oldest
+        for i in range(len(unique_dates) - 2, -1, -1):
+            gap = (unique_dates[i] - cursor).days
+            if gap == 1:
+                run += 1
+                cursor = unique_dates[i]
+            elif gap == 2:
+                run += 2
+                cursor = unique_dates[i]
+            else:
+                best = max(best, run)
+                run = 1
+                cursor = unique_dates[i]
+        best = max(best, run)
 
     return StreakResponse(
         current_streak=current,

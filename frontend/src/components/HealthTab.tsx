@@ -117,7 +117,7 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
         <div className="flex items-center justify-between border-t border-fg/5 pt-2 mt-3">
           <p className="flex items-center gap-1.5 text-xs text-fg/50">
             <Flame size={14} className="text-orange-400 shrink-0" weight="fill" />
-            Longest activity streak
+            Longest activity streak (2-day gap)
           </p>
           <p className="text-sm font-bold text-fg">
             {prs.longest_streak_days} day{prs.longest_streak_days === 1 ? "" : "s"}
@@ -292,7 +292,7 @@ export default function HealthTab() {
         </div>
       )}
 
-      {/* Streak */}
+      {/* Weight Logging Streak */}
       {streak && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center justify-between">
@@ -303,6 +303,7 @@ export default function HealthTab() {
                 <Flame size={28} className="text-orange-400 shrink-0" weight={streak.current_streak >= 7 ? "fill" : "regular"} />
               )}
               <div>
+                <p className="text-xs text-fg/40 mb-0.5">Weight Logging Streak</p>
                 <p className="text-sm font-semibold text-fg">{streakMsg(streak.current_streak)}</p>
                 <p className="text-xs text-fg/40 mt-0.5">
                   Best: {streak.best_streak} days
