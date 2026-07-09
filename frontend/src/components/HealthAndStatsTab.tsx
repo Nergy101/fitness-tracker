@@ -636,6 +636,29 @@ export default function HealthAndStatsTab() {
 
   return (
     <div className="health-stats-tab space-y-4">
+      {/* ── Quick Stats: consistency, kcal, weight trend ── */}
+      <div className="grid grid-cols-3 gap-2">
+        <StatCard
+          icon={<CalendarBlank size={14} className="text-accent" />}
+          label="Consistency (30d)"
+          value={`${stats?.consistency_score_pct ?? 0}%`}
+        />
+        <StatCard
+          icon={<Fire size={14} className="text-orange-400" />}
+          label="Total kcal"
+          value={(stats?.total_kcal_burned ?? 0).toLocaleString()}
+        />
+        <StatCard
+          icon={<Scales size={14} className="text-purple-400" />}
+          label="Weight chg (mo)"
+          value={
+            stats?.avg_weight_change_kg != null
+              ? `${stats.avg_weight_change_kg > 0 ? "+" : ""}${stats.avg_weight_change_kg.toFixed(1)} kg`
+              : "—"
+          }
+        />
+      </div>
+
       {/* ── TOP: Goal Progress + BMI + Log Weight ── */}
       <div className="grid grid-cols-3 gap-3">
         {/* Goal Progress */}
@@ -677,7 +700,9 @@ export default function HealthAndStatsTab() {
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           {bmi?.bmi ? (
             <>
-              <p className="text-xs text-fg/40 mb-1">BMI</p>
+              <p className="text-xs text-fg/40 mb-1 flex items-center gap-1.5">
+                <Ruler size={14} className="text-accent shrink-0" />
+                BMI</p>
               <p className={`text-2xl font-bold ${bmiColor(bmi.category)}`}>{bmi.bmi}</p>
               <p className={`text-xs mt-0.5 ${bmiColor(bmi.category)}`}>{bmi.category}</p>
             </>
@@ -688,7 +713,9 @@ export default function HealthAndStatsTab() {
 
         {/* Log Weight */}
         <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-2 sm:col-span-1">
-          <p className="text-xs text-fg/40 mb-2">Log Weight</p>
+          <p className="text-xs text-fg/40 mb-2 flex items-center gap-1.5">
+            <Scales size={14} className="text-accent shrink-0" />
+            Log Weight</p>
           <div className="flex gap-2">
             <input
               type="number"
@@ -708,29 +735,6 @@ export default function HealthAndStatsTab() {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* ── Quick Stats: consistency, kcal, weight trend ── */}
-      <div className="grid grid-cols-3 gap-2">
-        <StatCard
-          icon={<CalendarBlank size={14} className="text-accent" />}
-          label="Consistency (30d)"
-          value={`${stats?.consistency_score_pct ?? 0}%`}
-        />
-        <StatCard
-          icon={<Fire size={14} className="text-orange-400" />}
-          label="Total kcal"
-          value={(stats?.total_kcal_burned ?? 0).toLocaleString()}
-        />
-        <StatCard
-          icon={<Scales size={14} className="text-purple-400" />}
-          label="Weight chg (mo)"
-          value={
-            stats?.avg_weight_change_kg != null
-              ? `${stats.avg_weight_change_kg > 0 ? "+" : ""}${stats.avg_weight_change_kg.toFixed(1)} kg`
-              : "—"
-          }
-        />
       </div>
 
       {/* Health Score */}
