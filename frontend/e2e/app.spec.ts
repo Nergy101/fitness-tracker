@@ -387,7 +387,7 @@ test.describe("authenticated", () => {
     expect(mode).toBe("system");
   });
 
-  // --- Stats Tab ---
+  // --- Stats (now part of Health) Tab ---
 
   test("stats tab loads with summary data", async ({ page, request }) => {
     // Seed a session so stats has data
@@ -403,11 +403,9 @@ test.describe("authenticated", () => {
     });
 
     await page.goto("/");
-    await page.getByRole("button", { name: "Stats" }).click();
+    await page.getByRole("button", { name: "Health" }).click();
 
-    // Stats tab loads
-    await expect(page.getByText("Statistics")).toBeVisible();
-    // At least one stat card shows (total kcal, consistency, etc.)
+    // Health/Stats combined tab loads — summary cards visible
     await expect(page.getByText("Total kcal burned").first()).toBeVisible();
   });
 
@@ -518,8 +516,9 @@ test.describe("authenticated", () => {
 
     // Goal Progress card shows
     await expect(page.getByText("Goal Progress")).toBeVisible();
-    await expect(page.getByText("%")).toBeVisible(); // percentage
     await expect(page.getByText(/kg to go|Goal reached/)).toBeVisible();
+    // percentage in the goal progress bar (might also match consistency score, use first)
+    await expect(page.getByText("%").first()).toBeVisible();
   });
 
   test("wellness check-in logs and displays trend", async ({ page, request }) => {

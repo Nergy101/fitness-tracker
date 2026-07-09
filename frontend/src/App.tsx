@@ -5,25 +5,23 @@ import {
   GearIcon as Gear,
   HeartbeatIcon as Heartbeat,
   PersonSimpleRunIcon as PersonSimpleRun,
-  TrendUpIcon as TrendUp,
   type Icon,
 } from "@phosphor-icons/react";
 import { type WorkoutTemplate } from "./api";
 import WorkoutTab from "./components/WorkoutTab";
 import ExercisesTab from "./components/ExercisesTab";
 import HistoryTab from "./components/HistoryTab";
-import HealthTab from "./components/HealthTab";
+import HealthAndStatsTab from "./components/HealthAndStatsTab";
 import WorkoutRunner from "./components/WorkoutRunner";
 import AppSettingsModal from "./components/AppSettingsModal";
 import LoginScreen from "./components/LoginScreen";
 import { getStoredAuth, clearStoredAuth } from "./auth";
 import { useTheme } from "./useTheme";
-import StatisticsTab from "./components/StatisticsTab";
 import ErrorBoundary from "./components/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
 import { useHashRoute } from "./useHashRoute";
 
-type TabId = "workout" | "exercises" | "history" | "health" | "stats";
+type TabId = "workout" | "exercises" | "history" | "health";
 
 interface Tab {
   id: TabId;
@@ -35,7 +33,6 @@ const TABS: Tab[] = [
   { id: "workout", label: "Workouts", icon: Barbell },
   { id: "exercises", label: "Exercises", icon: PersonSimpleRun },
   { id: "history", label: "History", icon: ChartBar },
-  { id: "stats", label: "Stats", icon: TrendUp },
   { id: "health", label: "Health", icon: Heartbeat },
 ];
 
@@ -123,8 +120,7 @@ export default function App() {
           {currentTab === "history" && (
             <HistoryTab refreshKey={historyRefreshKey} />
           )}
-          {currentTab === "stats" && <StatisticsTab />}
-          {currentTab === "health" && <HealthTab key={healthRefreshKey} />}
+          {currentTab === "health" && <HealthAndStatsTab key={healthRefreshKey} />}
         </main>
 
         <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] shrink-0">
