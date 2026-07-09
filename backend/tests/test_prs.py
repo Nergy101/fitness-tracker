@@ -325,16 +325,13 @@ class TestPrsWorkoutRecordsExcludeMirrors:
 
 
 class TestPrsLongestStreak:
-    def test_three_consecutive_days_plus_isolated_day_gives_streak_of_three(
+    def test_every_other_day_streak_counts_calendar_days(
         self, client: TestClient, auth_headers: dict
     ):
-        """Longest streak equals 3 when three consecutive days are followed by a gap.
-
-        Active days: 2026-01-01, 2026-01-02, 2026-01-03 (chain of 3).
-        Isolated:    2026-01-05 (one-day gap at 2026-01-04 breaks it).
-        """
+        """With 2-day gap rule, activity every other day forms one long streak.
+        Jan 1, 3, 5 = 5 calendar days (Jan 1–5), not 3."""
         base = date(2026, 1, 1)
-        for offset in (0, 1, 2):  # three consecutive days
+        for offset in (0, 2, 4):  # every other day
             _post_run(
                 client,
                 auth_headers,
@@ -342,7 +339,28 @@ class TestPrsLongestStreak:
                 duration_seconds=1800,
                 date_str=(base + timedelta(days=offset)).isoformat(),
             )
-        # Isolated day — one-day gap at 2026-01-04 prevents extending the chain
+
+        data = _get_prs(client, auth_headers)
+
+        assert data["longest_streak_days"] == 5, (
+            f"Expected 5-day streak (Jan 1–5 with 1-day gaps), got {data['longest_streak_days']}"
+        )
+
+    def test_two_day_gap_breaks_streak(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """A 2-day gap (>1 rest day) breaks the streak.
+        Jan 1, 2 → streak of 2, then Jan 5 is isolated (3-day gap)."""
+        base = date(2026, 1, 1)
+        for offset in (0, 1):  # Jan 1, 2
+            _post_run(
+                client,
+                auth_headers,
+                distance_km=5.0,
+                duration_seconds=1800,
+                date_str=(base + timedelta(days=offset)).isoformat(),
+            )
+        # 3-day gap — should not extend the streak
         _post_run(
             client,
             auth_headers,
@@ -353,6 +371,6 @@ class TestPrsLongestStreak:
 
         data = _get_prs(client, auth_headers)
 
-        assert data["longest_streak_days"] == 3, (
-            f"Expected 3-day streak, got {data['longest_streak_days']}"
+        assert data["longest_streak_days"] == 2, (
+            f"Expected 2-day streak (Jan 1–2, then break), got {data['longest_streak_days']}"
         )
