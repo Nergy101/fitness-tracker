@@ -885,7 +885,7 @@ export default function HealthAndStatsTab() {
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_minutes },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_minutes },
             ]}
-            label={chartMode === "daily" ? (d: ChartDatum & { label: string }) => d.label : (d: ChartDatum & { week_start: string }) => d.week_start}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
           />
           <ActivityLegend kinds={["workout", "run", "walk"]} />
@@ -914,7 +914,7 @@ export default function HealthAndStatsTab() {
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_kcal },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_kcal },
             ]}
-            label={chartMode === "daily" ? (d: ChartDatum & { label: string }) => d.label : (d: ChartDatum & { week_start: string }) => d.week_start}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
           />
           <ActivityLegend kinds={["workout", "run", "walk"]} />
@@ -933,7 +933,7 @@ export default function HealthAndStatsTab() {
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_km },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_km },
             ]}
-            label={chartMode === "daily" ? (d: ChartDatum & { label: string }) => d.label : (d: ChartDatum & { week_start: string }) => d.week_start}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start}
             formatValue={(v) => `${Math.round(v * 10) / 10}km`}
           />
           <ActivityLegend kinds={["run", "walk"]} />
