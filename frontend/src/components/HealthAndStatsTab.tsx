@@ -39,7 +39,6 @@ import {
   type WeeklyActivityStat,
   type WeightEntryResponse,
   type WeightStatsResponse,
-  type WorkoutSession,
 } from "../api";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
 import ActivityLegend from "./ActivityLegend";
@@ -440,7 +439,7 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
   );
 }
 
-/** Common shape for chart datum fields shared by WeeklyActivityStat and DailyActivityStat. */
+/** Common shape for chart datum fields shared by WeeklyActivityStat. */
 type ChartDatum = {
   workout_minutes: number;
   run_minutes: number;
@@ -452,73 +451,7 @@ type ChartDatum = {
   walk_kcal: number;
 };
 
-// ─── Daily Activity Types & Helpers ─────────────────────────
-
-interface DailyActivityStat {
-  date: string;
-  label: string;
-  workout_minutes: number;
-  run_minutes: number;
-  walk_minutes: number;
-  run_km: number;
-  walk_km: number;
-  workout_kcal: number;
-  run_kcal: number;
-  walk_kcal: number;
-}
-
-/** Compute 7-day daily activity from sessions + runs (always fills all 7 days). */
-function computeDailyActivity(
-  sessions: WorkoutSession[],
-  runs: RunEntryResponse[],
-): DailyActivityStat[] {
-  const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
-  const now = new Date();
-  const days: DailyActivityStat[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    days.push({
-      date: key,
-      label: DAYS[(d.getDay() + 6) % 7],
-      workout_minutes: 0, run_minutes: 0, walk_minutes: 0,
-      run_km: 0, walk_km: 0,
-      workout_kcal: 0, run_kcal: 0, walk_kcal: 0,
-    });
-  }
-  // Aggregate sessions
-  for (const s of sessions) {
-    const d = new Date(s.started_at);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    const entry = days.find((x) => x.date === key);
-    if (!entry) continue;
-    const mins = s.total_duration_seconds / 60;
-    const kind = s.template_name.startsWith("Run") ? "run"
-      : s.template_name.startsWith("Walk") ? "walk"
-      : "workout";
-    const minKey = `${kind}_minutes` as "workout_minutes" | "run_minutes" | "walk_minutes";
-    entry[minKey] += mins;
-    if (s.total_kcal_estimated) {
-      const kcalKey = `${kind}_kcal` as "workout_kcal" | "run_kcal" | "walk_kcal";
-      entry[kcalKey] += s.total_kcal_estimated;
-    }
-  }
-  // Aggregate runs (for distance and minutes not already captured as sessions)
-  for (const r of runs) {
-    const key = r.date.slice(0, 10);
-    const entry = days.find((x) => x.date === key);
-    if (!entry) continue;
-    const kind: "run" | "walk" = r.run_type === "walk" ? "walk" : "run";
-    entry[`${kind}_km`] += r.distance_km;
-    if (entry[`${kind}_minutes`] === 0) {
-      entry[`${kind}_minutes`] = r.duration_seconds / 60;
-    }
-    // Estimate kcal from distance (60 kcal/km run, 45 kcal/km walk)
-    entry[`${kind}_kcal`] += r.distance_km * (kind === "run" ? 60 : 45);
-  }
-  return days;
-}
+/** Compact weekly total for the mix distribution chart. */
 
 // ─── Main Component ─────────────────────────────────────────
 
@@ -526,7 +459,6 @@ export default function HealthAndStatsTab() {
   // Stats data
   const [stats, setStats] = useState<StatsOverviewResponse | null>(null);
   const [runs, setRuns] = useState<RunEntryResponse[]>([]);
-  const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [weightEntries, setWeightEntries] = useState<WeightEntryResponse[]>([]);
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
   const [health, setHealth] = useState<HealthInsightsResponse | null>(null);
@@ -542,17 +474,15 @@ export default function HealthAndStatsTab() {
   const [newWeight, setNewWeight] = useState("");
   const [showWellness, setShowWellness] = useState(false);
   const [showMeas, setShowMeas] = useState(false);
-  const [chartMode, setChartMode] = useState<"daily" | "weekly">("daily");
 
   const loadAll = async () => {
     try {
       const [
-        overview, runList, sessionList, wEntries, goalProgress, healthInsights,
+        overview, runList, wEntries, goalProgress, healthInsights,
         ws, wStats, b, pr,
       ] = await Promise.all([
         api.getStatsOverview(),
         api.getRuns().catch(() => [] as RunEntryResponse[]),
-        api.getSessions().catch(() => [] as WorkoutSession[]),
         api.getWeightEntries().catch(() => [] as WeightEntryResponse[]),
         api.getGoalProgress().catch(() => null),
         api.getHealthInsights(120).catch(() => null),
@@ -563,7 +493,6 @@ export default function HealthAndStatsTab() {
       ]);
       setStats(overview);
       setRuns(runList);
-      setSessions(sessionList);
       setWeightEntries(wEntries);
       setGoal(goalProgress);
       setHealth(healthInsights);
@@ -601,10 +530,8 @@ export default function HealthAndStatsTab() {
   }
 
   const weeks = [...stats.activity_weekly].reverse(); // oldest → newest
-  const daily = computeDailyActivity(sessions, runs);
-  const chartData = chartMode === "daily" ? daily : weeks;
-  const hasDistance = chartData.some((d: ChartDatum) => (d.run_km || 0) + (d.walk_km || 0) > 0);
-  const hasKcal = chartData.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) > 0);
+  const hasDistance = weeks.some((d: ChartDatum) => (d.run_km || 0) + (d.walk_km || 0) > 0);
+  const hasKcal = weeks.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) > 0);
   const mixWeeks = weeks.slice(-4);
 
   // Pace trend
@@ -849,47 +776,24 @@ export default function HealthAndStatsTab() {
         </ChartCard>
       )}
 
-      {/* Activity charts — daily/weekly toggle */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-semibold text-fg/60">Activity</span>
-        <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10">
-          <button
-            onClick={() => setChartMode("daily")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              chartMode === "daily" ? "bg-accent text-on-accent" : "text-fg/50"
-            }`}
-          >
-            Daily
-          </button>
-          <button
-            onClick={() => setChartMode("weekly")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              chartMode === "weekly" ? "bg-accent text-on-accent" : "text-fg/50"
-            }`}
-          >
-            Weekly
-          </button>
-        </div>
-      </div>
-
       {/* Activity (min) */}
-      {chartData.length > 0 && (
+      {weeks.length > 0 && (
         <ChartCard
           icon={<TrendUp size={16} className="text-accent" />}
-          title={chartMode === "daily" ? "Daily Activity (min)" : "Weekly Activity (min)"}
+          title="Weekly Activity (min)"
         >
           <StackedBarChart
-            data={chartData}
+            data={weeks}
             segments={[
               { color: ACTIVITY_COLORS.workout, value: (d: ChartDatum) => d.workout_minutes },
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_minutes },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_minutes },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start}
+            label={(d: WeeklyActivityStat) => d.week_start}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
           />
           <ActivityLegend kinds={["workout", "run", "walk"]} />
-          {chartMode === "weekly" && stats.current_month_vs_previous_pct != null && (
+          {stats.current_month_vs_previous_pct != null && (
             <div className="flex justify-between mt-2 text-[10px] text-fg/40">
               <span>This month: {formatHours(stats.current_month_minutes)}</span>
               <span className={stats.current_month_vs_previous_pct >= 0 ? "text-green-400" : "text-orange-400"}>
@@ -905,16 +809,16 @@ export default function HealthAndStatsTab() {
       {hasKcal && (
         <ChartCard
           icon={<Fire size={16} className="text-orange-400" />}
-          title={chartMode === "daily" ? "Daily Energy Burn (kcal)" : "Weekly Energy Burn (kcal)"}
+          title="Weekly Energy Burn (kcal)"
         >
           <StackedBarChart
-            data={chartData}
+            data={weeks}
             segments={[
               { color: ACTIVITY_COLORS.workout, value: (d: ChartDatum) => d.workout_kcal },
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_kcal },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_kcal },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start}
+            label={(d: WeeklyActivityStat) => d.week_start}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
           />
           <ActivityLegend kinds={["workout", "run", "walk"]} />
@@ -925,15 +829,15 @@ export default function HealthAndStatsTab() {
       {hasDistance && (
         <ChartCard
           icon={<PersonSimpleRun size={16} style={{ color: ACTIVITY_COLORS.run }} />}
-          title={chartMode === "daily" ? "Daily Distance (km)" : "Weekly Distance (km)"}
+          title="Weekly Distance (km)"
         >
           <StackedBarChart
-            data={chartData}
+            data={weeks}
             segments={[
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_km },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_km },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start}
+            label={(d: WeeklyActivityStat) => d.week_start}
             formatValue={(v) => `${Math.round(v * 10) / 10}km`}
           />
           <ActivityLegend kinds={["run", "walk"]} />
