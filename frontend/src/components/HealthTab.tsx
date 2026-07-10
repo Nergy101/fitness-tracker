@@ -12,10 +12,8 @@ import {
   api,
   type BmiResponse,
   type GoalProgressResponse,
-  type HealthScoreResponse,
   type StreakResponse,
   type WeightEntryResponse,
-  type WeightStatsResponse,
   type PrsResponse,
 } from "../api";
 import { formatDuration } from "../format";
@@ -133,11 +131,9 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
 export default function HealthTab() {
   // Data state
   const [weights, setWeights] = useState<WeightEntryResponse[]>([]);
-  const [stats, setStats] = useState<WeightStatsResponse | null>(null);
   const [streak, setStreak] = useState<StreakResponse | null>(null);
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
   const [bmi, setBmi] = useState<BmiResponse | null>(null);
-  const [score, setScore] = useState<HealthScoreResponse | null>(null);
   const [prs, setPrs] = useState<PrsResponse | null>(null);
 
   // UI state
@@ -149,22 +145,18 @@ export default function HealthTab() {
   const loadAll = async () => {
     try {
       const [
-        w, s, st, g, b, sc, pr,
+        w, st, g, b, pr,
       ] = await Promise.all([
         api.getWeightEntries(),
-        api.getWeightStats(),
         api.getWeightStreak(),
         api.getGoalProgress(),
         api.getBmi(),
-        api.getHealthScore(),
         api.getPrs(),
       ]);
       setWeights(w);
-      setStats(s);
       setStreak(st);
       setGoal(g);
       setBmi(b);
-      setScore(sc);
       setPrs(pr);
     } catch (e) {
       console.error("Failed to load health data", e);
@@ -197,41 +189,6 @@ export default function HealthTab() {
     <div className="health-tab space-y-4">
       {/* Header */}
       <h2 className="text-sm text-fg/50 font-medium">Your Health Overview</h2>
-
-      {/* Health Score Card */}
-      {score && (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="relative w-14 h-14 shrink-0">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#ffffff10" strokeWidth="3" />
-                <circle
-                  cx="18" cy="18" r="15.5" fill="none"
-                  stroke={score.score >= 80 ? "#4cb782" : score.score >= 60 ? "#facc15" : "#f97316"}
-                  strokeWidth="3" strokeDasharray="97.4"
-                  strokeDashoffset={97.4 - (score.score / 100) * 97.4}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-lg font-bold ${score.score >= 80 ? "text-green-400" : score.score >= 60 ? "text-yellow-400" : "text-orange-400"}`}>
-                  {score.score}
-                </span>
-              </div>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-fg">Health Score</p>
-              <p className="text-xs text-fg/50 mt-0.5">{score.spotlight}</p>
-            </div>
-          </div>
-          <div className="flex gap-3 text-[10px] text-fg/40 justify-between">
-            <span>BMI: {score.bmi_score}/40</span>
-            <span>Workouts: {score.workout_score}/30</span>
-            <span>Streak: {score.streak_score}/15</span>
-            <span>Meas: {score.measurement_score}/15</span>
-          </div>
-        </div>
-      )}
 
       {/* BMI + Weight Entry Row */}
       <div className="grid grid-cols-2 gap-3">
@@ -272,27 +229,7 @@ export default function HealthTab() {
         </div>
       </div>
 
-      {/* Weekly Summary */}
-      {stats && stats.total_entries > 0 && (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
-          <p className="text-xs text-fg/40 mb-2">This Week</p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-fg">
-              {stats.avg_7d ? stats.avg_7d.toFixed(1) : "—"}
-            </span>
-            <span className="text-sm text-fg/40">kg avg</span>
-          </div>
-          <div className="flex gap-4 mt-1.5 text-xs text-fg/50">
-            <span>Highest: {stats.max?.weight_kg.toFixed(1)} kg</span>
-            <span>Lowest: {stats.min?.weight_kg.toFixed(1)} kg</span>
-          </div>
-          <p className="text-xs text-fg/40 mt-1.5">
-            Logged {stats.total_entries} total entries
-          </p>
-        </div>
-      )}
-
-      {/* Weight Logging Streak */}
+      {/* Streak */}
       {streak && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center justify-between">

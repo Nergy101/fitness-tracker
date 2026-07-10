@@ -517,7 +517,7 @@ export default function StatisticsTab() {
       <div className="grid grid-cols-2 gap-2">
         <StatCard
           icon={<Fire size={14} className="text-orange-400" />}
-          label="Total kcal burned"
+          label="Total kcal (30d)"
           value={stats.total_kcal_burned.toLocaleString()}
         />
         <StatCard
@@ -532,7 +532,7 @@ export default function StatisticsTab() {
         />
         <StatCard
           icon={<Scales size={14} className="text-purple-400" />}
-          label="Weight change (month)"
+          label="Weight change (30d)"
           value={
             stats.avg_weight_change_kg != null
               ? `${stats.avg_weight_change_kg > 0 ? "+" : ""}${stats.avg_weight_change_kg.toFixed(1)} kg`
