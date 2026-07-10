@@ -37,6 +37,7 @@ def _create_workout_session(run: RunEntry, db: Session) -> None:
         finished_at=datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(seconds=run.duration_seconds),
         total_duration_seconds=run.duration_seconds,
         total_kcal_estimated=kcal,
+        notes=run.notes,
     )
     db.add(session)
     db.flush()
@@ -130,6 +131,7 @@ def update_run(run_id: int, data: RunEntryCreate, db: Session = Depends(get_db))
         for s in sessions:
             s.template_name = f"{prefix} {run.distance_km:.1f}km"
             s.total_kcal_estimated = _calc_run_kcal(run.distance_km, run.run_type, db)
+            s.notes = run.notes
             db.commit()
 
     db.refresh(run)
