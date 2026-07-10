@@ -60,9 +60,11 @@ def _delete_workout_session(run: RunEntry, db: Session) -> None:
     date_start = datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc)
     date_end = date_start + timedelta(days=1)
     # Search for both "Run:" and "Walk:" prefixed sessions
-    prefix = "Walk:" if run.run_type == "walk" else "Run:"
+    search_prefixes = ["Run:", "Walk:"]
     sessions = db.query(WorkoutSession).filter(
-        WorkoutSession.template_name.ilike(f"{prefix} {run.distance_km:.1f}km"),
+        WorkoutSession.template_name.in_([
+            f"{p} {run.distance_km:.1f}km" for p in search_prefixes
+        ]),
         WorkoutSession.started_at >= date_start,
         WorkoutSession.started_at < date_end,
     ).all()
