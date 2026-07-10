@@ -1,0 +1,234 @@
+"""Tests for Boxing CRUD endpoints."""
+
+from datetime import date
+from fastapi.testclient import TestClient
+
+
+class TestListBoxing:
+    URL = "/api/v1/boxing"
+
+    def test_empty(self, client: TestClient, auth_headers: dict):
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_list(self, client: TestClient, auth_headers: dict):
+        client.post(self.URL, json={
+            "duration_seconds": 1800, "notes": "Light session",
+        }, headers=auth_headers)
+        client.post(self.URL, json={
+            "duration_seconds": 3600, "notes": "Heavy session",
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 2
+        # Newest first
+        assert data[0]["duration_seconds"] == 3600
+        assert data[1]["duration_seconds"] == 1800
+
+
+class TestCreateBoxing:
+    URL = "/api/v1/boxing"
+
+    def test_create_basic(self, client: TestClient, auth_headers: dict):
+        resp = client.post(self.URL, json={
+            "duration_seconds": 1800,
+            "notes": "Morning boxing",
+        }, headers=auth_headers)
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["duration_seconds"] == 1800
+        assert data["kcal_per_min"] == 10.0  # default
+        assert data["notes"] == "Morning boxing"
+        assert "id" in data
+        assert "created_at" in data
+        # Date defaults to today
+        assert data["date"] == date.today().isoformat()
+
+    def test_create_with_date(self, client: TestClient, auth_headers: dict):
+        resp = client.post(self.URL, json={
+            "duration_seconds": 2700,
+            "date": "2026-06-15",
+        }, headers=auth_headers)
+        assert resp.status_code == 201
+        assert resp.json()["date"] == "2026-06-15"
+
+    def test_create_creates_workout_session(self, client: TestClient, auth_headers: dict):
+        """Creating a boxing entry should also create a WorkoutSession for unified history."""
+        client.post(self.URL, json={
+            "duration_seconds": 1800, "notes": "Test session",
+        }, headers=auth_headers)
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert len(sessions) == 1
+        assert sessions[0]["template_name"] == "Boxing: 30min"
+        assert sessions[0]["total_duration_seconds"] == 1800
+        assert sessions[0]["notes"] == "Test session"
+
+    def test_create_with_different_duration(self, client: TestClient, auth_headers: dict):
+        """45min boxing should create a 'Boxing: 45min' mirror session."""
+        client.post(self.URL, json={
+            "duration_seconds": 2700, "notes": "45 min session",
+        }, headers=auth_headers)
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert len(sessions) == 1
+        assert sessions[0]["template_name"] == "Boxing: 45min"
+        assert sessions[0]["total_duration_seconds"] == 2700
+
+    def test_create_kcal_estimation(self, client: TestClient, auth_headers: dict):
+        """30min at default 10 kcal/min = 300 kcal."""
+        client.post(self.URL, json={
+            "duration_seconds": 1800,
+        }, headers=auth_headers)
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert sessions[0]["total_kcal_estimated"] == 300.0
+
+
+class TestUpdateBoxing:
+    def test_update_duration(self, client: TestClient, auth_headers: dict):
+        """Update from 30min to 45min — mirror session should rename and update."""
+        create = client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800,
+        }, headers=auth_headers).json()
+        bid = create["id"]
+
+        resp = client.put(f"/api/v1/boxing/{bid}", json={
+            "duration_seconds": 2700,
+            "notes": "Updated duration",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["duration_seconds"] == 2700
+        assert data["notes"] == "Updated duration"
+
+        # Mirror session should have updated name and duration
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert len(sessions) == 1
+        assert sessions[0]["template_name"] == "Boxing: 45min"
+        assert sessions[0]["total_duration_seconds"] == 2700
+        assert sessions[0]["notes"] == "Updated duration"
+
+    def test_update_notes_only(self, client: TestClient, auth_headers: dict):
+        """Update only notes — mirror session should update notes, keep duration."""
+        create = client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800,
+        }, headers=auth_headers).json()
+        bid = create["id"]
+
+        resp = client.put(f"/api/v1/boxing/{bid}", json={
+            "duration_seconds": 1800,
+            "notes": "New notes only",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert sessions[0]["notes"] == "New notes only"
+        assert sessions[0]["total_duration_seconds"] == 1800
+
+    def test_update_missing(self, client: TestClient, auth_headers: dict):
+        resp = client.put("/api/v1/boxing/99999", json={
+            "duration_seconds": 600,
+        }, headers=auth_headers)
+        assert resp.status_code == 404
+
+
+class TestDeleteBoxing:
+    def test_delete(self, client: TestClient, auth_headers: dict):
+        create = client.post("/api/v1/boxing", json={
+            "duration_seconds": 1200,
+        }, headers=auth_headers).json()
+        bid = create["id"]
+
+        resp = client.delete(f"/api/v1/boxing/{bid}", headers=auth_headers)
+        assert resp.status_code == 204
+
+        # Verify removed from list (no individual GET endpoint)
+        entries = client.get("/api/v1/boxing", headers=auth_headers).json()
+        assert all(e["id"] != bid for e in entries)
+
+    def test_delete_removes_workout_session(self, client: TestClient, auth_headers: dict):
+        create = client.post("/api/v1/boxing", json={
+            "duration_seconds": 1200,
+        }, headers=auth_headers).json()
+        bid = create["id"]
+
+        # Before delete, a session exists
+        assert len(client.get("/api/v1/sessions", headers=auth_headers).json()) == 1
+
+        client.delete(f"/api/v1/boxing/{bid}", headers=auth_headers)
+
+        # Session should be gone
+        assert len(client.get("/api/v1/sessions", headers=auth_headers).json()) == 0
+
+    def test_delete_missing(self, client: TestClient, auth_headers: dict):
+        resp = client.delete("/api/v1/boxing/99999", headers=auth_headers)
+        assert resp.status_code == 404
+
+
+class TestBoxingEdgeCases:
+    def test_same_day_multiple_entries(self, client: TestClient, auth_headers: dict):
+        """Two entries on the same day, different durations — both should have mirror sessions."""
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "notes": "Morning",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 3600, "notes": "Evening",
+        }, headers=auth_headers)
+
+        entries = client.get("/api/v1/boxing", headers=auth_headers).json()
+        assert len(entries) == 2
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert len(sessions) == 2
+        names = {s["template_name"] for s in sessions}
+        assert "Boxing: 30min" in names
+        assert "Boxing: 60min" in names
+
+    def test_same_day_same_duration(self, client: TestClient, auth_headers: dict):
+        """Two entries same day, same duration — both should have mirror sessions."""
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "notes": "Session 1",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "notes": "Session 2",
+        }, headers=auth_headers)
+
+        entries = client.get("/api/v1/boxing", headers=auth_headers).json()
+        assert len(entries) == 2
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert len(sessions) == 2
+
+    def test_custom_kcal_per_min(self, client: TestClient, auth_headers: dict):
+        """Custom kcal_per_min should produce correct kcal estimate."""
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800,
+            "kcal_per_min": 12.0,
+        }, headers=auth_headers)
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert sessions[0]["total_kcal_estimated"] == 360.0  # 30 * 12
+
+    def test_delete_only_target_entry(self, client: TestClient, auth_headers: dict):
+        """Deleting one entry should not affect the other."""
+        e1 = client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "notes": "Keep",
+        }, headers=auth_headers).json()
+        e2 = client.post("/api/v1/boxing", json={
+            "duration_seconds": 3600, "notes": "Delete",
+        }, headers=auth_headers).json()
+
+        client.delete(f"/api/v1/boxing/{e2['id']}", headers=auth_headers)
+
+        entries = client.get("/api/v1/boxing", headers=auth_headers).json()
+        assert len(entries) == 1
+        assert entries[0]["id"] == e1["id"]
+        assert entries[0]["notes"] == "Keep"
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert len(sessions) == 1
+        assert "30min" in sessions[0]["template_name"]
