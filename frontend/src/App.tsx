@@ -13,6 +13,7 @@ import ExercisesTab from "./components/ExercisesTab";
 import HistoryTab from "./components/HistoryTab";
 import HealthAndStatsTab from "./components/HealthAndStatsTab";
 import WorkoutRunner from "./components/WorkoutRunner";
+import TabataRunner from "./components/TabataRunner";
 import AppSettingsModal from "./components/AppSettingsModal";
 import LoginScreen from "./components/LoginScreen";
 import { getStoredAuth, clearStoredAuth } from "./auth";
@@ -64,12 +65,13 @@ export default function App() {
   }
 
   if (runningWorkout) {
+    const Runner = runningWorkout.mode === "tabata" ? TabataRunner : WorkoutRunner;
     return (
       <div
         className="fixed inset-0 z-50"
         style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
       >
-        <WorkoutRunner
+        <Runner
           workout={runningWorkout}
           onFinish={() => {
             setRunningWorkout(null);

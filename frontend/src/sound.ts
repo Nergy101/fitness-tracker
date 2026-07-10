@@ -88,6 +88,22 @@ export const soundFinish = () =>
     [120, 60, 200],
   );
 
+// Short, punchy two-tone cue for Tabata interval transitions. Rising into a
+// work interval, falling into a rest interval — distinct from the circuit cues.
+export const soundTabata = (kind: "work" | "rest") =>
+  tones(
+    kind === "work"
+      ? [
+          { freq: 880, start: 0, dur: 0.08 },
+          { freq: 1320, start: 0.09, dur: 0.11 },
+        ]
+      : [
+          { freq: 660, start: 0, dur: 0.08 },
+          { freq: 440, start: 0.09, dur: 0.11 },
+        ],
+    kind === "work" ? [50, 30, 50] : 70,
+  );
+
 // Preferred TTS voice — Apple's "Daniel" (en-GB). Voices populate
 // asynchronously, so cache the pick and refresh on `voiceschanged`.
 let preferredVoice: SpeechSynthesisVoice | null = null;

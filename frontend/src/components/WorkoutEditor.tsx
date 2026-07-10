@@ -243,16 +243,20 @@ export default function WorkoutEditor({
         {/* Mode selector */}
         <div className="mb-4">
           <label className="text-sm text-fg/60 block mb-2">Timer Mode</label>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
               { id: "circuit", label: "Circuit", desc: "Fixed rounds" },
               { id: "amrap", label: "AMRAP", desc: "Time cap" },
               { id: "emom", label: "EMOM", desc: "Per minute" },
+              { id: "tabata", label: "Tabata", desc: "20s / 10s" },
             ].map((opt) => (
               <button
                 key={opt.id}
                 type="button"
-                onClick={() => setMode(opt.id)}
+                onClick={() => {
+                  setMode(opt.id);
+                  if (opt.id === "tabata" && rounds < 2) setRounds(8);
+                }}
                 className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-colors border ${
                   mode === opt.id
                     ? "bg-accent/20 border-accent text-accent"
@@ -306,7 +310,7 @@ export default function WorkoutEditor({
           </div>
         )}
 
-        {/* Rounds (circuit only) */}
+        {/* Rounds (circuit / tabata) */}
         {!isAmrap && !isEmom && (
           <div className="flex items-center gap-3 mb-4">
             <label htmlFor="rounds" className="text-sm text-fg/60">
@@ -320,7 +324,9 @@ export default function WorkoutEditor({
               ariaLabel="Rounds"
             />
             <span className="text-xs text-fg/40">
-              repeat the whole circuit this many times
+              {mode === "tabata"
+                ? "20s work / 10s rest per round"
+                : "repeat the whole circuit this many times"}
             </span>
           </div>
         )}
@@ -334,7 +340,18 @@ export default function WorkoutEditor({
           </p>
         )}
 
-        {!isAmrap && rounds > 1 && (
+        {/* Tabata info */}
+        {mode === "tabata" && (
+          <p className="text-xs text-fg/40 mb-4 bg-surface rounded-xl px-4 py-3 border border-fg/5">
+            Tabata — {rounds} round{rounds !== 1 ? "s" : ""} of 20s work / 10s rest
+            {rows.length > 0
+              ? `, cycling ${rows.length} exercise${rows.length !== 1 ? "s" : ""}`
+              : ""}
+            . Total {formatDuration(rounds * 20 + Math.max(0, rounds - 1) * 10)}.
+          </p>
+        )}
+
+        {!isAmrap && mode !== "tabata" && rounds > 1 && (
           <div className="mb-4">
             <label className="text-sm text-fg/60 block mb-2">
               Rest between rounds
@@ -364,6 +381,7 @@ export default function WorkoutEditor({
         )}
 
         {/* Warmup & Cooldown */}
+        {mode !== "tabata" && (
         <div className="mb-4 space-y-3">
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -416,6 +434,7 @@ export default function WorkoutEditor({
             )}
           </div>
         </div>
+        )}
 
         <button
           onClick={() => setShowPicker((v) => !v)}

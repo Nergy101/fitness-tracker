@@ -62,3 +62,14 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* Tabata interval transition: a full-screen color flash that snaps in then
+   fades out. Re-triggered by remounting the overlay with a changing key. */
+@keyframes tabata-flash {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 0;
+  }
+}
