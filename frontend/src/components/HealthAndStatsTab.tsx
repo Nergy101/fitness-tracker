@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  ArrowDownIcon as ArrowDown,
-  ArrowUpIcon as ArrowUp,
   BarbellIcon as Barbell,
   CalendarBlankIcon as CalendarBlank,
   CaretDownIcon as CaretDown,
@@ -16,7 +14,6 @@ import {
   HeartIcon as Heart,
   MoonIcon as Moon,
   PersonSimpleRunIcon as PersonSimpleRun,
-  PlantIcon as Plant,
   PulseIcon as Pulse,
   RocketLaunchIcon as RocketLaunch,
   RulerIcon as Ruler,
@@ -552,13 +549,6 @@ export default function HealthAndStatsTab() {
       insightLines.push({ icon: ChartBar, text: "Your workout volume is steady this month." });
     }
   }
-  if (stats.consistency_score_pct > 0) {
-    const cons = stats.consistency_score_pct;
-    if (cons >= 80) insightLines.push({ icon: Fire, text: `${cons}% consistency — you're on fire!` });
-    else if (cons >= 50) insightLines.push({ icon: Barbell, text: `${cons}% consistency — keep showing up!` });
-    else insightLines.push({ icon: Plant, text: `${cons}% consistency — start small, stay steady!` });
-  }
-
   if (weeks.length >= 2) {
     const cur = weeks[weeks.length - 1];
     const prev = weeks[weeks.length - 2];
@@ -587,30 +577,14 @@ export default function HealthAndStatsTab() {
     }
   }
 
-  if (goal?.goal_weight_kg != null && goal.remaining_kg != null) {
-    if ((goal.progress_percentage ?? 0) >= 100) {
-      insightLines.push({ icon: Scales, text: "Goal weight reached — now hold the line!" });
-    } else {
-      insightLines.push({ icon: Scales, text: `${Math.abs(goal.remaining_kg).toFixed(1)} kg to your goal weight — keep going!` });
-    }
-  }
-
-  if (stats.avg_weight_change_kg != null) {
-    const w = stats.avg_weight_change_kg;
-    if (w < 0) {
-      insightLines.push({ icon: ArrowDown, text: `Your weight dropped ${Math.abs(w).toFixed(1)} kg this month.` });
-    } else if (w > 0) {
-      insightLines.push({ icon: ArrowUp, text: `Your weight increased ${w.toFixed(1)} kg this month.` });
-    }
-  }
   if (stats.total_sessions_all === 0 && stats.total_runs === 0 && stats.total_walks === 0) {
     insightLines.push({ icon: RocketLaunch, text: "Complete your first workout to see stats!" });
   }
 
   return (
     <div className="health-stats-tab space-y-4">
-      {/* ── Quick Stats: consistency, kcal, weight trend ── */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* ── Quick Stats: consistency, kcal, weight trend, streak ── */}
+      <div className="grid grid-cols-2 gap-2">
         <StatCard
           icon={<CalendarBlank size={14} className="text-accent" />}
           label="Consistency (30d)"
@@ -630,6 +604,21 @@ export default function HealthAndStatsTab() {
               : "—"
           }
         />
+        {prs && prs.longest_streak_days > 0 ? (
+          <StatCard
+            icon={<Flame size={14} className="text-orange-400" weight="fill" />}
+            label="Activity Streak"
+            value={`${prs.longest_streak_days} days`}
+            sub="best ever"
+          />
+        ) : (
+          <StatCard
+            icon={<Flame size={14} className="text-fg/30" weight="fill" />}
+            label="Activity Streak"
+            value="—"
+            sub="no activity yet"
+          />
+        )}
       </div>
 
       {/* ── TOP: Goal Progress + BMI + Log Weight ── */}
@@ -762,23 +751,6 @@ export default function HealthAndStatsTab() {
           <p className="text-xs text-fg/40 mt-1.5">
             Logged {weightStats.total_entries} total entries
           </p>
-        </div>
-      )}
-
-      {/* Activity Streak */}
-      {prs && prs.longest_streak_days > 0 && (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Flame size={28} className="text-orange-400 shrink-0" weight="fill" />
-              <div>
-                <p className="text-xs text-fg/40 mb-0.5">Activity Streak (2-day gap)</p>
-                <p className="text-sm font-semibold text-fg">
-                  {prs.longest_streak_days} day{prs.longest_streak_days === 1 ? "" : "s"} — best ever
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
