@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import WorkoutSession, SessionExercise, WorkoutTemplate, ExerciseLog, RunEntry, BoxingEntry
+from app.models.models import WorkoutSession, SessionExercise, WorkoutTemplate, ExerciseLog, RunEntry, BoxingEntry, is_mirror_session
 from app.schemas import WorkoutSessionCreate, WorkoutSessionEnd, WorkoutSessionResponse, SessionExerciseResponse, ExerciseLogCreate, ExerciseLogResponse
 from pydantic import BaseModel
 
@@ -134,39 +134,40 @@ def delete_session(session_id: int, db: Session = Depends(get_db)):
     name = session.template_name or ""
     session_date = session.started_at.date() if session.started_at else None
 
-    if name.startswith(("Run:", "Walk:")) and session_date:
-        # Parse distance from "Run: 5.0km" or "Walk: 3.2km"
-        try:
-            dist_str = name.split(": ")[1].rstrip("km")
-            distance = float(dist_str)
-        except (IndexError, ValueError):
-            distance = None
+    if is_mirror_session(session) and session_date:
+        if name.startswith(("Run:", "Walk:")):
+            # Parse distance from "Run: 5.0km" or "Walk: 3.2km"
+            try:
+                dist_str = name.split(": ")[1].rstrip("km")
+                distance = float(dist_str)
+            except (IndexError, ValueError):
+                distance = None
 
-        if distance is not None:
-            run_type = "walk" if name.startswith("Walk:") else "run"
-            entries = db.query(RunEntry).filter(
-                RunEntry.date == session_date,
-                RunEntry.distance_km == distance,
-                RunEntry.run_type == run_type,
-            ).all()
-            for entry in entries:
-                db.delete(entry)
+            if distance is not None:
+                run_type = "walk" if name.startswith("Walk:") else "run"
+                entries = db.query(RunEntry).filter(
+                    RunEntry.date == session_date,
+                    RunEntry.distance_km == distance,
+                    RunEntry.run_type == run_type,
+                ).all()
+                for entry in entries:
+                    db.delete(entry)
 
-    elif name.startswith("Boxing:") and session_date:
-        # Parse minutes from "Boxing: 30min"
-        try:
-            mins_str = name.split(": ")[1].rstrip("min")
-            target_mins = int(mins_str)
-        except (IndexError, ValueError):
-            target_mins = None
+        elif name.startswith("Boxing:"):
+            # Parse minutes from "Boxing: 30min"
+            try:
+                mins_str = name.split(": ")[1].rstrip("min")
+                target_mins = int(mins_str)
+            except (IndexError, ValueError):
+                target_mins = None
 
-        if target_mins is not None:
-            entries = db.query(BoxingEntry).filter(
-                BoxingEntry.date == session_date,
-                BoxingEntry.duration_seconds == target_mins * 60,
-            ).all()
-            for entry in entries:
-                db.delete(entry)
+            if target_mins is not None:
+                entries = db.query(BoxingEntry).filter(
+                    BoxingEntry.date == session_date,
+                    BoxingEntry.duration_seconds == target_mins * 60,
+                ).all()
+                for entry in entries:
+                    db.delete(entry)
 
     db.delete(session)
     db.commit()
