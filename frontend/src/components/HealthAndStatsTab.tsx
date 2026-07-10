@@ -440,6 +440,18 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
   );
 }
 
+/** Common shape for chart datum fields shared by WeeklyActivityStat and DailyActivityStat. */
+type ChartDatum = {
+  workout_minutes: number;
+  run_minutes: number;
+  walk_minutes: number;
+  run_km: number;
+  walk_km: number;
+  workout_kcal: number;
+  run_kcal: number;
+  walk_kcal: number;
+};
+
 // ─── Daily Activity Types & Helpers ─────────────────────────
 
 interface DailyActivityStat {
@@ -591,8 +603,8 @@ export default function HealthAndStatsTab() {
   const weeks = [...stats.activity_weekly].reverse(); // oldest → newest
   const daily = computeDailyActivity(sessions, runs);
   const chartData = chartMode === "daily" ? daily : weeks;
-  const hasDistance = chartData.some((d: any) => (d.run_km || 0) + (d.walk_km || 0) > 0);
-  const hasKcal = chartData.some((d: any) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) > 0);
+  const hasDistance = chartData.some((d: ChartDatum) => (d.run_km || 0) + (d.walk_km || 0) > 0);
+  const hasKcal = chartData.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) > 0);
   const mixWeeks = weeks.slice(-4);
 
   // Pace trend
@@ -869,11 +881,11 @@ export default function HealthAndStatsTab() {
           <StackedBarChart
             data={chartData}
             segments={[
-              { color: ACTIVITY_COLORS.workout, value: (d: any) => d.workout_minutes },
-              { color: ACTIVITY_COLORS.run, value: (d: any) => d.run_minutes },
-              { color: ACTIVITY_COLORS.walk, value: (d: any) => d.walk_minutes },
+              { color: ACTIVITY_COLORS.workout, value: (d: ChartDatum) => d.workout_minutes },
+              { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_minutes },
+              { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_minutes },
             ]}
-            label={chartMode === "daily" ? (d: any) => d.label : (d: any) => d.week_start}
+            label={chartMode === "daily" ? (d: ChartDatum & { label: string }) => d.label : (d: ChartDatum & { week_start: string }) => d.week_start}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
           />
           <ActivityLegend kinds={["workout", "run", "walk"]} />
@@ -898,11 +910,11 @@ export default function HealthAndStatsTab() {
           <StackedBarChart
             data={chartData}
             segments={[
-              { color: ACTIVITY_COLORS.workout, value: (d: any) => d.workout_kcal },
-              { color: ACTIVITY_COLORS.run, value: (d: any) => d.run_kcal },
-              { color: ACTIVITY_COLORS.walk, value: (d: any) => d.walk_kcal },
+              { color: ACTIVITY_COLORS.workout, value: (d: ChartDatum) => d.workout_kcal },
+              { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_kcal },
+              { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_kcal },
             ]}
-            label={chartMode === "daily" ? (d: any) => d.label : (d: any) => d.week_start}
+            label={chartMode === "daily" ? (d: ChartDatum & { label: string }) => d.label : (d: ChartDatum & { week_start: string }) => d.week_start}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
           />
           <ActivityLegend kinds={["workout", "run", "walk"]} />
@@ -918,10 +930,10 @@ export default function HealthAndStatsTab() {
           <StackedBarChart
             data={chartData}
             segments={[
-              { color: ACTIVITY_COLORS.run, value: (d: any) => d.run_km },
-              { color: ACTIVITY_COLORS.walk, value: (d: any) => d.walk_km },
+              { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_km },
+              { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_km },
             ]}
-            label={chartMode === "daily" ? (d: any) => d.label : (d: any) => d.week_start}
+            label={chartMode === "daily" ? (d: ChartDatum & { label: string }) => d.label : (d: ChartDatum & { week_start: string }) => d.week_start}
             formatValue={(v) => `${Math.round(v * 10) / 10}km`}
           />
           <ActivityLegend kinds={["run", "walk"]} />

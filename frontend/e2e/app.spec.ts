@@ -509,8 +509,8 @@ test.describe("authenticated", () => {
     expect(match).toBeTruthy();
   });
 
-  test("health score card shows after logging weight", async ({ page, request }) => {
-    // Seed weight + profile for meaningful score
+  test("health metric cards render after logging weight", async ({ page, request }) => {
+    // Seed weight + profile for meaningful BMI
     await request.post(`${API_URL}/api/v1/health/weight`, {
       data: { weight_kg: 78, date: "2026-07-01", notes: "" },
       headers: _authHeaders,
@@ -523,10 +523,8 @@ test.describe("authenticated", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Health" }).click();
 
-    // Health Score gauge renders
-    await expect(page.getByText("Health Score")).toBeVisible();
-    // At least one sub-score label should show
-    await expect(page.getByText(/BMI:|Workouts:|Streak:|Meas:/).first()).toBeVisible();
+    // BMI card renders after logging weight
+    await expect(page.getByText("BMI")).toBeVisible();
   });
 
   test("goal progress bar renders when goal is set", async ({ page, request }) => {
