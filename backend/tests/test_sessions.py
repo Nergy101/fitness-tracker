@@ -216,3 +216,83 @@ class TestDeleteSession:
     def test_delete_missing(self, client: TestClient, auth_headers: dict):
         resp = client.delete("/api/v1/sessions/99999", headers=auth_headers)
         assert resp.status_code == 404
+
+    def test_delete_run_mirror_cascades(self, client: TestClient, auth_headers: dict):
+        """Deleting a run mirror session via DELETE /sessions/{id} should
+        also delete the underlying RunEntry (NER-150)."""
+        # Create a run — this creates both RunEntry + mirror WorkoutSession
+        run_resp = client.post("/api/v1/runs", json={
+            "duration_seconds": 1800,
+            "distance_km": 5.0,
+            "run_type": "run",
+            "notes": "test cascade",
+        }, headers=auth_headers)
+        assert run_resp.status_code == 201
+        run_data = run_resp.json()
+        run_id = run_data["id"]
+
+        # Find the mirror session
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        mirror = next((s for s in sessions if s["template_name"].startswith("Run:")), None)
+        assert mirror is not None, "Mirror session should exist for run"
+
+        # Delete via generic session endpoint (what the History tab does)
+        del_resp = client.delete(f"/api/v1/sessions/{mirror['id']}", headers=auth_headers)
+        assert del_resp.status_code == 204
+
+        # Verify the run entry is also deleted (check via list)
+        runs = client.get("/api/v1/runs", headers=auth_headers).json()
+        assert not any(r["id"] == run_id for r in runs), "RunEntry should be cascade-deleted"
+
+        # Verify the session is deleted
+        get_ses = client.get(f"/api/v1/sessions/{mirror['id']}", headers=auth_headers)
+        assert get_ses.status_code == 404
+
+    def test_delete_boxing_mirror_cascades(self, client: TestClient, auth_headers: dict):
+        """Deleting a boxing mirror session via DELETE /sessions/{id} should
+        also delete the underlying BoxingEntry (NER-150)."""
+        # Create a boxing entry — this creates both BoxingEntry + mirror WorkoutSession
+        box_resp = client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800,
+            "kcal_per_min": 10.0,
+            "notes": "test cascade boxing",
+        }, headers=auth_headers)
+        assert box_resp.status_code == 201
+        box_data = box_resp.json()
+        box_id = box_data["id"]
+
+        # Find the mirror session
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        mirror = next((s for s in sessions if s["template_name"].startswith("Boxing:")), None)
+        assert mirror is not None, "Mirror session should exist for boxing"
+
+        # Delete via generic session endpoint
+        del_resp = client.delete(f"/api/v1/sessions/{mirror['id']}", headers=auth_headers)
+        assert del_resp.status_code == 204
+
+        # Verify the boxing entry is also deleted (check via list)
+        boxing = client.get("/api/v1/boxing", headers=auth_headers).json()
+        assert not any(b["id"] == box_id for b in boxing), "BoxingEntry should be cascade-deleted"
+
+        # Verify the session is deleted
+        get_ses = client.get(f"/api/v1/sessions/{mirror['id']}", headers=auth_headers)
+        assert get_ses.status_code == 404
+
+    def test_delete_regular_session_does_not_touch_entries(self, client: TestClient, auth_headers: dict):
+        """Regular workout sessions (not mirrors) should delete normally without
+        affecting any run/boxing entries that happen to share the same date."""
+        # Create a regular session
+        create = client.post("/api/v1/sessions", json={
+            "template_name": "Regular Workout",
+            "total_duration_seconds": 300,
+            "total_kcal_estimated": 25.0,
+        }, headers=auth_headers)
+        assert create.status_code == 201
+        sid = create.json()["id"]
+
+        # Delete it
+        resp = client.delete(f"/api/v1/sessions/{sid}", headers=auth_headers)
+        assert resp.status_code == 204
+
+        get_resp = client.get(f"/api/v1/sessions/{sid}", headers=auth_headers)
+        assert get_resp.status_code == 404
