@@ -752,6 +752,52 @@ test.describe("authenticated", () => {
     await page.getByRole("button", { name: "History" }).click();
     await expect(page.getByText("E2E Log Test").first()).toBeVisible();
   });
+
+  test("session notes edit persists after closing and reopening detail", async ({ page, request }) => {
+    // Create a fast workout via API
+    const workout = await createFastWorkout(request, "E2E Notes Test", 1, 2, 10, _authHeaders);
+    expect(workout.id).toBeTruthy();
+
+    await page.goto("/");
+    await expect(page.getByText("E2E Notes Test", { exact: true }).first()).toBeVisible();
+
+    // Log the workout
+    await page
+      .locator("div.bg-surface")
+      .filter({ has: page.getByRole("heading", { name: "E2E Notes Test" }) })
+      .first()
+      .getByRole("button", { name: "Log", exact: true })
+      .click();
+
+    await expect(page.getByRole("status")).toContainText("Workout logged!", { timeout: 5000 });
+
+    // Navigate to History
+    await page.getByRole("button", { name: "History" }).click();
+    await expect(page.getByText("E2E Notes Test").first()).toBeVisible();
+
+    // Open the session detail modal
+    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "E2E Notes Test" }).first().click();
+
+    // Type notes into the textarea
+    const notesArea = page.locator('textarea[aria-label="Session notes"]');
+    await expect(notesArea).toBeVisible();
+    await notesArea.fill("E2E test notes — persistence check");
+
+    // Save by blurring (onBlur calls saveNotes)
+    await notesArea.blur();
+
+    // Close the detail modal via the × button
+    await page.locator("button").filter({ hasText: "×" }).click();
+
+    // Wait for modal to close
+    await expect(page.locator('textarea[aria-label="Session notes"]')).toHaveCount(0);
+
+    // Reopen the session detail
+    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "E2E Notes Test" }).first().click();
+
+    // Verify notes persisted
+    await expect(page.locator('textarea[aria-label="Session notes"]')).toHaveValue("E2E test notes — persistence check");
+  });
 });
 
 // --- Auth flow tests ---
