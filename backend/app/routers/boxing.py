@@ -30,6 +30,7 @@ def _create_workout_session(entry: BoxingEntry, db: Session) -> None:
         finished_at=datetime.combine(entry.date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(seconds=entry.duration_seconds),
         total_duration_seconds=entry.duration_seconds,
         total_kcal_estimated=kcal,
+        notes=entry.notes,
     )
     db.add(session)
     db.flush()
@@ -111,6 +112,7 @@ def update_boxing(entry_id: int, data: BoxingEntryCreate, db: Session = Depends(
         s.template_name = f"Boxing: {mins}min"
         s.total_duration_seconds = entry.duration_seconds
         s.total_kcal_estimated = kcal
+        s.notes = entry.notes
         db.commit()
 
     db.refresh(entry)
