@@ -755,7 +755,7 @@ test.describe("authenticated", () => {
     await expect(page.getByText("E2E Log Test").first()).toBeVisible();
   });
 
-  test("run notes update persists in SessionDetail after closing and reopening", async ({ page, request }) => {
+  test("run notes update persists in SessionDetail after closing and reopening", async ({ page }) => {
     // Log a run via UI with notes
     await page.goto("/");
     await page.getByText("Log a Run").click();
