@@ -112,27 +112,28 @@ def update_run(run_id: int, data: RunEntryCreate, db: Session = Depends(get_db))
     run.notes = data.notes
     db.commit()
 
-    # Update the associated WorkoutSession (name + kcal) if run_type changed
-    if data.run_type:
-        prefix = "Walk:" if run.run_type == "walk" else "Run:"
-        date_start = datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc)
-        date_end = date_start + timedelta(days=1)
+    # Always sync the associated WorkoutSession mirror
+    prefix = "Walk:" if run.run_type == "walk" else "Run:"
+    date_start = datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc)
+    date_end = date_start + timedelta(days=1)
+    sessions = db.query(WorkoutSession).filter(
+        WorkoutSession.template_name.ilike(f"Run: {run.distance_km:.1f}km"),
+        WorkoutSession.started_at >= date_start,
+        WorkoutSession.started_at < date_end,
+    ).all()
+    if not sessions:
         sessions = db.query(WorkoutSession).filter(
-            WorkoutSession.template_name.ilike(f"Run: {run.distance_km:.1f}km"),
+            WorkoutSession.template_name.ilike(f"Walk: {run.distance_km:.1f}km"),
             WorkoutSession.started_at >= date_start,
             WorkoutSession.started_at < date_end,
         ).all()
-        if not sessions:
-            sessions = db.query(WorkoutSession).filter(
-                WorkoutSession.template_name.ilike(f"Walk: {run.distance_km:.1f}km"),
-                WorkoutSession.started_at >= date_start,
-                WorkoutSession.started_at < date_end,
-            ).all()
-        for s in sessions:
-            s.template_name = f"{prefix} {run.distance_km:.1f}km"
-            s.total_kcal_estimated = _calc_run_kcal(run.distance_km, run.run_type, db)
-            s.notes = run.notes
-            db.commit()
+    kcal = _calc_run_kcal(run.distance_km, run.run_type, db)
+    for s in sessions:
+        s.template_name = f"{prefix} {run.distance_km:.1f}km"
+        s.total_duration_seconds = run.duration_seconds
+        s.total_kcal_estimated = kcal
+        s.notes = run.notes
+        db.commit()
 
     db.refresh(run)
     return run
