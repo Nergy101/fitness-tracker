@@ -18,7 +18,7 @@ export default function WeekdayBarChart({ sessions }: { sessions: WorkoutSession
 
   return (
     <div>
-      <div className="flex items-end gap-1.5 h-20">
+      <div className="flex items-end gap-1.5 h-40">
         {buckets.map((b, i) => {
           const total = b.workout + b.run + b.walk;
           return (
@@ -31,7 +31,7 @@ export default function WeekdayBarChart({ sessions }: { sessions: WorkoutSession
               <div
                 className="w-full rounded-t-sm overflow-hidden flex flex-col justify-end transition-all"
                 style={{
-                  height: `${total > 0 ? 6 + (total / max) * 46 : 3}px`,
+                  height: `${total > 0 ? 12 + (total / max) * 100 : 6}px`,
                   background: total > 0 ? undefined : "var(--track)",
                 }}
               >

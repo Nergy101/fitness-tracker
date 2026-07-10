@@ -48,7 +48,7 @@ export default function DayBars({
 
   return (
     <div>
-      <div className="flex items-end gap-1.5 h-24">
+      <div className="flex items-end gap-1.5 h-44">
         {days.items.map((d) => {
           const today = d.key === days.todayKey;
           const total = d.counts.workout + d.counts.run + d.counts.walk;
@@ -62,7 +62,7 @@ export default function DayBars({
               <div
                 className="w-full rounded-t-sm overflow-hidden flex flex-col justify-end transition-all"
                 style={{
-                  height: `${total > 0 ? 6 + (total / max) * 40 : 3}px`,
+                  height: `${total > 0 ? 12 + (total / max) * 88 : 6}px`,
                   background: total > 0 ? undefined : "var(--track)",
                 }}
               >
