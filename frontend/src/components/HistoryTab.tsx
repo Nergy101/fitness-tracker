@@ -28,7 +28,6 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   const [range, setRange] = useState<RangeKey>("7d");
   const [view, setView] = useState<"range" | "all">("range");
   const [calendar, setCalendar] = useState(false);
-  const [chartMode, setChartMode] = useState<"daily" | "weekly">("daily");
 
   useEffect(() => {
     let active = true;
@@ -135,23 +134,15 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   // ── Range view ─────────────────────────────────────────
   return (
     <div className="history-tab">
-      <div className="flex items-center gap-2 mb-4">
-        <DateRangeFilter
-          range={range}
-          calendar={calendar}
-          onRangeChange={(key) => {
-            setRange(key);
-            setCalendar(false);
-          }}
-          onToggleCalendar={() => setCalendar((c) => !c)}
-        />
-        <button
-          onClick={() => setChartMode((m) => (m === "daily" ? "weekly" : "daily"))}
-          className="ml-auto px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors bg-surface text-fg/60 border border-fg/10 hover:text-fg"
-        >
-          {chartMode === "daily" ? "Daily" : "Weekly"}
-        </button>
-      </div>
+      <DateRangeFilter
+        range={range}
+        calendar={calendar}
+        onRangeChange={(key) => {
+          setRange(key);
+          setCalendar(false);
+        }}
+        onToggleCalendar={() => setCalendar((c) => !c)}
+      />
 
       {/* Activity + summary — chart depends on the mode. */}
       {calendar ? (
@@ -161,9 +152,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
       ) : (
         <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
           <StatsGrid sessions={rangeSessions} />
-          {chartMode === "weekly" ? (
-            <WeekdayBarChart sessions={rangeSessions} />
-          ) : range === "30d" ? (
+          {range === "30d" ? (
             <HeatmapChart sessions={rangeSessions} />
           ) : (
             <DayBars sessions={rangeSessions} mode={range} />
