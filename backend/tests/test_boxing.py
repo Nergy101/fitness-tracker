@@ -232,3 +232,75 @@ class TestBoxingEdgeCases:
         sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
         assert len(sessions) == 1
         assert "30min" in sessions[0]["template_name"]
+
+
+class TestBoxingStats:
+    URL = "/api/v1/boxing/stats"
+
+    def test_empty(self, client: TestClient, auth_headers: dict):
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_sessions"] == 0
+        assert data["total_duration_seconds"] == 0
+        assert data["monthly_breakdown"] == []
+
+    def test_single_entry(self, client: TestClient, auth_headers: dict):
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800,
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_sessions"] == 1
+        assert data["total_duration_seconds"] == 1800
+        assert data["total_hours"] == 0.5
+        assert data["avg_duration_seconds"] == 1800.0
+        assert data["avg_kcal_per_min"] == 10.0
+        assert data["total_kcal_estimated"] == 300.0
+
+    def test_multiple_entries(self, client: TestClient, auth_headers: dict):
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "kcal_per_min": 10.0,
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 3600, "kcal_per_min": 12.0,
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total_sessions"] == 2
+        assert data["total_duration_seconds"] == 5400
+        assert data["total_hours"] == 1.5
+        assert data["avg_duration_seconds"] == 2700.0
+        assert data["avg_kcal_per_min"] == 11.0
+        # (30*10) + (60*12) = 300 + 720 = 1020
+        assert data["total_kcal_estimated"] == 1020.0
+
+    def test_monthly_breakdown(self, client: TestClient, auth_headers: dict):
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "date": "2026-06-10",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 3600, "date": "2026-06-20",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 2700, "date": "2026-07-05",
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["monthly_breakdown"]) == 2
+        # Most recent month first
+        july = data["monthly_breakdown"][0]
+        assert july["month"] == "2026-07"
+        assert july["sessions"] == 1
+        assert july["total_minutes"] == 45
+
+        june = data["monthly_breakdown"][1]
+        assert june["month"] == "2026-06"
+        assert june["sessions"] == 2
+        assert june["total_minutes"] == 90  # 30 + 60

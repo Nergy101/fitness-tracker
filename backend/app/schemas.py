@@ -435,6 +435,22 @@ class BoxingEntryResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MonthlyBoxingStats(BaseModel):
+    month: str
+    sessions: int
+    total_minutes: int
+
+
+class BoxingStatsResponse(BaseModel):
+    total_sessions: int = 0
+    total_duration_seconds: int = 0
+    total_hours: float = 0.0
+    avg_duration_seconds: Optional[float] = None
+    avg_kcal_per_min: Optional[float] = None
+    total_kcal_estimated: float = 0.0
+    monthly_breakdown: list[MonthlyBoxingStats] = []
+
+
 # ─── Apple Health import ───────────────────────────────────
 
 

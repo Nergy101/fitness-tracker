@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.models import BoxingEntry, WorkoutSession, SessionExercise
-from app.schemas import BoxingEntryCreate, BoxingEntryResponse
+from app.schemas import BoxingEntryCreate, BoxingEntryResponse, BoxingStatsResponse, MonthlyBoxingStats
 
 router = APIRouter(prefix="/api/v1/boxing", tags=["boxing"])
 
@@ -135,3 +135,38 @@ def delete_boxing(entry_id: int, db: Session = Depends(get_db)):
     _delete_workout_session(entry, db)
     db.delete(entry)
     db.commit()
+
+
+@router.get("/stats", response_model=BoxingStatsResponse)
+def boxing_stats(db: Session = Depends(get_db)):
+    entries = db.query(BoxingEntry).order_by(BoxingEntry.date.asc()).all()
+    if not entries:
+        return BoxingStatsResponse()
+
+    total_sessions = len(entries)
+    total_duration = sum(e.duration_seconds for e in entries)
+    total_hours = round(total_duration / 3600, 1)
+    avg_duration = round(total_duration / total_sessions, 1) if total_sessions > 0 else None
+    avg_kcal = round(sum(e.kcal_per_min for e in entries) / total_sessions, 1) if total_sessions > 0 else None
+    total_kcal = round(sum((e.duration_seconds / 60) * e.kcal_per_min for e in entries), 1)
+
+    # Monthly breakdown
+    monthly: dict[str, MonthlyBoxingStats] = {}
+    for e in entries:
+        key = e.date.strftime("%Y-%m")
+        if key not in monthly:
+            monthly[key] = MonthlyBoxingStats(month=key, sessions=0, total_minutes=0)
+        monthly[key].sessions += 1
+        monthly[key].total_minutes += e.duration_seconds // 60
+
+    monthly_list = sorted(monthly.values(), key=lambda m: m.month, reverse=True)[:12]
+
+    return BoxingStatsResponse(
+        total_sessions=total_sessions,
+        total_duration_seconds=total_duration,
+        total_hours=total_hours,
+        avg_duration_seconds=avg_duration,
+        avg_kcal_per_min=avg_kcal,
+        total_kcal_estimated=total_kcal,
+        monthly_breakdown=monthly_list,
+    )
