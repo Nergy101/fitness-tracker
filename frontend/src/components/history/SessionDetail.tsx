@@ -101,6 +101,13 @@ export default function SessionDetail({
           />
         </p>
 
+        {session.notes && (
+          <div className="bg-surface rounded-lg p-3 mb-4">
+            <p className="text-[10px] text-fg/40 mb-1 font-medium">Notes</p>
+            <p className="text-sm text-fg whitespace-pre-wrap">{session.notes}</p>
+          </div>
+        )}
+
         <div className="space-y-1.5 mb-4">
           {session.exercises.map((ex, i) => (
             <div

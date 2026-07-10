@@ -157,6 +157,7 @@ class WorkoutSessionCreate(BaseModel):
     exercises: list[SessionExerciseCreate] = []
     total_duration_seconds: int = 0
     total_kcal_estimated: float = 0.0
+    notes: str = ""
     # Optional — set by history import to preserve original timing; the runner
     # omits them and the server stamps "now".
     started_at: Optional[datetime] = None
@@ -177,6 +178,7 @@ class WorkoutSessionResponse(BaseModel):
     finished_at: Optional[datetime] = None
     total_duration_seconds: int
     total_kcal_estimated: float
+    notes: str
     exercises: list[SessionExerciseResponse] = []
 
     model_config = {"from_attributes": True}

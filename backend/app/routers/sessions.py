@@ -48,6 +48,7 @@ def _build_session_response(session: WorkoutSession) -> WorkoutSessionResponse:
         finished_at=session.finished_at,
         total_duration_seconds=session.total_duration_seconds,
         total_kcal_estimated=session.total_kcal_estimated,
+        notes=session.notes or "",
         exercises=ex_responses,
     )
 
@@ -81,6 +82,7 @@ def create_session(data: WorkoutSessionCreate, db: Session = Depends(get_db)):
         finished_at=data.finished_at,
         total_duration_seconds=data.total_duration_seconds,
         total_kcal_estimated=data.total_kcal_estimated,
+        notes=data.notes,
     )
     db.add(session)
     db.flush()

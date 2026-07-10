@@ -114,6 +114,7 @@ export interface WorkoutSession {
   finished_at: string | null;
   total_duration_seconds: number;
   total_kcal_estimated: number;
+  notes: string;
   exercises: SessionExercise[];
 }
 
@@ -132,6 +133,7 @@ export interface WorkoutSessionInput {
   total_duration_seconds: number;
   total_kcal_estimated: number;
   exercises: SessionExerciseInput[];
+  notes?: string;
   started_at?: string | null;
   finished_at?: string | null;
 }

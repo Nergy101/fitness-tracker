@@ -90,6 +90,7 @@ export default function WorkoutRunner({
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   });
+  const [sessionNotes, setSessionNotes] = useState("");
 
   // Breathing cycle for cooldown: 4s inhale, 4s exhale
   const [breathPhase, setBreathPhase] = useState<"inhale" | "exhale">("inhale");
@@ -412,6 +413,7 @@ export default function WorkoutRunner({
           template_name: workout.name || "",
           total_duration_seconds: totalDuration,
           total_kcal_estimated: totalKcal,
+          notes: sessionNotes,
           started_at: localISO(sessionDate),
           exercises: exercises.map((e, i) => ({
             exercise_id: e.exercise?.id ?? e.exercise_id,
@@ -926,6 +928,18 @@ export default function WorkoutRunner({
               value={sessionDate}
               onChange={(e) => setSessionDate(e.target.value)}
               className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm text-fg outline-none focus:border-accent/50"
+            />
+          </div>
+
+          <div className="mb-5 w-full max-w-xs">
+            <label className="text-xs text-fg/40 block mb-1.5">How did it feel? (optional)</label>
+            <textarea
+              value={sessionNotes}
+              onChange={(e) => setSessionNotes(e.target.value)}
+              placeholder="Any notes about this workout..."
+              rows={3}
+              className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm text-fg outline-none focus:border-accent/50 resize-none placeholder:text-fg/20"
+              aria-label="Session notes"
             />
           </div>
 

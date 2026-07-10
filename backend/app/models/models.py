@@ -64,6 +64,7 @@ class WorkoutSession(Base):
     finished_at = Column(DateTime, nullable=True)
     total_duration_seconds = Column(Integer, default=0)
     total_kcal_estimated = Column(Float, default=0.0)
+    notes = Column(Text, default="")
 
     exercises = relationship("SessionExercise", back_populates="session", cascade="all, delete-orphan", order_by="SessionExercise.order_index")
 
