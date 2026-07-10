@@ -56,6 +56,11 @@ export default function WorkoutCard({
             onClick={() => onStart(template)}
           >
             <h3 className="font-semibold text-base">{template.name}</h3>
+            {template.mode && template.mode !== "circuit" && (
+              <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent/15 text-accent ml-2 align-middle">
+                {template.mode}
+              </span>
+            )}
             {template.description && (
               <p className="text-fg/50 text-sm mt-1">{template.description}</p>
             )}

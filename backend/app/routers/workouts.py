@@ -19,10 +19,23 @@ class PinToggle(BaseModel):
 
 
 def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateResponse:
-    per_round = sum(te.duration_seconds for te in template.exercises)
-    work_duration = per_round * template.rounds
-    rest_between = template.rest_between_rounds if template.rest_between_rounds else 0
-    rest_duration = max(0, template.rounds - 1) * rest_between
+    if template.mode == "tabata":
+        # Tabata uses fixed 20s work / 10s rest intervals per round,
+        # regardless of individual exercise durations.
+        work_duration = template.rounds * 20
+        rest_duration = max(0, template.rounds - 1) * 10
+        total_duration = work_duration + rest_duration
+    else:
+        per_round = sum(te.duration_seconds for te in template.exercises)
+        work_duration = per_round * template.rounds
+        rest_between = template.rest_between_rounds if template.rest_between_rounds else 0
+        rest_duration = max(0, template.rounds - 1) * rest_between
+        total_duration = (
+            work_duration
+            + rest_duration
+            + (template.warmup_seconds or 0)
+            + (template.cooldown_seconds or 0)
+        )
     ex_responses = []
     for te in template.exercises:
         ex_responses.append(WorkoutTemplateExerciseResponse(
@@ -51,7 +64,7 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
         exercises=ex_responses,
         work_duration_seconds=work_duration,
         rest_duration_seconds=rest_duration,
-        total_duration_seconds=work_duration + rest_duration + (template.warmup_seconds or 0) + (template.cooldown_seconds or 0),
+        total_duration_seconds=total_duration,
     )
 
 

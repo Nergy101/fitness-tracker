@@ -85,23 +85,30 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
 
   async function logWorkout(tpl: WorkoutTemplate) {
     const rounds = Math.max(1, tpl.rounds || 1);
-    const workDuration =
-      tpl.exercises.reduce((sum, e) => sum + (e.duration_seconds || 30), 0) *
-      rounds;
-    const restDuration =
-      Math.max(0, rounds - 1) * (tpl.rest_between_rounds || 0);
-    const warmupDuration = tpl.warmup_seconds || 0;
-    const cooldownDuration = tpl.cooldown_seconds || 0;
-    const totalKcal =
-      tpl.exercises.reduce(
-        (sum, e) =>
-          sum +
-          kcalFor(
-            e.duration_seconds || 30,
-            e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
-          ),
-        0,
-      ) * rounds;
+    const isTabata = tpl.mode === "tabata";
+    const workDuration = isTabata
+      ? rounds * 20
+      : tpl.exercises.reduce((sum, e) => sum + (e.duration_seconds || 30), 0) *
+        rounds;
+    const restDuration = isTabata
+      ? Math.max(0, rounds - 1) * 10
+      : Math.max(0, rounds - 1) * (tpl.rest_between_rounds || 0);
+    const warmupDuration = isTabata ? 0 : (tpl.warmup_seconds || 0);
+    const cooldownDuration = isTabata ? 0 : (tpl.cooldown_seconds || 0);
+    const totalKcal = isTabata
+      ? Array.from({ length: rounds }, (_, r) => {
+          const ex = tpl.exercises.length > 0 ? tpl.exercises[r % tpl.exercises.length] : null;
+          return kcalFor(20, ex?.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN);
+        }).reduce((a, b) => a + b, 0)
+      : tpl.exercises.reduce(
+          (sum, e) =>
+            sum +
+            kcalFor(
+              e.duration_seconds || 30,
+              e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
+            ),
+          0,
+        ) * rounds;
 
     try {
       await api.createSession({
@@ -112,11 +119,13 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         exercises: tpl.exercises.map((e, i) => ({
           exercise_id: e.exercise?.id ?? e.exercise_id,
           exercise_name: e.exercise?.name || "",
-          duration_seconds: e.duration_seconds || 30,
-          kcal_burned: kcalFor(
-            e.duration_seconds || 30,
-            e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
-          ),
+          duration_seconds: isTabata ? 20 : (e.duration_seconds || 30),
+          kcal_burned: isTabata
+            ? kcalFor(20, e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN)
+            : kcalFor(
+                e.duration_seconds || 30,
+                e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
+              ),
           order_index: i,
           completed: true,
         })),
