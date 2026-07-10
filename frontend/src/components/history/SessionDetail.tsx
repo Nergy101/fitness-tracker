@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { api, type WorkoutSession } from "../../api";
 import { formatDateRelative, formatDuration, localISO } from "../../format";
 
-/** Modal showing a session's stats, per-exercise breakdown, and date editing. */
+/** Modal showing a session's stats, per-exercise breakdown, date editing, and inline notes. */
 export default function SessionDetail({
   session,
   onClose,
@@ -11,6 +12,8 @@ export default function SessionDetail({
   onClose: () => void;
   onUpdate: (updated: WorkoutSession) => void;
 }) {
+  const [notes, setNotes] = useState(session.notes || "");
+
   function toLocalDatetimeLocal(iso: string) {
     const d = new Date(iso);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -24,6 +27,18 @@ export default function SessionDetail({
       onUpdate(updated);
     } catch (err) {
       console.error("Failed to update session date", err);
+    }
+  }
+
+  async function saveNotes() {
+    const trimmed = notes.trim();
+    if (trimmed === (session.notes || "")) return;
+    try {
+      const updated = await api.updateSession(session.id, { notes: trimmed });
+      onUpdate(updated);
+      setNotes(trimmed);
+    } catch (err) {
+      console.error("Failed to save notes", err);
     }
   }
 
@@ -52,6 +67,8 @@ export default function SessionDetail({
       console.error("Failed to toggle run type", err);
     }
   }
+
+  const notesDirty = notes.trim() !== (session.notes || "");
 
   return (
     <div
@@ -101,12 +118,28 @@ export default function SessionDetail({
           />
         </p>
 
-        {session.notes && (
-          <div className="bg-surface rounded-lg p-3 mb-4">
-            <p className="text-[10px] text-fg/40 mb-1 font-medium">Notes</p>
-            <p className="text-sm text-fg whitespace-pre-wrap">{session.notes}</p>
+        <div className="bg-surface rounded-lg p-3 mb-4">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[10px] text-fg/40 font-medium">Notes</p>
+            {notesDirty && (
+              <button
+                onClick={saveNotes}
+                className="text-[10px] text-accent font-medium hover:underline"
+              >
+                Save
+              </button>
+            )}
           </div>
-        )}
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            onBlur={saveNotes}
+            placeholder="Add notes..."
+            aria-label="Session notes"
+            rows={3}
+            className="w-full bg-transparent text-sm text-fg placeholder:text-fg/25 outline-none resize-none"
+          />
+        </div>
 
         <div className="space-y-1.5 mb-4">
           {session.exercises.map((ex, i) => (

@@ -577,7 +577,7 @@ export const api = {
     }),
   deleteSession: (id: number) =>
     fetchJSON<void>(`/api/v1/sessions/${id}`, { method: "DELETE" }),
-  updateSession: (id: number, data: { started_at: string }) =>
+  updateSession: (id: number, data: { started_at?: string; notes?: string }) =>
     fetchJSON<WorkoutSession>(`/api/v1/sessions/${id}`, {
       method: "PATCH",
       body: JSON.stringify(data),

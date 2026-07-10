@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 class SessionPatch(BaseModel):
     started_at: Optional[datetime] = None
+    notes: Optional[str] = None
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 
@@ -137,6 +138,8 @@ def patch_session(session_id: int, data: SessionPatch, db: Session = Depends(get
         raise HTTPException(status_code=404, detail="Session not found")
     if data.started_at is not None:
         session.started_at = data.started_at
+    if data.notes is not None:
+        session.notes = data.notes
     db.commit()
     db.refresh(session)
     return _build_session_response(session)
