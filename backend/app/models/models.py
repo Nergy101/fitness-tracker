@@ -74,7 +74,7 @@ def is_run_mirror(session: "WorkoutSession") -> bool:
     run/walk in the History tab ("Run: 5.0km" / "Walk: 3.2km"). Such sessions
     duplicate a RunEntry's time/kcal, so activity aggregates must count one
     side only."""
-    return session.template_id is None and (session.template_name or "").startswith(("Run:", "Walk:"))
+    return session.template_id is None and (session.template_name or "").startswith(("Run:", "Walk:", "Boxing:"))
 
 
 class SessionExercise(Base):
