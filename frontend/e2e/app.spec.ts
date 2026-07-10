@@ -59,6 +59,8 @@ async function resetData(request: APIRequestContext, headers: Record<string, str
   }
   // Runs first: deleting a run also removes its auto-created session.
   for (const r of await list("/api/v1/runs")) await del(`/api/v1/runs/${r.id}`);
+  // Boxing entries: delete before sessions (deleting a boxing entry cascades to its mirror session).
+  for (const b of await list("/api/v1/boxing")) await del(`/api/v1/boxing/${b.id}`);
   for (const s of await list("/api/v1/sessions")) await del(`/api/v1/sessions/${s.id}`);
   for (const w of await list("/api/v1/health/weight")) await del(`/api/v1/health/weight/${w.id}`);
   for (const m of await list("/api/v1/health/measurements")) await del(`/api/v1/health/measurements/${m.id}`);
@@ -751,6 +753,68 @@ test.describe("authenticated", () => {
     // Verify it appears in the History tab
     await page.getByRole("button", { name: "History" }).click();
     await expect(page.getByText("E2E Log Test").first()).toBeVisible();
+  });
+
+  test("run notes update persists in SessionDetail after closing and reopening", async ({ page, request }) => {
+    // Log a run via UI with notes
+    await page.goto("/");
+    await page.getByText("Log a Run").click();
+    await page.locator('input[placeholder="e.g. 5.0"]').fill("5.2");
+    await page.getByRole("button", { name: "1h" }).click();
+    await page.locator('input[placeholder="How did it feel?"]').fill("test-run-notes");
+    await page.getByRole("button", { name: "Save Run" }).click();
+    await expect(page.getByRole("status")).toContainText("Run logged");
+
+    // Navigate to History and open the session detail
+    await page.getByRole("button", { name: "History" }).click();
+    await expect(page.getByText("Run: 5.2km").first()).toBeVisible();
+    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "Run: 5.2km" }).first().click();
+
+    // Edit notes
+    const notesArea = page.locator('textarea[aria-label="Session notes"]');
+    await expect(notesArea).toBeVisible();
+    await notesArea.fill("updated-run-notes");
+    await notesArea.blur();
+
+    // Close the modal
+    await page.locator("button").filter({ hasText: "×" }).click();
+    await expect(page.locator('textarea[aria-label="Session notes"]')).toHaveCount(0);
+
+    // Reopen and verify notes persisted
+    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "Run: 5.2km" }).first().click();
+    await expect(page.locator('textarea[aria-label="Session notes"]')).toHaveValue("updated-run-notes");
+  });
+
+  test("boxing mirror session reflects notes on create and duration on update", async ({ page, request }) => {
+    // Log a boxing session via UI
+    await page.goto("/");
+    await page.getByText("Log Boxing").click();
+    await page.getByRole("button", { name: "30m" }).click();
+    await page.getByText("Notes (optional)").locator("..").locator("input").fill("boxing-e2e-notes");
+    await page.getByRole("button", { name: "Save Boxing Workout" }).click();
+    await expect(page.getByRole("status")).toContainText("Boxing workout logged!");
+
+    // Verify via API: mirror session has notes
+    const sessions = await (await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })).json();
+    const mirror = sessions.find((s: { template_name: string }) => s.template_name.includes("Boxing:"));
+    expect(mirror).toBeTruthy();
+    expect(mirror.total_duration_seconds).toBe(1800);
+    expect(mirror.notes).toBe("boxing-e2e-notes");
+
+    // Update boxing entry via API to change duration
+    const boxingEntries = await (await request.get(`${API_URL}/api/v1/boxing`, { headers: _authHeaders })).json();
+    const entry = boxingEntries.find((b: { notes: string }) => b.notes === "boxing-e2e-notes");
+    expect(entry).toBeTruthy();
+    await request.put(`${API_URL}/api/v1/boxing/${entry.id}`, {
+      data: { duration_seconds: 2700, kcal_per_min: 10, notes: "boxing-e2e-notes" },
+      headers: _authHeaders,
+    });
+
+    // Verify mirror session now has updated duration
+    const sessionsAfter = await (await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })).json();
+    const mirrorAfter = sessionsAfter.find((s: { template_name: string }) => s.template_name.includes("Boxing: 45min"));
+    expect(mirrorAfter).toBeTruthy();
+    expect(mirrorAfter.total_duration_seconds).toBe(2700);
   });
 
   test("session notes edit persists after closing and reopening detail", async ({ page, request }) => {
