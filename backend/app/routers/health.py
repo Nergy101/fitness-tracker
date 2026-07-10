@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import (
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin, WorkoutSession,
-    RunEntry, is_run_mirror,
+    RunEntry, is_mirror_session,
 )
 from app.schemas import (
     UserProfileResponse, UserProfileUpdate,
@@ -94,7 +94,7 @@ def personal_records(db: Session = Depends(get_db)):
     # session the runs router creates, workout kcal on real sessions.
     workouts = []
     for s in sessions:
-        if not is_run_mirror(s):
+        if not is_mirror_session(s):
             workouts.append(s)
             continue
         kcal = s.total_kcal_estimated or 0.0

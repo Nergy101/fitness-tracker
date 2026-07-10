@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import WorkoutSession, RunEntry, WeightEntry, is_run_mirror
+from app.models.models import WorkoutSession, RunEntry, WeightEntry, is_mirror_session
 from app.schemas import (
     DailyActivityPoint, DailyActivityResponse, StatsOverviewResponse, WeeklyActivityStats,
 )
@@ -32,7 +32,7 @@ def stats_overview(db: Session = Depends(get_db)):
     # session covers workouts and runs alike.
     total_kcal = sum(s.total_kcal_estimated for s in sessions)
 
-    workouts = [s for s in sessions if not is_run_mirror(s)]
+    workouts = [s for s in sessions if not is_mirror_session(s)]
 
     # Weekly activity, split by type (last 12 weeks with any activity).
     # Kcal for runs/walks lives on their mirror sessions; workout kcal on
@@ -46,7 +46,7 @@ def stats_overview(db: Session = Depends(get_db)):
     )
     for s in sessions:
         wk = _monday_of(_session_date(s)).isoformat()
-        if is_run_mirror(s):
+        if is_mirror_session(s):
             kind = "walk" if (s.template_name or "").startswith("Walk:") else "run"
             weekly[wk][f"{kind}_kcal"] += s.total_kcal_estimated or 0.0
         else:
@@ -83,7 +83,7 @@ def stats_overview(db: Session = Depends(get_db)):
         d = _session_date(s)
         if d < thirty_days_ago:
             continue
-        if is_run_mirror(s):
+        if is_mirror_session(s):
             # Walk mirror sessions don't count toward the 3/week target.
             if not (s.template_name or "").startswith("Walk:"):
                 workout_run_days.add(d)

@@ -69,10 +69,10 @@ class WorkoutSession(Base):
     exercises = relationship("SessionExercise", back_populates="session", cascade="all, delete-orphan", order_by="SessionExercise.order_index")
 
 
-def is_run_mirror(session: "WorkoutSession") -> bool:
-    """Whether a session was auto-created by the runs router to surface a
-    run/walk in the History tab ("Run: 5.0km" / "Walk: 3.2km"). Such sessions
-    duplicate a RunEntry's time/kcal, so activity aggregates must count one
+def is_mirror_session(session: "WorkoutSession") -> bool:
+    """Whether a session was auto-created to surface a standalone activity
+    (Run, Walk, Boxing) in the History tab. Such sessions duplicate the
+    dedicated entry's time/kcal, so activity aggregates must count one
     side only."""
     return session.template_id is None and (session.template_name or "").startswith(("Run:", "Walk:", "Boxing:"))
 

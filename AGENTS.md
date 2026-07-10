@@ -78,8 +78,8 @@ style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
 ### Run/walk mirror pattern
 
 Runs/walks create a mirror `WorkoutSession` with `"Run: X.Xkm"` / `"Walk: X.Xkm"` template_name.
-The `is_run_mirror()` helper excludes these from workout stats so runs/walks aren't double-counted.
-If adding a new activity type that mirrors into sessions, update `is_run_mirror()` accordingly.
+The `is_mirror_session()` helper excludes these from workout stats so runs/walks aren't double-counted.
+If adding a new activity type that mirrors into sessions, update `is_mirror_session()` accordingly.
 
 ### total_duration_seconds — keep in sync across 3 locations
 
