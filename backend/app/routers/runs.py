@@ -33,6 +33,7 @@ def _create_workout_session(run: RunEntry, db: Session) -> None:
     session = WorkoutSession(
         template_id=None,
         template_name=f"{'Walk' if run.run_type == 'walk' else 'Run'}: {run.distance_km:.1f}km",
+        run_entry_id=run.id,
         started_at=datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc),
         finished_at=datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(seconds=run.duration_seconds),
         total_duration_seconds=run.duration_seconds,
@@ -57,16 +58,8 @@ def _create_workout_session(run: RunEntry, db: Session) -> None:
 
 def _delete_workout_session(run: RunEntry, db: Session) -> None:
     """Remove the associated WorkoutSession when a run is deleted."""
-    date_start = datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc)
-    date_end = date_start + timedelta(days=1)
-    # Search for both "Run:" and "Walk:" prefixed sessions
-    search_prefixes = ["Run:", "Walk:"]
     sessions = db.query(WorkoutSession).filter(
-        WorkoutSession.template_name.in_([
-            f"{p} {run.distance_km:.1f}km" for p in search_prefixes
-        ]),
-        WorkoutSession.started_at >= date_start,
-        WorkoutSession.started_at < date_end,
+        WorkoutSession.run_entry_id == run.id,
     ).all()
     for s in sessions:
         db.delete(s)
@@ -116,19 +109,9 @@ def update_run(run_id: int, data: RunEntryCreate, db: Session = Depends(get_db))
 
     # Always sync the associated WorkoutSession mirror
     prefix = "Walk:" if run.run_type == "walk" else "Run:"
-    date_start = datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc)
-    date_end = date_start + timedelta(days=1)
     sessions = db.query(WorkoutSession).filter(
-        WorkoutSession.template_name.ilike(f"Run: {run.distance_km:.1f}km"),
-        WorkoutSession.started_at >= date_start,
-        WorkoutSession.started_at < date_end,
+        WorkoutSession.run_entry_id == run.id,
     ).all()
-    if not sessions:
-        sessions = db.query(WorkoutSession).filter(
-            WorkoutSession.template_name.ilike(f"Walk: {run.distance_km:.1f}km"),
-            WorkoutSession.started_at >= date_start,
-            WorkoutSession.started_at < date_end,
-        ).all()
     kcal = _calc_run_kcal(run.distance_km, run.run_type, db)
     for s in sessions:
         s.template_name = f"{prefix} {run.distance_km:.1f}km"

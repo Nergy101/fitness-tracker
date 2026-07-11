@@ -60,6 +60,8 @@ class WorkoutSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     template_id = Column(Integer, ForeignKey("workout_templates.id"), nullable=True)
     template_name = Column(String(255), default="")  # snapshot in case template is deleted
+    run_entry_id = Column(Integer, ForeignKey("run_entries.id"), nullable=True)
+    boxing_entry_id = Column(Integer, ForeignKey("boxing_entries.id"), nullable=True)
     started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     finished_at = Column(DateTime, nullable=True)
     total_duration_seconds = Column(Integer, default=0)

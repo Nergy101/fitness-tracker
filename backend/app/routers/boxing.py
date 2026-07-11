@@ -26,6 +26,7 @@ def _create_workout_session(entry: BoxingEntry, db: Session) -> None:
     session = WorkoutSession(
         template_id=None,
         template_name=f"Boxing: {mins}min",
+        boxing_entry_id=entry.id,
         started_at=datetime.combine(entry.date, datetime.min.time(), tzinfo=timezone.utc),
         finished_at=datetime.combine(entry.date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(seconds=entry.duration_seconds),
         total_duration_seconds=entry.duration_seconds,
@@ -50,13 +51,8 @@ def _create_workout_session(entry: BoxingEntry, db: Session) -> None:
 
 def _delete_workout_session(entry: BoxingEntry, db: Session) -> None:
     """Remove the associated WorkoutSession when a boxing entry is deleted."""
-    date_start = datetime.combine(entry.date, datetime.min.time(), tzinfo=timezone.utc)
-    date_end = date_start + timedelta(days=1)
-    mins = entry.duration_seconds // 60
     sessions = db.query(WorkoutSession).filter(
-        WorkoutSession.template_name.ilike(f"Boxing: {mins}min"),
-        WorkoutSession.started_at >= date_start,
-        WorkoutSession.started_at < date_end,
+        WorkoutSession.boxing_entry_id == entry.id,
     ).all()
     for s in sessions:
         db.delete(s)
@@ -91,7 +87,6 @@ def update_boxing(entry_id: int, data: BoxingEntryCreate, db: Session = Depends(
     if not entry:
         raise HTTPException(status_code=404, detail="Boxing entry not found")
 
-    old_mins = entry.duration_seconds // 60
     entry.duration_seconds = data.duration_seconds
     entry.kcal_per_min = data.kcal_per_min
     if data.date:
@@ -102,20 +97,9 @@ def update_boxing(entry_id: int, data: BoxingEntryCreate, db: Session = Depends(
     # Update the associated WorkoutSession
     mins = entry.duration_seconds // 60
     kcal = _calc_boxing_kcal(entry.duration_seconds, entry.kcal_per_min)
-    date_start = datetime.combine(entry.date, datetime.min.time(), tzinfo=timezone.utc)
-    date_end = date_start + timedelta(days=1)
-    # First search for the old session name
     sessions = db.query(WorkoutSession).filter(
-        WorkoutSession.template_name.ilike(f"Boxing: {old_mins}min"),
-        WorkoutSession.started_at >= date_start,
-        WorkoutSession.started_at < date_end,
+        WorkoutSession.boxing_entry_id == entry.id,
     ).all()
-    if not sessions and old_mins != mins:
-        sessions = db.query(WorkoutSession).filter(
-            WorkoutSession.template_name.ilike(f"Boxing: {mins}min"),
-            WorkoutSession.started_at >= date_start,
-            WorkoutSession.started_at < date_end,
-        ).all()
     for s in sessions:
         s.template_name = f"Boxing: {mins}min"
         s.total_duration_seconds = entry.duration_seconds
