@@ -779,7 +779,7 @@ export default function HealthAndStatsTab() {
           {bmi?.bmi ? (
             <>
               <p className="text-xs text-fg/40 mb-1 flex items-center gap-1.5">
-                <Ruler size={14} className="text-accent shrink-0" />
+                <Ruler size={14} className={`${bmiColor(bmi.category)} shrink-0`} />
                 BMI</p>
               <p className={`text-2xl font-bold ${bmiColor(bmi.category)}`}>{bmi.bmi}</p>
               <p className={`text-xs mt-0.5 ${bmiColor(bmi.category)}`}>{bmi.category}</p>
