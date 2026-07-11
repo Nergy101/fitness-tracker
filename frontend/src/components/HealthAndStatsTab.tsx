@@ -276,15 +276,16 @@ function LineChart({
 // ─── Activity Mix ──────────────────────────────────────────
 
 function ActivityMixBar({ weeks }: { weeks: WeeklyActivityStat[] }) {
-  const minutes: Record<ActivityKind, number> = { workout: 0, run: 0, walk: 0 };
+  const minutes: Record<ActivityKind, number> = { workout: 0, run: 0, walk: 0, boxing: 0 };
   for (const w of weeks) {
     minutes.workout += w.workout_minutes;
     minutes.run += w.run_minutes;
     minutes.walk += w.walk_minutes;
+    minutes.boxing += w.boxing_minutes;
   }
-  const total = minutes.workout + minutes.run + minutes.walk;
+  const total = minutes.workout + minutes.run + minutes.walk + minutes.boxing;
   if (total <= 0) return null;
-  const kinds = (["workout", "run", "walk"] as const).filter((k) => minutes[k] > 0);
+  const kinds = (["workout", "run", "walk", "boxing"] as const).filter((k) => minutes[k] > 0);
 
   return (
     <div>
@@ -469,11 +470,13 @@ type ChartDatum = {
   workout_minutes: number;
   run_minutes: number;
   walk_minutes: number;
+  boxing_minutes: number;
   run_km: number;
   walk_km: number;
   workout_kcal: number;
   run_kcal: number;
   walk_kcal: number;
+  boxing_kcal: number;
 };
 
 // ─── Daily Activity Types & Helpers ─────────────────────────
@@ -484,11 +487,13 @@ interface DailyActivityStat {
   workout_minutes: number;
   run_minutes: number;
   walk_minutes: number;
+  boxing_minutes: number;
   run_km: number;
   walk_km: number;
   workout_kcal: number;
   run_kcal: number;
   walk_kcal: number;
+  boxing_kcal: number;
 }
 
 /** Compute 7-day daily activity from sessions + runs (always fills all 7 days). */
@@ -506,9 +511,9 @@ function computeDailyActivity(
     days.push({
       date: key,
       label: DAYS[(d.getDay() + 6) % 7],
-      workout_minutes: 0, run_minutes: 0, walk_minutes: 0,
+      workout_minutes: 0, run_minutes: 0, walk_minutes: 0, boxing_minutes: 0,
       run_km: 0, walk_km: 0,
-      workout_kcal: 0, run_kcal: 0, walk_kcal: 0,
+      workout_kcal: 0, run_kcal: 0, walk_kcal: 0, boxing_kcal: 0,
     });
   }
   // Aggregate sessions
@@ -520,11 +525,12 @@ function computeDailyActivity(
     const mins = s.total_duration_seconds / 60;
     const kind = s.template_name.startsWith("Run") ? "run"
       : s.template_name.startsWith("Walk") ? "walk"
+      : s.template_name.startsWith("Boxing") ? "boxing"
       : "workout";
-    const minKey = `${kind}_minutes` as "workout_minutes" | "run_minutes" | "walk_minutes";
+    const minKey = `${kind}_minutes` as "workout_minutes" | "run_minutes" | "walk_minutes" | "boxing_minutes";
     entry[minKey] += mins;
     if (s.total_kcal_estimated) {
-      const kcalKey = `${kind}_kcal` as "workout_kcal" | "run_kcal" | "walk_kcal";
+      const kcalKey = `${kind}_kcal` as "workout_kcal" | "run_kcal" | "walk_kcal" | "boxing_kcal";
       entry[kcalKey] += s.total_kcal_estimated;
     }
   }
@@ -634,7 +640,7 @@ export default function HealthAndStatsTab() {
   const daily = computeDailyActivity(sessions, runs);
   const chartData = chartMode === "daily" ? daily : weeks;
   const hasDistance = chartData.some((d: ChartDatum) => (d.run_km || 0) + (d.walk_km || 0) > 0);
-  const hasKcal = chartData.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) > 0);
+  const hasKcal = chartData.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) + (d.boxing_kcal || 0) > 0);
   const mixWeeks = weeks.slice(-4);
 
   // Pace trend
@@ -678,7 +684,7 @@ export default function HealthAndStatsTab() {
 
   {
     const strength = mixWeeks.reduce((s, w) => s + w.workout_minutes, 0);
-    const cardio = mixWeeks.reduce((s, w) => s + w.run_minutes + w.walk_minutes, 0);
+    const cardio = mixWeeks.reduce((s, w) => s + w.run_minutes + w.walk_minutes + w.boxing_minutes, 0);
     const total = strength + cardio;
     if (total > 0) {
       const cardioShare = cardio / total;
@@ -690,7 +696,7 @@ export default function HealthAndStatsTab() {
     }
   }
 
-  if (stats.total_sessions_all === 0 && stats.total_runs === 0 && stats.total_walks === 0) {
+  if (stats.total_sessions_all === 0 && stats.total_runs === 0 && stats.total_walks === 0 && stats.total_boxing === 0) {
     insightLines.push({ icon: RocketLaunch, text: "Complete your first workout to see stats!" });
   }
 
@@ -848,7 +854,7 @@ export default function HealthAndStatsTab() {
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <StatCard
           icon={<Barbell size={14} style={{ color: ACTIVITY_COLORS.workout }} />}
           label="Total workouts"
@@ -863,6 +869,11 @@ export default function HealthAndStatsTab() {
           icon={<Sneaker size={14} style={{ color: ACTIVITY_COLORS.walk }} />}
           label="Total walks"
           value={String(stats.total_walks)}
+        />
+        <StatCard
+          icon={<HandFist size={14} style={{ color: ACTIVITY_COLORS.boxing }} />}
+          label="Total boxing"
+          value={String(stats.total_boxing)}
         />
       </div>
 
@@ -960,11 +971,12 @@ export default function HealthAndStatsTab() {
               { color: ACTIVITY_COLORS.workout, value: (d: ChartDatum) => d.workout_minutes },
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_minutes },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_minutes },
+              { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_minutes },
             ]}
             label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
           />
-          <ActivityLegend kinds={["workout", "run", "walk"]} />
+          <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
           {chartMode === "weekly" && stats.current_month_vs_previous_pct != null && (
             <div className="flex justify-between mt-2 text-[10px] text-fg/40">
               <span>This month: {formatHours(stats.current_month_minutes)}</span>
@@ -989,11 +1001,12 @@ export default function HealthAndStatsTab() {
               { color: ACTIVITY_COLORS.workout, value: (d: ChartDatum) => d.workout_kcal },
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_kcal },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_kcal },
+              { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_kcal },
             ]}
             label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
           />
-          <ActivityLegend kinds={["workout", "run", "walk"]} />
+          <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
         </ChartCard>
       )}
 

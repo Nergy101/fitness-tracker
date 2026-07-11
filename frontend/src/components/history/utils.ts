@@ -39,7 +39,7 @@ export function countsByDay(sessions: WorkoutSession[]): Map<string, DayCounts> 
   const m = new Map<string, DayCounts>();
   for (const s of sessions) {
     const k = dayKey(new Date(s.started_at));
-    const c = m.get(k) ?? { workout: 0, run: 0, walk: 0 };
+    const c = m.get(k) ?? { workout: 0, run: 0, walk: 0, boxing: 0 };
     c[activityKind(s.template_name)]++;
     m.set(k, c);
   }

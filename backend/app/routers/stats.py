@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import WorkoutSession, RunEntry, WeightEntry, is_mirror_session
+from app.models.models import WorkoutSession, RunEntry, BoxingEntry, WeightEntry, is_mirror_session
 from app.schemas import (
     DailyActivityPoint, DailyActivityResponse, StatsOverviewResponse, WeeklyActivityStats,
 )
@@ -39,16 +39,22 @@ def stats_overview(db: Session = Depends(get_db)):
     # real sessions.
     weekly: dict[str, dict[str, float]] = defaultdict(
         lambda: {
-            "workout_min": 0.0, "run_min": 0.0, "walk_min": 0.0,
+            "workout_min": 0.0, "run_min": 0.0, "walk_min": 0.0, "boxing_min": 0.0,
             "run_km": 0.0, "walk_km": 0.0,
-            "workout_kcal": 0.0, "run_kcal": 0.0, "walk_kcal": 0.0,
+            "workout_kcal": 0.0, "run_kcal": 0.0, "walk_kcal": 0.0, "boxing_kcal": 0.0,
         }
     )
     for s in sessions:
         wk = _monday_of(_session_date(s)).isoformat()
         if is_mirror_session(s):
-            kind = "walk" if (s.template_name or "").startswith("Walk:") else "run"
-            weekly[wk][f"{kind}_kcal"] += s.total_kcal_estimated or 0.0
+            name = s.template_name or ""
+            if name.startswith("Boxing:"):
+                weekly[wk]["boxing_min"] += (s.total_duration_seconds or 0) / 60
+                weekly[wk]["boxing_kcal"] += s.total_kcal_estimated or 0.0
+            elif name.startswith("Walk:"):
+                weekly[wk]["walk_kcal"] += s.total_kcal_estimated or 0.0
+            else:
+                weekly[wk]["run_kcal"] += s.total_kcal_estimated or 0.0
         else:
             weekly[wk]["workout_min"] += (s.total_duration_seconds or 0) / 60
             weekly[wk]["workout_kcal"] += s.total_kcal_estimated or 0.0
@@ -64,11 +70,13 @@ def stats_overview(db: Session = Depends(get_db)):
             workout_minutes=round(weekly[wk]["workout_min"], 1),
             run_minutes=round(weekly[wk]["run_min"], 1),
             walk_minutes=round(weekly[wk]["walk_min"], 1),
+            boxing_minutes=round(weekly[wk]["boxing_min"], 1),
             run_km=round(weekly[wk]["run_km"], 2),
             walk_km=round(weekly[wk]["walk_km"], 2),
             workout_kcal=round(weekly[wk]["workout_kcal"], 1),
             run_kcal=round(weekly[wk]["run_kcal"], 1),
             walk_kcal=round(weekly[wk]["walk_kcal"], 1),
+            boxing_kcal=round(weekly[wk]["boxing_kcal"], 1),
         )
         for wk in sorted(weekly.keys(), reverse=True)[:12]
     ]
@@ -159,6 +167,7 @@ def stats_overview(db: Session = Depends(get_db)):
         total_sessions_all=len(workouts),
         total_runs=sum(1 for r in runs if r.run_type != "walk"),
         total_walks=sum(1 for r in runs if r.run_type == "walk"),
+        total_boxing=db.query(BoxingEntry).count(),
         current_month_minutes=round(current_minutes, 1),
         previous_month_minutes=round(prev_minutes, 1),
         current_month_vs_previous_pct=vs_prev,

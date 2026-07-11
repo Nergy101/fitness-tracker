@@ -259,15 +259,16 @@ function LineChart({
 
 /** 100% split bar of time per activity type over the given weeks. */
 function ActivityMixBar({ weeks }: { weeks: WeeklyActivityStat[] }) {
-  const minutes: Record<ActivityKind, number> = { workout: 0, run: 0, walk: 0 };
+  const minutes: Record<ActivityKind, number> = { workout: 0, run: 0, walk: 0, boxing: 0 };
   for (const w of weeks) {
     minutes.workout += w.workout_minutes;
     minutes.run += w.run_minutes;
     minutes.walk += w.walk_minutes;
+    minutes.boxing += w.boxing_minutes;
   }
-  const total = minutes.workout + minutes.run + minutes.walk;
+  const total = minutes.workout + minutes.run + minutes.walk + minutes.boxing;
   if (total <= 0) return null;
-  const kinds = (["workout", "run", "walk"] as const).filter((k) => minutes[k] > 0);
+  const kinds = (["workout", "run", "walk", "boxing"] as const).filter((k) => minutes[k] > 0);
 
   return (
     <div>

@@ -20,7 +20,7 @@ export default function DayBars({
   const days = useMemo(() => {
     const byDay = countsByDay(sessions);
     const now = new Date();
-    const empty: DayCounts = { workout: 0, run: 0, walk: 0 };
+    const empty: DayCounts = { workout: 0, run: 0, walk: 0, boxing: 0 };
     const items: { key: string; counts: DayCounts; label: string; date: Date }[] = [];
     if (mode === "week") {
       const monday = new Date(now);
@@ -44,14 +44,14 @@ export default function DayBars({
     }
     return { items, todayKey: dayKey(now) };
   }, [sessions, mode]);
-  const max = Math.max(1, ...days.items.map((d) => d.counts.workout + d.counts.run + d.counts.walk));
+  const max = Math.max(1, ...days.items.map((d) => d.counts.workout + d.counts.run + d.counts.walk + d.counts.boxing));
 
   return (
     <div>
       <div className="flex items-end gap-1.5 h-44">
         {days.items.map((d) => {
           const today = d.key === days.todayKey;
-          const total = d.counts.workout + d.counts.run + d.counts.walk;
+          const total = d.counts.workout + d.counts.run + d.counts.walk + d.counts.boxing;
           return (
             <div key={d.key} className="flex-1 flex flex-col items-center gap-0.5">
               <span
@@ -66,7 +66,7 @@ export default function DayBars({
                   background: total > 0 ? undefined : "var(--track)",
                 }}
               >
-                {(["walk", "run", "workout"] as const).map((kind) =>
+                {(["boxing", "walk", "run", "workout"] as const).map((kind) =>
                   d.counts[kind] > 0 ? (
                     <div
                       key={kind}
@@ -92,7 +92,7 @@ export default function DayBars({
           );
         })}
       </div>
-      <ActivityLegend kinds={["workout", "run", "walk"]} />
+      <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
     </div>
   );
 }

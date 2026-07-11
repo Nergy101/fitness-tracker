@@ -309,11 +309,13 @@ export interface WeeklyActivityStat {
   workout_minutes: number;
   run_minutes: number;
   walk_minutes: number;
+  boxing_minutes: number;
   run_km: number;
   walk_km: number;
   workout_kcal: number;
   run_kcal: number;
   walk_kcal: number;
+  boxing_kcal: number;
 }
 
 export interface StatsOverviewResponse {
@@ -323,6 +325,7 @@ export interface StatsOverviewResponse {
   total_sessions_all: number;
   total_runs: number;
   total_walks: number;
+  total_boxing: number;
   current_month_minutes: number;
   previous_month_minutes: number;
   current_month_vs_previous_pct: number | null;

@@ -375,16 +375,18 @@ class PrsResponse(BaseModel):
 
 class WeeklyActivityStats(BaseModel):
     """One week of activity, split by type so charts can stack without
-    double-counting (run/walk mirror sessions are excluded from workouts)."""
+    double-counting (run/walk/boxing mirror sessions are excluded from workouts)."""
     week_start: str
     workout_minutes: float
     run_minutes: float
     walk_minutes: float
+    boxing_minutes: float = 0.0
     run_km: float
     walk_km: float
     workout_kcal: float
     run_kcal: float
     walk_kcal: float
+    boxing_kcal: float = 0.0
 
 
 class StatsOverviewResponse(BaseModel):
@@ -394,6 +396,7 @@ class StatsOverviewResponse(BaseModel):
     total_sessions_all: int = 0
     total_runs: int = 0
     total_walks: int = 0
+    total_boxing: int = 0
     current_month_minutes: float = 0.0
     previous_month_minutes: float = 0.0
     current_month_vs_previous_pct: float | None = None

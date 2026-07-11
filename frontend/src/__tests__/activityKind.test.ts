@@ -14,11 +14,18 @@ describe("activityKind", () => {
     expect(activityKind("Walk: Treadmill")).toBe("walk");
   });
 
+  it("classifies template names starting with 'Boxing:' as boxing", () => {
+    expect(activityKind("Boxing: 30min")).toBe("boxing");
+    expect(activityKind("Boxing: 45min")).toBe("boxing");
+    expect(activityKind("Boxing: Heavy Bag")).toBe("boxing");
+  });
+
   it("classifies all other template names as workout", () => {
     expect(activityKind("Full Body")).toBe("workout");
     expect(activityKind("Push-ups")).toBe("workout");
     expect(activityKind("Running")).toBe("workout"); // not prefixed with "Run:"
     expect(activityKind("Walking")).toBe("workout"); // not prefixed with "Walk:"
+    expect(activityKind("Boxing")).toBe("workout"); // not prefixed with "Boxing:"
     expect(activityKind("EMOM Cardio")).toBe("workout");
     expect(activityKind("")).toBe("workout"); // empty string
   });
@@ -26,6 +33,7 @@ describe("activityKind", () => {
   it("is case-sensitive — only exact prefixes match", () => {
     expect(activityKind("run: 5km")).toBe("workout"); // lowercase run colon
     expect(activityKind("walk: 2km")).toBe("workout"); // lowercase walk colon
+    expect(activityKind("boxing: 30min")).toBe("workout"); // lowercase boxing colon
     expect(activityKind("RUN: 5km")).toBe("workout"); // uppercase RUN colon
   });
 
