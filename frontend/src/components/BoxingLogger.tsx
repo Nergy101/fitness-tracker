@@ -28,6 +28,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
   const [duration, setDuration] = useState(1800);
   const [customDuration, setCustomDuration] = useState("");
   const [kcalPerMin, setKcalPerMin] = useState(DEFAULT_KCAL_PER_MIN);
+  const [rounds, setRounds] = useState<number | null>(null);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
       await api.createBoxing({
         duration_seconds: dur,
         kcal_per_min: kcalPerMin,
+        rounds: rounds || null,
         date,
         notes,
       });
@@ -47,6 +49,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
       setToast("Boxing workout logged!");
       setCustomDuration("");
       setDuration(1800);
+      setRounds(null);
       setNotes("");
       setShowForm(false);
       onWorkoutLogged();
@@ -156,6 +159,21 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-fg/50 mb-1">Rounds (optional)</p>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={rounds ?? ""}
+              onChange={(e) => setRounds(e.target.value ? parseInt(e.target.value) : null)}
+              placeholder="e.g. 10"
               className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
             />
           </div>

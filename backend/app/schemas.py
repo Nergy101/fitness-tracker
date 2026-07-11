@@ -423,6 +423,7 @@ class RunStatsResponse(BaseModel):
 class BoxingEntryCreate(BaseModel):
     duration_seconds: int
     kcal_per_min: float = 10.0
+    rounds: Optional[int] = None
     date: DateField = None
     notes: str = ""
 
@@ -431,6 +432,7 @@ class BoxingEntryResponse(BaseModel):
     id: int
     duration_seconds: int
     kcal_per_min: float
+    rounds: Optional[int] = None
     date: date
     notes: str
     created_at: datetime
@@ -450,6 +452,7 @@ class BoxingStatsResponse(BaseModel):
     total_hours: float = 0.0
     avg_duration_seconds: Optional[float] = None
     avg_kcal_per_min: Optional[float] = None
+    avg_rounds: Optional[float] = None
     total_kcal_estimated: float = 0.0
     monthly_breakdown: list[MonthlyBoxingStats] = []
 

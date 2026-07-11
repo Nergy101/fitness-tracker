@@ -23,6 +23,11 @@ def _create_workout_session(entry: BoxingEntry, db: Session) -> None:
     kcal = _calc_boxing_kcal(entry.duration_seconds, entry.kcal_per_min)
     mins = entry.duration_seconds // 60
 
+    # Build notes with rounds info if present
+    session_notes = entry.notes
+    if entry.rounds:
+        session_notes = f"{session_notes} ({entry.rounds} rounds)".strip()
+
     session = WorkoutSession(
         template_id=None,
         template_name=f"Boxing: {mins}min",
@@ -31,7 +36,7 @@ def _create_workout_session(entry: BoxingEntry, db: Session) -> None:
         finished_at=datetime.combine(entry.date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(seconds=entry.duration_seconds),
         total_duration_seconds=entry.duration_seconds,
         total_kcal_estimated=kcal,
-        notes=entry.notes,
+        notes=session_notes,
     )
     db.add(session)
     db.flush()
@@ -59,6 +64,7 @@ def create_boxing(data: BoxingEntryCreate, db: Session = Depends(get_db)):
     entry = BoxingEntry(
         duration_seconds=data.duration_seconds,
         kcal_per_min=data.kcal_per_min,
+        rounds=data.rounds,
         date=data.date or date.today(),
         notes=data.notes,
     )
@@ -79,6 +85,7 @@ def update_boxing(entry_id: int, data: BoxingEntryCreate, db: Session = Depends(
 
     entry.duration_seconds = data.duration_seconds
     entry.kcal_per_min = data.kcal_per_min
+    entry.rounds = data.rounds
     if data.date:
         entry.date = data.date
     entry.notes = data.notes
@@ -87,6 +94,10 @@ def update_boxing(entry_id: int, data: BoxingEntryCreate, db: Session = Depends(
     # Update the associated WorkoutSession
     mins = entry.duration_seconds // 60
     kcal = _calc_boxing_kcal(entry.duration_seconds, entry.kcal_per_min)
+    # Build notes with rounds info if present
+    session_notes = entry.notes
+    if entry.rounds:
+        session_notes = f"{session_notes} ({entry.rounds} rounds)".strip()
     sessions = db.query(WorkoutSession).filter(
         WorkoutSession.boxing_entry_id == entry.id,
     ).all()
@@ -94,7 +105,7 @@ def update_boxing(entry_id: int, data: BoxingEntryCreate, db: Session = Depends(
         s.template_name = f"Boxing: {mins}min"
         s.total_duration_seconds = entry.duration_seconds
         s.total_kcal_estimated = kcal
-        s.notes = entry.notes
+        s.notes = session_notes
         db.commit()
 
     db.refresh(entry)
@@ -127,6 +138,9 @@ def boxing_stats(db: Session = Depends(get_db)):
     avg_duration = round(total_duration / total_sessions, 1) if total_sessions > 0 else None
     avg_kcal = round(sum(e.kcal_per_min for e in entries) / total_sessions, 1) if total_sessions > 0 else None
     total_kcal = round(sum((e.duration_seconds / 60) * e.kcal_per_min for e in entries), 1)
+    # Avg rounds across entries that have rounds set
+    entries_with_rounds = [e for e in entries if e.rounds is not None]
+    avg_rounds = round(sum(e.rounds for e in entries_with_rounds) / len(entries_with_rounds), 1) if entries_with_rounds else None
 
     # Monthly breakdown
     monthly: dict[str, MonthlyBoxingStats] = {}
@@ -145,6 +159,7 @@ def boxing_stats(db: Session = Depends(get_db)):
         total_hours=total_hours,
         avg_duration_seconds=avg_duration,
         avg_kcal_per_min=avg_kcal,
+        avg_rounds=avg_rounds,
         total_kcal_estimated=total_kcal,
         monthly_breakdown=monthly_list,
     )

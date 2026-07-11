@@ -466,6 +466,7 @@ export interface BoxingEntryResponse {
   id: number;
   duration_seconds: number;
   kcal_per_min: number;
+  rounds: number | null;
   date: string;
   notes: string;
   created_at: string;
@@ -474,6 +475,7 @@ export interface BoxingEntryResponse {
 export interface BoxingEntryCreate {
   duration_seconds: number;
   kcal_per_min?: number;
+  rounds?: number | null;
   date?: string;
   notes?: string;
 }
@@ -490,6 +492,7 @@ export interface BoxingStatsResponse {
   total_hours: number;
   avg_duration_seconds: number | null;
   avg_kcal_per_min: number | null;
+  avg_rounds: number | null;
   total_kcal_estimated: number;
   monthly_breakdown: MonthlyBoxingStats[];
 }

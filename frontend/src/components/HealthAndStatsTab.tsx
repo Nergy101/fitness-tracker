@@ -906,6 +906,13 @@ export default function HealthAndStatsTab() {
               value={Math.round(boxingStats.total_kcal_estimated).toLocaleString()}
               sub={boxingStats.avg_kcal_per_min ? `${boxingStats.avg_kcal_per_min.toFixed(1)} kcal/min` : undefined}
             />
+            {boxingStats.avg_rounds != null && (
+              <StatCard
+                icon={<HandFist size={14} className="text-red-400" />}
+                label="Avg rounds"
+                value={String(boxingStats.avg_rounds)}
+              />
+            )}
           </div>
           {boxingStats.monthly_breakdown.length > 0 && (
             <div className="mt-3 pt-3 border-t border-fg/5">
