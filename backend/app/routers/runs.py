@@ -56,16 +56,6 @@ def _create_workout_session(run: RunEntry, db: Session) -> None:
     db.commit()
 
 
-def _delete_workout_session(run: RunEntry, db: Session) -> None:
-    """Remove the associated WorkoutSession when a run is deleted."""
-    sessions = db.query(WorkoutSession).filter(
-        WorkoutSession.run_entry_id == run.id,
-    ).all()
-    for s in sessions:
-        db.delete(s)
-    db.commit()
-
-
 @router.get("", response_model=list[RunEntryResponse])
 def list_runs(db: Session = Depends(get_db)):
     return db.query(RunEntry).order_by(RunEntry.date.desc(), RunEntry.created_at.desc()).all()
@@ -129,7 +119,11 @@ def delete_run(run_id: int, db: Session = Depends(get_db)):
     run = db.get(RunEntry, run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
-    _delete_workout_session(run, db)
+    sessions = db.query(WorkoutSession).filter(
+        WorkoutSession.run_entry_id == run.id,
+    ).all()
+    for s in sessions:
+        db.delete(s)
     db.delete(run)
     db.commit()
 

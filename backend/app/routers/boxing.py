@@ -49,16 +49,6 @@ def _create_workout_session(entry: BoxingEntry, db: Session) -> None:
     db.commit()
 
 
-def _delete_workout_session(entry: BoxingEntry, db: Session) -> None:
-    """Remove the associated WorkoutSession when a boxing entry is deleted."""
-    sessions = db.query(WorkoutSession).filter(
-        WorkoutSession.boxing_entry_id == entry.id,
-    ).all()
-    for s in sessions:
-        db.delete(s)
-    db.commit()
-
-
 @router.get("", response_model=list[BoxingEntryResponse])
 def list_boxing(db: Session = Depends(get_db)):
     return db.query(BoxingEntry).order_by(BoxingEntry.date.desc(), BoxingEntry.created_at.desc()).all()
@@ -116,7 +106,11 @@ def delete_boxing(entry_id: int, db: Session = Depends(get_db)):
     entry = db.get(BoxingEntry, entry_id)
     if not entry:
         raise HTTPException(status_code=404, detail="Boxing entry not found")
-    _delete_workout_session(entry, db)
+    sessions = db.query(WorkoutSession).filter(
+        WorkoutSession.boxing_entry_id == entry.id,
+    ).all()
+    for s in sessions:
+        db.delete(s)
     db.delete(entry)
     db.commit()
 
