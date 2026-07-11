@@ -429,6 +429,7 @@ function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxingPrs: 
   const boxingRecords = boxingPrs ? [
     { label: "Longest session", value: boxingPrs.longest_session_seconds ? formatDuration(boxingPrs.longest_session_seconds) : null },
     { label: "Most kcal", value: boxingPrs.most_kcal_session ? `${Math.round(boxingPrs.most_kcal_session)} kcal` : null },
+    { label: "Most rounds", value: boxingPrs.most_rounds_session ? String(boxingPrs.most_rounds_session) : null },
     { label: "Total hours", value: boxingPrs.total_hours_all_time > 0 ? `${boxingPrs.total_hours_all_time} hr` : null },
   ] : [];
 

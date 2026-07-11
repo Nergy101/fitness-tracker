@@ -177,9 +177,12 @@ def boxing_prs(db: Session = Depends(get_db)):
     longest = max(e.duration_seconds for e in entries)
     most_kcal = max((e.duration_seconds / 60) * e.kcal_per_min for e in entries)
     total_hours = round(sum(e.duration_seconds for e in entries) / 3600, 1)
+    entries_with_rounds = [e.rounds for e in entries if e.rounds is not None]
+    most_rounds = max(entries_with_rounds) if entries_with_rounds else None
 
     return BoxingPrsResponse(
         longest_session_seconds=longest,
         most_kcal_session=round(most_kcal, 1),
         total_hours_all_time=total_hours,
+        most_rounds_session=most_rounds,
     )

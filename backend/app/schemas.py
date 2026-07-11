@@ -464,6 +464,7 @@ class BoxingPrsResponse(BaseModel):
     longest_session_seconds: int | None = None
     most_kcal_session: float | None = None
     total_hours_all_time: float = 0.0
+    most_rounds_session: int | None = None
 
 
 # ─── Apple Health import ───────────────────────────────────

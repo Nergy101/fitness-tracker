@@ -503,6 +503,7 @@ export interface BoxingPrsResponse {
   longest_session_seconds: number | null;
   most_kcal_session: number | null;
   total_hours_all_time: number;
+  most_rounds_session: number | null;
 }
 
 async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> {
