@@ -286,6 +286,62 @@ class TestStatsOverviewKcal:
             f"Expected {expected_kcal} for walk, got {stats['total_kcal_burned']}"
         )
 
+    def test_kcal_excludes_sessions_older_than_30_days(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """total_kcal_burned is a 30-day rolling window: a recent session
+        counts, one started >30 days ago does not."""
+        recent_iso = date.today().isoformat()
+        old_iso = (date.today() - timedelta(days=45)).isoformat()
+        client.post(
+            SESSIONS_URL,
+            json={
+                "template_name": "Recent Workout",
+                "total_duration_seconds": 600,
+                "total_kcal_estimated": 100.0,
+                "started_at": f"{recent_iso}T08:00:00Z",
+            },
+            headers=auth_headers,
+        )
+        client.post(
+            SESSIONS_URL,
+            json={
+                "template_name": "Old Workout",
+                "total_duration_seconds": 600,
+                "total_kcal_estimated": 500.0,
+                "started_at": f"{old_iso}T08:00:00Z",
+            },
+            headers=auth_headers,
+        )
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["total_kcal_burned"] == 100.0, (
+            "Only the last-30-days session kcal should count, "
+            f"got {stats['total_kcal_burned']}"
+        )
+
+
+class TestStatsOverviewWeightChange:
+    def test_weight_change_uses_30_day_window(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """avg_weight_change_kg = latest minus earliest weight within the last
+        30 days; entries older than 30 days are excluded."""
+        today = date.today()
+        for days_ago, kg in ((45, 100.0), (20, 90.0), (2, 88.0)):
+            resp = client.post(
+                WEIGHT_URL,
+                json={"weight_kg": kg, "date": (today - timedelta(days=days_ago)).isoformat()},
+                headers=auth_headers,
+            )
+            assert resp.status_code in (200, 201), resp.text
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["avg_weight_change_kg"] == -2.0, (
+            "Weight change must be last-minus-first within the 30-day window "
+            f"(88 - 90 = -2.0), got {stats['avg_weight_change_kg']}"
+        )
+
 
 # ---------------------------------------------------------------------------
 # 5. Per-week kcal split (run_kcal / walk_kcal / workout_kcal in activity_weekly)

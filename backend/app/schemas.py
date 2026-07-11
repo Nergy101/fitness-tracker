@@ -371,6 +371,7 @@ class PrsResponse(BaseModel):
     most_exercises_workout: int | None = None
     # Overall
     longest_streak_days: int = 0
+    streak_days_30d: int = 0
 
 
 class WeeklyActivityStats(BaseModel):

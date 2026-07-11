@@ -6,6 +6,7 @@ import {
 } from "@phosphor-icons/react";
 import { api, type WorkoutSession } from "../api";
 import CalendarView from "./CalendarView";
+import LoadingSpinner from "./LoadingSpinner";
 import DateRangeFilter from "./history/DateRangeFilter";
 import DayBars from "./history/DayBars";
 import HeatmapChart from "./history/HeatmapChart";
@@ -69,7 +70,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   }
 
   if (loading) {
-    return <div className="text-center py-8 text-fg/40">Loading...</div>;
+    return <LoadingSpinner />;
   }
   if (error) {
     return (

@@ -302,6 +302,7 @@ export interface PrsResponse {
   most_exercises_workout: number | null;
   // Overall
   longest_streak_days: number;
+  streak_days_30d: number;
 }
 
 export interface WeeklyActivityStat {

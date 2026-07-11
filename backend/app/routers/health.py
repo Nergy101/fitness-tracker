@@ -115,6 +115,9 @@ def personal_records(db: Session = Depends(get_db)):
     for s in sessions:
         active_days.add(s.started_at.date() if hasattr(s.started_at, "date") else s.started_at)
     prs.longest_streak_days = _longest_streak(active_days)
+    # Streak within the last 30 days (rolling window), for the monthly card.
+    cutoff_30d = date.today() - timedelta(days=30)
+    prs.streak_days_30d = _longest_streak({d for d in active_days if d >= cutoff_30d})
 
     return prs
 

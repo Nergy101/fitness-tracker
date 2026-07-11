@@ -41,12 +41,12 @@ import {
   type StatsOverviewResponse,
   type WeeklyActivityStat,
   type WeightEntryResponse,
-  type WeightStatsResponse,
   type WorkoutSession,
 } from "../api";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
 import ActivityLegend from "./ActivityLegend";
 import ChartCard from "./ChartCard";
+import LoadingSpinner from "./LoadingSpinner";
 import AppleHealthCharts from "./health/AppleHealthCharts";
 import MeasurementsSection from "./health/MeasurementsSection";
 import SimpleChart from "./health/SimpleChart";
@@ -563,7 +563,6 @@ export default function HealthAndStatsTab() {
 
   // Health data
   const [weights, setWeights] = useState<WeightEntryResponse[]>([]);
-  const [weightStats, setWeightStats] = useState<WeightStatsResponse | null>(null);
   const [bmi, setBmi] = useState<BmiResponse | null>(null);
   const [prs, setPrs] = useState<PrsResponse | null>(null);
   const [boxingStats, setBoxingStats] = useState<BoxingStatsResponse | null>(null);
@@ -580,7 +579,7 @@ export default function HealthAndStatsTab() {
     try {
       const [
         overview, runList, sessionList, wEntries, goalProgress, healthInsights,
-        ws, wStats, b, pr,
+        ws, b, pr,
       ] = await Promise.all([
         api.getStatsOverview(),
         api.getRuns().catch(() => [] as RunEntryResponse[]),
@@ -589,7 +588,6 @@ export default function HealthAndStatsTab() {
         api.getGoalProgress().catch(() => null),
         api.getHealthInsights(120).catch(() => null),
         api.getWeightEntries(),
-        api.getWeightStats(),
         api.getBmi(),
         api.getPrs(),
       ]);
@@ -602,7 +600,6 @@ export default function HealthAndStatsTab() {
       setGoal(goalProgress);
       setHealth(healthInsights);
       setWeights(ws);
-      setWeightStats(wStats);
       setBmi(b);
       setPrs(pr);
       setBoxingStats(boxStats);
@@ -630,7 +627,7 @@ export default function HealthAndStatsTab() {
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-fg/40">Loading...</div>;
+    return <LoadingSpinner label="Loading health data" />;
   }
   if (!stats) {
     return <div className="text-center py-8 text-fg/40">Failed to load data.</div>;
@@ -711,29 +708,28 @@ export default function HealthAndStatsTab() {
         />
         <StatCard
           icon={<Fire size={14} className="text-orange-400" />}
-          label="Total kcal"
+          label="Total kcal (30d)"
           value={(stats?.total_kcal_burned ?? 0).toLocaleString()}
         />
         <StatCard
           icon={<Scales size={14} className="text-purple-400" />}
-          label="Weight chg (mo)"
+          label="Weight chg (30d)"
           value={
             stats?.avg_weight_change_kg != null
               ? `${stats.avg_weight_change_kg > 0 ? "+" : ""}${stats.avg_weight_change_kg.toFixed(1)} kg`
               : "—"
           }
         />
-        {prs && prs.longest_streak_days > 0 ? (
+        {prs && prs.streak_days_30d > 0 ? (
           <StatCard
             icon={<Flame size={14} className="text-orange-400" weight="fill" />}
-            label="Activity Streak"
-            value={`${prs.longest_streak_days} days`}
-            sub="best ever"
+            label="Activity Streak (30d)"
+            value={`${prs.streak_days_30d} days`}
           />
         ) : (
           <StatCard
             icon={<Flame size={14} className="text-fg/30" weight="fill" />}
-            label="Activity Streak"
+            label="Activity Streak (30d)"
             value="—"
             sub="no activity yet"
           />
@@ -817,26 +813,6 @@ export default function HealthAndStatsTab() {
           </div>
         </div>
       </div>
-
-      {/* Weekly Weight Summary */}
-      {weightStats && weightStats.total_entries > 0 && (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
-          <p className="text-xs text-fg/40 mb-2">This Week</p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-fg">
-              {weightStats.avg_7d ? weightStats.avg_7d.toFixed(1) : "—"}
-            </span>
-            <span className="text-sm text-fg/40">kg avg</span>
-          </div>
-          <div className="flex gap-4 mt-1.5 text-xs text-fg/50">
-            <span>Highest: {weightStats.max?.weight_kg.toFixed(1)} kg</span>
-            <span>Lowest: {weightStats.min?.weight_kg.toFixed(1)} kg</span>
-          </div>
-          <p className="text-xs text-fg/40 mt-1.5">
-            Logged {weightStats.total_entries} total entries
-          </p>
-        </div>
-      )}
 
       {/* ── PERSONAL RECORDS ── */}
       {prs && <PersonalRecordsCard prs={prs} boxingPrs={boxingPrs} />}

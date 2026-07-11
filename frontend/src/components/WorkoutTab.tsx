@@ -10,6 +10,7 @@ import WorkoutEditor from "./WorkoutEditor";
 import RunLogger from "./RunLogger";
 import BoxingLogger from "./BoxingLogger";
 import WorkoutCard from "./WorkoutCard";
+import LoadingSpinner from "./LoadingSpinner";
 
 interface WorkoutTabProps {
   onStartWorkout: (workout: WorkoutTemplate) => void;
@@ -188,7 +189,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
 
       {/* Workout Templates */}
       {loading ? (
-        <div className="text-center py-8 text-fg/40">Loading...</div>
+        <LoadingSpinner />
       ) : error ? (
         <div className="flex flex-col items-center py-12 text-red-400">
           <SmileySad size={40} weight="regular" className="mb-3 opacity-80" />

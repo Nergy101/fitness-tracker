@@ -28,9 +28,13 @@ def stats_overview(db: Session = Depends(get_db)):
     weights = db.query(WeightEntry).order_by(WeightEntry.date.asc()).all()
 
     today = date.today()
+    thirty_days_ago = today - timedelta(days=30)
     # Mirror sessions carry the run/walk kcal estimate, so summing every
-    # session covers workouts and runs alike.
-    total_kcal = sum(s.total_kcal_estimated for s in sessions)
+    # session covers workouts and runs alike. Scoped to the last 30 days.
+    total_kcal = sum(
+        s.total_kcal_estimated for s in sessions
+        if _session_date(s) >= thirty_days_ago
+    )
 
     workouts = [s for s in sessions if not is_mirror_session(s)]
 
@@ -83,8 +87,6 @@ def stats_overview(db: Session = Depends(get_db)):
 
     # Consistency score: ≥3 workout/run days per week = 100%.
     # Walk km add bonus % on top (1% per km).
-    thirty_days_ago = today - timedelta(days=30)
-
     # Collect qualifying days (workouts + runs, excluding walks) and walk km.
     workout_run_days: set[date] = set()
     for s in sessions:
@@ -154,11 +156,11 @@ def stats_overview(db: Session = Depends(get_db)):
     if prev_minutes > 0:
         vs_prev = round(((current_minutes - prev_minutes) / prev_minutes) * 100, 1)
 
-    # Average weight change (last vs first this month)
+    # Weight change over the last 30 days (last vs first entry in the window)
     avg_weight_change = None
-    this_month_weights = [w for w in weights if w.date >= current_month_start]
-    if len(this_month_weights) >= 2:
-        avg_weight_change = round(this_month_weights[-1].weight_kg - this_month_weights[0].weight_kg, 2)
+    window_weights = [w for w in weights if w.date >= thirty_days_ago]
+    if len(window_weights) >= 2:
+        avg_weight_change = round(window_weights[-1].weight_kg - window_weights[0].weight_kg, 2)
 
     return StatsOverviewResponse(
         activity_weekly=activity_weekly,

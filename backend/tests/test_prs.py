@@ -374,3 +374,52 @@ class TestPrsLongestStreak:
         assert data["longest_streak_days"] == 2, (
             f"Expected 2-day streak (Jan 1–2, then break), got {data['longest_streak_days']}"
         )
+
+# ---------------------------------------------------------------------------
+# 8. 30-day rolling streak (streak_days_30d)
+# ---------------------------------------------------------------------------
+
+
+class TestPrsStreak30d:
+    def test_recent_activity_forms_30d_streak(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Consecutive activity days inside the last 30 days set streak_days_30d."""
+        today = date.today()
+        for offset in (2, 3, 4):  # three consecutive recent days
+            _post_run(
+                client,
+                auth_headers,
+                distance_km=5.0,
+                duration_seconds=1800,
+                date_str=(today - timedelta(days=offset)).isoformat(),
+            )
+
+        data = _get_prs(client, auth_headers)
+        assert data["streak_days_30d"] == 3, (
+            f"Expected 3-day streak in the 30-day window, got {data['streak_days_30d']}"
+        )
+
+    def test_activity_older_than_30_days_excluded_from_window_streak(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """A streak entirely older than 30 days still sets longest_streak_days
+        (all-time) but contributes nothing to streak_days_30d."""
+        base = date.today() - timedelta(days=90)
+        for offset in (0, 1, 2):
+            _post_run(
+                client,
+                auth_headers,
+                distance_km=5.0,
+                duration_seconds=1800,
+                date_str=(base + timedelta(days=offset)).isoformat(),
+            )
+
+        data = _get_prs(client, auth_headers)
+        assert data["longest_streak_days"] == 3, (
+            f"All-time streak should be 3, got {data['longest_streak_days']}"
+        )
+        assert data["streak_days_30d"] == 0, (
+            f"90-day-old activity must not count in the 30-day window, "
+            f"got {data['streak_days_30d']}"
+        )
