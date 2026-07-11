@@ -921,7 +921,7 @@ export default function HealthAndStatsTab() {
                 {boxingStats.monthly_breakdown.map((m) => (
                   <div key={m.month} className="flex items-center justify-between text-xs">
                     <span className="text-fg/60">{m.month}</span>
-                    <span className="text-fg/40">{m.sessions} sessions · {m.total_minutes} min</span>
+                    <span className="text-fg/40">{m.sessions} sessions · {m.total_minutes} min{m.total_rounds > 0 ? ` · ${m.total_rounds} rounds` : ""}</span>
                   </div>
                 ))}
               </div>

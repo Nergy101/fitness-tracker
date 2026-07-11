@@ -444,6 +444,7 @@ class MonthlyBoxingStats(BaseModel):
     month: str
     sessions: int
     total_minutes: int
+    total_rounds: int = 0
 
 
 class BoxingStatsResponse(BaseModel):

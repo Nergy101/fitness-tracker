@@ -147,9 +147,11 @@ def boxing_stats(db: Session = Depends(get_db)):
     for e in entries:
         key = e.date.strftime("%Y-%m")
         if key not in monthly:
-            monthly[key] = MonthlyBoxingStats(month=key, sessions=0, total_minutes=0)
+            monthly[key] = MonthlyBoxingStats(month=key, sessions=0, total_minutes=0, total_rounds=0)
         monthly[key].sessions += 1
         monthly[key].total_minutes += e.duration_seconds // 60
+        if e.rounds is not None:
+            monthly[key].total_rounds += e.rounds
 
     monthly_list = sorted(monthly.values(), key=lambda m: m.month, reverse=True)[:12]
 

@@ -484,6 +484,7 @@ export interface MonthlyBoxingStats {
   month: string;
   sessions: number;
   total_minutes: number;
+  total_rounds: number;
 }
 
 export interface BoxingStatsResponse {
