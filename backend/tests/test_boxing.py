@@ -304,3 +304,51 @@ class TestBoxingStats:
         assert june["month"] == "2026-06"
         assert june["sessions"] == 2
         assert june["total_minutes"] == 90  # 30 + 60
+
+
+class TestBoxingPrs:
+    URL = "/api/v1/boxing/prs"
+
+    def test_empty(self, client: TestClient, auth_headers: dict):
+        """Returns empty defaults when no boxing entries exist."""
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["longest_session_seconds"] is None
+        assert data["most_kcal_session"] is None
+        assert data["total_hours_all_time"] == 0.0
+
+    def test_single_entry(self, client: TestClient, auth_headers: dict):
+        """Returns correct PRs for a single boxing entry."""
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "kcal_per_min": 10.0,
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["longest_session_seconds"] == 1800
+        assert data["most_kcal_session"] == 300.0  # 30min * 10 kcal/min
+        assert data["total_hours_all_time"] == 0.5
+
+    def test_multiple_entries(self, client: TestClient, auth_headers: dict):
+        """Returns correct PRs across multiple entries — picks max values."""
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "kcal_per_min": 10.0, "notes": "Short",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 3600, "kcal_per_min": 12.0, "notes": "Long",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 2700, "kcal_per_min": 15.0, "notes": "Medium",
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        # Longest session: 3600s
+        assert data["longest_session_seconds"] == 3600
+        # Most kcal: 60min * 12 = 720.0 (higher than 45min * 15 = 675.0)
+        assert data["most_kcal_session"] == 720.0
+        # Total hours: (1800 + 3600 + 2700) / 3600 = 2.25
+        assert data["total_hours_all_time"] == 2.2  # round(2.25, 1) = 2.2 (banker's rounding)
