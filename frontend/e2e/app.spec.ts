@@ -5,12 +5,25 @@ const TEST_PASSWORD = "e2e-test-password";
 
 /** Log in via the UI then return an auth headers object. */
 async function login(page: Page): Promise<Record<string, string>> {
+  await suppressOnboarding(page);
   await page.goto("/");
   await page.getByPlaceholder("Password").fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Unlock" }).click();
   await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 5000 });
   const token = await page.evaluate(() => localStorage.getItem("fitness_auth"));
   return { Authorization: "Basic " + token };
+}
+
+/** Mark onboarding complete before the app boots so the first-run tour
+ *  overlay never covers the UI under test. */
+async function suppressOnboarding(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("onboardingComplete", "1");
+    } catch {
+      /* ignore storage failures */
+    }
+  });
 }
 
 // Build a fast, deterministic workout straight against the API so the runner
@@ -867,6 +880,11 @@ test.describe("authenticated", () => {
 // --- Auth flow tests ---
 
 test.describe("auth", () => {
+  // Auth tests authenticate but don't test onboarding — keep the tour out of the way.
+  test.beforeEach(async ({ page }) => {
+    await suppressOnboarding(page);
+  });
+
   test("login screen appears when no auth is stored", async ({ page }) => {
     await page.goto("/");
     // Should show the login screen, not the app
@@ -928,5 +946,36 @@ test.describe("auth", () => {
     // Should be back at login screen
     await expect(page.getByText("Enter your password to unlock")).toBeVisible();
     await expect(page.getByRole("button", { name: "Workouts" })).toHaveCount(0);
+  });
+});
+
+// --- Onboarding flow ---
+
+test.describe("onboarding", () => {
+  test("first-run tour shows after login, completes, and stays dismissed", async ({ page }) => {
+    // No suppressOnboarding here: a fresh context has no completion flag, so
+    // the tour must appear.
+    await page.goto("/");
+    await page.getByPlaceholder("Password").fill(TEST_PASSWORD);
+    await page.getByRole("button", { name: "Unlock" }).click();
+
+    const tour = page.getByRole("dialog", { name: "Welcome tour" });
+    await expect(tour).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Welcome to FitnessTracker")).toBeVisible();
+
+    // Step through every slide (6 Next clicks reach the last slide).
+    for (let i = 0; i < 6; i++) {
+      await page.getByRole("button", { name: "Next" }).click();
+    }
+    await page.getByRole("button", { name: "Get started" }).click();
+
+    // Overlay is conditionally unmounted; app is now usable.
+    await expect(tour).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible();
+
+    // Reload — the tour must not reappear (flag persisted in localStorage).
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible();
+    await expect(tour).toHaveCount(0);
   });
 });
