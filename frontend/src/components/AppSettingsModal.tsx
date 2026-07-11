@@ -12,6 +12,7 @@ import { useLocale } from "../useLocale";
 import type { DateLocale } from "../locale";
 import HealthSettingsSection from "./health/HealthSettingsSection";
 import BackupSection from "./BackupSection";
+import { useOnboarding } from "../useOnboarding";
 
 type SettingsTab = "general" | "health";
 
@@ -46,6 +47,7 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
   const { theme, mode, setMode } = useTheme();
   const { muted, toggleMuted } = useAudio();
   const { locale, setLocale } = useLocale();
+  const { reset: resetOnboarding } = useOnboarding();
   const [subTab, setSubTab] = useState<SettingsTab>("general");
 
   return (
@@ -156,6 +158,16 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
               {/* Backups */}
               <div className="border-t border-fg/10 pt-3.5">
                 <BackupSection />
+              </div>
+
+              {/* Intro tour */}
+              <div className="border-t border-fg/10 pt-3.5">
+                <button
+                  onClick={() => { resetOnboarding(); onClose(); }}
+                  className="text-sm text-accent hover:text-accent-hover transition-colors"
+                >
+                  Replay intro tour
+                </button>
               </div>
             </div>
           )}

@@ -15,12 +15,14 @@ import HealthAndStatsTab from "./components/HealthAndStatsTab";
 import WorkoutRunner from "./components/WorkoutRunner";
 import TabataRunner from "./components/TabataRunner";
 import AppSettingsModal from "./components/AppSettingsModal";
+import Onboarding from "./components/Onboarding";
 import LoginScreen from "./components/LoginScreen";
 import { getStoredAuth, clearStoredAuth } from "./auth";
 import { useTheme } from "./useTheme";
 import ErrorBoundary from "./components/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
 import { useHashRoute } from "./useHashRoute";
+import { useOnboarding } from "./useOnboarding";
 
 type TabId = "workout" | "exercises" | "history" | "health";
 
@@ -43,6 +45,7 @@ export default function App() {
   // Nothing else mounts theme handling on the main screen (controls live in
   // the settings modal), so apply the persisted theme from the app root.
   useTheme();
+  const { complete: onboardingComplete, markComplete } = useOnboarding();
 
   const [authenticated, setAuthenticated] = useState(() => {
     try {
@@ -146,6 +149,8 @@ export default function App() {
             onHealthSaved={() => setHealthRefreshKey((k) => k + 1)}
           />
         )}
+
+        {!onboardingComplete && <Onboarding onComplete={markComplete} />}
       </div>
     </ErrorBoundary>
   );
