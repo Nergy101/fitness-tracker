@@ -451,6 +451,13 @@ class BoxingStatsResponse(BaseModel):
     monthly_breakdown: list[MonthlyBoxingStats] = []
 
 
+class BoxingPrsResponse(BaseModel):
+    """Personal records for boxing sessions."""
+    longest_session_seconds: int | None = None
+    most_kcal_session: float | None = None
+    total_hours_all_time: float = 0.0
+
+
 # ─── Apple Health import ───────────────────────────────────
 
 

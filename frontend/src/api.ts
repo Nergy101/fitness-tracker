@@ -491,6 +491,12 @@ export interface BoxingStatsResponse {
   monthly_breakdown: MonthlyBoxingStats[];
 }
 
+export interface BoxingPrsResponse {
+  longest_session_seconds: number | null;
+  most_kcal_session: number | null;
+  total_hours_all_time: number;
+}
+
 async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -728,6 +734,8 @@ export const api = {
     fetchJSON<void>(`/api/v1/boxing/${id}`, { method: "DELETE" }),
   getBoxingStats: () =>
     fetchJSON<BoxingStatsResponse>("/api/v1/boxing/stats"),
+  getBoxingPrs: () =>
+    fetchJSON<BoxingPrsResponse>("/api/v1/boxing/prs"),
 
   // ─── Notifications ─────────────────────────────────
   subscribePush: (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) =>

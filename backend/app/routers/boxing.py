@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.models import BoxingEntry, WorkoutSession, SessionExercise
-from app.schemas import BoxingEntryCreate, BoxingEntryResponse, BoxingStatsResponse, MonthlyBoxingStats
+from app.schemas import BoxingEntryCreate, BoxingEntryResponse, BoxingStatsResponse, MonthlyBoxingStats, BoxingPrsResponse
 
 router = APIRouter(prefix="/api/v1/boxing", tags=["boxing"])
 
@@ -169,4 +169,22 @@ def boxing_stats(db: Session = Depends(get_db)):
         avg_kcal_per_min=avg_kcal,
         total_kcal_estimated=total_kcal,
         monthly_breakdown=monthly_list,
+    )
+
+
+@router.get("/prs", response_model=BoxingPrsResponse)
+def boxing_prs(db: Session = Depends(get_db)):
+    """Personal records for boxing sessions."""
+    entries = db.query(BoxingEntry).all()
+    if not entries:
+        return BoxingPrsResponse()
+
+    longest = max(e.duration_seconds for e in entries)
+    most_kcal = max((e.duration_seconds / 60) * e.kcal_per_min for e in entries)
+    total_hours = round(sum(e.duration_seconds for e in entries) / 3600, 1)
+
+    return BoxingPrsResponse(
+        longest_session_seconds=longest,
+        most_kcal_session=round(most_kcal, 1),
+        total_hours_all_time=total_hours,
     )

@@ -32,6 +32,7 @@ import {
   api,
   type BmiResponse,
   type BoxingStatsResponse,
+  type BoxingPrsResponse,
   type GoalProgressResponse,
   type HealthInsightsResponse,
   type HealthSeries,
@@ -404,7 +405,7 @@ function RecordGroup({
   );
 }
 
-function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
+function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxingPrs: BoxingPrsResponse | null }) {
   const runRecords = [
     { label: "Longest (distance)", value: prs.longest_run_km ? `${prs.longest_run_km.toFixed(1)} km` : null },
     { label: "Longest (time)", value: prs.longest_run_seconds ? formatDuration(prs.longest_run_seconds) : null },
@@ -424,9 +425,14 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
     { label: "Most kcal", value: prs.most_kcal_workout ? `${Math.round(prs.most_kcal_workout)} kcal` : null },
     { label: "Most exercises", value: prs.most_exercises_workout ? String(prs.most_exercises_workout) : null },
   ];
+  const boxingRecords = boxingPrs ? [
+    { label: "Longest session", value: boxingPrs.longest_session_seconds ? formatDuration(boxingPrs.longest_session_seconds) : null },
+    { label: "Most kcal", value: boxingPrs.most_kcal_session ? `${Math.round(boxingPrs.most_kcal_session)} kcal` : null },
+    { label: "Total hours", value: boxingPrs.total_hours_all_time > 0 ? `${boxingPrs.total_hours_all_time} hr` : null },
+  ] : [];
 
   const hasAny =
-    [...runRecords, ...walkRecords, ...workoutRecords].some((r) => r.value != null);
+    [...runRecords, ...walkRecords, ...workoutRecords, ...boxingRecords].some((r) => r.value != null);
   if (!hasAny) return null;
 
   return (
@@ -438,6 +444,22 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
       <RecordGroup kind="run" records={runRecords} />
       <RecordGroup kind="walk" records={walkRecords} />
       <RecordGroup kind="workout" records={workoutRecords} />
+      {boxingRecords.some((r) => r.value != null) && (
+        <div className="mb-3 last:mb-0">
+          <p className="flex items-center gap-1.5 text-xs text-fg/40 mb-1.5">
+            <HandFist size={14} className="shrink-0 text-red-400" />
+            Boxing
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {boxingRecords.filter((r): r is { label: string; value: string } => r.value != null).map((r) => (
+              <div key={r.label} className="bg-bg rounded-lg p-2">
+                <p className="text-fg/50">{r.label}</p>
+                <p className="text-sm font-bold text-fg">{r.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -539,6 +561,7 @@ export default function HealthAndStatsTab() {
   const [bmi, setBmi] = useState<BmiResponse | null>(null);
   const [prs, setPrs] = useState<PrsResponse | null>(null);
   const [boxingStats, setBoxingStats] = useState<BoxingStatsResponse | null>(null);
+  const [boxingPrs, setBoxingPrs] = useState<BoxingPrsResponse | null>(null);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -565,6 +588,7 @@ export default function HealthAndStatsTab() {
         api.getPrs(),
       ]);
       const boxStats = await api.getBoxingStats().catch(() => null);
+      const boxPrs = await api.getBoxingPrs().catch(() => null);
       setStats(overview);
       setRuns(runList);
       setSessions(sessionList);
@@ -576,6 +600,7 @@ export default function HealthAndStatsTab() {
       setBmi(b);
       setPrs(pr);
       setBoxingStats(boxStats);
+      setBoxingPrs(boxPrs);
     } catch (e) {
       console.error("Failed to load health & stats data", e);
     } finally {
@@ -808,7 +833,7 @@ export default function HealthAndStatsTab() {
       )}
 
       {/* ── PERSONAL RECORDS ── */}
-      {prs && <PersonalRecordsCard prs={prs} />}
+      {prs && <PersonalRecordsCard prs={prs} boxingPrs={boxingPrs} />}
 
       {/* Insight cards */}
       {insightLines.length > 0 && (
