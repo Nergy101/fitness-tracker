@@ -11,6 +11,7 @@ import {
   FlagBannerIcon as FlagBanner,
   FlameIcon as Flame,
   FootprintsIcon as Footprints,
+  HandFistIcon as HandFist,
   HeartIcon as Heart,
   MoonIcon as Moon,
   PersonSimpleRunIcon as PersonSimpleRun,
@@ -30,6 +31,7 @@ import {
 import {
   api,
   type BmiResponse,
+  type BoxingStatsResponse,
   type GoalProgressResponse,
   type HealthInsightsResponse,
   type HealthSeries,
@@ -536,6 +538,7 @@ export default function HealthAndStatsTab() {
   const [weightStats, setWeightStats] = useState<WeightStatsResponse | null>(null);
   const [bmi, setBmi] = useState<BmiResponse | null>(null);
   const [prs, setPrs] = useState<PrsResponse | null>(null);
+  const [boxingStats, setBoxingStats] = useState<BoxingStatsResponse | null>(null);
 
   // UI state
   const [loading, setLoading] = useState(true);
@@ -561,6 +564,7 @@ export default function HealthAndStatsTab() {
         api.getBmi(),
         api.getPrs(),
       ]);
+      const boxStats = await api.getBoxingStats().catch(() => null);
       setStats(overview);
       setRuns(runList);
       setSessions(sessionList);
@@ -571,6 +575,7 @@ export default function HealthAndStatsTab() {
       setWeightStats(wStats);
       setBmi(b);
       setPrs(pr);
+      setBoxingStats(boxStats);
     } catch (e) {
       console.error("Failed to load health & stats data", e);
     } finally {
@@ -835,6 +840,52 @@ export default function HealthAndStatsTab() {
           value={String(stats.total_walks)}
         />
       </div>
+
+      {/* ── Boxing Stats ── */}
+      {boxingStats && boxingStats.total_sessions > 0 && (
+        <div className="bg-surface rounded-xl p-4 border border-fg/5">
+          <div className="flex items-center gap-2 mb-3">
+            <HandFist size={20} className="text-red-400 shrink-0" weight="fill" />
+            <p className="text-sm font-semibold text-fg">Boxing</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <StatCard
+              icon={<HandFist size={14} className="text-red-400" />}
+              label="Sessions"
+              value={String(boxingStats.total_sessions)}
+            />
+            <StatCard
+              icon={<Timer size={14} className="text-red-400" />}
+              label="Total hours"
+              value={`${boxingStats.total_hours}h`}
+            />
+            <StatCard
+              icon={<Timer size={14} className="text-red-400" />}
+              label="Avg session"
+              value={boxingStats.avg_duration_seconds ? `${Math.round(boxingStats.avg_duration_seconds / 60)}m` : "—"}
+            />
+            <StatCard
+              icon={<Fire size={14} className="text-orange-400" />}
+              label="Total kcal"
+              value={Math.round(boxingStats.total_kcal_estimated).toLocaleString()}
+              sub={boxingStats.avg_kcal_per_min ? `${boxingStats.avg_kcal_per_min.toFixed(1)} kcal/min` : undefined}
+            />
+          </div>
+          {boxingStats.monthly_breakdown.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-fg/5">
+              <p className="text-xs text-fg/40 mb-2">Monthly</p>
+              <div className="space-y-1.5">
+                {boxingStats.monthly_breakdown.map((m) => (
+                  <div key={m.month} className="flex items-center justify-between text-xs">
+                    <span className="text-fg/60">{m.month}</span>
+                    <span className="text-fg/40">{m.sessions} sessions · {m.total_minutes} min</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── GRAPHS ── */}
 
