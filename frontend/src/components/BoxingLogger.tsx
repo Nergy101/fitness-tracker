@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
-import { HandFistIcon as HandFist, PencilIcon as Pencil, TrashIcon as Trash } from "@phosphor-icons/react";
+import { useState } from "react";
+import { HandFistIcon as HandFist } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api } from "../api";
-import type { BoxingEntryResponse } from "../api";
 import { formatDuration } from "../format";
 
 interface BoxingLoggerProps {
@@ -24,19 +23,8 @@ function calcKcal(durationSeconds: number, kcalPerMin: number): number {
   return Math.round((durationSeconds / 60) * kcalPerMin);
 }
 
-function parseDate(dateStr: string): string {
-  return dateStr.slice(0, 10);
-}
-
-function formatDate(isoStr: string): string {
-  const d = new Date(isoStr);
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-
 export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [entries, setEntries] = useState<BoxingEntryResponse[]>([]);
   const [duration, setDuration] = useState(1800);
   const [customDuration, setCustomDuration] = useState("");
   const [kcalPerMin, setKcalPerMin] = useState(DEFAULT_KCAL_PER_MIN);
@@ -44,18 +32,6 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
-  const [showConfirmDelete, setShowConfirmDelete] = useState<number | null>(null);
-
-  async function loadEntries() {
-    try {
-      const data = await api.getBoxing();
-      setEntries(data);
-    } catch {
-      // silently fail — entries are cosmetic
-    }
-  }
-
-  useEffect(() => { loadEntries(); }, []);
 
   function resetForm() {
     setDuration(1800);
@@ -64,30 +40,6 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
     setRounds(null);
     setNotes("");
     setDate(new Date().toISOString().slice(0, 10));
-    setEditingId(null);
-  }
-
-  function startEdit(entry: BoxingEntryResponse) {
-    setEditingId(entry.id);
-    setDuration(entry.duration_seconds);
-    setCustomDuration("");
-    setKcalPerMin(entry.kcal_per_min);
-    setRounds(entry.rounds);
-    setNotes(entry.notes);
-    setDate(parseDate(entry.date));
-    setShowForm(true);
-  }
-
-  async function handleDelete(entryId: number) {
-    setShowConfirmDelete(null);
-    try {
-      await api.deleteBoxing(entryId);
-      setToast("Boxing entry deleted");
-      await loadEntries();
-      onWorkoutLogged();
-    } catch {
-      setToast("Failed to delete boxing entry");
-    }
   }
 
   async function handleSubmit() {
@@ -95,38 +47,25 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
     if (dur <= 0) return;
 
     try {
-      if (editingId) {
-        await api.updateBoxing(editingId, {
-          duration_seconds: dur,
-          kcal_per_min: kcalPerMin,
-          rounds: rounds || null,
-          date,
-          notes,
-        });
-        setToast("Boxing entry updated!");
-      } else {
-        await api.createBoxing({
-          duration_seconds: dur,
-          kcal_per_min: kcalPerMin,
-          rounds: rounds || null,
-          date,
-          notes,
-        });
-        setToast("Boxing workout logged!");
-      }
-
+      await api.createBoxing({
+        duration_seconds: dur,
+        kcal_per_min: kcalPerMin,
+        rounds: rounds || null,
+        date,
+        notes,
+      });
+      setToast("Boxing workout logged!");
       resetForm();
       setShowForm(false);
-      await loadEntries();
       onWorkoutLogged();
     } catch {
-      setToast(editingId ? "Failed to update boxing entry" : "Failed to log boxing workout");
+      setToast("Failed to log boxing workout");
     }
   }
 
   const estimatedKcal = calcKcal(duration, kcalPerMin);
 
-  // ── Collapsed state: show "Log Boxing" button + recent entries list ──
+  // ── Collapsed state: show "Log Boxing" button ──
   if (!showForm) {
     return (
       <>
@@ -149,57 +88,11 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
             </p>
           </div>
         </button>
-
-        {/* Recent entries list */}
-        {entries.length > 0 && (
-          <div className="bg-surface rounded-xl p-4 border border-fg/10 mb-4 space-y-2">
-            <p className="text-xs text-fg/50 font-medium uppercase tracking-wide mb-2">
-              Recent Boxing Sessions
-            </p>
-            {entries.slice(0, 10).map((entry) => (
-              <div
-                key={entry.id}
-                className="flex items-center justify-between py-1.5 border-b border-fg/5 last:border-b-0"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <HandFist size={14} className="text-accent shrink-0" />
-                  <div className="truncate">
-                    <span className="text-sm text-fg font-medium">
-                      {formatDuration(entry.duration_seconds)}
-                    </span>
-                    {entry.rounds != null && (
-                      <span className="text-xs text-fg/40 ml-1">{entry.rounds}r</span>
-                    )}
-                    <span className="text-xs text-fg/30 ml-2">
-                      {formatDate(entry.date)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 ml-2">
-                  <button
-                    onClick={() => startEdit(entry)}
-                    aria-label="Edit"
-                    className="p-1.5 text-fg/40 hover:text-fg rounded-lg hover:bg-bg transition-colors"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => setShowConfirmDelete(entry.id)}
-                    aria-label="Delete"
-                    className="p-1.5 text-fg/40 hover:text-red-400 rounded-lg hover:bg-bg transition-colors"
-                  >
-                    <Trash size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </>
     );
   }
 
-  // ── Form state (create or edit) ──
+  // ── Form state ──
   return (
     <>
       {toast && (
@@ -209,44 +102,11 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
         </Toast>
       )}
 
-      {/* Confirm delete overlay */}
-      {showConfirmDelete !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-             style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
-             onClick={() => setShowConfirmDelete(null)}>
-          <div
-            className="bg-surface rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl border border-fg/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-sm font-semibold text-fg mb-2">Delete boxing entry?</p>
-            <p className="text-xs text-fg/50 mb-4">
-              This will also remove it from your history. This action cannot be undone.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowConfirmDelete(null)}
-                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-bg text-fg/60 hover:text-fg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(showConfirmDelete)}
-                className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-red-500/90 text-white hover:bg-red-500 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="bg-surface rounded-xl p-4 border border-accent/20 mb-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <HandFist size={18} className="text-accent" />
-            <span className="text-sm font-semibold text-fg">
-              {editingId ? "Edit Boxing Session" : "Log Boxing"}
-            </span>
+            <span className="text-sm font-semibold text-fg">Log Boxing</span>
           </div>
           <button
             onClick={() => { resetForm(); setShowForm(false); }}
@@ -354,7 +214,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
           disabled={duration <= 0}
           className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
         >
-          {editingId ? "Update Boxing Session" : "Save Boxing Workout"}
+          Save Boxing Workout
         </button>
       </div>
     </>
