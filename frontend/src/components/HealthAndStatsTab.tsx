@@ -9,12 +9,8 @@ import {
   FireIcon as Fire,
   FlagBannerIcon as FlagBanner,
   FlameIcon as Flame,
-  FootprintsIcon as Footprints,
   HandFistIcon as HandFist,
-  HeartIcon as Heart,
-  MoonIcon as Moon,
   PersonSimpleRunIcon as PersonSimpleRun,
-  PulseIcon as Pulse,
   RocketLaunchIcon as RocketLaunch,
   RulerIcon as Ruler,
   ScalesIcon as Scales,
@@ -32,10 +28,7 @@ import {
   type BmiResponse,
   type BoxingStatsResponse,
   type BoxingPrsResponse,
-  type DailyActivityPoint,
   type GoalProgressResponse,
-  type HealthInsightsResponse,
-  type HealthSeries,
   type PrsResponse,
   type StatsOverviewResponse,
   type WeightEntryResponse,
@@ -43,29 +36,11 @@ import {
 } from "../api";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
 import LoadingSpinner from "./LoadingSpinner";
-import AppleHealthCharts from "./health/AppleHealthCharts";
-import MetricNamesDiagnostic from "./health/MetricNamesDiagnostic";
 import MeasurementsSection from "./health/MeasurementsSection";
 import SimpleChart from "./health/SimpleChart";
-import { activityStats, combineHealthSeries, shortDate, type ActivityStats } from "./health/utils";
+import { activityStats, shortDate, type ActivityStats } from "./health/utils";
 import WellnessSection from "./health/WellnessSection";
 import { formatDuration } from "../format";
-
-// Per-metric presentation for imported Apple Health series.
-const HEALTH_META: Record<string, { icon: Icon; color: string }> = {
-  resting_heart_rate: { icon: Heart, color: "#f87171" },   // red-400
-  vo2_max: { icon: Pulse, color: "#2dd4bf" },              // teal-400
-  step_count: { icon: Footprints, color: "#60a5fa" },      // blue-400
-  sleep_analysis: { icon: Moon, color: "#818cf8" },        // indigo-400
-  active_energy: { icon: Fire, color: "#f59e0b" },         // amber-500
-  apple_exercise_time: { icon: Timer, color: "#34d399" },  // emerald-400
-};
-
-function formatHealthValue(metric: string, v: number): string {
-  if (metric === "step_count") return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v));
-  if (metric === "vo2_max" || metric === "sleep_analysis") return v.toFixed(1);
-  return String(Math.round(v));
-}
 
 function bmiColor(cat: string | null): string {
   switch (cat) {
@@ -102,8 +77,6 @@ function StatCard({
   );
 }
 
-/** Per-activity all-time summary (Workouts / Running / Walking), mirroring the
- *  Boxing card layout. Driven by activityStats() over the full session list. */
 function ActivityStatsCard({ kind, stats }: { kind: ActivityKind; stats: ActivityStats }) {
   const Icon = ACTIVITY_ICONS[kind];
   const color = ACTIVITY_COLORS[kind];
@@ -148,87 +121,6 @@ function ActivityStatsCard({ kind, stats }: { kind: ActivityKind; stats: Activit
             ))}
           </div>
         </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Health Trend Card ─────────────────────────────────────
-
-const ROLLING_AVG_METRICS = new Set(["resting_heart_rate", "step_count"]);
-
-function rollingAvg(values: number[], window: number): number[] {
-  return values.map((_, i) => {
-    const slice = values.slice(Math.max(0, i - window + 1), i + 1);
-    return slice.reduce((s, v) => s + v, 0) / slice.length;
-  });
-}
-
-function HealthTrendChart({ series }: { series: HealthSeries }) {
-  if (series.points.length === 0) return null;
-  const meta = HEALTH_META[series.metric] ?? { icon: Pulse, color: "var(--accent)" };
-  const MetricIcon = meta.icon;
-  const latest = series.points[series.points.length - 1].value;
-  const avg = series.points.reduce((s, p) => s + p.value, 0) / series.points.length;
-  const values = series.points.map((p) => p.value);
-  const w = 300;
-  const h = 90;
-  const lo = Math.min(...values) * 0.9;
-  const hi = Math.max(...values) * 1.1;
-  const range = hi - lo || 1;
-  const px = (i: number) => 24 + (i / (series.points.length - 1)) * (w - 30);
-  const py = (v: number) => h - ((v - lo) / range) * h;
-  const labelIdxs = [0, Math.floor((series.points.length - 1) / 2), series.points.length - 1];
-  const overlay = ROLLING_AVG_METRICS.has(series.metric) ? rollingAvg(values, 7) : undefined;
-
-  return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-3">
-      <div className="flex items-center gap-2 mb-2">
-        <MetricIcon size={16} style={{ color: meta.color }} />
-        <span className="text-xs text-fg/40">{series.label}</span>
-        <span className="text-[10px] text-fg/30 ml-auto">
-          {formatHealthValue(series.metric, latest)} {series.unit} · avg {formatHealthValue(series.metric, avg)}
-        </span>
-      </div>
-      {series.points.length >= 2 ? (
-        <svg viewBox={`0 0 ${w} ${h + 18}`} className="w-full" style={{ maxHeight: h + 18 }}>
-          <polyline
-            points={series.points.map((p, i) => `${px(i)},${py(p.value)}`).join(" ")}
-            fill="none"
-            stroke={meta.color}
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {series.points.map((p, i) => (
-            <circle key={i} cx={px(i)} cy={py(p.value)} r="2.5" fill={meta.color} />
-          ))}
-          {overlay && overlay.length === series.points.length && (
-            <polyline
-              points={overlay.map((v, i) => `${px(i)},${py(v)}`).join(" ")}
-              fill="none"
-              stroke={meta.color}
-              strokeWidth="1"
-              strokeDasharray="3 3"
-              opacity={0.55}
-            />
-          )}
-          {series.metric === "apple_exercise_time" && (
-            <line
-              x1={24} y1={py(30)} x2={w} y2={py(30)}
-              stroke={meta.color} strokeWidth="1" strokeDasharray="4 3" opacity={0.45}
-            />
-          )}
-          {labelIdxs.map((idx) => (
-            <text key={idx} x={px(idx)} y={h + 13} textAnchor="middle" className="fill-fg/30" fontSize="8">
-              {series.points[idx].date.slice(5)}
-            </text>
-          ))}
-        </svg>
-      ) : (
-        <p className="text-[10px] text-fg/30 text-center py-2">
-          More data needed for trend — keep syncing
-        </p>
       )}
     </div>
   );
@@ -327,22 +219,16 @@ function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxingPrs: 
 // ─── Main Component ─────────────────────────────────────────
 
 export default function HealthAndStatsTab() {
-  // Stats data
   const [stats, setStats] = useState<StatsOverviewResponse | null>(null);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
-  const [weightEntries, setWeightEntries] = useState<WeightEntryResponse[]>([]);
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
-  const [health, setHealth] = useState<HealthInsightsResponse | null>(null);
-  const [activity, setActivity] = useState<DailyActivityPoint[]>([]);
 
-  // Health data
   const [weights, setWeights] = useState<WeightEntryResponse[]>([]);
   const [bmi, setBmi] = useState<BmiResponse | null>(null);
   const [prs, setPrs] = useState<PrsResponse | null>(null);
   const [boxingStats, setBoxingStats] = useState<BoxingStatsResponse | null>(null);
   const [boxingPrs, setBoxingPrs] = useState<BoxingPrsResponse | null>(null);
 
-  // UI state
   const [loading, setLoading] = useState(true);
   const [newWeight, setNewWeight] = useState("");
   const [showWellness, setShowWellness] = useState(false);
@@ -350,35 +236,26 @@ export default function HealthAndStatsTab() {
 
   const loadAll = async () => {
     try {
-      const [
-        overview, sessionList, wEntries, goalProgress, healthInsights,
-        ws, b, pr, dailyActivity,
-      ] = await Promise.all([
+      const [overview, sessionList, ws, b, pr] = await Promise.all([
         api.getStatsOverview(),
         api.getSessions().catch(() => [] as WorkoutSession[]),
-        api.getWeightEntries().catch(() => [] as WeightEntryResponse[]),
-        api.getGoalProgress().catch(() => null),
-        api.getHealthInsights(120).catch(() => null),
         api.getWeightEntries(),
         api.getBmi(),
         api.getPrs(),
-        api.getDailyActivity(120).catch(() => null),
       ]);
       const boxStats = await api.getBoxingStats().catch(() => null);
       const boxPrs = await api.getBoxingPrs().catch(() => null);
+      const goalProgress = await api.getGoalProgress().catch(() => null);
       setStats(overview);
       setSessions(sessionList);
-      setWeightEntries(wEntries);
-      setGoal(goalProgress);
-      setHealth(healthInsights);
       setWeights(ws);
       setBmi(b);
       setPrs(pr);
-      setActivity(dailyActivity?.days ?? []);
+      setGoal(goalProgress);
       setBoxingStats(boxStats);
       setBoxingPrs(boxPrs);
     } catch (e) {
-      console.error("Failed to load health & stats data", e);
+      console.error("Failed to load health data", e);
     } finally {
       setLoading(false);
     }
@@ -406,18 +283,11 @@ export default function HealthAndStatsTab() {
     return <div className="text-center py-8 text-fg/40">Failed to load data.</div>;
   }
 
-  const weeks = [...stats.activity_weekly].reverse(); // oldest → newest
+  const weeks = [...stats.activity_weekly].reverse();
   const mixWeeks = weeks.slice(-4);
   const workoutStats = activityStats(sessions, "workout");
   const runStats = activityStats(sessions, "run");
   const walkStats = activityStats(sessions, "walk");
-
-  const appMinByDate = new Map(
-    activity.filter((d) => d.minutes > 0).map((d) => [d.date, d.minutes] as const),
-  );
-  const appKcalByDate = new Map(
-    activity.filter((d) => d.kcal > 0).map((d) => [d.date, d.kcal] as const),
-  );
 
   // ── Coach insights ──
   const insightLines: { icon: Icon; text: string; tone?: "warn" }[] = [];
@@ -466,7 +336,7 @@ export default function HealthAndStatsTab() {
 
   return (
     <div className="health-stats-tab space-y-4">
-      {/* ── Quick Stats: consistency, kcal, weight trend, streak ── */}
+      {/* ── Quick Stats ── */}
       <div className="grid grid-cols-2 gap-2">
         <StatCard
           icon={<CalendarBlank size={14} className="text-accent" />}
@@ -503,9 +373,8 @@ export default function HealthAndStatsTab() {
         )}
       </div>
 
-      {/* ── TOP: Goal Progress + BMI + Log Weight ── */}
+      {/* ── Goal Progress + BMI + Log Weight ── */}
       <div className="grid grid-cols-3 gap-3">
-        {/* Goal Progress */}
         <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-3 sm:col-span-1">
           {goal?.goal_weight_kg ? (
             <>
@@ -540,7 +409,6 @@ export default function HealthAndStatsTab() {
           )}
         </div>
 
-        {/* BMI */}
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           {bmi?.bmi ? (
             <>
@@ -555,7 +423,6 @@ export default function HealthAndStatsTab() {
           )}
         </div>
 
-        {/* Log Weight */}
         <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-2 sm:col-span-1">
           <p className="text-xs text-fg/40 mb-2 flex items-center gap-1.5">
             <Scales size={14} className="text-accent shrink-0" />
@@ -581,10 +448,10 @@ export default function HealthAndStatsTab() {
         </div>
       </div>
 
-      {/* ── PERSONAL RECORDS ── */}
+      {/* ── Personal Records ── */}
       {prs && <PersonalRecordsCard prs={prs} boxingPrs={boxingPrs} />}
 
-      {/* Insight cards */}
+      {/* ── Coach insights ── */}
       {insightLines.length > 0 && (
         <div className="space-y-1.5">
           {insightLines.map(({ icon: InsightIcon, text, tone }, i) => (
@@ -596,7 +463,7 @@ export default function HealthAndStatsTab() {
         </div>
       )}
 
-      {/* Summary cards */}
+      {/* ── Summary cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <StatCard
           icon={<Barbell size={14} style={{ color: ACTIVITY_COLORS.workout }} />}
@@ -620,7 +487,7 @@ export default function HealthAndStatsTab() {
         />
       </div>
 
-      {/* ── Per-activity Stats (above Boxing) ── */}
+      {/* ── Per-activity Stats ── */}
       {workoutStats.sessions > 0 && (
         <ActivityStatsCard kind="workout" stats={workoutStats} />
       )}
@@ -712,31 +579,7 @@ export default function HealthAndStatsTab() {
 
       {weights.length >= 2 && <SimpleChart entries={weights} />}
 
-      {/* Apple Health vitals */}
-      {health && health.series.length > 0 && (
-        <>
-          <div className="flex items-center gap-2 pt-1">
-            <Heart size={18} className="text-red-400" weight="fill" />
-            <h3 className="text-sm font-semibold">Apple Health</h3>
-          </div>
-          {health.series
-            .filter((s) => s.metric !== "sleep_analysis" && s.metric !== "heart_rate")
-            .map((s) => {
-              const merged =
-                s.metric === "apple_exercise_time"
-                  ? combineHealthSeries(s, appMinByDate)
-                  : s.metric === "active_energy"
-                  ? combineHealthSeries(s, appKcalByDate)
-                  : s;
-              return <HealthTrendChart key={s.metric} series={merged} />;
-            })}
-          <AppleHealthCharts series={health.series} weightEntries={weightEntries} />
-        </>
-      )}
-
-      <MetricNamesDiagnostic />
-
-      {/* ── BODY MEASUREMENTS ── */}
+      {/* ── Body Measurements ── */}
       <button
         onClick={() => setShowMeas(!showMeas)}
         className="w-full bg-surface rounded-xl p-4 border border-fg/5 flex items-center justify-between"
@@ -752,7 +595,7 @@ export default function HealthAndStatsTab() {
       </button>
       {showMeas && <MeasurementsSection />}
 
-      {/* ── WELLNESS CHECK-IN ── */}
+      {/* ── Wellness Check-in ── */}
       <button
         onClick={() => setShowWellness(!showWellness)}
         className="w-full bg-surface rounded-xl p-4 border border-fg/5 flex items-center justify-between"

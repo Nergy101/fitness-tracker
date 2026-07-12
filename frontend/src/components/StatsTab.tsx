@@ -2,14 +2,22 @@ import { useEffect, useState } from "react";
 import {
   ChartPieSliceIcon as ChartPieSlice,
   FireIcon as Fire,
+  FootprintsIcon as Footprints,
+  HeartIcon as Heart,
+  MoonIcon as Moon,
   PersonSimpleRunIcon as PersonSimpleRun,
+  PulseIcon as Pulse,
   ScalesIcon as Scales,
   TimerIcon as Timer,
   TrendUpIcon as TrendUp,
+  type Icon,
 } from "@phosphor-icons/react";
 import {
   api,
+  type DailyActivityPoint,
   type GoalProgressResponse,
+  type HealthInsightsResponse,
+  type HealthSeries,
   type RunEntryResponse,
   type StatsOverviewResponse,
   type WeeklyActivityStat,
@@ -20,9 +28,28 @@ import { ACTIVITY_COLORS, ACTIVITY_LABELS, type ActivityKind } from "../activity
 import ActivityLegend from "./ActivityLegend";
 import ChartCard from "./ChartCard";
 import LoadingSpinner from "./LoadingSpinner";
+import AppleHealthCharts from "./health/AppleHealthCharts";
+import MetricNamesDiagnostic from "./health/MetricNamesDiagnostic";
 import { niceTicks } from "./health/ticks";
+import { combineHealthSeries } from "./health/utils";
 
 const WEIGHT_COLOR = "#c084fc"; // purple-400
+
+// Per-metric presentation for imported Apple Health series.
+const HEALTH_META: Record<string, { icon: Icon; color: string }> = {
+  resting_heart_rate: { icon: Heart, color: "#f87171" },   // red-400
+  vo2_max: { icon: Pulse, color: "#2dd4bf" },              // teal-400
+  step_count: { icon: Footprints, color: "#60a5fa" },      // blue-400
+  sleep_analysis: { icon: Moon, color: "#818cf8" },        // indigo-400
+  active_energy: { icon: Fire, color: "#f59e0b" },         // amber-500
+  apple_exercise_time: { icon: Timer, color: "#34d399" },  // emerald-400
+};
+
+function formatHealthValue(metric: string, v: number): string {
+  if (metric === "step_count") return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v));
+  if (metric === "vo2_max" || metric === "sleep_analysis") return v.toFixed(1);
+  return String(Math.round(v));
+}
 
 /** Seconds-per-km as "m:ss" (e.g. 324 → "5:24"). */
 function formatPace(secondsPerKm: number): string {
@@ -267,7 +294,6 @@ interface DailyActivityStat {
   boxing_kcal: number;
 }
 
-/** Common shape for chart datum fields shared by WeeklyActivityStat and DailyActivityStat. */
 type ChartDatum = {
   workout_minutes: number;
   run_minutes: number;
@@ -281,7 +307,6 @@ type ChartDatum = {
   boxing_kcal: number;
 };
 
-/** Compute 7-day daily activity from sessions + runs (always fills all 7 days). */
 function computeDailyActivity(
   sessions: WorkoutSession[],
   runs: RunEntryResponse[],
@@ -301,7 +326,6 @@ function computeDailyActivity(
       workout_kcal: 0, run_kcal: 0, walk_kcal: 0, boxing_kcal: 0,
     });
   }
-  // Aggregate sessions
   for (const s of sessions) {
     const d = new Date(s.started_at);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -319,7 +343,6 @@ function computeDailyActivity(
       entry[kcalKey] += s.total_kcal_estimated;
     }
   }
-  // Aggregate runs (for distance and minutes not already captured as sessions)
   for (const r of runs) {
     const key = r.date.slice(0, 10);
     const entry = days.find((x) => x.date === key);
@@ -329,7 +352,6 @@ function computeDailyActivity(
     if (entry[`${kind}_minutes`] === 0) {
       entry[`${kind}_minutes`] = r.duration_seconds / 60;
     }
-    // Estimate kcal from distance (60 kcal/km run, 45 kcal/km walk)
     entry[`${kind}_kcal`] += r.distance_km * (kind === "run" ? 60 : 45);
   }
   return days;
@@ -341,37 +363,83 @@ function formatHours(totalMinutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+// ─── Health Trend Chart ─────────────────────────────────────
+
+const ROLLING_AVG_METRICS = new Set(["resting_heart_rate", "step_count"]);
+
+function rollingAvg(values: number[], window: number): number[] {
+  return values.map((_, i) => {
+    const slice = values.slice(Math.max(0, i - window + 1), i + 1);
+    return slice.reduce((s, v) => s + v, 0) / slice.length;
+  });
+}
+
+function HealthTrendChart({ series }: { series: HealthSeries }) {
+  if (series.points.length === 0) return null;
+  const meta = HEALTH_META[series.metric] ?? { icon: Pulse, color: "var(--accent)" };
+  const MetricIcon = meta.icon;
+  const latest = series.points[series.points.length - 1].value;
+  const avg = series.points.reduce((s, p) => s + p.value, 0) / series.points.length;
+  const values = series.points.map((p) => p.value);
+  return (
+    <ChartCard
+      icon={<MetricIcon size={16} style={{ color: meta.color }} />}
+      title={series.label}
+      sub={`${formatHealthValue(series.metric, latest)} ${series.unit} · avg ${formatHealthValue(series.metric, avg)}`}
+    >
+      {series.points.length >= 2 && (
+        <LineChart
+          points={series.points.map((p) => ({ label: p.date.slice(5), value: p.value }))}
+          color={meta.color}
+          formatValue={(v) => formatHealthValue(series.metric, v)}
+          overlay={ROLLING_AVG_METRICS.has(series.metric) ? rollingAvg(values, 7) : undefined}
+          reference={series.metric === "apple_exercise_time" ? { value: 30, label: "goal 30 min" } : undefined}
+        />
+      )}
+      {series.points.length === 1 && (
+        <p className="text-[10px] text-fg/30 text-center py-2">
+          More data needed for trend — keep syncing
+        </p>
+      )}
+    </ChartCard>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────────
 
 export default function StatsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // Data
   const [stats, setStats] = useState<StatsOverviewResponse | null>(null);
   const [runs, setRuns] = useState<RunEntryResponse[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [weightEntries, setWeightEntries] = useState<WeightEntryResponse[]>([]);
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
+  const [health, setHealth] = useState<HealthInsightsResponse | null>(null);
+  const [activity, setActivity] = useState<DailyActivityPoint[]>([]);
 
-  // Chart mode
   const [chartMode, setChartMode] = useState<"daily" | "weekly">("daily");
 
   useEffect(() => {
     (async () => {
       try {
-        const [overview, runList, sessionList, wEntries, goalProgress] = await Promise.all([
+        const [overview, runList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity] = await Promise.all([
           api.getStatsOverview(),
           api.getRuns().catch(() => [] as RunEntryResponse[]),
           api.getSessions().catch(() => [] as WorkoutSession[]),
           api.getWeightEntries().catch(() => [] as WeightEntryResponse[]),
           api.getGoalProgress().catch(() => null),
+          api.getHealthInsights(120).catch(() => null),
+          api.getDailyActivity(120).catch(() => null),
         ]);
         setStats(overview);
         setRuns(runList);
         setSessions(sessionList);
         setWeightEntries(wEntries);
         setGoal(goalProgress);
+        setHealth(healthInsights);
+        setActivity(dailyActivity?.days ?? []);
       } catch (e) {
         console.error("Failed to load stats data", e);
         setError(true);
@@ -388,24 +456,29 @@ export default function StatsTab() {
     return <div className="text-center py-8 text-fg/40">Failed to load data.</div>;
   }
 
-  const weeks = [...stats.activity_weekly].reverse(); // oldest → newest
+  const weeks = [...stats.activity_weekly].reverse();
   const daily = computeDailyActivity(sessions, runs);
   const chartData = chartMode === "daily" ? daily : weeks;
   const hasDistance = chartData.some((d: ChartDatum) => (d.run_km || 0) + (d.walk_km || 0) > 0);
   const hasKcal = chartData.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) + (d.boxing_kcal || 0) > 0);
   const mixWeeks = weeks.slice(-4);
 
-  // Pace trend
   const pacedRuns = runs
     .filter((r) => r.run_type !== "walk" && r.pace_per_km != null && r.distance_km >= 1)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(-20);
   const bestPace = pacedRuns.length > 0 ? Math.min(...pacedRuns.map((r) => r.pace_per_km as number)) : null;
 
-  // Weight journey
   const weightSeries = [...weightEntries]
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(-30);
+
+  const appMinByDate = new Map(
+    activity.filter((d) => d.minutes > 0).map((d) => [d.date, d.minutes] as const),
+  );
+  const appKcalByDate = new Map(
+    activity.filter((d) => d.kcal > 0).map((d) => [d.date, d.kcal] as const),
+  );
 
   return (
     <div className="stats-tab space-y-4">
@@ -552,6 +625,30 @@ export default function StatsTab() {
           />
         </ChartCard>
       )}
+
+      {/* Apple Health vitals */}
+      {health && health.series.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 pt-1">
+            <Heart size={18} className="text-red-400" weight="fill" />
+            <h3 className="text-sm font-semibold">Apple Health</h3>
+          </div>
+          {health.series
+            .filter((s) => s.metric !== "sleep_analysis" && s.metric !== "heart_rate")
+            .map((s) => {
+              const merged =
+                s.metric === "apple_exercise_time"
+                  ? combineHealthSeries(s, appMinByDate)
+                  : s.metric === "active_energy"
+                  ? combineHealthSeries(s, appKcalByDate)
+                  : s;
+              return <HealthTrendChart key={s.metric} series={merged} />;
+            })}
+          <AppleHealthCharts series={health.series} weightEntries={weightEntries} />
+        </>
+      )}
+
+      <MetricNamesDiagnostic />
     </div>
   );
 }
