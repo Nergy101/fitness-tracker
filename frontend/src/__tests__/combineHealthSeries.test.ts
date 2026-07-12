@@ -13,9 +13,9 @@ const base: HealthSeries = {
 };
 
 describe("combineHealthSeries", () => {
-  it("sums app value into a matching apple date", () => {
+  it("keeps the watch value on a shared date (no double-count)", () => {
     const out = combineHealthSeries(base, new Map([["2026-07-01", 30]]));
-    expect(out.points.find((p) => p.date === "2026-07-01")!.value).toBe(50);
+    expect(out.points.find((p) => p.date === "2026-07-01")!.value).toBe(20);
   });
 
   it("inserts app-only dates in sorted order", () => {

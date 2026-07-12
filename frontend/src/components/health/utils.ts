@@ -6,9 +6,10 @@ export function shortDate(dateStr: string) {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-/** Merge app-logged per-day values into an Apple Health series: sum on shared
- *  dates, insert app-only dates, re-sort ascending. Completes Exercise Minutes /
- *  Active Energy when the watch under-reports but the workout was logged in-app.
+/** Fill an Apple Health series with app-logged per-day values: on dates the
+ *  watch already recorded, keep the watch value (no double-count); on dates the
+ *  watch missed, insert the app value. Re-sort ascending. Completes Exercise
+ *  Minutes / Active Energy for days logged in-app but absent from the watch.
  *  `appByDate` maps ISO date -> app value already in the series' unit (min or kcal). */
 export function combineHealthSeries(
   series: HealthSeries,
@@ -16,7 +17,7 @@ export function combineHealthSeries(
 ): HealthSeries {
   const byDate = new Map<string, number>();
   for (const p of series.points) byDate.set(p.date, p.value);
-  for (const [d, v] of appByDate) byDate.set(d, (byDate.get(d) ?? 0) + v);
+  for (const [d, v] of appByDate) if (!byDate.has(d)) byDate.set(d, v);
   const points = [...byDate.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, value]) => ({
