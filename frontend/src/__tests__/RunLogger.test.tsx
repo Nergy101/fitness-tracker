@@ -6,6 +6,9 @@ import RunLogger from "../components/RunLogger";
 vi.mock("../api", () => ({
   api: {
     createRun: vi.fn().mockResolvedValue({ id: 1 }),
+    getRuns: vi.fn().mockResolvedValue([]),
+    updateRun: vi.fn().mockResolvedValue({ id: 1 }),
+    deleteRun: vi.fn().mockResolvedValue(undefined),
   },
 }));
 

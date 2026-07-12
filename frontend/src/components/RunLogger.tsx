@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { PersonSimpleRunIcon as PersonSimpleRun, MapTrifoldIcon as MapTrifold } from "@phosphor-icons/react";
+import { useState, useEffect } from "react";
+import { PersonSimpleRunIcon as PersonSimpleRun, MapTrifoldIcon as MapTrifold, PencilIcon as Pencil, TrashIcon as Trash } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api } from "../api";
+import type { RunEntryResponse } from "../api";
 import { formatDuration } from "../format";
 
 interface RunLoggerProps {
@@ -23,8 +24,19 @@ function formatPace(secondsPerKm: number | null): string {
   return `${min}:${sec.toString().padStart(2, "0")} /km`;
 }
 
+function parseDate(dateStr: string): string {
+  return dateStr.slice(0, 10);
+}
+
+function formatDate(isoStr: string): string {
+  const d = new Date(isoStr);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 export default function RunLogger({ onRunLogged }: RunLoggerProps) {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [entries, setEntries] = useState<RunEntryResponse[]>([]);
   const [runDuration, setRunDuration] = useState(1800);
   const [runCustomDuration, setRunCustomDuration] = useState("");
   const [runDistance, setRunDistance] = useState("");
@@ -32,30 +44,84 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
   const [runDate, setRunDate] = useState(new Date().toISOString().slice(0, 10));
   const [runNotes, setRunNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState<number | null>(null);
 
-  async function logRun() {
+  async function loadEntries() {
+    try {
+      const data = await api.getRuns();
+      setEntries(data);
+    } catch {
+      // silently fail — entries are cosmetic
+    }
+  }
+
+  useEffect(() => { loadEntries(); }, []);
+
+  function resetForm() {
+    setRunDuration(1800);
+    setRunCustomDuration("");
+    setRunDistance("");
+    setRunType("run");
+    setRunNotes("");
+    setRunDate(new Date().toISOString().slice(0, 10));
+    setEditingId(null);
+  }
+
+  function startEdit(entry: RunEntryResponse) {
+    setEditingId(entry.id);
+    setRunDuration(entry.duration_seconds);
+    setRunCustomDuration("");
+    setRunDistance(entry.distance_km.toString());
+    setRunType(entry.run_type === "walk" ? "walk" : "run");
+    setRunNotes(entry.notes);
+    setRunDate(parseDate(entry.date));
+    setShowForm(true);
+  }
+
+  async function handleDelete(entryId: number) {
+    setShowConfirmDelete(null);
+    try {
+      await api.deleteRun(entryId);
+      setToast("Run deleted");
+      await loadEntries();
+      onRunLogged();
+    } catch {
+      setToast("Failed to delete run");
+    }
+  }
+
+  async function handleSubmit() {
     const dist = parseFloat(runDistance);
     const dur = runDuration;
     if (isNaN(dist) || dist <= 0 || dur <= 0) return;
 
     try {
-      await api.createRun({
-        duration_seconds: dur,
-        distance_km: dist,
-        run_type: runType,
-        date: runDate,
-        notes: runNotes,
-      });
+      if (editingId) {
+        await api.updateRun(editingId, {
+          duration_seconds: dur,
+          distance_km: dist,
+          run_type: runType,
+          date: runDate,
+          notes: runNotes,
+        });
+        setToast("Run updated!");
+      } else {
+        await api.createRun({
+          duration_seconds: dur,
+          distance_km: dist,
+          run_type: runType,
+          date: runDate,
+          notes: runNotes,
+        });
+        setToast("Run logged!");
+      }
 
-      setToast("Run logged!");
-      setRunDistance("");
-      setRunNotes("");
-      setRunCustomDuration("");
-      setRunDuration(1800);
+      resetForm();
       setShowForm(false);
+      await loadEntries();
       onRunLogged();
     } catch {
-      setToast("Failed to log run");
+      setToast(editingId ? "Failed to update run" : "Failed to log run");
     }
   }
 
@@ -64,6 +130,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
       ? runDuration / parseFloat(runDistance)
       : null;
 
+  // ── Collapsed state: show "Log a Run" button + recent entries list ──
   if (!showForm) {
     return (
       <>
@@ -73,8 +140,9 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
             {toast}
           </Toast>
         )}
+
         <button
-          onClick={() => setShowForm(true)}
+          onClick={() => { resetForm(); setShowForm(true); }}
           className="w-full bg-surface rounded-xl p-4 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors mb-4 flex items-center gap-3"
         >
           <PersonSimpleRun size={22} className="text-accent shrink-0" />
@@ -85,10 +153,57 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
             </p>
           </div>
         </button>
+
+        {/* Recent entries list */}
+        {entries.length > 0 && (
+          <div className="bg-surface rounded-xl p-4 border border-fg/10 mb-4 space-y-2">
+            <p className="text-xs text-fg/50 font-medium uppercase tracking-wide mb-2">
+              Recent Runs & Walks
+            </p>
+            {entries.slice(0, 10).map((entry) => (
+              <div
+                key={entry.id}
+                className="flex items-center justify-between py-1.5 border-b border-fg/5 last:border-b-0"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <PersonSimpleRun size={14} className="text-accent shrink-0" />
+                  <div className="truncate">
+                    <span className="text-sm text-fg font-medium">
+                      {entry.run_type === "walk" ? "Walk" : "Run"} {entry.distance_km.toFixed(1)}km
+                    </span>
+                    <span className="text-xs text-fg/40 ml-1">
+                      {formatDuration(entry.duration_seconds)}
+                    </span>
+                    <span className="text-xs text-fg/30 ml-2">
+                      {formatDate(entry.date)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  <button
+                    onClick={() => startEdit(entry)}
+                    aria-label="Edit"
+                    className="p-1.5 text-fg/40 hover:text-fg rounded-lg hover:bg-bg transition-colors"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => setShowConfirmDelete(entry.id)}
+                    aria-label="Delete"
+                    className="p-1.5 text-fg/40 hover:text-red-400 rounded-lg hover:bg-bg transition-colors"
+                  >
+                    <Trash size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </>
     );
   }
 
+  // ── Form state (create or edit) ──
   return (
     <>
       {toast && (
@@ -97,14 +212,48 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
           {toast}
         </Toast>
       )}
+
+      {/* Confirm delete overlay */}
+      {showConfirmDelete !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+             style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
+             onClick={() => setShowConfirmDelete(null)}>
+          <div
+            className="bg-surface rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl border border-fg/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-semibold text-fg mb-2">Delete run?</p>
+            <p className="text-xs text-fg/50 mb-4">
+              This will also remove it from your history. This action cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowConfirmDelete(null)}
+                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-bg text-fg/60 hover:text-fg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(showConfirmDelete)}
+                className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-red-500/90 text-white hover:bg-red-500 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-surface rounded-xl p-4 border border-accent/20 mb-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <PersonSimpleRun size={18} className="text-accent" />
-            <span className="text-sm font-semibold text-fg">Log a {runType === "walk" ? "Walk" : "Run"}</span>
+            <span className="text-sm font-semibold text-fg">
+              {editingId ? "Edit Run" : `Log a ${runType === "walk" ? "Walk" : "Run"}`}
+            </span>
           </div>
           <button
-            onClick={() => setShowForm(false)}
+            onClick={() => { resetForm(); setShowForm(false); }}
             className="text-xs text-fg/40 hover:text-fg"
           >
             Cancel
@@ -213,11 +362,11 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
         </div>
 
         <button
-          onClick={logRun}
+          onClick={handleSubmit}
           disabled={!runDistance || parseFloat(runDistance) <= 0}
           className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
         >
-          Save Run
+          {editingId ? "Update Run" : "Save Run"}
         </button>
       </div>
     </>
