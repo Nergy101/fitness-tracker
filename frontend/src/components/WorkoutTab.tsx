@@ -189,7 +189,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
 
       {/* Workout Templates */}
       {loading ? (
-        <LoadingSpinner />
+        <LoadingSpinner label="Loading workouts" />
       ) : error ? (
         <div className="flex flex-col items-center py-12 text-red-400">
           <SmileySad size={40} weight="regular" className="mb-3 opacity-80" />

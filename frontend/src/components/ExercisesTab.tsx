@@ -141,7 +141,7 @@ export default function ExercisesTab() {
       </div>
 
       {loading ? (
-        <LoadingSpinner />
+        <LoadingSpinner label="Loading exercises" />
       ) : error ? (
         <div className="flex flex-col items-center py-8 text-red-400">
           <SmileySad size={40} weight="regular" className="mb-3 opacity-80" />

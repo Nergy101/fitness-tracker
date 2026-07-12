@@ -70,7 +70,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   }
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner label="Loading history" />;
   }
   if (error) {
     return (
