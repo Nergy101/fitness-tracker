@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   BarbellIcon as Barbell,
   ChartBarIcon as ChartBar,
+  ChartPieSliceIcon as ChartPieSlice,
   GearIcon as Gear,
   HeartbeatIcon as Heartbeat,
   PersonSimpleRunIcon as PersonSimpleRun,
@@ -12,6 +13,7 @@ import WorkoutTab from "./components/WorkoutTab";
 import ExercisesTab from "./components/ExercisesTab";
 import HistoryTab from "./components/HistoryTab";
 import HealthAndStatsTab from "./components/HealthAndStatsTab";
+import StatsTab from "./components/StatsTab";
 import WorkoutRunner from "./components/WorkoutRunner";
 import TabataRunner from "./components/TabataRunner";
 import AppSettingsModal from "./components/AppSettingsModal";
@@ -24,7 +26,7 @@ import OfflineBanner from "./components/OfflineBanner";
 import { useHashRoute } from "./useHashRoute";
 import { useOnboarding } from "./useOnboarding";
 
-type TabId = "workout" | "exercises" | "history" | "health";
+type TabId = "workout" | "exercises" | "history" | "health" | "stats";
 
 interface Tab {
   id: TabId;
@@ -37,6 +39,7 @@ const TABS: Tab[] = [
   { id: "exercises", label: "Exercises", icon: PersonSimpleRun },
   { id: "history", label: "History", icon: ChartBar },
   { id: "health", label: "Health", icon: Heartbeat },
+  { id: "stats", label: "Stats", icon: ChartPieSlice },
 ];
 
 const TAB_IDS: readonly TabId[] = TABS.map((t) => t.id);
@@ -126,6 +129,7 @@ export default function App() {
             <HistoryTab refreshKey={historyRefreshKey} />
           )}
           {currentTab === "health" && <HealthAndStatsTab key={healthRefreshKey} />}
+          {currentTab === "stats" && <StatsTab />}
         </main>
 
         <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] shrink-0">
