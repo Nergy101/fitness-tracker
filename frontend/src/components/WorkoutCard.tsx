@@ -124,7 +124,31 @@ export default function WorkoutCard({
         )}
         {template.rounds > 1 && <span>{template.rounds} rounds</span>}
       </div>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-xs">
+      {(template.warmup_seconds > 0 || template.cooldown_seconds > 0) && (
+        <div className="grid grid-cols-2 gap-x-3 mt-1.5 text-xs">
+          {template.warmup_seconds > 0 ? (
+            <span className="text-orange-400/70">
+              🔥 Warmup{" "}
+              <span className="font-semibold">
+                {formatDuration(template.warmup_seconds)}
+              </span>
+            </span>
+          ) : (
+            <span />
+          )}
+          {template.cooldown_seconds > 0 ? (
+            <span className="text-blue-400/70">
+              🧊 Cooldown{" "}
+              <span className="font-semibold">
+                {formatDuration(template.cooldown_seconds)}
+              </span>
+            </span>
+          ) : (
+            <span />
+          )}
+        </div>
+      )}
+      <div className="grid grid-cols-3 gap-x-3 mt-1.5 text-xs">
         <span className="text-fg/50">
           Work{" "}
           <span className="font-semibold text-fg/70">
@@ -142,28 +166,6 @@ export default function WorkoutCard({
         ) : (
           <span />
         )}
-        {template.warmup_seconds > 0 ? (
-          <span className="text-orange-400/70">
-            🔥 Warmup{" "}
-            <span className="font-semibold">
-              {formatDuration(template.warmup_seconds)}
-            </span>
-          </span>
-        ) : (
-          <span />
-        )}
-        {template.cooldown_seconds > 0 ? (
-          <span className="text-blue-400/70">
-            🧊 Cooldown{" "}
-            <span className="font-semibold">
-              {formatDuration(template.cooldown_seconds)}
-            </span>
-          </span>
-        ) : (
-          <span />
-        )}
-      </div>
-      <div className="mt-1 text-xs">
         <span className="text-accent">
           Total{" "}
           <span className="font-semibold">
