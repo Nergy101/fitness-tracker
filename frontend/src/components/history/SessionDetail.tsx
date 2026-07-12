@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type WorkoutSession, type BoxingEntryResponse } from "../../api";
+import { api, type WorkoutSession, type BoxingEntryResponse, type RunEntryResponse } from "../../api";
 import { formatDateRelative, formatDuration, localISO } from "../../format";
 
 /** Modal showing a session's stats, per-exercise breakdown, date editing, and inline notes. */
@@ -101,6 +101,60 @@ export default function SessionDetail({
 
   const isRunOrWalk = session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:");
   const isRun = session.template_name.startsWith("Run:");
+
+  const [runEntry, setRunEntry] = useState<RunEntryResponse | null>(null);
+  const [runDistanceEdit, setRunDistanceEdit] = useState("");
+  const [runMinutesEdit, setRunMinutesEdit] = useState("");
+
+  useEffect(() => {
+    if (!isRunOrWalk || session.run_entry_id == null) return;
+    let active = true;
+    api
+      .getRuns()
+      .then((list) => {
+        if (!active) return;
+        const e = list.find((r) => r.id === session.run_entry_id);
+        if (e) {
+          setRunEntry(e);
+          setRunDistanceEdit(e.distance_km.toString());
+          setRunMinutesEdit(String(Math.round(e.duration_seconds / 60)));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [isRunOrWalk, session.run_entry_id]);
+
+  async function saveRun() {
+    if (!runEntry) return;
+    const dist = parseFloat(runDistanceEdit);
+    const mins = parseInt(runMinutesEdit) || 0;
+    if (isNaN(dist) || dist <= 0 || mins <= 0) return;
+    try {
+      await api.updateRun(runEntry.id, {
+        duration_seconds: mins * 60,
+        distance_km: dist,
+        run_type: isRun ? "run" : "walk",
+        date: runEntry.date.slice(0, 10),
+        notes: runEntry.notes,
+      });
+      const [updated, list] = await Promise.all([
+        api.getSession(session.id),
+        api.getRuns(),
+      ]);
+      onUpdate(updated);
+      const e = list.find((r) => r.id === runEntry.id);
+      if (e) setRunEntry(e);
+    } catch (err) {
+      console.error("Failed to update run", err);
+    }
+  }
+
+  const runDirty =
+    !!runEntry &&
+    ((parseInt(runMinutesEdit) || 0) * 60 !== runEntry.duration_seconds ||
+      parseFloat(runDistanceEdit) !== runEntry.distance_km);
 
   async function toggleRunType() {
     try {
@@ -247,6 +301,46 @@ export default function SessionDetail({
             >
               Walk
             </button>
+          </div>
+        )}
+
+        {isRunOrWalk && runEntry && (
+          <div className="bg-surface rounded-lg p-3 mb-4 space-y-3">
+            <p className="text-[10px] text-fg/40 font-medium">Edit {isRun ? "run" : "walk"}</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[10px] text-fg/40 mb-1">Distance (km)</p>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={runDistanceEdit}
+                  onChange={(e) => setRunDistanceEdit(e.target.value)}
+                  aria-label="Run distance km"
+                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                />
+              </div>
+              <div>
+                <p className="text-[10px] text-fg/40 mb-1">Minutes</p>
+                <input
+                  type="number"
+                  min="1"
+                  value={runMinutesEdit}
+                  onChange={(e) => setRunMinutesEdit(e.target.value)}
+                  aria-label="Run minutes"
+                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                />
+              </div>
+            </div>
+            {runDirty && (
+              <button
+                onClick={saveRun}
+                disabled={!(parseFloat(runDistanceEdit) > 0) || (parseInt(runMinutesEdit) || 0) <= 0}
+                className="w-full bg-accent text-on-accent rounded-lg py-1.5 text-xs font-semibold disabled:opacity-50"
+              >
+                Save changes
+              </button>
+            )}
           </div>
         )}
 

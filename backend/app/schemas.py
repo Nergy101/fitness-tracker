@@ -180,6 +180,7 @@ class WorkoutSessionResponse(BaseModel):
     total_kcal_estimated: float
     notes: str
     boxing_entry_id: Optional[int] = None
+    run_entry_id: Optional[int] = None
     exercises: list[SessionExerciseResponse] = []
 
     model_config = {"from_attributes": True}

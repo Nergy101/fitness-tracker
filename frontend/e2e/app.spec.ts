@@ -855,6 +855,34 @@ test.describe("authenticated", () => {
     }).toPass();
   });
 
+  test("run session is editable from the History tab", async ({ page, request }) => {
+    // Log a 30m / 5.0km run via UI
+    await page.goto("/");
+    await page.getByText("Log a Run").click();
+    await page.getByRole("button", { name: "30m" }).click();
+    await page.locator('input[placeholder="e.g. 5.0"]').fill("5.0");
+    await page.getByRole("button", { name: "Save Run" }).click();
+    await expect(page.getByRole("status")).toContainText("Run logged");
+
+    // Open the run session detail from History
+    await page.getByRole("button", { name: "History" }).click();
+    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "Run: 5.0km" }).first().click();
+
+    // Edit the distance to 7.0km and save
+    await page.getByLabel("Run distance km").fill("7.0");
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    // Verify the run entry + mirror session updated to 7.0km
+    await expect(async () => {
+      const runs = await (await request.get(`${API_URL}/api/v1/runs`, { headers: _authHeaders })).json();
+      const match = runs.find((r: { distance_km: number }) => r.distance_km === 7.0);
+      expect(match).toBeTruthy();
+      const sessions = await (await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })).json();
+      const mirror = sessions.find((s: { template_name: string }) => s.template_name.includes("Run: 7.0km"));
+      expect(mirror).toBeTruthy();
+    }).toPass();
+  });
+
   test("session notes edit persists after closing and reopening detail", async ({ page, request }) => {
     // Create a fast workout via API
     const workout = await createFastWorkout(request, "E2E Notes Test", 1, 2, 10, _authHeaders);

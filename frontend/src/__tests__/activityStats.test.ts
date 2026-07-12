@@ -13,6 +13,7 @@ function session(overrides: Partial<WorkoutSession>): WorkoutSession {
     total_kcal_estimated: 0,
     notes: "",
     boxing_entry_id: null,
+    run_entry_id: null,
     exercises: [],
     ...overrides,
   };
