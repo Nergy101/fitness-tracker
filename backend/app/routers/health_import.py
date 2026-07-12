@@ -13,7 +13,7 @@ import json
 from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Body, Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
@@ -21,7 +21,8 @@ from app.database import get_db
 from app.models.models import HealthMetric, HealthWorkout
 from app.schemas import (
     HealthImportResult, HealthInsightsResponse, HealthSeries, HealthPoint,
-    HealthWorkoutSummary, HealthWorkoutsResponse, SleepStages,
+    HealthWorkoutSummary, HealthWorkoutsResponse, MetricNamesResponse,
+    MetricNameStat, SleepStages,
 )
 
 router = APIRouter(prefix="/api/v1/import", tags=["import"])
@@ -303,6 +304,39 @@ def health_insights(days: int = 120, db: Session = Depends(get_db)):
         series.append(HealthSeries(metric="heart_rate", label="Heart Rate", unit="bpm", points=points))
 
     return HealthInsightsResponse(series=series)
+
+
+@router.get("/metric-names", response_model=MetricNamesResponse)
+def metric_names(db: Session = Depends(get_db)):
+    """Diagnostic: every distinct stored Apple Health metric name with its row
+    count, date span, and most-recent qty. Use to confirm whether a metric
+    (e.g. vo2_max) is actually arriving and under which name."""
+    rows = db.execute(
+        select(
+            HealthMetric.metric_name,
+            func.count().label("count"),
+            func.min(HealthMetric.date).label("earliest"),
+            func.max(HealthMetric.date).label("latest"),
+        )
+        .group_by(HealthMetric.metric_name)
+        .order_by(HealthMetric.metric_name.asc())
+    ).all()
+
+    stats: list[MetricNameStat] = []
+    for name, count, earliest, latest in rows:
+        latest_qty = db.execute(
+            select(HealthMetric.qty)
+            .where(HealthMetric.metric_name == name, HealthMetric.date == latest)
+            .limit(1)
+        ).scalar()
+        stats.append(MetricNameStat(
+            metric_name=name,
+            count=count,
+            earliest=earliest.isoformat() if earliest else None,
+            latest=latest.isoformat() if latest else None,
+            latest_qty=latest_qty,
+        ))
+    return MetricNamesResponse(metrics=stats)
 
 
 def _workout_energy_kcal(w: HealthWorkout) -> float | None:

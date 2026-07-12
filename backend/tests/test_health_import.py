@@ -891,6 +891,47 @@ class TestAggregatedAvgFallback:
         assert series["resting_heart_rate"]["points"][0]["value"] == 51.0
 
 
+# ---------------------------------------------------------------------------
+# Diagnostic: distinct stored metric names
+# ---------------------------------------------------------------------------
+
+
+class TestMetricNames:
+    IMPORT_URL = "/api/v1/import/data"
+    URL = "/api/v1/import/metric-names"
+
+    def test_empty_when_nothing_imported(self, client: TestClient, auth_headers: dict):
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["metrics"] == []
+
+    def test_reports_count_span_and_latest_qty(self, client: TestClient, auth_headers: dict):
+        """Each distinct name reports row count, date span (oldest→newest), and
+        the qty of the most recent day — sorted by name."""
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(
+                _metric("vo2_max", "mL/min·kg", [_scalar_point(3, 48.5)]),
+                _metric("step_count", "count", [_scalar_point(2, 8000.0), _scalar_point(0, 9000.0)]),
+            ),
+            headers=auth_headers,
+        )
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        by_name = {m["metric_name"]: m for m in resp.json()["metrics"]}
+
+        assert by_name["vo2_max"]["count"] == 1
+        assert by_name["vo2_max"]["latest"] == (date.today() - timedelta(days=3)).isoformat()
+        assert by_name["vo2_max"]["latest_qty"] == 48.5
+
+        assert by_name["step_count"]["count"] == 2
+        assert by_name["step_count"]["earliest"] == (date.today() - timedelta(days=2)).isoformat()
+        assert by_name["step_count"]["latest"] == date.today().isoformat()
+        assert by_name["step_count"]["latest_qty"] == 9000.0
+
+        # Alphabetical order regardless of import order.
+        assert [m["metric_name"] for m in resp.json()["metrics"]] == ["step_count", "vo2_max"]
+
 
 # ---------------------------------------------------------------------------
 # 8. Same-day point merging

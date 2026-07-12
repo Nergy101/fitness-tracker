@@ -49,6 +49,7 @@ import ActivityLegend from "./ActivityLegend";
 import ChartCard from "./ChartCard";
 import LoadingSpinner from "./LoadingSpinner";
 import AppleHealthCharts from "./health/AppleHealthCharts";
+import MetricNamesDiagnostic from "./health/MetricNamesDiagnostic";
 import MeasurementsSection from "./health/MeasurementsSection";
 import SimpleChart from "./health/SimpleChart";
 import { niceTicks } from "./health/ticks"
@@ -1113,6 +1114,8 @@ export default function HealthAndStatsTab() {
           <AppleHealthCharts series={health.series} weightEntries={weightEntries} />
         </>
       )}
+
+      <MetricNamesDiagnostic />
 
       {/* ── BODY MEASUREMENTS ── */}
       <button

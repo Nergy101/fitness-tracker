@@ -520,6 +520,19 @@ class HealthWorkoutsResponse(BaseModel):
     workouts: list[HealthWorkoutSummary] = []
 
 
+class MetricNameStat(BaseModel):
+    """Diagnostic summary of one stored Apple Health metric name."""
+    metric_name: str
+    count: int
+    earliest: str | None = None
+    latest: str | None = None
+    latest_qty: float | None = None
+
+
+class MetricNamesResponse(BaseModel):
+    metrics: list[MetricNameStat] = []
+
+
 class DailyActivityPoint(BaseModel):
     date: str
     minutes: float

@@ -360,6 +360,18 @@ export interface HealthInsightsResponse {
   series: HealthSeries[];
 }
 
+export interface MetricNameStat {
+  metric_name: string;
+  count: number;
+  earliest: string | null;
+  latest: string | null;
+  latest_qty: number | null;
+}
+
+export interface MetricNamesResponse {
+  metrics: MetricNameStat[];
+}
+
 export interface HealthWorkoutSummary {
   date: string;
   name: string;
@@ -706,6 +718,8 @@ export const api = {
     fetchJSON<HealthInsightsResponse>(`/api/v1/import/insights?days=${days}`),
   getHealthWorkouts: (days = 120) =>
     fetchJSON<HealthWorkoutsResponse>(`/api/v1/import/workouts?days=${days}`),
+  getMetricNames: () =>
+    fetchJSON<MetricNamesResponse>("/api/v1/import/metric-names"),
 
 
   // ─── Runs ───────────────────────────────────────────
