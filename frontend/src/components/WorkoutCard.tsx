@@ -29,9 +29,9 @@ export default function WorkoutCard({
           : "border-fg/5"
       }`}
     >
+      {/* Title row: pin + name + buttons */}
       <div className="flex items-start justify-between">
-        <div className="flex items-start gap-2 flex-1">
-          {/* Pin / star icon */}
+        <div className="flex items-start gap-2 flex-1 min-w-0">
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -52,75 +52,18 @@ export default function WorkoutCard({
           </button>
 
           <div
-            className="flex-1 cursor-pointer"
+            className="flex-1 cursor-pointer min-w-0"
             onClick={() => onStart(template)}
           >
-            <h3 className="font-semibold text-base">{template.name}</h3>
+            <h3 className="font-semibold text-base truncate">{template.name}</h3>
             {template.mode && template.mode !== "circuit" && (
               <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-accent/15 text-accent ml-2 align-middle">
                 {template.mode}
               </span>
             )}
-            {template.description && (
-              <p className="text-fg/50 text-sm mt-1">{template.description}</p>
-            )}
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-fg/40">
-              <span>{template.exercises.length} exercises</span>
-              {template.exercises.some((e) => e.superset_group != null) && (
-                <span className="text-accent/60">superset</span>
-              )}
-              {template.rounds > 1 && <span>{template.rounds} rounds</span>}
-            </div>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-xs">
-              <span className="text-fg/50">
-                Work{" "}
-                <span className="font-semibold text-fg/70">
-                  {formatDuration(template.work_duration_seconds)}
-                </span>
-              </span>
-              {template.rest_duration_seconds > 0 ? (
-                <span className="text-fg/50">
-                  Rest{" "}
-                  <span className="font-semibold text-fg/70">
-                    {template.rounds - 1}&times;
-                    {formatDuration(template.rest_between_rounds)}
-                  </span>
-                </span>
-              ) : (
-                <span />
-              )}
-              {template.warmup_seconds > 0 ? (
-                <span className="text-orange-400/70">
-                  🔥 Warmup{" "}
-                  <span className="font-semibold">
-                    {formatDuration(template.warmup_seconds)}
-                  </span>
-                </span>
-              ) : (
-                <span />
-              )}
-              {template.cooldown_seconds > 0 ? (
-                <span className="text-blue-400/70">
-                  🧊 Cooldown{" "}
-                  <span className="font-semibold">
-                    {formatDuration(template.cooldown_seconds)}
-                  </span>
-                </span>
-              ) : (
-                <span />
-              )}
-            </div>
-            <div className="mt-1 text-xs">
-              <span className="text-accent">
-                Total{" "}
-                <span className="font-semibold">
-                  {formatDuration(template.total_duration_seconds)}
-                </span>
-              </span>
-            </div>
           </div>
         </div>
-        <div className="flex gap-2 ml-3">
+        <div className="flex gap-2 ml-3 shrink-0">
           <button
             onClick={() => onEdit(template)}
             className="text-fg/30 hover:text-fg/70 transition-colors p-1"
@@ -166,6 +109,67 @@ export default function WorkoutCard({
             Start
           </button>
         </div>
+      </div>
+
+      {/* Full-width description */}
+      {template.description && (
+        <p className="text-fg/50 text-sm mt-1">{template.description}</p>
+      )}
+
+      {/* Full-width metadata + timing */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-fg/40">
+        <span>{template.exercises.length} exercises</span>
+        {template.exercises.some((e) => e.superset_group != null) && (
+          <span className="text-accent/60">superset</span>
+        )}
+        {template.rounds > 1 && <span>{template.rounds} rounds</span>}
+      </div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-1.5 text-xs">
+        <span className="text-fg/50">
+          Work{" "}
+          <span className="font-semibold text-fg/70">
+            {formatDuration(template.work_duration_seconds)}
+          </span>
+        </span>
+        {template.rest_duration_seconds > 0 ? (
+          <span className="text-fg/50">
+            Rest{" "}
+            <span className="font-semibold text-fg/70">
+              {template.rounds - 1}&times;
+              {formatDuration(template.rest_between_rounds)}
+            </span>
+          </span>
+        ) : (
+          <span />
+        )}
+        {template.warmup_seconds > 0 ? (
+          <span className="text-orange-400/70">
+            🔥 Warmup{" "}
+            <span className="font-semibold">
+              {formatDuration(template.warmup_seconds)}
+            </span>
+          </span>
+        ) : (
+          <span />
+        )}
+        {template.cooldown_seconds > 0 ? (
+          <span className="text-blue-400/70">
+            🧊 Cooldown{" "}
+            <span className="font-semibold">
+              {formatDuration(template.cooldown_seconds)}
+            </span>
+          </span>
+        ) : (
+          <span />
+        )}
+      </div>
+      <div className="mt-1 text-xs">
+        <span className="text-accent">
+          Total{" "}
+          <span className="font-semibold">
+            {formatDuration(template.total_duration_seconds)}
+          </span>
+        </span>
       </div>
     </div>
   );
