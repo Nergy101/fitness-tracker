@@ -115,6 +115,7 @@ export interface WorkoutSession {
   total_duration_seconds: number;
   total_kcal_estimated: number;
   notes: string;
+  boxing_entry_id: number | null;
   exercises: SessionExercise[];
 }
 

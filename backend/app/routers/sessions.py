@@ -50,6 +50,7 @@ def _build_session_response(session: WorkoutSession) -> WorkoutSessionResponse:
         total_duration_seconds=session.total_duration_seconds,
         total_kcal_estimated=session.total_kcal_estimated,
         notes=session.notes or "",
+        boxing_entry_id=session.boxing_entry_id,
         exercises=ex_responses,
     )
 

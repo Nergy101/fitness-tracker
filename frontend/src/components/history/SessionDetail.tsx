@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { api, type WorkoutSession } from "../../api";
+import { useEffect, useState } from "react";
+import { api, type WorkoutSession, type BoxingEntryResponse } from "../../api";
 import { formatDateRelative, formatDuration, localISO } from "../../format";
 
 /** Modal showing a session's stats, per-exercise breakdown, date editing, and inline notes. */
@@ -13,6 +13,63 @@ export default function SessionDetail({
   onUpdate: (updated: WorkoutSession) => void;
 }) {
   const [notes, setNotes] = useState(session.notes || "");
+
+  const isBoxing = session.template_name.startsWith("Boxing:");
+  const [boxingEntry, setBoxingEntry] = useState<BoxingEntryResponse | null>(null);
+  const [boxMinutes, setBoxMinutes] = useState("");
+  const [boxKcalPerMin, setBoxKcalPerMin] = useState("");
+  const [boxRounds, setBoxRounds] = useState("");
+
+  useEffect(() => {
+    if (!isBoxing || session.boxing_entry_id == null) return;
+    let active = true;
+    api
+      .getBoxing()
+      .then((list) => {
+        if (!active) return;
+        const e = list.find((b) => b.id === session.boxing_entry_id);
+        if (e) {
+          setBoxingEntry(e);
+          setBoxMinutes(String(Math.round(e.duration_seconds / 60)));
+          setBoxKcalPerMin(String(e.kcal_per_min));
+          setBoxRounds(e.rounds != null ? String(e.rounds) : "");
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [isBoxing, session.boxing_entry_id]);
+
+  async function saveBoxing() {
+    if (!boxingEntry) return;
+    const mins = parseInt(boxMinutes) || 0;
+    if (mins <= 0) return;
+    try {
+      await api.updateBoxing(boxingEntry.id, {
+        duration_seconds: mins * 60,
+        kcal_per_min: parseFloat(boxKcalPerMin) || 0,
+        rounds: boxRounds ? parseInt(boxRounds) : null,
+        date: boxingEntry.date.slice(0, 10),
+        notes: boxingEntry.notes,
+      });
+      const [updated, list] = await Promise.all([
+        api.getSession(session.id),
+        api.getBoxing(),
+      ]);
+      onUpdate(updated);
+      const e = list.find((b) => b.id === boxingEntry.id);
+      if (e) setBoxingEntry(e);
+    } catch (err) {
+      console.error("Failed to update boxing session", err);
+    }
+  }
+
+  const boxDirty =
+    !!boxingEntry &&
+    ((parseInt(boxMinutes) || 0) * 60 !== boxingEntry.duration_seconds ||
+      (parseFloat(boxKcalPerMin) || 0) !== boxingEntry.kcal_per_min ||
+      (boxRounds ? parseInt(boxRounds) : null) !== (boxingEntry.rounds ?? null));
 
   function toLocalDatetimeLocal(iso: string) {
     const d = new Date(iso);
@@ -190,6 +247,57 @@ export default function SessionDetail({
             >
               Walk
             </button>
+          </div>
+        )}
+
+        {isBoxing && boxingEntry && (
+          <div className="bg-surface rounded-lg p-3 mb-4 space-y-3">
+            <p className="text-[10px] text-fg/40 font-medium">Edit boxing session</p>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <p className="text-[10px] text-fg/40 mb-1">Minutes</p>
+                <input
+                  type="number"
+                  min="1"
+                  value={boxMinutes}
+                  onChange={(e) => setBoxMinutes(e.target.value)}
+                  aria-label="Boxing minutes"
+                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                />
+              </div>
+              <div>
+                <p className="text-[10px] text-fg/40 mb-1">Kcal/min</p>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={boxKcalPerMin}
+                  onChange={(e) => setBoxKcalPerMin(e.target.value)}
+                  aria-label="Boxing kcal per minute"
+                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                />
+              </div>
+              <div>
+                <p className="text-[10px] text-fg/40 mb-1">Rounds</p>
+                <input
+                  type="number"
+                  min="1"
+                  value={boxRounds}
+                  onChange={(e) => setBoxRounds(e.target.value)}
+                  placeholder="—"
+                  aria-label="Boxing rounds"
+                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                />
+              </div>
+            </div>
+            {boxDirty && (
+              <button
+                onClick={saveBoxing}
+                disabled={(parseInt(boxMinutes) || 0) <= 0}
+                className="w-full bg-accent text-on-accent rounded-lg py-1.5 text-xs font-semibold disabled:opacity-50"
+              >
+                Save changes
+              </button>
+            )}
           </div>
         )}
 

@@ -830,6 +830,31 @@ test.describe("authenticated", () => {
     expect(mirrorAfter.total_duration_seconds).toBe(2700);
   });
 
+  test("boxing session is editable from the History tab", async ({ page, request }) => {
+    // Log a 30m boxing session via UI
+    await page.goto("/");
+    await page.getByText("Log Boxing").click();
+    await page.getByRole("button", { name: "30m" }).click();
+    await page.getByRole("button", { name: "Save Boxing Workout" }).click();
+    await expect(page.getByRole("status")).toContainText("Boxing workout logged!");
+
+    // Open the boxing session detail from History
+    await page.getByRole("button", { name: "History" }).click();
+    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "Boxing: 30min" }).first().click();
+
+    // Edit the duration to 45 minutes and save
+    await page.getByLabel("Boxing minutes").fill("45");
+    await page.getByRole("button", { name: "Save changes" }).click();
+
+    // Verify the boxing entry + mirror session updated to 45min / 2700s
+    await expect(async () => {
+      const sessions = await (await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })).json();
+      const mirror = sessions.find((s: { template_name: string }) => s.template_name.includes("Boxing: 45min"));
+      expect(mirror).toBeTruthy();
+      expect(mirror.total_duration_seconds).toBe(2700);
+    }).toPass();
+  });
+
   test("session notes edit persists after closing and reopening detail", async ({ page, request }) => {
     // Create a fast workout via API
     const workout = await createFastWorkout(request, "E2E Notes Test", 1, 2, 10, _authHeaders);
