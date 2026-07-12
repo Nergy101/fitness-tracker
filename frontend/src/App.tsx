@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   BarbellIcon as Barbell,
   ChartBarIcon as ChartBar,
-  ChartPieSliceIcon as ChartPieSlice,
+  ClockIcon as Clock,
   GearIcon as Gear,
   HeartbeatIcon as Heartbeat,
   PersonSimpleRunIcon as PersonSimpleRun,
@@ -37,9 +37,9 @@ interface Tab {
 const TABS: Tab[] = [
   { id: "workout", label: "Workouts", icon: Barbell },
   { id: "exercises", label: "Exercises", icon: PersonSimpleRun },
-  { id: "history", label: "History", icon: ChartBar },
   { id: "health", label: "Health", icon: Heartbeat },
-  { id: "stats", label: "Stats", icon: ChartPieSlice },
+  { id: "history", label: "History", icon: Clock },
+  { id: "stats", label: "Stats", icon: ChartBar },
 ];
 
 const TAB_IDS: readonly TabId[] = TABS.map((t) => t.id);
@@ -137,12 +137,12 @@ export default function App() {
             <button
               key={tab.id}
               onClick={() => setCurrentTab(tab.id)}
+              aria-label={tab.label}
               className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
                 currentTab === tab.id ? "text-accent" : "text-fg/40"
               }`}
             >
               <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
-              <span className="text-xs font-medium">{tab.label}</span>
             </button>
           ))}
         </nav>

@@ -435,7 +435,7 @@ test.describe("authenticated", () => {
     expect(mode).toBe("system");
   });
 
-  // --- Stats (now part of Health) Tab ---
+  // --- Stats Tab ---
 
   test("stats tab loads with summary data", async ({ page, request }) => {
     // Seed a session so stats has data
@@ -451,10 +451,10 @@ test.describe("authenticated", () => {
     });
 
     await page.goto("/");
-    await page.getByRole("button", { name: "Health" }).click();
+    await page.getByRole("button", { name: "Stats" }).click();
 
-    // Health/Stats combined tab loads — summary cards visible
-    await expect(page.getByText("Total kcal").first()).toBeVisible();
+    // Stats tab loads — activity section is visible
+    await expect(page.getByText("Activity").first()).toBeVisible();
   });
 
   // --- Health Tab ---
