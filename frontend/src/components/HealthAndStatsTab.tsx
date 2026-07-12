@@ -33,6 +33,7 @@ import {
   type BmiResponse,
   type BoxingStatsResponse,
   type BoxingPrsResponse,
+  type DailyActivityPoint,
   type GoalProgressResponse,
   type HealthInsightsResponse,
   type HealthSeries,
@@ -51,7 +52,7 @@ import AppleHealthCharts from "./health/AppleHealthCharts";
 import MeasurementsSection from "./health/MeasurementsSection";
 import SimpleChart from "./health/SimpleChart";
 import { niceTicks } from "./health/ticks"
-import { shortDate } from "./health/utils";
+import { combineHealthSeries, shortDate } from "./health/utils";
 import WellnessSection from "./health/WellnessSection";
 import { formatDuration, formatHours } from "../format";
 
@@ -561,6 +562,7 @@ export default function HealthAndStatsTab() {
   const [weightEntries, setWeightEntries] = useState<WeightEntryResponse[]>([]);
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
   const [health, setHealth] = useState<HealthInsightsResponse | null>(null);
+  const [activity, setActivity] = useState<DailyActivityPoint[]>([]);
 
   // Health data
   const [weights, setWeights] = useState<WeightEntryResponse[]>([]);
@@ -580,7 +582,7 @@ export default function HealthAndStatsTab() {
     try {
       const [
         overview, runList, sessionList, wEntries, goalProgress, healthInsights,
-        ws, b, pr,
+        ws, b, pr, dailyActivity,
       ] = await Promise.all([
         api.getStatsOverview(),
         api.getRuns().catch(() => [] as RunEntryResponse[]),
@@ -591,6 +593,7 @@ export default function HealthAndStatsTab() {
         api.getWeightEntries(),
         api.getBmi(),
         api.getPrs(),
+        api.getDailyActivity(120).catch(() => null),
       ]);
       const boxStats = await api.getBoxingStats().catch(() => null);
       const boxPrs = await api.getBoxingPrs().catch(() => null);
@@ -603,6 +606,7 @@ export default function HealthAndStatsTab() {
       setWeights(ws);
       setBmi(b);
       setPrs(pr);
+      setActivity(dailyActivity?.days ?? []);
       setBoxingStats(boxStats);
       setBoxingPrs(boxPrs);
     } catch (e) {
@@ -697,6 +701,13 @@ export default function HealthAndStatsTab() {
   if (stats.total_sessions_all === 0 && stats.total_runs === 0 && stats.total_walks === 0 && stats.total_boxing === 0) {
     insightLines.push({ icon: RocketLaunch, text: "Complete your first workout to see stats!" });
   }
+
+  const appMinByDate = new Map(
+    activity.filter((d) => d.minutes > 0).map((d) => [d.date, d.minutes] as const),
+  );
+  const appKcalByDate = new Map(
+    activity.filter((d) => d.kcal > 0).map((d) => [d.date, d.kcal] as const),
+  );
 
   return (
     <div className="health-stats-tab space-y-4">
@@ -1090,9 +1101,15 @@ export default function HealthAndStatsTab() {
           </div>
           {health.series
             .filter((s) => s.metric !== "sleep_analysis" && s.metric !== "heart_rate")
-            .map((s) => (
-              <HealthTrendChart key={s.metric} series={s} />
-            ))}
+            .map((s) => {
+              const merged =
+                s.metric === "apple_exercise_time"
+                  ? combineHealthSeries(s, appMinByDate)
+                  : s.metric === "active_energy"
+                  ? combineHealthSeries(s, appKcalByDate)
+                  : s;
+              return <HealthTrendChart key={s.metric} series={merged} />;
+            })}
           <AppleHealthCharts series={health.series} weightEntries={weightEntries} />
         </>
       )}
