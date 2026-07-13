@@ -257,9 +257,11 @@ async def auth_middleware(request: Request, call_next):
                 )
 
         # Apple Health import endpoints are called by Shortcuts automation
-        # which sends Basic auth — reject Bearer tokens here so a stale
-        # session token doesn't silently fail the import.
-        if path.startswith("/api/v1/import/") and auth_header.startswith("Bearer "):
+        # which sends Basic auth. The POST endpoint ingests data; reject
+        # Bearer tokens there so a stale session token doesn't silently fail
+        # the import. GET endpoints (insights, workouts, metric-names) are
+        # read-only and used by the web UI — they accept Bearer tokens.
+        if path == "/api/v1/import/data" and auth_header.startswith("Bearer "):
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Import endpoints require Basic auth"},
