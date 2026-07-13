@@ -317,6 +317,7 @@ class TestBoxingPrs:
         assert data["longest_session_seconds"] is None
         assert data["most_kcal_session"] is None
         assert data["total_hours_all_time"] == 0.0
+        assert data["most_rounds_session"] is None
 
     def test_single_entry(self, client: TestClient, auth_headers: dict):
         """Returns correct PRs for a single boxing entry."""
@@ -330,6 +331,7 @@ class TestBoxingPrs:
         assert data["longest_session_seconds"] == 1800
         assert data["most_kcal_session"] == 300.0  # 30min * 10 kcal/min
         assert data["total_hours_all_time"] == 0.5
+        assert data["most_rounds_session"] is None  # no rounds set
 
     def test_multiple_entries(self, client: TestClient, auth_headers: dict):
         """Returns correct PRs across multiple entries — picks max values."""
@@ -352,3 +354,35 @@ class TestBoxingPrs:
         assert data["most_kcal_session"] == 720.0
         # Total hours: (1800 + 3600 + 2700) / 3600 = 2.25
         assert data["total_hours_all_time"] == 2.2  # round(2.25, 1) = 2.2 (banker's rounding)
+        assert data["most_rounds_session"] is None  # no rounds set
+
+    def test_most_rounds(self, client: TestClient, auth_headers: dict):
+        """most_rounds_session picks the entry with the highest round count."""
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "rounds": 8, "notes": "8 rounds",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 3600, "rounds": 12, "notes": "12 rounds",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 2700, "rounds": 6, "notes": "6 rounds",
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["most_rounds_session"] == 12
+
+    def test_most_rounds_mixed(self, client: TestClient, auth_headers: dict):
+        """most_rounds_session ignores entries without rounds set."""
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800, "notes": "no rounds",
+        }, headers=auth_headers)
+        client.post("/api/v1/boxing", json={
+            "duration_seconds": 3600, "rounds": 10, "notes": "10 rounds",
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["most_rounds_session"] == 10
