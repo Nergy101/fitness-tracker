@@ -67,6 +67,15 @@ def auth_headers() -> dict[str, str]:
     return {"Authorization": f"Basic {token}"}
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limit():
+    """Isolate the auth rate limiter between tests (module-global state)."""
+    from app.routers.auth import reset_rate_limit
+
+    reset_rate_limit()
+    yield
+
+
 # ─── Helpers ──────────────────────────────────────────────────
 
 @pytest.fixture

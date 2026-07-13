@@ -4,6 +4,7 @@ import base64
 from fastapi.testclient import TestClient
 
 from .conftest import TEST_PASSWORD
+from app.routers.auth import MAX_FAILED_ATTEMPTS
 
 
 class TestLogin:
@@ -92,3 +93,34 @@ class TestAuthMiddleware:
         """Garbage in the Basic token raises 401."""
         resp = client.get(self.PROTECTED_URL, headers={"Authorization": "Basic this-is-not-base64!!!"})
         assert resp.status_code == 401
+
+
+class TestRateLimit:
+    """The login endpoint and auth middleware lock out brute-force attempts."""
+
+    URL = "/api/auth/login"
+    PROTECTED_URL = "/api/v1/exercises"
+
+    def test_login_locks_out_after_threshold(self, client: TestClient):
+        for _ in range(MAX_FAILED_ATTEMPTS):
+            assert client.post(self.URL, json={"password": "nope"}).status_code == 401
+        locked = client.post(self.URL, json={"password": "nope"})
+        assert locked.status_code == 429
+        assert "Retry-After" in locked.headers
+        # Even the correct password is refused while locked out.
+        assert client.post(self.URL, json={"password": TEST_PASSWORD}).status_code == 429
+
+    def test_login_success_resets_failure_count(self, client: TestClient):
+        for _ in range(MAX_FAILED_ATTEMPTS - 1):
+            assert client.post(self.URL, json={"password": "nope"}).status_code == 401
+        # A success clears the counter...
+        assert client.post(self.URL, json={"password": TEST_PASSWORD}).status_code == 200
+        # ...so the next wrong attempt is a plain 401, not a lockout.
+        assert client.post(self.URL, json={"password": "nope"}).status_code == 401
+
+    def test_middleware_locks_out_password_brute_force(self, client: TestClient):
+        token = base64.b64encode(b"fitness:wrong").decode()
+        headers = {"Authorization": f"Basic {token}"}
+        for _ in range(MAX_FAILED_ATTEMPTS):
+            assert client.get(self.PROTECTED_URL, headers=headers).status_code == 401
+        assert client.get(self.PROTECTED_URL, headers=headers).status_code == 429
