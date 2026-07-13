@@ -19,7 +19,6 @@ import {
   TimerIcon as Timer,
   TrendDownIcon as TrendDown,
   TrendUpIcon as TrendUp,
-  TrophyIcon as Trophy,
   WarningIcon as Warning,
   type Icon,
 } from "@phosphor-icons/react";
@@ -34,13 +33,15 @@ import {
   type WeightEntryResponse,
   type WorkoutSession,
 } from "../api";
-import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
+import { ACTIVITY_COLORS } from "../activity";
 import LoadingSpinner from "./LoadingSpinner";
 import MeasurementsSection from "./health/MeasurementsSection";
 import SimpleChart from "./health/SimpleChart";
-import { activityStats, shortDate, type ActivityStats } from "./health/utils";
+import { activityStats, shortDate } from "./health/utils";
 import WellnessSection from "./health/WellnessSection";
-import { formatDuration } from "../format";
+import { StatCard } from "./health/StatCard";
+import { ActivityStatsCard } from "./health/ActivityStatsCard";
+import { PersonalRecordsCard } from "./health/PersonalRecordsCard";
 
 function bmiColor(cat: string | null): string {
   switch (cat) {
@@ -50,170 +51,6 @@ function bmiColor(cat: string | null): string {
     case "Obese": return "text-red-400";
     default: return "text-fg/50";
   }
-}
-
-// ─── Stat Card ──────────────────────────────────────────────
-
-function StatCard({
-  icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  sub?: string;
-}) {
-  return (
-    <div className="bg-surface rounded-xl p-3 border border-fg/5">
-      <div className="flex items-center gap-1.5 mb-1">
-        {icon}
-        <span className="text-[10px] text-fg/40">{label}</span>
-      </div>
-      <p className="text-lg font-bold text-fg">{value}</p>
-      {sub && <p className="text-[10px] text-fg/30 mt-0.5">{sub}</p>}
-    </div>
-  );
-}
-
-function ActivityStatsCard({ kind, stats }: { kind: ActivityKind; stats: ActivityStats }) {
-  const Icon = ACTIVITY_ICONS[kind];
-  const color = ACTIVITY_COLORS[kind];
-  return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5">
-      <div className="flex items-center gap-2 mb-3">
-        <Icon size={20} weight="fill" className="shrink-0" style={{ color }} />
-        <p className="text-sm font-semibold text-fg">{ACTIVITY_LABELS[kind]}</p>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <StatCard
-          icon={<Icon size={14} style={{ color }} />}
-          label="Sessions"
-          value={String(stats.sessions)}
-        />
-        <StatCard
-          icon={<Timer size={14} style={{ color }} />}
-          label="Total hours"
-          value={`${stats.total_hours}h`}
-        />
-        <StatCard
-          icon={<Timer size={14} style={{ color }} />}
-          label="Avg session"
-          value={stats.avg_duration_seconds ? `${Math.round(stats.avg_duration_seconds / 60)}m` : "—"}
-        />
-        <StatCard
-          icon={<Fire size={14} className="text-orange-400" />}
-          label="Total kcal"
-          value={Math.round(stats.total_kcal_estimated).toLocaleString()}
-          sub={stats.avg_kcal_per_min ? `${stats.avg_kcal_per_min.toFixed(1)} kcal/min` : undefined}
-        />
-      </div>
-      {stats.monthly_breakdown.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-fg/5">
-          <p className="text-xs text-fg/40 mb-2">Monthly</p>
-          <div className="space-y-1.5">
-            {stats.monthly_breakdown.map((m) => (
-              <div key={m.month} className="flex items-center justify-between text-xs">
-                <span className="text-fg/60">{m.month}</span>
-                <span className="text-fg/40">{m.sessions} sessions · {m.total_minutes} min</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Personal Records ──────────────────────────────────────
-
-function RecordGroup({
-  kind,
-  records,
-}: {
-  kind: ActivityKind;
-  records: { label: string; value: string | null }[];
-}) {
-  const filled = records.filter((r): r is { label: string; value: string } => r.value != null);
-  if (filled.length === 0) return null;
-  const KindIcon = ACTIVITY_ICONS[kind];
-  return (
-    <div className="mb-3 last:mb-0">
-      <p className="flex items-center gap-1.5 text-xs text-fg/40 mb-1.5">
-        <KindIcon size={14} className="shrink-0" style={{ color: ACTIVITY_COLORS[kind] }} />
-        {ACTIVITY_LABELS[kind]}
-      </p>
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        {filled.map((r) => (
-          <div key={r.label} className="bg-bg rounded-lg p-2">
-            <p className="text-fg/50">{r.label}</p>
-            <p className="text-sm font-bold text-fg">{r.value}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxingPrs: BoxingPrsResponse | null }) {
-  const runRecords = [
-    { label: "Longest (distance)", value: prs.longest_run_km ? `${prs.longest_run_km.toFixed(1)} km` : null },
-    { label: "Longest (time)", value: prs.longest_run_seconds ? formatDuration(prs.longest_run_seconds) : null },
-    { label: "Fastest 5K", value: prs.fastest_5k_seconds ? formatDuration(prs.fastest_5k_seconds) : null },
-    { label: "Fastest 10K", value: prs.fastest_10k_seconds ? formatDuration(prs.fastest_10k_seconds) : null },
-    { label: "Best pace", value: prs.best_pace_seconds_per_km ? `${formatDuration(Math.round(prs.best_pace_seconds_per_km))} /km` : null },
-    { label: "Most kcal", value: prs.most_kcal_run ? `${Math.round(prs.most_kcal_run)} kcal` : null },
-    { label: "Best week", value: prs.best_week_run_km ? `${prs.best_week_run_km.toFixed(1)} km` : null },
-  ];
-  const walkRecords = [
-    { label: "Longest (distance)", value: prs.longest_walk_km ? `${prs.longest_walk_km.toFixed(1)} km` : null },
-    { label: "Longest (time)", value: prs.longest_walk_seconds ? formatDuration(prs.longest_walk_seconds) : null },
-    { label: "Most kcal", value: prs.most_kcal_walk ? `${Math.round(prs.most_kcal_walk)} kcal` : null },
-  ];
-  const workoutRecords = [
-    { label: "Longest (time)", value: prs.longest_workout_seconds ? formatDuration(prs.longest_workout_seconds) : null },
-    { label: "Most kcal", value: prs.most_kcal_workout ? `${Math.round(prs.most_kcal_workout)} kcal` : null },
-    { label: "Most exercises", value: prs.most_exercises_workout ? String(prs.most_exercises_workout) : null },
-  ];
-  const boxingRecords = boxingPrs ? [
-    { label: "Longest session", value: boxingPrs.longest_session_seconds ? formatDuration(boxingPrs.longest_session_seconds) : null },
-    { label: "Most kcal", value: boxingPrs.most_kcal_session ? `${Math.round(boxingPrs.most_kcal_session)} kcal` : null },
-    { label: "Most rounds", value: boxingPrs.most_rounds_session ? String(boxingPrs.most_rounds_session) : null },
-    { label: "Total hours", value: boxingPrs.total_hours_all_time > 0 ? `${boxingPrs.total_hours_all_time} hr` : null },
-  ] : [];
-
-  const hasAny =
-    [...runRecords, ...walkRecords, ...workoutRecords, ...boxingRecords].some((r) => r.value != null);
-  if (!hasAny) return null;
-
-  return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5">
-      <div className="flex items-center gap-2 mb-3">
-        <Trophy size={20} className="text-yellow-400 shrink-0" weight="fill" />
-        <p className="text-sm font-semibold text-fg">Personal Records</p>
-      </div>
-      <RecordGroup kind="run" records={runRecords} />
-      <RecordGroup kind="walk" records={walkRecords} />
-      <RecordGroup kind="workout" records={workoutRecords} />
-      {boxingRecords.some((r) => r.value != null) && (
-        <div className="mb-3 last:mb-0">
-          <p className="flex items-center gap-1.5 text-xs text-fg/40 mb-1.5">
-            <HandFist size={14} className="shrink-0 text-red-400" />
-            Boxing
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {boxingRecords.filter((r): r is { label: string; value: string } => r.value != null).map((r) => (
-              <div key={r.label} className="bg-bg rounded-lg p-2">
-                <p className="text-fg/50">{r.label}</p>
-                <p className="text-sm font-bold text-fg">{r.value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
 
 // ─── Main Component ─────────────────────────────────────────
