@@ -451,6 +451,15 @@ test.describe("authenticated", () => {
     });
 
     await page.goto("/");
+    // Debug: check what's in localStorage
+    const stored = await page.evaluate(() => {
+      return {
+        auth: localStorage.getItem("fitness_auth"),
+        onboarding: localStorage.getItem("onboardingComplete"),
+        length: localStorage.length,
+      };
+    });
+    console.log("localStorage state:", JSON.stringify(stored));
     // Wait for the bottom nav to appear (page finished loading)
     await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 10000 });
     await page.getByRole("button", { name: "Stats" }).click();
