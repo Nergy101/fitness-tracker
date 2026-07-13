@@ -90,6 +90,39 @@ jobs:
           cd backend
           python -m pytest tests/ -v --cov=app --cov-report=term-missing --tb=short
 
+  frontend-tests:
+    name: Frontend type-check & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend deps
+        run: |
+          cd frontend
+          npm ci
+
+      # `tsc --noEmit` at the repo root is a no-op: the root tsconfig has
+      # `files: []` and only project references, so it checks nothing. Build
+      # the referenced projects (`tsc -b`, both are noEmit) to actually
+      # type-check src/ — this is the same type gate `npm run build` runs.
+      - name: Type-check (tsc)
+        run: |
+          cd frontend
+          npx tsc -b
+
+      - name: Unit tests (Vitest)
+        run: |
+          cd frontend
+          npx vitest run
+
   e2e:
     name: E2E tests (Playwright)
     runs-on: ubuntu-latest
@@ -144,7 +177,7 @@ jobs:
 
   publish:
     name: Build & push Docker images
-    needs: [lint, test, e2e]
+    needs: [lint, test, frontend-tests, e2e]
     # Tests run on PRs, but images are published only from pushes to main
     # (and manual dispatches) — never from unreviewed PR code.
     if: github.event_name != 'pull_request'
