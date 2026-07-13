@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.database import get_db
-from app.models.models import Exercise, SessionExercise, ExerciseLog
+from app.models.models import Exercise, SessionExercise, ExerciseLog, WorkoutTemplateExercise
 from app.schemas import ExerciseCreate, ExerciseUpdate, ExerciseResponse, ExerciseLogResponse
 
 router = APIRouter(prefix="/api/v1/exercises", tags=["exercises"])
@@ -51,6 +51,24 @@ def delete_exercise(exercise_id: int, db: Session = Depends(get_db)):
     exercise = db.get(Exercise, exercise_id)
     if not exercise:
         raise HTTPException(status_code=404, detail="Exercise not found")
+    # Templates hold a NOT NULL FK to the exercise — refuse to delete one that
+    # is still in use (would violate the FK now that enforcement is on) and
+    # tell the caller how many workouts reference it.
+    in_use = (
+        db.query(WorkoutTemplateExercise)
+        .filter(WorkoutTemplateExercise.exercise_id == exercise_id)
+        .count()
+    )
+    if in_use:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Exercise is used in {in_use} workout(s); remove it from them first.",
+        )
+    # Past sessions keep a name snapshot, so null the nullable FK to preserve
+    # history instead of blocking deletion.
+    db.query(SessionExercise).filter(
+        SessionExercise.exercise_id == exercise_id
+    ).update({SessionExercise.exercise_id: None}, synchronize_session=False)
     db.delete(exercise)
     db.commit()
 

@@ -1,10 +1,12 @@
+import asyncio
 import logging
 import time
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import CORS_ORIGINS
+from app.config import CORS_ORIGINS, DATABASE_URL
 from app.database import run_migrations
 from app.logging_config import configure_logging
 from app.routers import exercises, workouts, sessions, health, runs, auth, stats, notifications, backup, health_import, boxing
@@ -17,7 +19,22 @@ logger = logging.getLogger("app.request")
 # Apply any pending schema migrations on startup.
 run_migrations()
 
-app = FastAPI(title="FitnessTracker API", version="1.2.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Automatic scheduled backups only for a real file-based DB (never the
+    # in-memory DB used by tests, where a background loop would be pointless).
+    task = None
+    if not (DATABASE_URL.endswith(":memory:") or DATABASE_URL == "sqlite://"):
+        task = asyncio.create_task(backup.scheduler_loop())
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+
+
+app = FastAPI(title="FitnessTracker API", version="1.2.0", lifespan=lifespan)
 
 # Auth middleware — must be added before other middleware/routes
 app.middleware("http")(auth.auth_middleware)

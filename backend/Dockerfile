@@ -9,8 +9,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# SQLite lives on a mounted volume so data survives container restarts.
+# SQLite + settings + backup config all live on the mounted volume so they
+# survive container recreation. A fresh settings.toml would otherwise mint a
+# new password + VAPID keys on every deploy, logging everyone out and killing
+# push subscriptions.
 ENV DATABASE_URL=sqlite:////data/fitness_tracker.db
+ENV FITNESS_SETTINGS_PATH=/data/settings.toml
+ENV FITNESS_BACKUP_CONFIG_PATH=/data/backup_config.json
 VOLUME ["/data"]
 
 EXPOSE 8000

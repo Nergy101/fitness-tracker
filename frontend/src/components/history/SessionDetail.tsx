@@ -188,7 +188,7 @@ export default function SessionDetail({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 border border-fg/10 max-h-[85vh] overflow-y-auto">
+      <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">{session.template_name}</h2>
           <button

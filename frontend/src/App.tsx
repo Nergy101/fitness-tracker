@@ -8,7 +8,7 @@ import {
   PersonSimpleRunIcon as PersonSimpleRun,
   type Icon,
 } from "@phosphor-icons/react";
-import { type WorkoutTemplate } from "./api";
+import { api, type WorkoutTemplate } from "./api";
 import WorkoutTab from "./components/WorkoutTab";
 import ExercisesTab from "./components/ExercisesTab";
 import HistoryTab from "./components/HistoryTab";
@@ -108,7 +108,7 @@ export default function App() {
               <Gear size={20} weight="fill" />
             </button>
             <button
-              onClick={() => { clearStoredAuth(); setAuthenticated(false); }}
+              onClick={() => { void api.logout(); clearStoredAuth(); setAuthenticated(false); }}
               className="text-[10px] text-fg/20 hover:text-red-400 transition-colors"
               title="Logout"
             >

@@ -91,6 +91,8 @@ export default function WorkoutRunner({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   });
   const [sessionNotes, setSessionNotes] = useState("");
+  const savedRef = useRef(false);
+  const savedSessionIdRef = useRef<number | null>(null);
 
   // Breathing cycle for cooldown: 4s inhale, 4s exhale
   const [breathPhase, setBreathPhase] = useState<"inhale" | "exhale">("inhale");
@@ -382,7 +384,6 @@ export default function WorkoutRunner({
           clear();
           soundFinish();
           setPhase("finished");
-          void saveSession();
         }
       }, 250);
     }
@@ -401,67 +402,14 @@ export default function WorkoutRunner({
           clear();
           soundFinish();
           setPhase("finished");
-          void saveSession();
         }
       }, 250);
-    }
-
-    async function saveSession() {
-      try {
-        const session = await api.createSession({
-          template_id: workout.id,
-          template_name: workout.name || "",
-          total_duration_seconds: totalDuration,
-          total_kcal_estimated: totalKcal,
-          notes: sessionNotes,
-          started_at: localISO(sessionDate),
-          exercises: exercises.map((e, i) => ({
-            exercise_id: e.exercise?.id ?? e.exercise_id,
-            exercise_name: e.exercise?.name || "",
-            duration_seconds: e.duration_seconds || 30,
-            kcal_burned: kcalFor(
-              e.duration_seconds || 30,
-              e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
-            ),
-            order_index: i,
-            completed: true,
-          })),
-        });
-
-        // Save exercise logs for any exercise that had weight/reps entered
-        const logPromises = session.exercises.map((se) => {
-          // Find all log entries for this exercise by matching exercise_id
-          const logEntries: { weightKg: string; reps: string }[] = [];
-          Object.entries(exerciseLogs).forEach(([key, val]) => {
-            const idx = parseInt(key.split("-")[1], 10);
-            if (exercises[idx]?.exercise_id === se.exercise_id && (val.weightKg || val.reps)) {
-              logEntries.push(val);
-            }
-          });
-          if (logEntries.length > 0) {
-            return api.createExerciseLogs(
-              session.id,
-              se.id,
-              logEntries.map((l, i) => ({
-                weight_kg: l.weightKg ? parseFloat(l.weightKg) : null,
-                reps: l.reps ? parseInt(l.reps, 10) : null,
-                set_number: i + 1,
-              })),
-            ).catch(() => {});
-          }
-          return null;
-        });
-        await Promise.all(logPromises.filter(Boolean));
-      } catch (err) {
-        console.error("Failed to save session", err);
-      }
     }
 
     function finish() {
       clear();
       soundFinish();
       setPhase("finished");
-      void saveSession();
     }
 
     if (totalExercises === 0) {
@@ -521,6 +469,91 @@ export default function WorkoutRunner({
     return `${m}:${String(sec).padStart(2, "0")}`;
   })();
 
+  // Persist the session as soon as the workout finishes (so it's never lost if
+  // the user closes the summary) — capturing exercise logs entered during the
+  // run. Notes/date typed on the summary screen are PATCHed in on Done. Reads
+  // live state at call time (no stale closure); guarded against double-save.
+  async function saveSession() {
+    if (savedRef.current) return;
+    savedRef.current = true;
+    try {
+      const session = await api.createSession({
+        template_id: workout.id,
+        template_name: workout.name || "",
+        total_duration_seconds: totalDuration,
+        total_kcal_estimated: totalKcal,
+        notes: sessionNotes,
+        started_at: localISO(sessionDate),
+        exercises: exercises.map((e, i) => ({
+          exercise_id: e.exercise?.id ?? e.exercise_id,
+          exercise_name: e.exercise?.name || "",
+          duration_seconds: e.duration_seconds || 30,
+          kcal_burned: kcalFor(
+            e.duration_seconds || 30,
+            e.exercise?.default_kcal_per_min ?? DEFAULT_KCAL_PER_MIN,
+          ),
+          order_index: i,
+          completed: true,
+        })),
+      });
+      savedSessionIdRef.current = session.id;
+
+      // Attach weight/reps logs, matching by order_index so repeated
+      // exercises don't collapse onto the first occurrence.
+      const logPromises = session.exercises.map((se) => {
+        const logEntries: { weightKg: string; reps: string }[] = [];
+        Object.entries(exerciseLogs).forEach(([key, val]) => {
+          const idx = parseInt(key.split("-")[1], 10);
+          if (idx === se.order_index && (val.weightKg || val.reps)) {
+            logEntries.push(val);
+          }
+        });
+        if (logEntries.length > 0) {
+          return api.createExerciseLogs(
+            session.id,
+            se.id,
+            logEntries.map((l, i) => ({
+              weight_kg: l.weightKg ? parseFloat(l.weightKg) : null,
+              reps: l.reps ? parseInt(l.reps, 10) : null,
+              set_number: i + 1,
+            })),
+          ).catch(() => {});
+        }
+        return null;
+      });
+      await Promise.all(logPromises.filter(Boolean));
+    } catch (err) {
+      // Allow a retry (offline is queued by the api layer) rather than
+      // silently dropping the session.
+      savedRef.current = false;
+      console.error("Failed to save session", err);
+    }
+  }
+
+  // Fire the save exactly once, when the workout reaches the finished screen.
+  useEffect(() => {
+    if (phase === "finished") void saveSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- saveSession is guarded; only the phase transition should trigger it.
+  }, [phase]);
+
+  async function handleDone() {
+    // Ensure the session exists (covers a failed auto-save), then fold in any
+    // notes/date edited on the summary screen.
+    if (!savedRef.current) await saveSession();
+    const id = savedSessionIdRef.current;
+    if (id != null) {
+      try {
+        await api.updateSession(id, {
+          started_at: localISO(sessionDate),
+          notes: sessionNotes,
+        });
+      } catch {
+        /* offline/unreachable — the base session is already saved */
+      }
+    }
+    onFinish();
+  }
+
   return (
     <div className="workout-runner bg-bg h-full flex flex-col no-select">
       {showSwapPicker && (
@@ -529,7 +562,7 @@ export default function WorkoutRunner({
           onClick={() => { setShowSwapPicker(false); setSwapSearch(""); }}
         >
           <div
-            className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 border border-fg/10 max-h-[70vh] flex flex-col"
+            className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[70vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -944,7 +977,7 @@ export default function WorkoutRunner({
           </div>
 
           <button
-            onClick={onFinish}
+            onClick={() => void handleDone()}
             className="bg-accent text-on-accent rounded-xl px-8 py-3 font-semibold hover:bg-accent-hover transition-colors"
           >
             Done

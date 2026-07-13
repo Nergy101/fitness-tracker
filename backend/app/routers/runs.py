@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -18,24 +18,42 @@ def _compute_pace(duration_seconds: int, distance_km: float) -> float:
     return round(duration_seconds / distance_km, 1)
 
 
-def _calc_run_kcal(distance_km: float, run_type: str, db: Session) -> float:
-    """Estimate calories burned: ~0.97 kcal/kg/km for running, ~0.5 for walking."""
-    latest = db.query(WeightEntry).order_by(WeightEntry.date.desc()).first()
-    weight_kg = latest.weight_kg if latest else 75.0
+def _calc_run_kcal(distance_km: float, run_type: str, db: Session, run_date=None) -> float:
+    """Estimate calories burned: ~0.97 kcal/kg/km for running, ~0.5 for walking.
+
+    Uses the weight entry nearest on-or-before `run_date` (falling back to the
+    earliest entry, then a 75 kg default) so historical runs aren't recomputed
+    with today's weight.
+    """
+    entry = None
+    if run_date is not None:
+        entry = (
+            db.query(WeightEntry)
+            .filter(WeightEntry.date <= run_date)
+            .order_by(WeightEntry.date.desc())
+            .first()
+        )
+    if entry is None:
+        entry = db.query(WeightEntry).order_by(WeightEntry.date.asc()).first()
+    weight_kg = entry.weight_kg if entry else 75.0
     factor = 0.5 if run_type == "walk" else 0.97
     return round(factor * weight_kg * distance_km, 1)
 
 
 def _create_workout_session(run: RunEntry, db: Session) -> None:
     """Create a matching WorkoutSession so runs appear in the unified History tab."""
-    kcal = _calc_run_kcal(run.distance_km, run.run_type, db)
+    kcal = _calc_run_kcal(run.distance_km, run.run_type, db, run.date)
 
+    # Naive local-midnight so History/stats render the run on its own calendar
+    # day regardless of the viewer's timezone (a UTC-stamped midnight would
+    # shift a day for users behind UTC).
+    start = datetime.combine(run.date, datetime.min.time())
     session = WorkoutSession(
         template_id=None,
         template_name=f"{'Walk' if run.run_type == 'walk' else 'Run'}: {run.distance_km:.1f}km",
         run_entry_id=run.id,
-        started_at=datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc),
-        finished_at=datetime.combine(run.date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(seconds=run.duration_seconds),
+        started_at=start,
+        finished_at=start + timedelta(seconds=run.duration_seconds),
         total_duration_seconds=run.duration_seconds,
         total_kcal_estimated=kcal,
         notes=run.notes,
@@ -46,7 +64,7 @@ def _create_workout_session(run: RunEntry, db: Session) -> None:
     ses_ex = SessionExercise(
         session_id=session.id,
         exercise_id=None,
-        exercise_name="Running",
+        exercise_name="Walking" if run.run_type == "walk" else "Running",
         duration_seconds=run.duration_seconds,
         kcal_burned=kcal,
         order_index=0,
@@ -102,13 +120,17 @@ def update_run(run_id: int, data: RunEntryCreate, db: Session = Depends(get_db))
     sessions = db.query(WorkoutSession).filter(
         WorkoutSession.run_entry_id == run.id,
     ).all()
-    kcal = _calc_run_kcal(run.distance_km, run.run_type, db)
+    kcal = _calc_run_kcal(run.distance_km, run.run_type, db, run.date)
+    start = datetime.combine(run.date, datetime.min.time())
     for s in sessions:
         s.template_name = f"{prefix} {run.distance_km:.1f}km"
         s.total_duration_seconds = run.duration_seconds
         s.total_kcal_estimated = kcal
         s.notes = run.notes
-        db.commit()
+        # Keep the mirror on the run's (possibly edited) calendar day.
+        s.started_at = start
+        s.finished_at = start + timedelta(seconds=run.duration_seconds)
+    db.commit()
 
     db.refresh(run)
     return run
@@ -124,6 +146,9 @@ def delete_run(run_id: int, db: Session = Depends(get_db)):
     ).all()
     for s in sessions:
         db.delete(s)
+    # Flush child deletes before removing the parent so FK enforcement passes
+    # (session.run_entry_id has no ORM relationship to auto-order the delete).
+    db.flush()
     db.delete(run)
     db.commit()
 
@@ -157,7 +182,7 @@ def run_stats(db: Session = Depends(get_db)):
     best_week = 0.0
     sorted_dates = sorted(set(e.date for e in entries))
     for d in sorted_dates:
-        window_end = d + timedelta(days=7)
+        window_end = d + timedelta(days=6)
         week_dist = sum(e.distance_km for e in entries if d <= e.date <= window_end)
         best_week = max(best_week, week_dist)
 

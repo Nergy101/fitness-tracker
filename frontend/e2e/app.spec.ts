@@ -11,7 +11,7 @@ async function login(page: Page): Promise<Record<string, string>> {
   await page.getByRole("button", { name: "Unlock" }).click();
   await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 5000 });
   const token = await page.evaluate(() => localStorage.getItem("fitness_auth"));
-  return { Authorization: "Basic " + token };
+  return { Authorization: "Bearer " + token };
 }
 
 /** Mark onboarding complete before the app boots so the first-run tour

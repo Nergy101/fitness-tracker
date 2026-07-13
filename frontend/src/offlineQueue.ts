@@ -63,6 +63,10 @@ export function queueSize(): number {
   return read().length;
 }
 
+// Hard cap so a long offline stint can't grow localStorage without bound.
+// Oldest entries are evicted first (FIFO), matching replay order.
+const MAX_QUEUE = 500;
+
 export function enqueueMutation(
   method: string,
   url: string,
@@ -77,6 +81,7 @@ export function enqueueMutation(
   };
   const queue = read();
   queue.push(item);
+  if (queue.length > MAX_QUEUE) queue.splice(0, queue.length - MAX_QUEUE);
   write(queue);
   return item;
 }

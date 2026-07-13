@@ -79,10 +79,11 @@ def personal_records(db: Session = Depends(get_db)):
             if 9.5 <= e.distance_km <= 10.5:
                 if prs.fastest_10k_seconds is None or e.duration_seconds < prs.fastest_10k_seconds:
                     prs.fastest_10k_seconds = e.duration_seconds
-        # Best rolling 7-day window of run distance
+        # Best rolling 7-day window of run distance (inclusive bounds over a
+        # 6-day span = exactly 7 calendar days).
         best_week = 0.0
         for d in sorted(set(e.date for e in runs)):
-            window_end = d + timedelta(days=7)
+            window_end = d + timedelta(days=6)
             best_week = max(best_week, sum(e.distance_km for e in runs if d <= e.date <= window_end))
         prs.best_week_run_km = round(best_week, 1)
 

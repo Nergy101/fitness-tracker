@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -32,8 +32,8 @@ def _create_workout_session(entry: BoxingEntry, db: Session) -> None:
         template_id=None,
         template_name=f"Boxing: {mins}min",
         boxing_entry_id=entry.id,
-        started_at=datetime.combine(entry.date, datetime.min.time(), tzinfo=timezone.utc),
-        finished_at=datetime.combine(entry.date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(seconds=entry.duration_seconds),
+        started_at=datetime.combine(entry.date, datetime.min.time()),
+        finished_at=datetime.combine(entry.date, datetime.min.time()) + timedelta(seconds=entry.duration_seconds),
         total_duration_seconds=entry.duration_seconds,
         total_kcal_estimated=kcal,
         notes=session_notes,
@@ -101,12 +101,15 @@ def update_boxing(entry_id: int, data: BoxingEntryCreate, db: Session = Depends(
     sessions = db.query(WorkoutSession).filter(
         WorkoutSession.boxing_entry_id == entry.id,
     ).all()
+    start = datetime.combine(entry.date, datetime.min.time())
     for s in sessions:
         s.template_name = f"Boxing: {mins}min"
         s.total_duration_seconds = entry.duration_seconds
         s.total_kcal_estimated = kcal
         s.notes = session_notes
-        db.commit()
+        s.started_at = start
+        s.finished_at = start + timedelta(seconds=entry.duration_seconds)
+    db.commit()
 
     db.refresh(entry)
     return entry
@@ -122,6 +125,8 @@ def delete_boxing(entry_id: int, db: Session = Depends(get_db)):
     ).all()
     for s in sessions:
         db.delete(s)
+    # Flush child deletes before removing the parent so FK enforcement passes.
+    db.flush()
     db.delete(entry)
     db.commit()
 

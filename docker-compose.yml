@@ -12,6 +12,10 @@ services:
     # No published port: only the frontend reaches it, over the internal network.
     expose:
       - "8000"
+    # Optional: pin the login password so it stays stable across deploys.
+    # If unset, settings.toml on the /data volume keeps its generated password.
+    environment:
+      - FITNESS_PASSWORD=${FITNESS_PASSWORD:-}
     volumes:
       - backend-data:/data
       - ./backups:/backups

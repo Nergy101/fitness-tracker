@@ -196,7 +196,7 @@ export default function ExercisesTab() {
             if (e.target === e.currentTarget) setShowForm(false);
           }}
         >
-          <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-6 border border-fg/10 max-h-[85vh] overflow-y-auto">
+          <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[85vh] overflow-y-auto">
             <h2 className="text-lg font-bold mb-4">
               {editingId ? "Edit Exercise" : "New Exercise"}
             </h2>

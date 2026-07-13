@@ -73,13 +73,18 @@ def get_session(session_id: int, db: Session = Depends(get_db)):
 @router.post("", response_model=WorkoutSessionResponse, status_code=201)
 def create_session(data: WorkoutSessionCreate, db: Session = Depends(get_db)):
     template_name = data.template_name
+    template_id = data.template_id
     if data.template_id:
         template = db.get(WorkoutTemplate, data.template_id)
         if template:
             template_name = template.name
+        else:
+            # Template was deleted — keep the snapshot name, drop the dangling
+            # FK (would violate the constraint now that FKs are enforced).
+            template_id = None
 
     session = WorkoutSession(
-        template_id=data.template_id,
+        template_id=template_id,
         template_name=template_name,
         started_at=data.started_at or datetime.now(timezone.utc),
         finished_at=data.finished_at,
@@ -130,19 +135,23 @@ def delete_session(session_id: int, db: Session = Depends(get_db)):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Cascade-delete the underlying entry for run/walk/boxing mirror sessions.
-    # Uses the explicit FK columns added in NER-152.
-    if is_mirror_session(session):
-        if session.run_entry_id:
-            entry = db.get(RunEntry, session.run_entry_id)
-            if entry:
-                db.delete(entry)
-        elif session.boxing_entry_id:
-            entry = db.get(BoxingEntry, session.boxing_entry_id)
-            if entry:
-                db.delete(entry)
-
+    # Capture mirror linkage before deleting the session, then remove the
+    # child (session) before the parent (run/boxing entry) so FK enforcement
+    # is satisfied.
+    is_mirror = is_mirror_session(session)
+    run_entry_id = session.run_entry_id
+    boxing_entry_id = session.boxing_entry_id
     db.delete(session)
+    db.flush()
+    if is_mirror:
+        if run_entry_id:
+            entry = db.get(RunEntry, run_entry_id)
+            if entry:
+                db.delete(entry)
+        elif boxing_entry_id:
+            entry = db.get(BoxingEntry, boxing_entry_id)
+            if entry:
+                db.delete(entry)
     db.commit()
 
 

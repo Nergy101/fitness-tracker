@@ -6,6 +6,7 @@ the last_backup timestamp are managed through the settings endpoint.
 """
 
 import json
+import os
 import logging
 from datetime import date, datetime, time, timezone
 from pathlib import Path
@@ -20,16 +21,32 @@ from app.models.models import (
     Exercise, WorkoutTemplate, WorkoutTemplateExercise,
     WorkoutSession, SessionExercise, ExerciseLog,
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin,
-    RunEntry, PushSubscription, HealthMetric, HealthWorkout,
+    RunEntry, BoxingEntry, PushSubscription, HealthMetric, HealthWorkout,
 )
 from app.settings import settings
+
+# Every data table, in FK-safe insert order (parents before children). Used
+# for dumps and to validate/spell restore statements.
+BACKUP_MODELS = [
+    Exercise, UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin,
+    RunEntry, BoxingEntry, PushSubscription,
+    WorkoutTemplate, WorkoutTemplateExercise,
+    WorkoutSession, SessionExercise, ExerciseLog,
+    HealthMetric, HealthWorkout,
+]
+# table name -> allowed column names (guards restore against injected columns).
+ALLOWED_COLUMNS: dict[str, set[str]] = {
+    m.__tablename__: {c.key for c in m.__table__.columns} for m in BACKUP_MODELS
+}
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["backup"])
 
 CONFIG_FILENAME = "backup_config.json"
-CONFIG_PATH = Path(CONFIG_FILENAME)  # stored in backend working directory
+# Persisted alongside data (set FITNESS_BACKUP_CONFIG_PATH to /data/... in
+# Docker); defaults to the working dir for local/dev/test runs.
+CONFIG_PATH = Path(os.getenv("FITNESS_BACKUP_CONFIG_PATH", CONFIG_FILENAME))
 BACKUP_VERSION = "1.0"
 
 # ─── Helpers ──────────────────────────────────────────────
@@ -53,7 +70,6 @@ def _get_backup_dir() -> Path:
 
     FITNESS_BACKUP_PATH env var overrides settings.toml (for tests/Docker).
     """
-    import os
     env_path = os.getenv("FITNESS_BACKUP_PATH")
     if env_path:
         return Path(env_path)
@@ -81,14 +97,8 @@ def _serialize_val(val):
 
 def _dump_tables(db: Session) -> dict:
     """Dump all data tables to a JSON-serializable dict."""
-    models = [
-        Exercise, WorkoutTemplate, WorkoutTemplateExercise,
-        WorkoutSession, SessionExercise, ExerciseLog,
-        UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin,
-        RunEntry, PushSubscription, HealthMetric, HealthWorkout,
-    ]
     tables = {}
-    for model in models:
+    for model in BACKUP_MODELS:
         rows = db.query(model).all()
         tables[_table_name(model)] = [_row_to_dict(r) for r in rows]
     return tables
@@ -211,9 +221,14 @@ def list_backups() -> list[BackupFileResponse]:
 @router.post("/backup/restore")
 def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
     backup_dir = _get_backup_dir()
-    filepath = backup_dir / req.filename
-    if not filepath.exists():
-        raise HTTPException(404, f"Backup file not found: {req.filename}")
+    # Reject path traversal / absolute paths: restore only reads files that
+    # live directly inside the backup dir.
+    name = req.filename
+    if not name or "/" in name or "\\" in name or ".." in name or Path(name).is_absolute():
+        raise HTTPException(400, "Invalid backup filename")
+    filepath = (backup_dir / name).resolve()
+    if filepath.parent != backup_dir.resolve() or not filepath.is_file():
+        raise HTTPException(404, f"Backup file not found: {name}")
 
     try:
         data = json.loads(filepath.read_text())
@@ -230,10 +245,11 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
     except OSError as e:
         raise HTTPException(400, f"Backup location '{backup_dir}' is not writable: {e}")
 
+    # children → parents for deletes (respects FK constraints once enforced).
     delete_order = [
         "exercise_logs", "session_exercises", "workout_sessions",
         "workout_template_exercises", "workout_templates",
-        "push_subscriptions", "run_entries", "wellness_checkins",
+        "push_subscriptions", "run_entries", "boxing_entries", "wellness_checkins",
         "body_measurements", "weight_entries", "user_profiles", "exercises",
         "health_metrics", "health_workouts",
     ]
@@ -246,9 +262,11 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
             if tname in existing_tables and tname in tables_data:
                 db.execute(text(f"DELETE FROM {tname}"))
 
+        # parents → children for inserts. workout_sessions references both
+        # run_entries and boxing_entries, so those precede it.
         insert_order = [
             "exercises", "user_profiles", "weight_entries", "body_measurements",
-            "wellness_checkins", "run_entries", "push_subscriptions",
+            "wellness_checkins", "run_entries", "boxing_entries", "push_subscriptions",
             "workout_templates", "workout_template_exercises",
             "workout_sessions", "session_exercises", "exercise_logs",
             "health_metrics", "health_workouts",
@@ -258,14 +276,26 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
             rows = tables_data.get(tname, [])
             if not rows:
                 continue
-            columns = list(rows[0].keys())
+            allowed = ALLOWED_COLUMNS.get(tname)
+            if allowed is None:
+                raise HTTPException(400, f"Unknown table in backup: {tname}")
+            # Only insert known columns; reject any unexpected key (guards the
+            # column-name interpolation below against injection / typos).
+            columns = [c for c in rows[0].keys() if c in allowed]
+            unknown = set(rows[0].keys()) - allowed
+            if unknown:
+                raise HTTPException(400, f"Unknown columns for {tname}: {sorted(unknown)}")
             col_str = ", ".join(columns)
             placeholders = ", ".join([f":{c}" for c in columns])
             stmt = text(f"INSERT INTO {tname} ({col_str}) VALUES ({placeholders})")
             for row in rows:
-                db.execute(stmt, row)
+                db.execute(stmt, {c: row.get(c) for c in columns})
 
         db.commit()
+    except HTTPException:
+        # A validation error (bad table/column): roll back and surface as-is.
+        db.rollback()
+        raise
     except Exception:
         db.rollback()
         logger.exception("Restore of %s failed", req.filename)
@@ -276,3 +306,60 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
         "safety_backup": safety_result["filename"],
         "table_counts": {t: len(rows) for t, rows in tables_data.items()},
     }
+
+
+# ─── Scheduler ───────────────────────────────────────────
+
+_INTERVAL_SECONDS = {"daily": 24 * 3600, "weekly": 7 * 24 * 3600}
+
+
+def _backup_due(config: dict, now: datetime) -> bool:
+    """Whether an automatic backup should run given the saved config."""
+    period = _INTERVAL_SECONDS.get(config.get("interval", "disabled"))
+    if period is None:
+        return False  # disabled / unknown
+    last = config.get("last_backup")
+    if not last:
+        return True
+    try:
+        last_dt = datetime.fromisoformat(last)
+    except (ValueError, TypeError):
+        return True
+    if last_dt.tzinfo is None:
+        last_dt = last_dt.replace(tzinfo=timezone.utc)
+    return (now - last_dt).total_seconds() >= period
+
+
+def run_scheduled_backup_once() -> bool:
+    """Run one due-check and back up if needed. Returns True if it backed up.
+
+    Opens its own DB session (runs outside a request). Never raises — logs and
+    returns False on error so the scheduler loop keeps running.
+    """
+    from app.database import SessionLocal
+
+    try:
+        config = _load_config()
+        if not _backup_due(config, datetime.now(timezone.utc)):
+            return False
+        db = SessionLocal()
+        try:
+            _do_backup(db, _get_backup_dir())
+        finally:
+            db.close()
+        config["last_backup"] = datetime.now(timezone.utc).isoformat()
+        _save_config(config)
+        logger.info("Scheduled backup completed (interval=%s)", config.get("interval"))
+        return True
+    except Exception:
+        logger.exception("Scheduled backup failed")
+        return False
+
+
+async def scheduler_loop(poll_seconds: int = 3600) -> None:
+    """Background loop: check hourly whether a scheduled backup is due."""
+    import asyncio
+
+    while True:
+        await asyncio.to_thread(run_scheduled_backup_once)
+        await asyncio.sleep(poll_seconds)

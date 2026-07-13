@@ -136,7 +136,10 @@ def stats_overview(db: Session = Depends(get_db)):
         cursor = week_end + timedelta(days=1)
 
     base_pct = round((qualifying_weeks / max(total_weeks, 1)) * 100, 1)
-    consistency_pct = round(base_pct + walk_km, 1)
+    # Walk distance is a small bonus, capped, and the whole score is clamped to
+    # 100 so it stays a percentage (was: unbounded pct + raw km).
+    WALK_BONUS_CAP_KM = 20.0
+    consistency_pct = round(min(100.0, base_pct + min(walk_km, WALK_BONUS_CAP_KM)), 1)
 
     # Monthly comparison
     current_month_start = today.replace(day=1)

@@ -38,10 +38,12 @@ setup: setup-backend setup-frontend ## Install everything
 $(VENV_PY):
 	$(PYTHON) -m venv $(VENV)
 
-# (Re)install deps into the venv whenever requirements.txt changes.
-$(STAMP): backend/requirements.txt | $(VENV_PY)
+# (Re)install deps into the venv whenever a requirements file changes. The dev
+# file pulls in runtime deps via `-r requirements.txt`, so the local venv has
+# the full toolchain (pytest, ruff); the Docker image installs runtime-only.
+$(STAMP): backend/requirements.txt backend/requirements-dev.txt | $(VENV_PY)
 	$(VENV_PY) -m pip install --upgrade pip
-	$(VENV_PY) -m pip install -r backend/requirements.txt
+	$(VENV_PY) -m pip install -r backend/requirements-dev.txt
 	@touch $(STAMP)
 
 setup-backend: $(STAMP) ## Install backend dependencies (into backend/.venv)

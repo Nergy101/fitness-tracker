@@ -96,6 +96,15 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       : Math.max(0, rounds - 1) * (tpl.rest_between_rounds || 0);
     const warmupDuration = isTabata ? 0 : (tpl.warmup_seconds || 0);
     const cooldownDuration = isTabata ? 0 : (tpl.cooldown_seconds || 0);
+    const isAmrap = tpl.mode === "amrap";
+    const isEmom = tpl.mode === "emom";
+    // Match the runner + backend: AMRAP is its time cap, EMOM is one minute
+    // per exercise; everything else sums work/rest/warmup/cooldown.
+    const totalDuration = isAmrap
+      ? (tpl.time_cap_seconds || 1200)
+      : isEmom
+        ? tpl.exercises.length * 60
+        : workDuration + restDuration + warmupDuration + cooldownDuration;
     const totalKcal = isTabata
       ? Array.from({ length: rounds }, (_, r) => {
           const ex = tpl.exercises.length > 0 ? tpl.exercises[r % tpl.exercises.length] : null;
@@ -115,7 +124,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       await api.createSession({
         template_id: tpl.id,
         template_name: tpl.name || "",
-        total_duration_seconds: workDuration + restDuration + warmupDuration + cooldownDuration,
+        total_duration_seconds: totalDuration,
         total_kcal_estimated: totalKcal,
         exercises: tpl.exercises.map((e, i) => ({
           exercise_id: e.exercise?.id ?? e.exercise_id,

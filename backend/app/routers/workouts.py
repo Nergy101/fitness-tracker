@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.database import get_db
-from app.models.models import WorkoutTemplate, WorkoutTemplateExercise, Exercise
+from app.models.models import WorkoutTemplate, WorkoutTemplateExercise, Exercise, WorkoutSession
 from app.schemas import (
     WorkoutTemplateCreate, WorkoutTemplateUpdate, WorkoutTemplateResponse,
     WorkoutTemplateExerciseResponse
@@ -25,6 +25,18 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
         work_duration = template.rounds * 20
         rest_duration = max(0, template.rounds - 1) * 10
         total_duration = work_duration + rest_duration
+    elif template.mode == "amrap":
+        # AMRAP runs for a fixed time cap; work/rest are one-round estimates.
+        per_round = sum(te.duration_seconds for te in template.exercises)
+        work_duration = per_round
+        rest_duration = 0
+        total_duration = template.time_cap_seconds or 0
+    elif template.mode == "emom":
+        # EMOM is one minute per exercise; the runner ends at len(exercises) min.
+        per_round = sum(te.duration_seconds for te in template.exercises)
+        work_duration = per_round * template.rounds
+        rest_duration = 0
+        total_duration = len(template.exercises) * 60
     else:
         per_round = sum(te.duration_seconds for te in template.exercises)
         work_duration = per_round * template.rounds
@@ -247,5 +259,10 @@ def delete_workout(workout_id: int, db: Session = Depends(get_db)):
     template = db.get(WorkoutTemplate, workout_id)
     if not template:
         raise HTTPException(status_code=404, detail="Workout template not found")
+    # Past sessions keep a template_name snapshot; null their FK so deleting the
+    # template doesn't violate the (now-enforced) constraint.
+    db.query(WorkoutSession).filter(
+        WorkoutSession.template_id == workout_id
+    ).update({WorkoutSession.template_id: None}, synchronize_session=False)
     db.delete(template)
     db.commit()

@@ -564,7 +564,7 @@ function isQueueableWrite(method: string, url: string): boolean {
 async function sendQueued(m: QueuedMutation): Promise<FlushOutcome> {
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   const token = getStoredAuth();
-  if (token) headers["Authorization"] = `Basic ${token}`;
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   let res: Response;
   try {
     res = await fetch(`${API_BASE}${m.url}`, {
@@ -576,8 +576,14 @@ async function sendQueued(m: QueuedMutation): Promise<FlushOutcome> {
     return "stop"; // still offline — retry on the next online event
   }
   if (res.ok || res.status === 204) return "sent";
-  // Auth / rate-limit / server errors are transient: stop and retry later.
-  if (res.status === 401 || res.status === 429 || res.status >= 500) return "stop";
+  if (res.status === 401) {
+    // Token expired/revoked: clearing it stops an endless retry loop and
+    // prompts re-login on the next foregrounding.
+    clearStoredAuth();
+    return "stop";
+  }
+  // Rate-limit / server errors are transient: stop and retry later.
+  if (res.status === 429 || res.status >= 500) return "stop";
   return "drop"; // 4xx client error — replaying won't help, discard
 }
 
@@ -608,7 +614,7 @@ async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> 
   // Attach auth token if stored
   const token = getStoredAuth();
   if (token) {
-    headers["Authorization"] = `Basic ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   const doFetch = () =>
@@ -890,4 +896,18 @@ export const api = {
       "/api/v1/backup/restore",
       { method: "POST", body: JSON.stringify({ filename }) },
     ),
+
+  // Auth — best-effort server-side token revocation on logout.
+  logout: async (): Promise<void> => {
+    const token = getStoredAuth();
+    if (!token) return;
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      /* offline / unreachable — the local token is cleared regardless */
+    }
+  },
 };
