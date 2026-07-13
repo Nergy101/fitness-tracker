@@ -464,6 +464,12 @@ test.describe("authenticated", () => {
     await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 10000 });
     await page.getByRole("button", { name: "Stats" }).click();
 
+    // Debug: what's rendered now?
+    const pageText = await page.locator("body").innerText();
+    console.log("Page text after Stats click (first 300):", pageText.substring(0, 300));
+    const stillAuth = await page.evaluate(() => localStorage.getItem("fitness_auth"));
+    console.log("Token still present:", !!stillAuth);
+
     // Stats tab loads — activity section is visible
     await expect(page.getByText("Activity").first()).toBeVisible({ timeout: 10000 });
   });
