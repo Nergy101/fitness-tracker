@@ -6,6 +6,7 @@ with a random password and prints it to the console.
 """
 
 import os
+import logging
 import string
 import secrets
 import tomllib
@@ -13,6 +14,8 @@ from typing import Any
 from pathlib import Path
 
 SETTINGS_PATH = Path(os.getenv("FITNESS_SETTINGS_PATH", "./settings.toml"))
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_password(length: int = 24) -> str:
@@ -45,8 +48,8 @@ def _ensure_settings() -> bool:
         return False
     password = _generate_password()
     SETTINGS_PATH.write_text(_generate_default_toml(password))
-    print(f"Generated {SETTINGS_PATH} with random password: {password}")
-    print(f"Change it in {SETTINGS_PATH} and restart the server.")
+    logger.warning("Generated %s with a random password: %s", SETTINGS_PATH, password)
+    logger.warning("Change it in %s and restart the server.", SETTINGS_PATH)
     return True
 
 
@@ -64,7 +67,7 @@ settings = load_settings()
 ENV_PASSWORD = os.getenv("FITNESS_PASSWORD")
 if ENV_PASSWORD:
     settings.setdefault("auth", {})["password"] = ENV_PASSWORD
-    print("Using FITNESS_PASSWORD env var (overriding settings.toml)")
+    logger.info("Using FITNESS_PASSWORD env var (overriding settings.toml)")
 
 
 def save_settings() -> None:
@@ -120,6 +123,6 @@ def get_or_create_vapid() -> dict[str, str]:
     notif["subject"] = subject
 
     save_settings()
-    print(f"Generated VAPID keys and saved to {SETTINGS_PATH}")
+    logger.info("Generated VAPID keys and saved to %s", SETTINGS_PATH)
 
     return {"private_key": notif["private_key"], "public_key": notif["public_key"], "subject": subject}
