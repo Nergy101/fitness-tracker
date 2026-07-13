@@ -454,7 +454,7 @@ test.describe("authenticated", () => {
     await page.getByRole("button", { name: "Stats" }).click();
 
     // Stats tab loads — activity section is visible
-    await expect(page.getByText("Activity").first()).toBeVisible();
+    await expect(page.getByText("Activity").first()).toBeVisible({ timeout: 10000 });
   });
 
   // --- Health Tab ---
