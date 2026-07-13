@@ -2,6 +2,13 @@
 // Mirrors backend/app/schemas.py.
 
 import { getStoredAuth, clearStoredAuth } from "./auth";
+import {
+  enqueueMutation,
+  flushMutations,
+  OUTBOX_SYNCED_EVENT,
+  type QueuedMutation,
+  type FlushOutcome,
+} from "./offlineQueue";
 
 // Empty string → same-origin relative requests (Docker: nginx proxies /api to
 // the backend). Unset → localhost:8000 for `npm run dev` convenience.
@@ -520,6 +527,78 @@ export interface BoxingPrsResponse {
   most_rounds_session: number | null;
 }
 
+function delay(ms: number): Promise<void> {
+  const { promise, resolve } = Promise.withResolvers<void>();
+  setTimeout(resolve, ms);
+  return promise;
+}
+
+/** Thrown when a mutating request is queued offline instead of sent. */
+export class OfflineError extends Error {
+  readonly offline = true;
+  constructor(
+    message = "You're offline — saved on this device and will sync when you reconnect.",
+  ) {
+    super(message);
+    this.name = "OfflineError";
+  }
+}
+
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+// Writes that must not be queued for offline replay: large Apple Health
+// imports, backup/restore, and push-subscription changes are online-only.
+const NON_QUEUEABLE_PREFIXES = [
+  "/api/v1/import/",
+  "/api/v1/backup",
+  "/api/v1/backups",
+  "/api/v1/settings/backup",
+  "/api/v1/notifications/",
+];
+
+function isQueueableWrite(method: string, url: string): boolean {
+  if (!WRITE_METHODS.has(method)) return false;
+  if (!url.startsWith("/api/v1/")) return false;
+  return !NON_QUEUEABLE_PREFIXES.some((p) => url.startsWith(p));
+}
+
+async function sendQueued(m: QueuedMutation): Promise<FlushOutcome> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const token = getStoredAuth();
+  if (token) headers["Authorization"] = `Basic ${token}`;
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${m.url}`, {
+      method: m.method,
+      headers,
+      body: m.body,
+    });
+  } catch {
+    return "stop"; // still offline — retry on the next online event
+  }
+  if (res.ok || res.status === 204) return "sent";
+  // Auth / rate-limit / server errors are transient: stop and retry later.
+  if (res.status === 401 || res.status === 429 || res.status >= 500) return "stop";
+  return "drop"; // 4xx client error — replaying won't help, discard
+}
+
+/** Replay queued offline writes; fires OUTBOX_SYNCED_EVENT when some land. */
+export async function flushOutbox(): Promise<{ synced: number; remaining: number }> {
+  const result = await flushMutations(sendQueued);
+  if (result.synced > 0 && typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(OUTBOX_SYNCED_EVENT, { detail: result }));
+  }
+  return result;
+}
+
+// Replay when connectivity returns and once on load (a persisted queue may
+// remain from a previous offline session).
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    void flushOutbox();
+  });
+  if (navigator.onLine) void flushOutbox();
+}
+
 async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -535,15 +614,30 @@ async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> 
   const doFetch = () =>
     fetch(`${API_BASE}${url}`, { ...options, headers });
 
+  const method = (options.method ?? "GET").toUpperCase();
+
   // One retry for network errors (offline, DNS, connection refused).
   // Don't retry 4xx/5xx — those are server-side issues.
   let res: Response;
   try {
     res = await doFetch();
   } catch {
-    // Only retry if it looks like a network error, not an abort/timeout.
-    await new Promise((r) => setTimeout(r, 1000));
-    res = await doFetch();
+    await delay(1000);
+    try {
+      res = await doFetch();
+    } catch (err) {
+      // Still unreachable. Persist mutating requests to the offline outbox so
+      // they replay when connectivity returns (NER-175); reads just fail.
+      if (isQueueableWrite(method, url)) {
+        enqueueMutation(
+          method,
+          url,
+          typeof options.body === "string" ? options.body : undefined,
+        );
+        throw new OfflineError();
+      }
+      throw err;
+    }
   }
 
   // Handle 401 — clear auth and redirect to login
