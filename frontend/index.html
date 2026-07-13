@@ -3,9 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- maximum-scale/user-scalable lock the zoom: iOS auto-zooms when a
+         sub-16px input gains focus in standalone PWA mode and then leaves the
+         view stuck zoomed-in. Locking scale keeps the app-like fixed layout. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <meta name="theme-color" content="#1e1e2e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
