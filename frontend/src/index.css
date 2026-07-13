@@ -57,6 +57,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* iOS zooms the viewport when a focused form control has font-size < 16px.
+   Safari ignores maximum-scale/user-scalable=no (accessibility override), so
+   a >=16px font-size is the only reliable way to stop the focus auto-zoom.
+   Scoped to touch devices so desktop keeps its compact text-sm/text-xs inputs;
+   !important beats Tailwind's text-* font-size utilities on the elements. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* Prevent text selection during workout timer */
 .no-select {
   -webkit-user-select: none;
