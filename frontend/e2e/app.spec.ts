@@ -451,6 +451,8 @@ test.describe("authenticated", () => {
     });
 
     await page.goto("/");
+    // Wait for the bottom nav to appear (page finished loading)
+    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 10000 });
     await page.getByRole("button", { name: "Stats" }).click();
 
     // Stats tab loads — activity section is visible
