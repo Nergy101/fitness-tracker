@@ -450,10 +450,11 @@ test.describe("authenticated", () => {
       headers: _authHeaders,
     });
 
-    await page.goto("/#stats");
+    await page.goto("/");
+    await page.getByRole("button", { name: "Stats" }).click();
 
     // Stats tab loads — activity section is visible
-    await expect(page.getByText("Activity").first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Activity").first()).toBeVisible();
   });
 
   // --- Health Tab ---
