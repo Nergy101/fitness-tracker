@@ -256,6 +256,15 @@ async def auth_middleware(request: Request, call_next):
                     content={"detail": "Invalid authorization format"},
                 )
 
+        # Apple Health import endpoints are called by Shortcuts automation
+        # which sends Basic auth — reject Bearer tokens here so a stale
+        # session token doesn't silently fail the import.
+        if path.startswith("/api/v1/import/") and auth_header.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Import endpoints require Basic auth"},
+            )
+
         if not _authorized(auth_header):
             # Only rate-limit Basic auth failures (password guessing).
             # Bearer token failures are expired/revoked tokens — not
