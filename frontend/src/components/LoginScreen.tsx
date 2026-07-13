@@ -134,6 +134,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           {loading ? "Checking..." : lockoutRemaining > 0 ? "Locked out" : "Unlock"}
         </button>
       </form>
+      <p className="text-[10px] text-fg/15 mt-8">v1.2.0</p>
     </div>
   );
 }
