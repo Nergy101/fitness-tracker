@@ -257,7 +257,13 @@ async def auth_middleware(request: Request, call_next):
                 )
 
         if not _authorized(auth_header):
-            record_failure(ip)
+            # Only rate-limit Basic auth failures (password guessing).
+            # Bearer token failures are expired/revoked tokens — not
+            # password attempts — and rate-limiting them would lock out
+            # legitimate users whose old tokens were invalidated by a
+            # deploy or restart.
+            if auth_header.startswith("Basic "):
+                record_failure(ip)
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Wrong password"},
