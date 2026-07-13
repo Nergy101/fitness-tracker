@@ -89,7 +89,7 @@ function StackedBarChart<T>({
   const ticks = [max, max / 2];
 
   return (
-    <svg viewBox={`0 0 ${w} ${height + 20}`} className="w-full" style={{ maxHeight: height + 20 }}>
+    <svg viewBox={`0 0 ${w} ${height + 20}`} className="w-full">
       {ticks.map((t) => {
         const y = height - (t / max) * height;
         return (
@@ -181,7 +181,7 @@ function LineChart({
   const ticks = niceTicks(lo, hi, 4);
 
   return (
-    <svg viewBox={`0 0 ${w} ${height + 18}`} className="w-full" style={{ maxHeight: height + 18 }}>
+    <svg viewBox={`0 0 ${w} ${height + 18}`} className="w-full">
       {ticks.map((t) => {
         const y = py(t);
         if (y < 5 || y > height - 1) return null;
