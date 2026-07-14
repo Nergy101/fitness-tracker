@@ -109,7 +109,8 @@ plus any streak tests in `test_prs.py`.
 
 ```bash
 # Backend changes
-cd backend && ruff check . && .venv/bin/python -m pytest tests/
+cd backend && ruff check . && .venv/bin/python -m pytest tests/ --cov=app --cov-fail-under=82
+# CI enforces --cov-fail-under=82 on backend coverage; the local command above matches that check.
 
 # Frontend changes
 cd frontend && npx tsc --noEmit && npx vitest run && npm run build
