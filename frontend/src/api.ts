@@ -663,7 +663,7 @@ export async function fetchJSON<T>(
   let res: Response;
   try {
     res = await attempt();
-  } catch (err) {
+  } catch {
     await delay(1000);
     try {
       res = await attempt();
