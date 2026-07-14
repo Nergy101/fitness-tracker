@@ -786,8 +786,12 @@ test.describe("authenticated", () => {
     // Edit notes
     const notesArea = page.locator('textarea[aria-label="Session notes"]');
     await expect(notesArea).toBeVisible();
+    const savePromise = page.waitForResponse(
+      r => r.url().includes('/api/v1/sessions/') && r.request().method() === 'PATCH'
+    );
     await notesArea.fill("updated-run-notes");
     await notesArea.blur();
+    await savePromise;
 
     // Close the modal
     await page.locator("button").filter({ hasText: "×" }).click();
