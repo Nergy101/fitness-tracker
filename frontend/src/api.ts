@@ -712,7 +712,27 @@ export const api = {
     }),
 
   // Sessions
-  getSessions: () => fetchJSON<WorkoutSession[]>("/api/v1/sessions"),
+  getSessions: (params?: { limit?: number; offset?: number }) => {
+    let url = "/api/v1/sessions";
+    const qs: string[] = [];
+    if (params?.limit !== undefined) qs.push(`limit=${params.limit}`);
+    if (params?.offset !== undefined) qs.push(`offset=${params.offset}`);
+    if (qs.length) url += `?${qs.join("&")}`;
+    return fetchJSON<WorkoutSession[]>(url);
+  },
+  getAllSessions: async (): Promise<WorkoutSession[]> => {
+    const PAGE = 100;
+    let offset = 0;
+    const all: WorkoutSession[] = [];
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const page = await api.getSessions({ limit: PAGE, offset });
+      all.push(...page);
+      if (page.length < PAGE) break;
+      offset += PAGE;
+    }
+    return all;
+  },
   getSession: (id: number) =>
     fetchJSON<WorkoutSession>(`/api/v1/sessions/${id}`),
   createSession: (data: WorkoutSessionInput) =>

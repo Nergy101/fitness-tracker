@@ -35,7 +35,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
     setLoading(true);
     setError(null);
     api
-      .getSessions()
+      .getAllSessions()
       .then((data) => {
         if (active) setSessions(data);
       })

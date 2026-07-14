@@ -1,7 +1,27 @@
 """Tests for Session endpoints."""
 
 from datetime import datetime, timezone, timedelta
+from contextlib import contextmanager
 from fastapi.testclient import TestClient
+from sqlalchemy import event
+from app.database import engine as app_engine
+
+
+@contextmanager
+def count_queries(connection):
+    """Context manager that counts SQL statements executed on *connection*."""
+    counts = [0]
+
+    def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        counts[0] += 1
+
+    event.listen(connection, "before_cursor_execute", before_cursor_execute)
+    try:
+        yield counts
+    finally:
+        event.remove(connection, "before_cursor_execute", before_cursor_execute)
+
+
 
 
 class TestListSessions:
@@ -296,3 +316,102 @@ class TestDeleteSession:
 
         get_resp = client.get(f"/api/v1/sessions/{sid}", headers=auth_headers)
         assert get_resp.status_code == 404
+
+
+# ─── Pagination tests ─────────────────────────────────────────────────────
+
+def _make_session(client, auth_headers, name: str, offset_secs: int = 0):
+    """POST a minimal session and return its JSON. offset_secs offsets started_at
+    so sessions get distinct timestamps for deterministic ordering."""
+    from datetime import datetime, timezone, timedelta
+    started = (datetime.now(timezone.utc) - timedelta(seconds=offset_secs)).isoformat()
+    resp = client.post("/api/v1/sessions", json={
+        "template_name": name,
+        "total_duration_seconds": 10,
+        "total_kcal_estimated": 1.0,
+        "started_at": started,
+        "exercises": [{
+            "exercise_name": "Jump",
+            "duration_seconds": 10,
+            "kcal_burned": 1.0,
+            "order_index": 0,
+            "completed": True,
+        }],
+    }, headers=auth_headers)
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+class TestListSessionsPagination:
+    URL = "/api/v1/sessions"
+
+    def test_limit_and_offset(self, client: TestClient, auth_headers: dict):
+        """Create 5 sessions; verify limit=2 returns 2 and offset=2 returns next 2."""
+        # oldest to newest: P0 is oldest, P4 is newest
+        for i in range(5):
+            _make_session(client, auth_headers, f"P{i}", offset_secs=(4 - i) * 10)
+
+        # First page: should return newest 2 (P4, P3)
+        resp = client.get(f"{self.URL}?limit=2&offset=0", headers=auth_headers)
+        assert resp.status_code == 200
+        page1 = resp.json()
+        assert len(page1) == 2
+        assert page1[0]["template_name"] == "P4"
+        assert page1[1]["template_name"] == "P3"
+
+        # Second page: should return P2, P1
+        resp2 = client.get(f"{self.URL}?limit=2&offset=2", headers=auth_headers)
+        assert resp2.status_code == 200
+        page2 = resp2.json()
+        assert len(page2) == 2
+        assert page2[0]["template_name"] == "P2"
+        assert page2[1]["template_name"] == "P1"
+
+    def test_limit_capped_at_200(self, client: TestClient, auth_headers: dict):
+        """limit > 200 is silently capped to 200."""
+        resp = client.get(f"{self.URL}?limit=999", headers=auth_headers)
+        assert resp.status_code == 200
+
+    def test_limit_less_than_1_rejected(self, client: TestClient, auth_headers: dict):
+        resp = client.get(f"{self.URL}?limit=0", headers=auth_headers)
+        assert resp.status_code == 422
+
+    def test_negative_offset_rejected(self, client: TestClient, auth_headers: dict):
+        resp = client.get(f"{self.URL}?offset=-1", headers=auth_headers)
+        assert resp.status_code == 422
+
+    def test_eager_loading_constant_queries(
+        self, client: TestClient, auth_headers: dict, db
+    ):
+        """Query count must NOT grow with session/exercise count (proves no N+1).
+        Regardless of how many sessions & exercises we insert, list_sessions
+        should issue a bounded, constant number of SQL statements (sessions
+        query + exercises selectin + logs selectin = 3, plus any auth overhead)."""
+
+        # Create sessions with exercises so there is something to eager-load
+        for i in range(4):
+            _make_session(client, auth_headers, f"EL{i}", offset_secs=(3 - i) * 5)
+
+        # Grab the underlying connection from the bound session
+        connection = db.connection()
+
+        with count_queries(connection) as counts_small:
+            resp = client.get(f"{self.URL}?limit=2", headers=auth_headers)
+        assert resp.status_code == 200
+        queries_for_2 = counts_small[0]
+
+        # Insert 2 more sessions with exercises
+        for i in range(4, 8):
+            _make_session(client, auth_headers, f"EL{i}", offset_secs=0)
+
+        with count_queries(connection) as counts_large:
+            resp2 = client.get(f"{self.URL}?limit=2", headers=auth_headers)
+        assert resp2.status_code == 200
+        queries_for_2b = counts_large[0]
+
+        # Both pages request the same limit=2; query count must be identical
+        # (eager-loading batches all relations; not one query per row).
+        assert queries_for_2 == queries_for_2b, (
+            f"Query count grew: {queries_for_2} → {queries_for_2b}. "
+            "Likely N+1 regression in list_sessions."
+        )
