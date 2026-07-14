@@ -544,6 +544,14 @@ export class OfflineError extends Error {
   }
 }
 
+/** Thrown when a request exceeds its timeout. */
+export class TimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(`Request timed out after ${timeoutMs}ms`);
+    this.name = "TimeoutError";
+  }
+}
+
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 // Writes that must not be queued for offline replay: large Apple Health
 // imports, backup/restore, and push-subscription changes are online-only.
@@ -605,7 +613,24 @@ if (typeof window !== "undefined") {
   if (navigator.onLine) void flushOutbox();
 }
 
-async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> {
+async function fetchWithTimeout(
+  fetchFn: (signal: AbortSignal) => Promise<Response>,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetchFn(controller.signal);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function fetchJSON<T>(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = 15000,
+): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
@@ -617,21 +642,32 @@ async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> 
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const doFetch = () =>
-    fetch(`${API_BASE}${url}`, { ...options, headers });
+  const doFetch = (signal?: AbortSignal) =>
+    fetch(`${API_BASE}${url}`, { ...options, headers, signal });
 
   const method = (options.method ?? "GET").toUpperCase();
 
-  // One retry for network errors (offline, DNS, connection refused).
-  // Don't retry 4xx/5xx — those are server-side issues.
+  const attempt = async (): Promise<Response> => {
+    try {
+      return await fetchWithTimeout(doFetch, timeoutMs);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new TimeoutError(timeoutMs);
+      }
+      throw err;
+    }
+  };
+
+  // One retry for network errors (offline, DNS, connection refused) and
+  // timeouts (stalled connections on flaky mobile networks).
   let res: Response;
   try {
-    res = await doFetch();
-  } catch {
+    res = await attempt();
+  } catch (err) {
     await delay(1000);
     try {
-      res = await doFetch();
-    } catch (err) {
+      res = await attempt();
+    } catch (err2) {
       // Still unreachable. Persist mutating requests to the offline outbox so
       // they replay when connectivity returns (NER-175); reads just fail.
       if (isQueueableWrite(method, url)) {
@@ -642,7 +678,7 @@ async function fetchJSON<T>(url: string, options: RequestInit = {}): Promise<T> 
         );
         throw new OfflineError();
       }
-      throw err;
+      throw err2;
     }
   }
 
