@@ -4,7 +4,6 @@ from datetime import datetime, timezone, timedelta
 from contextlib import contextmanager
 from fastapi.testclient import TestClient
 from sqlalchemy import event
-from app.database import engine as app_engine
 
 
 @contextmanager

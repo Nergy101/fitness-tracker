@@ -722,15 +722,14 @@ export const api = {
   },
   getAllSessions: async (): Promise<WorkoutSession[]> => {
     const PAGE = 100;
-    let offset = 0;
     const all: WorkoutSession[] = [];
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const page = await api.getSessions({ limit: PAGE, offset });
+    let offset = 0;
+    let page: WorkoutSession[];
+    do {
+      page = await api.getSessions({ limit: PAGE, offset });
       all.push(...page);
-      if (page.length < PAGE) break;
       offset += PAGE;
-    }
+    } while (page.length === PAGE);
     return all;
   },
   getSession: (id: number) =>
