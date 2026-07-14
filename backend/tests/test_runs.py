@@ -233,3 +233,64 @@ class TestRunStats:
         months = {(m["month"], m["runs"]) for m in data["monthly_breakdown"]}
         assert ("2026-06", 1) in months
         assert ("2026-07", 1) in months
+
+
+class TestUpdateRunMirrorExercise:
+    """NER-172: editing a run entry must update the mirror SessionExercise."""
+
+    def test_update_updates_session_exercise(self, client: TestClient, auth_headers: dict):
+        """PUT to run entry updates mirror SessionExercise duration_seconds and kcal_burned."""
+        create = client.post("/api/v1/runs", json={
+            "duration_seconds": 1800,
+            "distance_km": 5.0,
+            "run_type": "run",
+        }, headers=auth_headers).json()
+        rid = create["id"]
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert len(sessions) == 1
+        sid = sessions[0]["id"]
+
+        # Edit: change duration and distance
+        resp = client.put(f"/api/v1/runs/{rid}", json={
+            "duration_seconds": 2700,
+            "distance_km": 8.0,
+            "run_type": "run",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+
+        detail = client.get(f"/api/v1/sessions/{sid}", headers=auth_headers).json()
+        exercises = detail["exercises"]
+        assert len(exercises) == 1
+        ex = exercises[0]
+        assert ex["duration_seconds"] == 2700
+        assert ex["exercise_name"] == "Running"
+        # kcal_burned should be non-zero and reflect the updated distance
+        assert ex["kcal_burned"] > 0
+
+    def test_switch_run_type_relabels_exercise(self, client: TestClient, auth_headers: dict):
+        """Switching run_type from 'run' to 'walk' must relabel exercise_name to 'Walking'."""
+        create = client.post("/api/v1/runs", json={
+            "duration_seconds": 1800,
+            "distance_km": 4.0,
+            "run_type": "run",
+        }, headers=auth_headers).json()
+        rid = create["id"]
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        sid = sessions[0]["id"]
+
+        # Verify initial exercise name
+        detail_before = client.get(f"/api/v1/sessions/{sid}", headers=auth_headers).json()
+        assert detail_before["exercises"][0]["exercise_name"] == "Running"
+
+        # Switch to walk
+        resp = client.put(f"/api/v1/runs/{rid}", json={
+            "duration_seconds": 1800,
+            "distance_km": 4.0,
+            "run_type": "walk",
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+
+        detail_after = client.get(f"/api/v1/sessions/{sid}", headers=auth_headers).json()
+        assert detail_after["exercises"][0]["exercise_name"] == "Walking"

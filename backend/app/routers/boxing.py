@@ -109,6 +109,9 @@ def update_boxing(entry_id: int, data: BoxingEntryCreate, db: Session = Depends(
         s.notes = session_notes
         s.started_at = start
         s.finished_at = start + timedelta(seconds=entry.duration_seconds)
+        for se in db.query(SessionExercise).filter(SessionExercise.session_id == s.id).all():
+            se.duration_seconds = entry.duration_seconds
+            se.kcal_burned = kcal
     db.commit()
 
     db.refresh(entry)

@@ -386,3 +386,36 @@ class TestBoxingPrs:
         assert resp.status_code == 200
         data = resp.json()
         assert data["most_rounds_session"] == 10
+
+
+class TestUpdateBoxingMirrorExercise:
+    """NER-172: editing a boxing entry must update the mirror SessionExercise."""
+
+    def test_update_updates_session_exercise(self, client: TestClient, auth_headers: dict):
+        """PUT to boxing entry updates the mirror SessionExercise duration + kcal."""
+        create = client.post("/api/v1/boxing", json={
+            "duration_seconds": 1800,
+            "kcal_per_min": 10.0,
+        }, headers=auth_headers).json()
+        bid = create["id"]
+
+        # Get the created session id
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        assert len(sessions) == 1
+        sid = sessions[0]["id"]
+
+        # Edit: double duration and increase kcal/min
+        resp = client.put(f"/api/v1/boxing/{bid}", json={
+            "duration_seconds": 3600,
+            "kcal_per_min": 12.0,
+        }, headers=auth_headers)
+        assert resp.status_code == 200
+
+        # Fetch session detail and check SessionExercise
+        detail = client.get(f"/api/v1/sessions/{sid}", headers=auth_headers).json()
+        exercises = detail["exercises"]
+        assert len(exercises) == 1
+        ex = exercises[0]
+        assert ex["duration_seconds"] == 3600
+        # 3600s / 60 * 12.0 = 720.0 kcal
+        assert ex["kcal_burned"] == 720.0

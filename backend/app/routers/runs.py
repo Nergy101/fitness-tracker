@@ -130,6 +130,11 @@ def update_run(run_id: int, data: RunEntryCreate, db: Session = Depends(get_db))
         # Keep the mirror on the run's (possibly edited) calendar day.
         s.started_at = start
         s.finished_at = start + timedelta(seconds=run.duration_seconds)
+        ex_name = "Walking" if run.run_type == "walk" else "Running"
+        for se in db.query(SessionExercise).filter(SessionExercise.session_id == s.id).all():
+            se.duration_seconds = run.duration_seconds
+            se.kcal_burned = kcal
+            se.exercise_name = ex_name
     db.commit()
 
     db.refresh(run)
