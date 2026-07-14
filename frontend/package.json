@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
+    "postinstall": "patch-package",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test": "vitest run",

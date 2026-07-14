@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Power as HandFist } from "reicon-react";
+import { Hand as HandFist } from "reicon-react";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";

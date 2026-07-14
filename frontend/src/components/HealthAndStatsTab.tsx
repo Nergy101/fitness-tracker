@@ -9,7 +9,7 @@ import {
   Fire as Fire,
   FlagBanner as FlagBanner,
   Flame as Flame,
-  Power as HandFist,
+  Hand as HandFist,
   Run as PersonSimpleRun,
   Rocket as RocketLaunch,
   Ruler as Ruler,
