@@ -27,6 +27,7 @@ import {
   type BmiResponse,
   type BoxingStatsResponse,
   type BoxingPrsResponse,
+  type DailyActivityPoint,
   type GoalProgressResponse,
   type PrsResponse,
   type StatsOverviewResponse,
@@ -35,6 +36,7 @@ import {
 } from "../api";
 import { ACTIVITY_COLORS } from "../activity";
 import LoadingSpinner from "./LoadingSpinner";
+import ChartCard from "./ChartCard";
 import MeasurementsSection from "./health/MeasurementsSection";
 import SimpleChart from "./health/SimpleChart";
 import { activityStats, shortDate } from "./health/utils";
@@ -65,6 +67,8 @@ export default function HealthAndStatsTab() {
   const [prs, setPrs] = useState<PrsResponse | null>(null);
   const [boxingStats, setBoxingStats] = useState<BoxingStatsResponse | null>(null);
   const [boxingPrs, setBoxingPrs] = useState<BoxingPrsResponse | null>(null);
+  const [boxingTrends, setBoxingTrends] = useState<DailyActivityPoint[]>([]);
+  const [boxingChartMode, setBoxingChartMode] = useState<"daily" | "weekly">("daily");
 
   const [loading, setLoading] = useState(true);
   const [newWeight, setNewWeight] = useState("");
@@ -82,6 +86,7 @@ export default function HealthAndStatsTab() {
       ]);
       const boxStats = await api.getBoxingStats().catch(() => null);
       const boxPrs = await api.getBoxingPrs().catch(() => null);
+      const boxTrends = await api.getBoxingTrends().catch(() => null);
       const goalProgress = await api.getGoalProgress().catch(() => null);
       setStats(overview);
       setSessions(sessionList);
@@ -91,6 +96,7 @@ export default function HealthAndStatsTab() {
       setGoal(goalProgress);
       setBoxingStats(boxStats);
       setBoxingPrs(boxPrs);
+      setBoxingTrends(boxTrends?.days ?? []);
     } catch (e) {
       console.error("Failed to load health data", e);
     } finally {
@@ -387,6 +393,142 @@ export default function HealthAndStatsTab() {
           )}
         </div>
       )}
+
+      {/* ── Boxing Trend Charts ── */}
+      {boxingTrends.length >= 2 && (() => {
+        const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
+        const sorted = [...boxingTrends].sort((a, b) => a.date.localeCompare(b.date));
+
+        // Daily view: last 7 days
+        const now = new Date();
+        const daily = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now);
+          d.setDate(now.getDate() - i);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          const match = sorted.find((p) => p.date === key);
+          daily.push({
+            label: DAYS[(d.getDay() + 6) % 7],
+            minutes: match?.minutes ?? 0,
+            kcal: match?.kcal ?? 0,
+          });
+        }
+
+        // Weekly view: group by ISO week
+        const weeklyMap = new Map<string, { minutes: number; kcal: number }>();
+        for (const p of sorted) {
+          const d = new Date(p.date + "T12:00:00");
+          const mon = new Date(d);
+          mon.setDate(d.getDate() - (d.getDay() + 6) % 7);
+          const key = mon.toISOString().slice(0, 10);
+          const w = weeklyMap.get(key) ?? { minutes: 0, kcal: 0 };
+          w.minutes += p.minutes;
+          w.kcal += p.kcal;
+          weeklyMap.set(key, w);
+        }
+        const weekly = [...weeklyMap.entries()]
+          .sort(([a], [b]) => a.localeCompare(b))
+          .slice(-12)
+          .map(([week, v]) => ({ label: week.slice(5), minutes: v.minutes, kcal: v.kcal }));
+
+        const data = boxingChartMode === "daily" ? daily : weekly;
+        const hasData = data.some((d: { minutes: number; kcal: number }) => d.minutes > 0);
+
+        const barW = 20;
+        const gutter = 28;
+        const svgH = 80;
+        const svgW = gutter + Math.max(barW * data.length, barW);
+        const maxMin = Math.max(1, ...data.map((d: { minutes: number }) => d.minutes));
+        const maxKcal = Math.max(1, ...data.map((d: { kcal: number }) => d.kcal));
+
+        return hasData ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-fg/60">Boxing Trends</span>
+              <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10">
+                <button
+                  onClick={() => setBoxingChartMode("daily")}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "daily" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+                >
+                  Daily
+                </button>
+                <button
+                  onClick={() => setBoxingChartMode("weekly")}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "weekly" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+                >
+                  Weekly
+                </button>
+              </div>
+            </div>
+
+            {/* Minutes chart */}
+            <ChartCard
+              icon={<Timer size={16} className="text-red-400" />}
+              title={boxingChartMode === "daily" ? "Boxing Minutes (daily)" : "Boxing Minutes (weekly)"}
+            >
+              <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
+                {[maxMin, maxMin / 2].map((t) => {
+                  const y = svgH - (t / maxMin) * svgH;
+                  return (
+                    <g key={t}>
+                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
+                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                        {t >= 120 ? `${(t / 60).toFixed(1)}h` : `${Math.round(t)}m`}
+                      </text>
+                    </g>
+                  );
+                })}
+                <line x1={gutter} y1={svgH} x2={svgW} y2={svgH} className="stroke-fg/10" strokeWidth="0.5" />
+                {data.map((d: { label: string; minutes: number }, i: number) => {
+                  const x = gutter + i * barW + 2;
+                  const h = Math.max((d.minutes / maxMin) * svgH, 1);
+                  return (
+                    <g key={i}>
+                      <rect x={x} y={svgH - h} width={barW - 4} height={h} rx={2} fill={ACTIVITY_COLORS.boxing} opacity={0.7} />
+                      <text x={x + (barW - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                        {d.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </ChartCard>
+
+            {/* Kcal chart */}
+            <ChartCard
+              icon={<Fire size={16} className="text-orange-400" />}
+              title={boxingChartMode === "daily" ? "Boxing kcal (daily)" : "Boxing kcal (weekly)"}
+            >
+              <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
+                {[maxKcal, maxKcal / 2].map((t) => {
+                  const y = svgH - (t / maxKcal) * svgH;
+                  return (
+                    <g key={t}>
+                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
+                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                        {t >= 1000 ? `${(t / 1000).toFixed(1)}k` : String(Math.round(t))}
+                      </text>
+                    </g>
+                  );
+                })}
+                <line x1={gutter} y1={svgH} x2={svgW} y2={svgH} className="stroke-fg/10" strokeWidth="0.5" />
+                {data.map((d: { label: string; kcal: number }, i: number) => {
+                  const x = gutter + i * barW + 2;
+                  const h = Math.max((d.kcal / maxKcal) * svgH, 1);
+                  return (
+                    <g key={i}>
+                      <rect x={x} y={svgH - h} width={barW - 4} height={h} rx={2} fill={ACTIVITY_COLORS.boxing} opacity={0.7} />
+                      <text x={x + (barW - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                        {d.label}
+                      </text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </ChartCard>
+          </div>
+        ) : null;
+      })()}
 
       {/* Recent weights + trend */}
       {weights.length > 0 && (

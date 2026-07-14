@@ -916,6 +916,8 @@ export const api = {
     fetchJSON<BoxingStatsResponse>("/api/v1/boxing/stats"),
   getBoxingPrs: () =>
     fetchJSON<BoxingPrsResponse>("/api/v1/boxing/prs"),
+  getBoxingTrends: (days = 120) =>
+    fetchJSON<DailyActivityResponse>(`/api/v1/boxing/stats/trends?days=${days}`),
 
   // ─── Notifications ─────────────────────────────────
   subscribePush: (subscription: { endpoint: string; keys: { p256dh: string; auth: string } }) =>

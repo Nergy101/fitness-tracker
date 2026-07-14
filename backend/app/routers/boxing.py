@@ -5,7 +5,12 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.models import BoxingEntry, WorkoutSession, SessionExercise
-from app.schemas import BoxingEntryCreate, BoxingEntryResponse, BoxingStatsResponse, MonthlyBoxingStats, BoxingPrsResponse
+from collections import defaultdict
+
+from app.schemas import (
+    BoxingEntryCreate, BoxingEntryResponse, BoxingStatsResponse, MonthlyBoxingStats, BoxingPrsResponse,
+    DailyActivityPoint, DailyActivityResponse,
+)
 
 router = APIRouter(prefix="/api/v1/boxing", tags=["boxing"])
 
@@ -194,3 +199,24 @@ def boxing_prs(db: Session = Depends(get_db)):
         total_hours_all_time=total_hours,
         most_rounds_session=most_rounds,
     )
+
+
+def _monday_of(d: date) -> date:
+    return d - timedelta(days=d.weekday())
+
+
+@router.get("/stats/trends", response_model=DailyActivityResponse)
+def boxing_trends(days: int = 120, db: Session = Depends(get_db)):
+    """Daily boxing minutes + kcal for the most recent `days` window."""
+    cutoff = date.today() - timedelta(days=max(days, 1))
+    entries = db.query(BoxingEntry).filter(BoxingEntry.date >= cutoff).order_by(BoxingEntry.date.asc()).all()
+
+    per_day: dict[date, dict[str, float]] = defaultdict(lambda: {"minutes": 0.0, "kcal": 0.0})
+    for e in entries:
+        per_day[e.date]["minutes"] += e.duration_seconds / 60
+        per_day[e.date]["kcal"] += (e.duration_seconds / 60) * e.kcal_per_min
+
+    return DailyActivityResponse(days=[
+        DailyActivityPoint(date=d.isoformat(), minutes=round(v["minutes"], 1), kcal=round(v["kcal"], 1))
+        for d, v in sorted(per_day.items())
+    ])
