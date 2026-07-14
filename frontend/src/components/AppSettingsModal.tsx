@@ -13,6 +13,7 @@ import type { DateLocale } from "../locale";
 import HealthSettingsSection from "./health/HealthSettingsSection";
 import BackupSection from "./BackupSection";
 import { useOnboarding } from "../useOnboarding";
+import { APP_VERSION } from "../version";
 
 type SettingsTab = "general" | "health";
 
@@ -61,7 +62,10 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
       >
         {/* Header + tab bar */}
         <div className="flex items-center justify-between mb-3 shrink-0">
-          <h2 className="text-lg font-bold">Settings</h2>
+          <div className="flex items-baseline gap-2">
+            <h2 className="text-lg font-bold">Settings</h2>
+            <span className="text-[10px] text-fg/30">v{APP_VERSION}</span>
+          </div>
           <button onClick={onClose} className="text-fg/40 hover:text-fg text-xl">&times;</button>
         </div>
 

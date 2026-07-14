@@ -195,6 +195,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Full history so the daily revision counter can count today's commits.
+          fetch-depth: 0
+
+      - name: Compute app version
+        id: version
+        run: |
+          DATE=$(date -u +'%Y.%m.%d')
+          # Daily revision = number of commits landed today (UTC).
+          REV=$(git log --since="$(date -u +'%Y-%m-%d')T00:00:00Z" --oneline | wc -l | tr -d ' ')
+          [ "$REV" -gt 0 ] || REV=1
+          echo "version=${DATE}.${REV}" >> "$GITHUB_OUTPUT"
+          echo "App version: ${DATE}.${REV}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -217,6 +230,7 @@ jobs:
           # Lowercase the owner (GHCR requires lowercase repo names).
           tags: |
             type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
             type=sha,format=short
 
       - name: Build and push
@@ -225,6 +239,9 @@ jobs:
           context: ${{ matrix.context }}
           platforms: linux/amd64,linux/arm64
           push: true
+          # Bake the version into the frontend bundle; backend ignores it.
+          build-args: |
+            ${{ matrix.name == 'frontend' && format('APP_VERSION={0}', steps.version.outputs.version) || '' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

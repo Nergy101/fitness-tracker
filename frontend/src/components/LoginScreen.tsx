@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { HeartbeatIcon as Heartbeat, EyeIcon as Eye, EyeSlashIcon as EyeSlash, LockKeyIcon as LockKey } from "@phosphor-icons/react";
 import { setStoredAuth } from "../auth";
+import { APP_VERSION } from "../version";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -134,7 +135,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           {loading ? "Checking..." : lockoutRemaining > 0 ? "Locked out" : "Unlock"}
         </button>
       </form>
-      <p className="text-[10px] text-fg/15 mt-8">v1.2.0</p>
+      <p className="text-[10px] text-fg/15 mt-8">v{APP_VERSION}</p>
     </div>
   );
 }

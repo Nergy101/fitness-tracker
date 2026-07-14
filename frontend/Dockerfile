@@ -9,6 +9,9 @@ COPY . .
 # Empty → relative /api requests, proxied by nginx to the backend. This is what
 # lets the same image work on localhost or any domain without a rebuild.
 ENV VITE_API_URL=""
+# App version (YYYY.MM.DD.<revision>) injected by CI; "dev" for plain local builds.
+ARG APP_VERSION=dev
+ENV VITE_APP_VERSION=$APP_VERSION
 RUN npm run build
 
 FROM nginx:alpine
