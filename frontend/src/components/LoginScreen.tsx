@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { HeartPulse as Heartbeat, Eye as Eye, EyeOff as EyeSlash, LockKeyhole as LockKey } from "reicon-react";
+import { HeartbeatIcon as Heartbeat, EyeIcon as Eye, EyeSlashIcon as EyeSlash, LockKeyIcon as LockKey } from "@phosphor-icons/react";
 import { setStoredAuth } from "../auth";
 import { APP_VERSION } from "../version";
 
@@ -89,7 +89,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-6">
       {/* Logo */}
       <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mb-4">
-        <Heartbeat size={32} className="text-accent" weight="Filled" />
+        <Heartbeat size={32} className="text-accent" weight="fill" />
       </div>
 
       <h1 className="text-xl font-bold text-fg mb-1">FitnessTracker</h1>
@@ -118,7 +118,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
         {lockoutRemaining > 0 && (
           <p className="text-amber-400 text-sm text-center flex items-center justify-center gap-1.5">
-            <LockKey size={16} weight="Filled" />
+            <LockKey size={16} weight="fill" />
             Locked out — {formatLockout(lockoutRemaining)} remaining
           </p>
         )}

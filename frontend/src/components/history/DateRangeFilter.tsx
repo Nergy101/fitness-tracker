@@ -1,4 +1,4 @@
-import { Calendar as CalendarBlank } from "reicon-react";
+import { CalendarBlankIcon as CalendarBlank } from "@phosphor-icons/react";
 import { RANGES, type RangeKey } from "./utils";
 
 /** "This week / 7 Days / 30 Days" pills plus the calendar toggle. */

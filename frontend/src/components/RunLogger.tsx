@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Run as PersonSimpleRun, Map as MapTrifold } from "reicon-react";
+import { PersonSimpleRunIcon as PersonSimpleRun, MapTrifoldIcon as MapTrifold } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
@@ -75,7 +75,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
       <>
         {toast && (
           <Toast onDismiss={() => setToast(null)}>
-            <PersonSimpleRun size={18} weight="Filled" />
+            <PersonSimpleRun size={18} weight="fill" />
             {toast}
           </Toast>
         )}
@@ -101,7 +101,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
     <>
       {toast && (
         <Toast onDismiss={() => setToast(null)}>
-          <PersonSimpleRun size={18} weight="Filled" />
+          <PersonSimpleRun size={18} weight="fill" />
           {toast}
         </Toast>
       )}

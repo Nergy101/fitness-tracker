@@ -2,12 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Exercise, type ExerciseLog, type WorkoutTemplate } from "../api";
 import { soundStart, soundRest, soundFinish, speak } from "../sound";
 import {
-  ArrowSwapHorizontal2 as ArrowsLeftRight,
-  PauseCircle as PauseCircle,
-  PlayCircle as PlayCircle,
-  SkipNext as SkipForward,
-  X as X,
-} from "reicon-react";
+  ArrowsLeftRightIcon as ArrowsLeftRight,
+  PauseCircleIcon as PauseCircle,
+  PlayCircleIcon as PlayCircle,
+  SkipForwardIcon as SkipForward,
+  XIcon as X,
+} from "@phosphor-icons/react";
 import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 import { formatDuration, localISO } from "../format";
@@ -646,13 +646,13 @@ export default function WorkoutRunner({
               onClick={() => advanceRef.current()}
               className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
             >
-              <SkipForward size={16} weight="Filled" /> Skip warmup
+              <SkipForward size={16} weight="fill" /> Skip warmup
             </button>
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-emerald-400/60 hover:text-emerald-400 border border-emerald-400/20 hover:border-emerald-400/40 rounded-xl px-5 py-2 transition-colors"
             >
-              {paused ? <PlayCircle size={16} weight="Filled" /> : <PauseCircle size={16} weight="Filled" />}
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
               {paused ? "Resume" : "Pause"}
             </button>
           </div>
@@ -697,13 +697,13 @@ export default function WorkoutRunner({
               onClick={() => advanceRef.current()}
               className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
             >
-              <SkipForward size={16} weight="Filled" /> Skip rest
+              <SkipForward size={16} weight="fill" /> Skip rest
             </button>
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
             >
-              {paused ? <PlayCircle size={16} weight="Filled" /> : <PauseCircle size={16} weight="Filled" />}
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
               {paused ? "Resume" : "Pause"}
             </button>
           </div>
@@ -758,13 +758,13 @@ export default function WorkoutRunner({
               onClick={() => advanceRef.current()}
               className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
             >
-              <SkipForward size={16} weight="Filled" /> Skip cooldown
+              <SkipForward size={16} weight="fill" /> Skip cooldown
             </button>
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-blue-400/60 hover:text-blue-400 border border-blue-400/20 hover:border-blue-400/40 rounded-xl px-5 py-2 transition-colors"
             >
-              {paused ? <PlayCircle size={16} weight="Filled" /> : <PauseCircle size={16} weight="Filled" />}
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
               {paused ? "Resume" : "Pause"}
             </button>
           </div>
@@ -799,13 +799,13 @@ export default function WorkoutRunner({
               onClick={() => advanceRef.current()}
               className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
             >
-              <SkipForward size={16} weight="Filled" /> Skip rest
+              <SkipForward size={16} weight="fill" /> Skip rest
             </button>
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
             >
-              {paused ? <PlayCircle size={16} weight="Filled" /> : <PauseCircle size={16} weight="Filled" />}
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
               {paused ? "Resume" : "Pause"}
             </button>
           </div>
@@ -833,7 +833,7 @@ export default function WorkoutRunner({
               className="ml-2 inline-flex items-center text-fg/30 hover:text-accent transition-colors align-middle"
               title="Swap exercise"
             >
-              <ArrowsLeftRight size={20} weight="Outline" strokeWidth={2} />
+              <ArrowsLeftRight size={20} weight="bold" />
             </button>
           </h2>
           <ExerciseImage
@@ -904,13 +904,13 @@ export default function WorkoutRunner({
               onClick={() => advanceRef.current()}
               className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
             >
-              <SkipForward size={16} weight="Filled" /> Skip
+              <SkipForward size={16} weight="fill" /> Skip
             </button>
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
             >
-              {paused ? <PlayCircle size={16} weight="Filled" /> : <PauseCircle size={16} weight="Filled" />}
+              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
               {paused ? "Resume" : "Pause"}
             </button>
           </div>
@@ -991,7 +991,7 @@ export default function WorkoutRunner({
             onClick={onCancel}
             className="inline-flex items-center gap-1.5 text-fg/40 hover:text-fg/70 text-sm px-3 py-1.5"
           >
-            <X size={16} weight="Outline" strokeWidth={2} /> Stop
+            <X size={16} weight="bold" /> Stop
           </button>
         </div>
       )}

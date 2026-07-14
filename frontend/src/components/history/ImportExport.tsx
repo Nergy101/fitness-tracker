@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
 import {
-  Download as DownloadSimple,
-  Upload as UploadSimple,
-} from "reicon-react";
+  DownloadSimpleIcon as DownloadSimple,
+  UploadSimpleIcon as UploadSimple,
+} from "@phosphor-icons/react";
 import {
   api,
   type SessionExerciseInput,
@@ -114,7 +114,7 @@ export default function ImportExport({
         disabled={importing}
         className="flex-1 flex items-center justify-center gap-1.5 text-sm text-fg/60 hover:text-fg border border-fg/10 rounded-xl py-3 transition-colors disabled:opacity-50"
       >
-        <UploadSimple size={16} weight="Outline" strokeWidth={2} />
+        <UploadSimple size={16} weight="bold" />
         {importing ? "Importing..." : "Import"}
       </button>
       <button
@@ -122,7 +122,7 @@ export default function ImportExport({
         disabled={sessions.length === 0}
         className="flex-1 flex items-center justify-center gap-1.5 text-sm text-fg/60 hover:text-fg border border-fg/10 rounded-xl py-3 transition-colors disabled:opacity-50"
       >
-        <DownloadSimple size={16} weight="Outline" strokeWidth={2} />
+        <DownloadSimple size={16} weight="bold" />
         Export
       </button>
       <input

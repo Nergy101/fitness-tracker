@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import {
-  ChartPie as ChartPieSlice,
-  Fire as Fire,
-  Walk as Footprints,
-  Heart as Heart,
-  Moon as Moon,
-  Run as PersonSimpleRun,
-  Pulse as Pulse,
-  Scale as Scales,
-  Timer2 as Timer2,
-  TrendUp2 as TrendUp,
-} from "reicon-react"
-import type { IconComponent } from "reicon-react";;
+  ChartPieSliceIcon as ChartPieSlice,
+  FireIcon as Fire,
+  FootprintsIcon as Footprints,
+  HeartIcon as Heart,
+  MoonIcon as Moon,
+  PersonSimpleRunIcon as PersonSimpleRun,
+  PulseIcon as Pulse,
+  ScalesIcon as Scales,
+  TimerIcon as Timer,
+  TrendUpIcon as TrendUp,
+  type Icon,
+} from "@phosphor-icons/react";
 import {
   api,
   type DailyActivityPoint,
@@ -36,13 +36,13 @@ import { combineHealthSeries } from "./health/utils";
 const WEIGHT_COLOR = "#c084fc"; // purple-400
 
 // Per-metric presentation for imported Apple Health series.
-const HEALTH_META: Record<string, { icon: IconComponent; color: string }> = {
+const HEALTH_META: Record<string, { icon: Icon; color: string }> = {
   resting_heart_rate: { icon: Heart, color: "#f87171" },   // red-400
   vo2_max: { icon: Pulse, color: "#2dd4bf" },              // teal-400
   step_count: { icon: Footprints, color: "#60a5fa" },      // blue-400
   sleep_analysis: { icon: Moon, color: "#818cf8" },        // indigo-400
   active_energy: { icon: Fire, color: "#f59e0b" },         // amber-500
-  apple_exercise_time: { icon: Timer2, color: "#34d399" },  // emerald-400
+  apple_exercise_time: { icon: Timer, color: "#34d399" },  // emerald-400
 };
 
 function formatHealthValue(metric: string, v: number): string {
@@ -589,7 +589,7 @@ export default function StatsTab() {
       {/* Pace trend */}
       {pacedRuns.length >= 2 && (
         <ChartCard
-          icon={<Timer2 size={16} style={{ color: ACTIVITY_COLORS.run }} />}
+          icon={<Timer size={16} style={{ color: ACTIVITY_COLORS.run }} />}
           title="Run Pace Trend"
           sub="lower is faster"
         >
@@ -630,7 +630,7 @@ export default function StatsTab() {
       {health && health.series.length > 0 && (
         <>
           <div className="flex items-center gap-2 pt-1">
-            <Heart size={18} className="text-red-400" weight="Filled" />
+            <Heart size={18} className="text-red-400" weight="fill" />
             <h3 className="text-sm font-semibold">Apple Health</h3>
           </div>
           {health.series

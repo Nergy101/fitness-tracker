@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  Download as DownloadSimple,
-  ArrowDottedRotateAnticlockwise as ArrowCounterClockwise,
-} from "reicon-react";
+  DownloadSimpleIcon as DownloadSimple,
+  ArrowCounterClockwiseIcon as ArrowCounterClockwise,
+} from "@phosphor-icons/react";
 import { api, type BackupConfigResponse, type BackupFileResponse, type BackupResultResponse } from "../api";
 
 const SEGMENT_ON = "bg-accent/15 border-accent/30 text-accent";
@@ -121,7 +121,7 @@ export default function BackupSection() {
           aria-label="Backup now"
           className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20 transition-colors disabled:opacity-50"
         >
-          <DownloadSimple size={14} weight="Outline" strokeWidth={2} />
+          <DownloadSimple size={14} weight="bold" />
           Backup Now
         </button>
         {config.last_backup && (
@@ -175,7 +175,7 @@ export default function BackupSection() {
                     aria-label={`Restore from ${b.filename}`}
                     className="shrink-0 ml-2 text-fg/30 hover:text-accent transition-colors"
                   >
-                    <ArrowCounterClockwise size={14} weight="Outline" strokeWidth={2} />
+                    <ArrowCounterClockwise size={14} weight="bold" />
                   </button>
                 )}
               </div>

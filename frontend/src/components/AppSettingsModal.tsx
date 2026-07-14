@@ -1,29 +1,10 @@
 import {
-  Moon as Moon,
-  Speaker as SpeakerHigh,
-  VolumeOff as SpeakerSlash,
-  Sun as Sun,
-  Sunrise as SunHorizon,
-  Atom,
-  Bolt,
-  Box,
-  BranchDown,
-  CheckList,
-  Code2,
-  Database,
-  Gamepad,
-  Globe,
-  Layers,
-  Monitor,
-  Phone,
-  Play,
-  Rocket,
-  ShieldCheck,
-  Smileys2,
-  TerminalSquare,
-  TestTube,
-  Wind,
-} from "reicon-react";
+  MoonIcon as Moon,
+  SpeakerHighIcon as SpeakerHigh,
+  SpeakerSlashIcon as SpeakerSlash,
+  SunIcon as Sun,
+  SunHorizonIcon as SunHorizon,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 import { useTheme, type ThemeMode } from "../useTheme";
 import { useAudio } from "../useAudio";
@@ -34,12 +15,11 @@ import BackupSection from "./BackupSection";
 import { useOnboarding } from "../useOnboarding";
 import { APP_VERSION } from "../version";
 
-type SettingsTab = "general" | "health" | "credits";
+type SettingsTab = "general" | "health";
 
 const SUB_TABS: { id: SettingsTab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "health", label: "Health" },
-  { id: "credits", label: "Credits" },
 ];
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; ariaLabel: string }[] = [
@@ -63,28 +43,6 @@ interface AppSettingsModalProps {
   /** Called after the health profile was saved (data needs a refetch). */
   onHealthSaved: () => void;
 }
-
-const CREDITS = [
-  { icon: Atom, label: "React", desc: "UI framework" },
-  { icon: Code2, label: "TypeScript", desc: "Type-safe language" },
-  { icon: Bolt, label: "Vite", desc: "Build tool" },
-  { icon: Wind, label: "Tailwind CSS", desc: "Utility CSS" },
-  { icon: Smileys2, label: "Reicon", desc: "Icon library" },
-  { icon: Phone, label: "Workbox (PWA)", desc: "Offline support" },
-  { icon: TerminalSquare, label: "Python", desc: "Backend language" },
-  { icon: Rocket, label: "FastAPI", desc: "Web framework" },
-  { icon: Database, label: "SQLite", desc: "Database" },
-  { icon: Layers, label: "SQLAlchemy", desc: "ORM" },
-  { icon: BranchDown, label: "Alembic", desc: "Migrations" },
-  { icon: Box, label: "Docker", desc: "Containerization" },
-  { icon: Globe, label: "Nginx", desc: "Reverse proxy" },
-  { icon: Play, label: "GitHub Actions", desc: "CI/CD" },
-  { icon: Monitor, label: "Linux", desc: "Server OS" },
-  { icon: TestTube, label: "vitest", desc: "Unit tests" },
-  { icon: ShieldCheck, label: "pytest", desc: "Backend tests" },
-  { icon: Gamepad, label: "Playwright", desc: "E2E tests" },
-  { icon: CheckList, label: "Linear", desc: "Project management" },
-];
 
 export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettingsModalProps) {
   const { theme, mode, setMode } = useTheme();
@@ -146,11 +104,11 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
                       className={SEGMENT + (mode === opt.mode ? SEGMENT_ON : SEGMENT_OFF)}
                     >
                       {opt.mode === "system" ? (
-                        <SunHorizon size={16} weight="Filled" />
+                        <SunHorizon size={16} weight="fill" />
                       ) : opt.mode === "dark" ? (
-                        <Moon size={16} weight="Filled" />
+                        <Moon size={16} weight="fill" />
                       ) : (
-                        <Sun size={16} weight="Filled" />
+                        <Sun size={16} weight="fill" />
                       )}
                       {opt.label}
                     </button>
@@ -186,9 +144,9 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
               <label className="flex items-center justify-between gap-2 text-sm py-1 cursor-pointer">
                 <span className="flex items-center gap-2 text-fg/80">
                   {muted ? (
-                    <SpeakerSlash size={18} className="text-fg/40" weight="Filled" />
+                    <SpeakerSlash size={18} className="text-fg/40" weight="fill" />
                   ) : (
-                    <SpeakerHigh size={18} className="text-accent" weight="Filled" />
+                    <SpeakerHigh size={18} className="text-accent" weight="fill" />
                   )}
                   Sound effects
                 </span>
@@ -227,24 +185,6 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
                   onClose();
                 }}
               />
-            </div>
-          )}
-
-          {subTab === "credits" && (
-            <div className="space-y-1">
-              <p className="text-xs text-fg/40 mb-2.5">Built with</p>
-              {CREDITS.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-fg/5 transition-colors"
-                >
-                  <item.icon size={20} className="text-fg/50 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-fg/80">{item.label}</p>
-                    <p className="text-[11px] text-fg/30">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
             </div>
           )}
         </div>

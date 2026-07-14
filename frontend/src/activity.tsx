@@ -7,20 +7,20 @@
  */
 
 import {
-  Dumbbell,
-  Power,
-  Run,
-  Walk,
-} from "reicon-react"
-import type { IconComponent } from "reicon-react";;
+  BarbellIcon,
+  HandFistIcon,
+  PersonSimpleRunIcon,
+  SneakerIcon,
+  type Icon,
+} from "@phosphor-icons/react";
 
 export type ActivityKind = "workout" | "run" | "walk" | "boxing";
 
-export const ACTIVITY_ICONS: Record<ActivityKind, IconComponent> = {
-  workout: Dumbbell,
-  run: Run,
-  walk: Walk,
-  boxing: Power,
+export const ACTIVITY_ICONS: Record<ActivityKind, Icon> = {
+  workout: BarbellIcon,
+  run: PersonSimpleRunIcon,
+  walk: SneakerIcon,
+  boxing: HandFistIcon,
 };
 
 export const ACTIVITY_COLORS: Record<ActivityKind, string> = {

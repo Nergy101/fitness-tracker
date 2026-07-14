@@ -242,7 +242,7 @@ export default function WorkoutEditor({
 
         {/* Mode selector */}
         <div className="mb-4">
-          <label className="text-sm text-fg/60 block mb-2">Timer2 Mode</label>
+          <label className="text-sm text-fg/60 block mb-2">Timer Mode</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { id: "circuit", label: "Circuit", desc: "Fixed rounds" },

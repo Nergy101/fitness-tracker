@@ -16,13 +16,13 @@
 
 import { useEffect, useState } from "react";
 import {
-  Dumbbell as Barbell,
-  Fire as Fire,
-  Moon as Moon,
-  Run as PersonSimpleRun,
-  Pulse as Pulse,
-  FaceSmile as Smiley,
-} from "reicon-react";
+  BarbellIcon as Barbell,
+  FireIcon as Fire,
+  MoonIcon as Moon,
+  PersonSimpleRunIcon as PersonSimpleRun,
+  PulseIcon as Pulse,
+  SmileyIcon as Smiley,
+} from "@phosphor-icons/react";
 import {
   api,
   type DailyActivityPoint,

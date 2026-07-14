@@ -1,4 +1,4 @@
-import { Power as HandFist, Trophy as Trophy } from "reicon-react";
+import { HandFistIcon as HandFist, TrophyIcon as Trophy } from "@phosphor-icons/react";
 import { type BoxingPrsResponse, type PrsResponse } from "../../api";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../../activity";
 import { formatDuration } from "../../format";
@@ -65,7 +65,7 @@ export function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxi
   return (
     <div className="bg-surface rounded-xl p-4 border border-fg/5">
       <div className="flex items-center gap-2 mb-3">
-        <Trophy size={20} className="text-yellow-400 shrink-0" weight="Filled" />
+        <Trophy size={20} className="text-yellow-400 shrink-0" weight="fill" />
         <p className="text-sm font-semibold text-fg">Personal Records</p>
       </div>
       <RecordGroup kind="run" records={runRecords} />

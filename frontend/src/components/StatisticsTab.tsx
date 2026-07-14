@@ -1,27 +1,27 @@
 import { useEffect, useState } from "react";
 import {
-  ArrowDown as ArrowDown,
-  ArrowUp as ArrowUp,
-  Dumbbell as Barbell,
-  ChartBar as ChartBar,
-  ChartPie as ChartPieSlice,
-  Fire as Fire,
-  Walk as Footprints,
-  Calendar as CalendarBlank,
-  Heart as Heart,
-  Moon as Moon,
-  Leaf as Plant,
-  Pulse as Pulse,
-  Rocket as RocketLaunch,
-  Walk as Sneaker,
-  Timer2 as Timer2,
-  TrendDown2 as TrendDown,
-  TrendUp2 as TrendUp,
-  Scale as Scales,
-  Run as PersonSimpleRun,
-  AlertTriangle as Warning,
-} from "reicon-react"
-import type { IconComponent } from "reicon-react";;
+  ArrowDownIcon as ArrowDown,
+  ArrowUpIcon as ArrowUp,
+  BarbellIcon as Barbell,
+  ChartBarIcon as ChartBar,
+  ChartPieSliceIcon as ChartPieSlice,
+  FireIcon as Fire,
+  FootprintsIcon as Footprints,
+  CalendarBlankIcon as CalendarBlank,
+  HeartIcon as Heart,
+  MoonIcon as Moon,
+  PlantIcon as Plant,
+  PulseIcon as Pulse,
+  RocketLaunchIcon as RocketLaunch,
+  SneakerIcon as Sneaker,
+  TimerIcon as Timer,
+  TrendDownIcon as TrendDown,
+  TrendUpIcon as TrendUp,
+  ScalesIcon as Scales,
+  PersonSimpleRunIcon as PersonSimpleRun,
+  WarningIcon as Warning,
+  type Icon,
+} from "@phosphor-icons/react";
 import {
   api,
   type GoalProgressResponse,
@@ -42,13 +42,13 @@ import { formatHours } from "../format";
 const WEIGHT_COLOR = "#c084fc"; // purple-400 — matches the weight stat card icon
 
 // Per-metric presentation for imported Apple Health series.
-const HEALTH_META: Record<string, { icon: IconComponent; color: string }> = {
+const HEALTH_META: Record<string, { icon: Icon; color: string }> = {
   resting_heart_rate: { icon: Heart, color: "#f87171" },   // red-400
   vo2_max: { icon: Pulse, color: "#2dd4bf" },              // teal-400
   step_count: { icon: Footprints, color: "#60a5fa" },      // blue-400
   sleep_analysis: { icon: Moon, color: "#818cf8" },        // indigo-400
   active_energy: { icon: Fire, color: "#f59e0b" },         // amber-500
-  apple_exercise_time: { icon: Timer2, color: "#34d399" },  // emerald-400
+  apple_exercise_time: { icon: Timer, color: "#34d399" },  // emerald-400
 };
 
 function formatHealthValue(metric: string, v: number): string {
@@ -422,7 +422,7 @@ export default function StatisticsTab() {
     .slice(-30);
 
   // ── Coach insights ──
-  const insightLines: { icon: IconComponent; text: string; tone?: "warn" }[] = [];
+  const insightLines: { icon: Icon; text: string; tone?: "warn" }[] = [];
 
   if (stats.current_month_vs_previous_pct != null) {
     const pct = stats.current_month_vs_previous_pct;
@@ -498,7 +498,7 @@ export default function StatisticsTab() {
     <div className="stats-tab space-y-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <ChartBar size={22} className="text-accent" weight="Filled" />
+        <ChartBar size={22} className="text-accent" weight="fill" />
         <h2 className="text-sm font-semibold">Statistics</h2>
       </div>
 
@@ -628,7 +628,7 @@ export default function StatisticsTab() {
       {/* Pace trend */}
       {pacedRuns.length >= 2 && (
         <ChartCard
-          icon={<Timer2 size={16} style={{ color: ACTIVITY_COLORS.run }} />}
+          icon={<Timer size={16} style={{ color: ACTIVITY_COLORS.run }} />}
           title="Run Pace Trend"
           sub="lower is faster"
         >
@@ -671,7 +671,7 @@ export default function StatisticsTab() {
       {health && health.series.length > 0 && (
         <>
           <div className="flex items-center gap-2 pt-1">
-            <Heart size={18} className="text-red-400" weight="Filled" />
+            <Heart size={18} className="text-red-400" weight="fill" />
             <h3 className="text-sm font-semibold">Apple Health</h3>
           </div>
           {health.series

@@ -1,4 +1,4 @@
-import { Trash as Trash, Pin as PushPin, Copy as Copy } from "reicon-react";
+import { TrashIcon as Trash, PushPinIcon as PushPin, CopyIcon as Copy } from "@phosphor-icons/react";
 import { type WorkoutTemplate } from "../api";
 import { formatDuration } from "../format";
 
@@ -47,7 +47,7 @@ export default function WorkoutCard({
           >
             <PushPin
               size={18}
-              weight={template.is_pinned ? "Filled" : "Outline"}
+              weight={template.is_pinned ? "fill" : "regular"}
             />
           </button>
 

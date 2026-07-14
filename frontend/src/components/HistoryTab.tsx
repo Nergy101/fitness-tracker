@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft as ArrowLeft,
-  Clock as ClockCounterClockwise,
-  EmojiSad2 as SmileySad,
-} from "reicon-react";
+  ArrowLeftIcon as ArrowLeft,
+  ClockCounterClockwiseIcon as ClockCounterClockwise,
+  SmileySadIcon as SmileySad,
+} from "@phosphor-icons/react";
 import { api, type WorkoutSession } from "../api";
 import CalendarView from "./CalendarView";
 import LoadingSpinner from "./LoadingSpinner";
@@ -75,7 +75,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center py-8 text-red-400">
-        <SmileySad size={40} weight="Outline" className="mb-3 opacity-80" />
+        <SmileySad size={40} weight="regular" className="mb-3 opacity-80" />
         <p>{error}</p>
       </div>
     );
@@ -110,7 +110,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
           onClick={() => setView("range")}
           className="flex items-center gap-1.5 text-sm text-fg/60 hover:text-fg mb-4 transition-colors"
         >
-          <ArrowLeft size={16} weight="Outline" strokeWidth={2} /> Back
+          <ArrowLeft size={16} weight="bold" /> Back
         </button>
 
         <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
@@ -176,7 +176,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
         className="w-full mt-4 flex items-center justify-center gap-1.5 text-sm text-fg/60 hover:text-fg border border-fg/10 rounded-xl py-3 transition-colors"
       >
         View all
-        <ClockCounterClockwise size={16} weight="Outline" strokeWidth={2} />
+        <ClockCounterClockwise size={16} weight="bold" />
       </button>
 
       {/* Import / export all history as JSON */}

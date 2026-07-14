@@ -1,10 +1,10 @@
 import {
-  Moon as Moon,
-  Speaker as SpeakerHigh,
-  VolumeOff as SpeakerSlash,
-  Sun as Sun,
-  Sunrise as SunHorizon,
-} from "reicon-react";
+  MoonIcon as Moon,
+  SpeakerHighIcon as SpeakerHigh,
+  SpeakerSlashIcon as SpeakerSlash,
+  SunIcon as Sun,
+  SunHorizonIcon as SunHorizon,
+} from "@phosphor-icons/react";
 import { useTheme } from "../useTheme";
 import { useAudio } from "../useAudio";
 
@@ -33,9 +33,9 @@ export default function TopControls() {
         className={btn}
       >
         {muted ? (
-          <SpeakerSlash size={22} weight="Filled" />
+          <SpeakerSlash size={22} weight="fill" />
         ) : (
-          <SpeakerHigh size={22} weight="Filled" />
+          <SpeakerHigh size={22} weight="fill" />
         )}
       </button>
       <button
@@ -45,11 +45,11 @@ export default function TopControls() {
         title={modeLabel}
       >
         {mode === "system" ? (
-          <SunHorizon size={22} weight="Filled" />
+          <SunHorizon size={22} weight="fill" />
         ) : theme === "dark" ? (
-          <Sun size={22} weight="Filled" />
+          <Sun size={22} weight="fill" />
         ) : (
-          <Moon size={22} weight="Filled" />
+          <Moon size={22} weight="fill" />
         )}
       </button>
     </div>
