@@ -13,11 +13,13 @@ services:
     expose:
       - "8000"
     # Optional: pin the login password so it stays stable across deploys.
-    # If unset, settings.toml on the /data volume keeps its generated password.
+    # If unset, settings.toml in ./data keeps its generated password.
     environment:
       - FITNESS_PASSWORD=${FITNESS_PASSWORD:-}
     volumes:
-      - backend-data:/data
+      # /data is a literal FS bind mount so SQLite + settings.toml + backup_config.json
+      # live in ./data next to the compose file (survives container recreation).
+      - ./data:/data
       - ./backups:/backups
     networks:
       - app
@@ -36,6 +38,3 @@ services:
 
 networks:
   app:
-
-volumes:
-  backend-data:
