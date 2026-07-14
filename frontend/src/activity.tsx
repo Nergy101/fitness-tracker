@@ -8,7 +8,7 @@
 
 import {
   Dumbbell,
-  Hand,
+  Power,
   Run,
   Walk,
 } from "reicon-react"
@@ -20,7 +20,7 @@ export const ACTIVITY_ICONS: Record<ActivityKind, IconComponent> = {
   workout: Dumbbell,
   run: Run,
   walk: Walk,
-  boxing: Hand,
+  boxing: Power,
 };
 
 export const ACTIVITY_COLORS: Record<ActivityKind, string> = {

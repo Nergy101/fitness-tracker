@@ -1,4 +1,4 @@
-import { Hand as HandFist, Trophy as Trophy } from "reicon-react";
+import { Power as HandFist, Trophy as Trophy } from "reicon-react";
 import { type BoxingPrsResponse, type PrsResponse } from "../../api";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../../activity";
 import { formatDuration } from "../../format";
