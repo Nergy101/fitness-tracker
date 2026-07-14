@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { SmileySadIcon as SmileySad } from "@phosphor-icons/react";
+import { EmojiSad2 as SmileySad } from "reicon-react";
 import {
   api,
   type Category,
@@ -144,7 +144,7 @@ export default function ExercisesTab() {
         <LoadingSpinner label="Loading exercises" />
       ) : error ? (
         <div className="flex flex-col items-center py-8 text-red-400">
-          <SmileySad size={40} weight="regular" className="mb-3 opacity-80" />
+          <SmileySad size={40} weight="Outline" className="mb-3 opacity-80" />
           <p>{error}</p>
         </div>
       ) : filtered.length === 0 ? (

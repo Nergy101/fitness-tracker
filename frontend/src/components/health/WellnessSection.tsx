@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import {
-  SmileyIcon as Smiley,
-  SmileyMehIcon as SmileyMeh,
-  SmileySadIcon as SmileySad,
-  SmileyStickerIcon as SmileySticker,
-  SmileyWinkIcon as SmileyWink,
-} from "@phosphor-icons/react";
+  FaceSmile as Smiley,
+  EmojiNormal2 as SmileyMeh,
+  EmojiSad2 as SmileySad,
+  StickerSmile as SmileySticker,
+  FaceSmile as SmileyWink,
+} from "reicon-react";
 import { api, type WellnessResponse, type WellnessTrendsResponse } from "../../api";
 import { shortDate } from "./utils";
 
@@ -35,7 +35,7 @@ export default function WellnessSection() {
       : val <= 3 ? Smiley
       : val <= 4 ? SmileyWink
       : SmileySticker;
-    return <MoodFace size={14} weight="fill" className="inline align-[-2px] text-accent" />;
+    return <MoodFace size={14} weight="Filled" className="inline align-[-2px] text-accent" />;
   };
 
   const latest = entries[0];

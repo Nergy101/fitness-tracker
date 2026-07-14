@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PencilSimpleIcon as PencilSimple, TrashIcon as Trash } from "@phosphor-icons/react";
+import { Edit2 as PencilSimple, Trash as Trash } from "reicon-react";
 import { api, type WorkoutSession } from "../../api";
 import { formatDate, formatDuration, localISO } from "../../format";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind } from "../../activity";

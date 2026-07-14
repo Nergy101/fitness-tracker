@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckIcon as Check } from "@phosphor-icons/react";
+import { Check as Check } from "reicon-react";
 import { api, type UserProfileResponse, type UserProfileUpdate } from "../../api";
 import {
   requestNotificationPermission,
@@ -166,7 +166,7 @@ function HealthSettingsForm({
               >
                 {testSent ? (
                   <span className="inline-flex items-center justify-center gap-1">
-                    <Check size={12} weight="bold" /> Sent!
+                    <Check size={12} weight="Outline" strokeWidth={2} /> Sent!
                   </span>
                 ) : (
                   "Send Test"

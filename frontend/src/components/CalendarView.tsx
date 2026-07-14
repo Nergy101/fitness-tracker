@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import {
-  CaretLeftIcon as CaretLeft,
-  CaretRightIcon as CaretRight,
-  ArrowClockwiseIcon as ArrowClockwise,
-  XIcon as X,
-} from "@phosphor-icons/react";
+  CaretLeft as CaretLeft,
+  CaretRight as CaretRight,
+  ArrowRotate as ArrowClockwise,
+  X as X,
+} from "reicon-react";
 import type { WorkoutSession } from "../api";
 import { formatDuration } from "../format";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind } from "../activity";
@@ -111,7 +111,7 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-3">
         <button onClick={prevMonth} className="text-fg/40 hover:text-fg transition-colors p-1">
-          <CaretLeft size={20} weight="bold" />
+          <CaretLeft size={20} weight="Outline" strokeWidth={2} />
         </button>
         <h3 className="text-sm font-semibold">
           {MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}
@@ -125,7 +125,7 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
             <ArrowClockwise size={18} />
           </button>
           <button onClick={nextMonth} className="text-fg/40 hover:text-fg transition-colors p-1">
-            <CaretRight size={20} weight="bold" />
+            <CaretRight size={20} weight="Outline" strokeWidth={2} />
           </button>
         </div>
       </div>

@@ -1,27 +1,27 @@
 import { useEffect, useState } from "react";
 import {
-  BarbellIcon as Barbell,
-  CalendarBlankIcon as CalendarBlank,
-  CaretDownIcon as CaretDown,
-  CaretUpIcon as CaretUp,
-  ChartBarIcon as ChartBar,
-  ConfettiIcon as Confetti,
-  FireIcon as Fire,
-  FlagBannerIcon as FlagBanner,
-  FlameIcon as Flame,
-  HandFistIcon as HandFist,
-  PersonSimpleRunIcon as PersonSimpleRun,
-  RocketLaunchIcon as RocketLaunch,
-  RulerIcon as Ruler,
-  ScalesIcon as Scales,
-  SmileyIcon as Smiley,
-  SneakerIcon as Sneaker,
-  TimerIcon as Timer,
-  TrendDownIcon as TrendDown,
-  TrendUpIcon as TrendUp,
-  WarningIcon as Warning,
-  type Icon,
-} from "@phosphor-icons/react";
+  Dumbbell as Barbell,
+  Calendar as CalendarBlank,
+  ChevronDown as CaretDown,
+  ChevronUp as CaretUp,
+  ChartBar as ChartBar,
+  Confetti as Confetti,
+  Fire as Fire,
+  FlagBanner as FlagBanner,
+  Flame as Flame,
+  Power as HandFist,
+  Run as PersonSimpleRun,
+  Rocket as RocketLaunch,
+  Ruler as Ruler,
+  Scale as Scales,
+  FaceSmile as Smiley,
+  Walk as Sneaker,
+  Timer2 as Timer2,
+  TrendDown2 as TrendDown,
+  TrendUp2 as TrendUp,
+  AlertTriangle as Warning,
+} from "reicon-react"
+import type { IconComponent } from "reicon-react";;
 import {
   api,
   type BmiResponse,
@@ -133,7 +133,7 @@ export default function HealthAndStatsTab() {
   const walkStats = activityStats(sessions, "walk");
 
   // ── Coach insights ──
-  const insightLines: { icon: Icon; text: string; tone?: "warn" }[] = [];
+  const insightLines: { icon: IconComponent; text: string; tone?: "warn" }[] = [];
 
   if (stats.current_month_vs_previous_pct != null) {
     const pct = stats.current_month_vs_previous_pct;
@@ -202,13 +202,13 @@ export default function HealthAndStatsTab() {
         />
         {prs && prs.streak_days_30d > 0 ? (
           <StatCard
-            icon={<Flame size={14} className="text-orange-400" weight="fill" />}
+            icon={<Flame size={14} className="text-orange-400" weight="Filled" />}
             label="Activity Streak (30d)"
             value={`${prs.streak_days_30d} days`}
           />
         ) : (
           <StatCard
-            icon={<Flame size={14} className="text-fg/30" weight="fill" />}
+            icon={<Flame size={14} className="text-fg/30" weight="Filled" />}
             label="Activity Streak (30d)"
             value="—"
             sub="no activity yet"
@@ -239,7 +239,7 @@ export default function HealthAndStatsTab() {
                 <p className="text-xs text-fg/40 mt-1">
                   {(goal.progress_percentage ?? 0) >= 100 ? (
                     <span className="inline-flex items-center gap-1">
-                      Goal reached! <Confetti size={14} weight="fill" className="text-accent" />
+                      Goal reached! <Confetti size={14} weight="Filled" className="text-accent" />
                     </span>
                   ) : (
                     `${Math.abs(goal.remaining_kg).toFixed(1)} kg to go`
@@ -345,7 +345,7 @@ export default function HealthAndStatsTab() {
       {boxingStats && boxingStats.total_sessions > 0 && (
         <div className="bg-surface rounded-xl p-4 border border-fg/5">
           <div className="flex items-center gap-2 mb-3">
-            <HandFist size={20} className="text-red-400 shrink-0" weight="fill" />
+            <HandFist size={20} className="text-red-400 shrink-0" weight="Filled" />
             <p className="text-sm font-semibold text-fg">Boxing</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -355,12 +355,12 @@ export default function HealthAndStatsTab() {
               value={String(boxingStats.total_sessions)}
             />
             <StatCard
-              icon={<Timer size={14} className="text-red-400" />}
+              icon={<Timer2 size={14} className="text-red-400" />}
               label="Total hours"
               value={`${boxingStats.total_hours}h`}
             />
             <StatCard
-              icon={<Timer size={14} className="text-red-400" />}
+              icon={<Timer2 size={14} className="text-red-400" />}
               label="Avg session"
               value={boxingStats.avg_duration_seconds ? `${Math.round(boxingStats.avg_duration_seconds / 60)}m` : "—"}
             />
@@ -463,7 +463,7 @@ export default function HealthAndStatsTab() {
 
             {/* Minutes chart */}
             <ChartCard
-              icon={<Timer size={16} className="text-red-400" />}
+              icon={<Timer2 size={16} className="text-red-400" />}
               title={boxingChartMode === "daily" ? "Boxing Minutes (daily)" : "Boxing Minutes (weekly)"}
             >
               <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">

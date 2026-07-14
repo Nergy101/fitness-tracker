@@ -1,13 +1,13 @@
 import { useState } from "react";
 import {
-  BarbellIcon as Barbell,
-  ChartBarIcon as ChartBar,
-  ClockIcon as Clock,
-  GearIcon as Gear,
-  HeartbeatIcon as Heartbeat,
-  PersonSimpleRunIcon as PersonSimpleRun,
-  type Icon,
-} from "@phosphor-icons/react";
+  Dumbbell as Barbell,
+  ChartBar as ChartBar,
+  Clock as Clock,
+  Gear as Gear,
+  HeartPulse as Heartbeat,
+  Run as PersonSimpleRun,
+} from "reicon-react"
+import type { IconComponent } from "reicon-react";;
 import { api, type WorkoutTemplate } from "./api";
 import WorkoutTab from "./components/WorkoutTab";
 import ExercisesTab from "./components/ExercisesTab";
@@ -31,7 +31,7 @@ type TabId = "workout" | "exercises" | "history" | "health" | "stats";
 interface Tab {
   id: TabId;
   label: string;
-  icon: Icon;
+  icon: IconComponent;
 }
 
 const TABS: Tab[] = [
@@ -105,7 +105,7 @@ export default function App() {
               title="Settings"
               className="p-1.5 rounded-lg text-fg/50 hover:text-fg transition-colors"
             >
-              <Gear size={20} weight="fill" />
+              <Gear size={20} weight="Filled" />
             </button>
             <button
               onClick={() => { void api.logout(); clearStoredAuth(); setAuthenticated(false); }}
@@ -142,7 +142,7 @@ export default function App() {
                 currentTab === tab.id ? "text-accent" : "text-fg/40"
               }`}
             >
-              <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
+              <tab.icon size={24} weight={currentTab === tab.id ? "Filled" : "Outline"} />
             </button>
           ))}
         </nav>

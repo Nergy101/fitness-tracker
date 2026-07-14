@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import {
-  CaretDownIcon as CaretDown,
-  CaretUpIcon as CaretUp,
-  ConfettiIcon as Confetti,
-  FlameIcon as Flame,
-  RulerIcon as Ruler,
-  SmileyIcon as Smiley,
-  TrophyIcon as Trophy,
-} from "@phosphor-icons/react";
+  ChevronDown as CaretDown,
+  ChevronUp as CaretUp,
+  Confetti as Confetti,
+  Flame as Flame,
+  Ruler as Ruler,
+  FaceSmile as Smiley,
+  Trophy as Trophy,
+} from "reicon-react";
 import {
   api,
   type BmiResponse,
@@ -105,7 +105,7 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
   return (
     <div className="bg-surface rounded-xl p-4 border border-fg/5">
       <div className="flex items-center gap-2 mb-3">
-        <Trophy size={20} className="text-yellow-400 shrink-0" weight="fill" />
+        <Trophy size={20} className="text-yellow-400 shrink-0" weight="Filled" />
         <p className="text-sm font-semibold text-fg">Personal Records</p>
       </div>
       <RecordGroup kind="run" records={runRecords} />
@@ -114,7 +114,7 @@ function PersonalRecordsCard({ prs }: { prs: PrsResponse }) {
       {prs.longest_streak_days > 0 && (
         <div className="flex items-center justify-between border-t border-fg/5 pt-2 mt-3">
           <p className="flex items-center gap-1.5 text-xs text-fg/50">
-            <Flame size={14} className="text-orange-400 shrink-0" weight="fill" />
+            <Flame size={14} className="text-orange-400 shrink-0" weight="Filled" />
             Longest activity streak (2-day gap)
           </p>
           <p className="text-sm font-bold text-fg">
@@ -237,7 +237,7 @@ export default function HealthTab() {
               {streak.current_streak >= 30 ? (
                 <Trophy size={28} className="text-yellow-400 shrink-0" />
               ) : (
-                <Flame size={28} className="text-orange-400 shrink-0" weight={streak.current_streak >= 7 ? "fill" : "regular"} />
+                <Flame size={28} className="text-orange-400 shrink-0" weight={streak.current_streak >= 7 ? "Filled" : "Outline"} />
               )}
               <div>
                 <p className="text-xs text-fg/40 mb-0.5">Weight Logging Streak</p>
@@ -271,7 +271,7 @@ export default function HealthTab() {
             <p className="text-xs text-fg/40 mt-1">
               {(goal.progress_percentage ?? 0) >= 100 ? (
                 <span className="inline-flex items-center gap-1">
-                  Goal reached! <Confetti size={14} weight="fill" className="text-accent" />
+                  Goal reached! <Confetti size={14} weight="Filled" className="text-accent" />
                 </span>
               ) : (
                 `${Math.abs(goal.remaining_kg).toFixed(1)} kg to go`

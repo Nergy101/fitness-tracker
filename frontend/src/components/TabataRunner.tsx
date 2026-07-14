@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type WorkoutTemplate } from "../api";
 import { soundTabata, soundFinish } from "../sound";
 import {
-  PauseCircleIcon as PauseCircle,
-  PlayCircleIcon as PlayCircle,
-  SkipForwardIcon as SkipForward,
-  XIcon as X,
-} from "@phosphor-icons/react";
+  PauseCircle as PauseCircle,
+  PlayCircle as PlayCircle,
+  SkipNext as SkipForward,
+  X as X,
+} from "reicon-react";
 import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 import { formatDuration, localISO } from "../format";
@@ -279,13 +279,13 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
               onClick={() => advanceRef.current()}
               className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
             >
-              <SkipForward size={16} weight="fill" /> Skip
+              <SkipForward size={16} weight="Filled" /> Skip
             </button>
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
             >
-              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+              {paused ? <PlayCircle size={16} weight="Filled" /> : <PauseCircle size={16} weight="Filled" />}
               {paused ? "Resume" : "Pause"}
             </button>
           </div>
@@ -337,7 +337,7 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
             onClick={onCancel}
             className="inline-flex items-center gap-1.5 text-fg/40 hover:text-fg/70 text-sm px-3 py-1.5"
           >
-            <X size={16} weight="bold" /> Stop
+            <X size={16} weight="Outline" strokeWidth={2} /> Stop
           </button>
         </div>
       )}

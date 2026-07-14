@@ -1,20 +1,20 @@
 import { useRef, useState } from "react";
 import {
-  BarbellIcon as Barbell,
-  CaretLeftIcon as CaretLeft,
-  CaretRightIcon as CaretRight,
-  ChartBarIcon as ChartBar,
-  GearIcon as Gear,
-  HeartbeatIcon as Heartbeat,
-  PersonSimpleRunIcon as PersonSimpleRun,
-  type Icon,
-} from "@phosphor-icons/react";
+  Dumbbell as Barbell,
+  CaretLeft as CaretLeft,
+  CaretRight as CaretRight,
+  ChartBar as ChartBar,
+  Gear as Gear,
+  HeartPulse as Heartbeat,
+  Run as PersonSimpleRun,
+} from "reicon-react"
+import type { IconComponent } from "reicon-react";;
 import { api } from "../api";
 import { useLocale } from "../useLocale";
 import type { DateLocale } from "../locale";
 
 type Slide =
-  | { kind: "info"; icon: Icon; title: string; body: string }
+  | { kind: "info"; icon: IconComponent; title: string; body: string }
   | { kind: "setup" };
 
 const SLIDES: Slide[] = [
@@ -130,7 +130,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         {slide.kind === "info" ? (
           <div className="flex flex-col items-center text-center max-w-xs">
             <div className="w-20 h-20 bg-accent/15 rounded-3xl flex items-center justify-center mb-6">
-              <slide.icon size={40} className="text-accent" weight="fill" />
+              <slide.icon size={40} className="text-accent" weight="Filled" />
             </div>
             <h2 className="text-2xl font-bold text-fg mb-3">{slide.title}</h2>
             <p className="text-sm text-fg/60 leading-relaxed">{slide.body}</p>

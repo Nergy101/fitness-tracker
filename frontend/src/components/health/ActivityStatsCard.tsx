@@ -1,4 +1,4 @@
-import { FireIcon as Fire, TimerIcon as Timer } from "@phosphor-icons/react";
+import { Fire as Fire, Timer2 as Timer2 } from "reicon-react";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../../activity";
 import { type ActivityStats } from "./utils";
 import { StatCard } from "./StatCard";
@@ -11,7 +11,7 @@ export function ActivityStatsCard({ kind, stats }: { kind: ActivityKind; stats: 
   return (
     <div className="bg-surface rounded-xl p-4 border border-fg/5">
       <div className="flex items-center gap-2 mb-3">
-        <Icon size={20} weight="fill" className="shrink-0" style={{ color }} />
+        <Icon size={20} weight="Filled" className="shrink-0" style={{ color }} />
         <p className="text-sm font-semibold text-fg">{ACTIVITY_LABELS[kind]}</p>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -21,12 +21,12 @@ export function ActivityStatsCard({ kind, stats }: { kind: ActivityKind; stats: 
           value={String(stats.sessions)}
         />
         <StatCard
-          icon={<Timer size={14} style={{ color }} />}
+          icon={<Timer2 size={14} style={{ color }} />}
           label="Total hours"
           value={`${stats.total_hours}h`}
         />
         <StatCard
-          icon={<Timer size={14} style={{ color }} />}
+          icon={<Timer2 size={14} style={{ color }} />}
           label="Avg session"
           value={stats.avg_duration_seconds ? `${Math.round(stats.avg_duration_seconds / 60)}m` : "—"}
         />

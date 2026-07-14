@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { HandFistIcon as HandFist } from "@phosphor-icons/react";
+import { Power as HandFist } from "reicon-react";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
@@ -71,7 +71,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
       <>
         {toast && (
           <Toast onDismiss={() => setToast(null)}>
-            <HandFist size={18} weight="fill" />
+            <HandFist size={18} weight="Filled" />
             {toast}
           </Toast>
         )}
@@ -97,7 +97,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
     <>
       {toast && (
         <Toast onDismiss={() => setToast(null)}>
-          <HandFist size={18} weight="fill" />
+          <HandFist size={18} weight="Filled" />
           {toast}
         </Toast>
       )}

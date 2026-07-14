@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CaretDownIcon as CaretDown, CaretUpIcon as CaretUp, PulseIcon as Pulse } from "@phosphor-icons/react";
+import { ChevronDown as CaretDown, ChevronUp as CaretUp, Pulse as Pulse } from "reicon-react";
 import { api, type MetricNameStat } from "../../api";
 
 /** Collapsible diagnostic listing every distinct imported Apple Health metric

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircleIcon as CheckCircle, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
+import { CheckCircle as CheckCircle, EmojiSad2 as SmileySad } from "reicon-react";
 import Toast from "./Toast";
 import {
   api,
@@ -174,7 +174,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       {/* Toast */}
       {toast && (
         <Toast onDismiss={() => setToast(null)}>
-          <CheckCircle size={18} weight="fill" />
+          <CheckCircle size={18} weight="Filled" />
           {toast}
         </Toast>
       )}
@@ -201,7 +201,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         <LoadingSpinner label="Loading workouts" />
       ) : error ? (
         <div className="flex flex-col items-center py-12 text-red-400">
-          <SmileySad size={40} weight="regular" className="mb-3 opacity-80" />
+          <SmileySad size={40} weight="Outline" className="mb-3 opacity-80" />
           <p>{error}</p>
         </div>
       ) : templates.length === 0 ? (

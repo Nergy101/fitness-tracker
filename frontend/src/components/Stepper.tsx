@@ -1,4 +1,4 @@
-import { MinusIcon as Minus, PlusIcon as Plus } from "@phosphor-icons/react";
+import { Minus as Minus, Plus as Plus } from "reicon-react";
 
 interface StepperProps {
   value: number;
@@ -38,7 +38,7 @@ export default function Stepper({
         aria-label="Decrease"
         className="flex items-center justify-center w-11 h-11 text-fg/70 hover:bg-fg/5 active:bg-fg/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
       >
-        <Minus size={18} weight="bold" />
+        <Minus size={18} weight="Outline" strokeWidth={2} />
       </button>
       <div className="min-w-14 text-center text-sm font-semibold tabular-nums px-1">
         {value}
@@ -51,7 +51,7 @@ export default function Stepper({
         aria-label="Increase"
         className="flex items-center justify-center w-11 h-11 text-fg/70 hover:bg-fg/5 active:bg-fg/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
       >
-        <Plus size={18} weight="bold" />
+        <Plus size={18} weight="Outline" strokeWidth={2} />
       </button>
     </div>
   );
