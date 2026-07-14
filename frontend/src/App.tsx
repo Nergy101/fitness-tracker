@@ -132,7 +132,7 @@ export default function App() {
           {currentTab === "stats" && <StatsTab />}
         </main>
 
-        <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+8px)] shrink-0">
+        <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+4px)] shrink-0">
           {TABS.map((tab) => (
             <button
               key={tab.id}
