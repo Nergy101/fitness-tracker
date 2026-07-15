@@ -225,7 +225,7 @@ function MeasurementTrendChart({
   return (
     <div>
       <p className="text-[10px] text-fg/40 mb-2">Trends</p>
-      <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full h-28">
+      <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full">
         {series.map((s) => (
           <polyline
             key={s.key}

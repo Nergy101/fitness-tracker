@@ -131,7 +131,7 @@ export function BarChart({
     : null;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-28">
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
       <YGrid ticks={niceTicks(0, yMax).filter((t) => t > 0)} yOf={bY} format={formatY ?? fmtTick} />
       {points.map((p, i) => (
         <rect
@@ -201,7 +201,7 @@ export function DailyStackedBarChart({ points, goalValue, goalLabel, formatY, xL
   const goalY = goalValue != null ? yOf(goalValue) : null;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-28">
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
       <YGrid ticks={niceTicks(0, yMax).filter((t) => t > 0)} yOf={yOf} format={formatY ?? fmtTick} />
       {points.map((p, i) => {
         let y = H;
@@ -254,7 +254,7 @@ export function ScatterChart({ points, color = ACCENT, xLabel }: ScatterChartPro
   const ptY = (y: number) => yN(y, yLo - yPad, yHi + yPad);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 26}`} className="w-full h-32">
+    <svg viewBox={`0 0 ${W} ${H + 26}`} className="w-full">
       <YGrid ticks={niceTicks(yLo, yHi)} yOf={ptY} />
       {niceTicks(xLo, xHi).map((t) => (
         <g key={t}>
@@ -308,7 +308,7 @@ export function BandChart({ points, color = ACCENT, xLabels }: BandChartProps) {
   const lblIdxs = [0, Math.floor(n / 2), n - 1];
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full h-28">
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
       <YGrid ticks={niceTicks(yLo, yHi)} yOf={yOf} />
       <polygon points={`${topEdge} ${botEdge}`} fill={color} opacity="0.15" />
       <polyline
@@ -386,7 +386,7 @@ export function DualAxisChart({
   const hasLegend = barLabel || lineLabel;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 32}`} className="w-full h-32">
+    <svg viewBox={`0 0 ${W} ${H + 32}`} className="w-full">
       {/* left axis: line scale (tinted); gridlines come from this scale only */}
       <YGrid ticks={niceTicks(lineLo, lineHi)} yOf={lY} right={right} color={lineColor} />
       {/* right axis: bar scale (tinted labels, no second set of gridlines) */}

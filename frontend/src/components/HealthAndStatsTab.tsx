@@ -178,7 +178,7 @@ export default function HealthAndStatsTab() {
   }
 
   return (
-    <div className="health-stats-tab space-y-4">
+    <div className="health-stats-tab space-y-4 mx-auto w-full max-w-2xl">
       {/* ── Quick Stats ── */}
       <div className="grid grid-cols-2 gap-2">
         <StatCard
@@ -437,7 +437,8 @@ export default function HealthAndStatsTab() {
         const barW = 20;
         const gutter = 28;
         const svgH = 80;
-        const svgW = gutter + Math.max(barW * data.length, barW);
+        const svgW = Math.max(300, gutter + barW * data.length);
+        const slot = (svgW - gutter) / data.length;
         const maxMin = Math.max(1, ...data.map((d: { minutes: number }) => d.minutes));
         const maxKcal = Math.max(1, ...data.map((d: { kcal: number }) => d.kcal));
 
@@ -480,12 +481,12 @@ export default function HealthAndStatsTab() {
                 })}
                 <line x1={gutter} y1={svgH} x2={svgW} y2={svgH} className="stroke-fg/10" strokeWidth="0.5" />
                 {data.map((d: { label: string; minutes: number }, i: number) => {
-                  const x = gutter + i * barW + 2;
+                  const x = gutter + i * slot + 2;
                   const h = Math.max((d.minutes / maxMin) * svgH, 1);
                   return (
                     <g key={i}>
-                      <rect x={x} y={svgH - h} width={barW - 4} height={h} rx={2} fill={ACTIVITY_COLORS.boxing} opacity={0.7} />
-                      <text x={x + (barW - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill={ACTIVITY_COLORS.boxing} opacity={0.7} />
+                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
                         {d.label}
                       </text>
                     </g>
@@ -513,12 +514,12 @@ export default function HealthAndStatsTab() {
                 })}
                 <line x1={gutter} y1={svgH} x2={svgW} y2={svgH} className="stroke-fg/10" strokeWidth="0.5" />
                 {data.map((d: { label: string; kcal: number }, i: number) => {
-                  const x = gutter + i * barW + 2;
+                  const x = gutter + i * slot + 2;
                   const h = Math.max((d.kcal / maxKcal) * svgH, 1);
                   return (
                     <g key={i}>
-                      <rect x={x} y={svgH - h} width={barW - 4} height={h} rx={2} fill={ACTIVITY_COLORS.boxing} opacity={0.7} />
-                      <text x={x + (barW - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill={ACTIVITY_COLORS.boxing} opacity={0.7} />
+                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
                         {d.label}
                       </text>
                     </g>

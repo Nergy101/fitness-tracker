@@ -24,7 +24,7 @@ export default function SimpleChart({ entries }: { entries: WeightEntryResponse[
   return (
     <div className="bg-surface rounded-xl p-4 border border-fg/5">
       <p className="text-xs text-fg/40 mb-3">Weight Trend (30d)</p>
-      <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full h-28">
+      <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full">
         <polyline
           points={points.join(" ")}
           fill="none"

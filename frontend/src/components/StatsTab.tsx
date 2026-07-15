@@ -85,7 +85,10 @@ function StackedBarChart<T>({
   );
   const wPerBar = 28;
   const gutter = 30;
-  const w = gutter + Math.max(wPerBar * data.length, wPerBar);
+  // Keep a constant minimum viewBox width so few bars don't inflate the
+  // aspect-derived height; bars are distributed across the available span.
+  const w = Math.max(300, gutter + wPerBar * data.length);
+  const slot = (w - gutter) / data.length;
   const ticks = [max, max / 2];
 
   return (
@@ -103,7 +106,7 @@ function StackedBarChart<T>({
       })}
       <line x1={gutter} y1={height} x2={w} y2={height} className="stroke-fg/10" strokeWidth="0.5" />
       {data.map((d, i) => {
-        const x = gutter + i * wPerBar + 2;
+        const x = gutter + i * slot + 2;
         const parts = segments
           .map((seg) => ({ color: seg.color, val: seg.value(d) }))
           .filter((p) => p.val > 0);
@@ -119,7 +122,7 @@ function StackedBarChart<T>({
                   key={j}
                   x={x}
                   y={yCursor}
-                  width={wPerBar - 4}
+                  width={slot - 4}
                   height={barH}
                   rx={isTop ? 2 : 0}
                   fill={p.color}
@@ -128,7 +131,7 @@ function StackedBarChart<T>({
               );
             })}
             <text
-              x={x + (wPerBar - 4) / 2}
+              x={x + (slot - 4) / 2}
               y={height + 12}
               textAnchor="middle"
               className="fill-fg/30"
@@ -481,7 +484,7 @@ export default function StatsTab() {
   );
 
   return (
-    <div className="stats-tab space-y-4">
+    <div className="stats-tab space-y-4 mx-auto w-full max-w-2xl">
       {/* Training mix */}
       {mixWeeks.length > 0 && (
         <ChartCard
