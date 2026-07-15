@@ -19,3 +19,6 @@ backend/backup_config.json
 /frontend/blob-report/
 /frontend/.playwright/
 .coverage
+
+# Self-host setup (local copies of compose + settings)
+self-host/

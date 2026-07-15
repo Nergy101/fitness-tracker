@@ -131,3 +131,48 @@ class TestRestore:
         series = client.get(INSIGHTS_URL, headers=auth_headers).json()["series"]
         by_metric = {s["metric"]: s for s in series}
         assert by_metric["step_count"]["points"][0]["value"] == 9000
+
+
+class TestDeleteBackup:
+    def test_deletes_existing_backup(
+        self, tmp_path, client: TestClient, auth_headers: dict
+    ):
+        backup_dir = _point_in(tmp_path, client, auth_headers)
+        created = client.post(BACKUP_URL, headers=auth_headers)
+        assert created.status_code == 200
+        filename = created.json()["filename"]
+
+        # Delete it
+        resp = client.delete(f"/api/v1/backups/{filename}", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "deleted"
+
+        # File should be gone
+        assert not (Path(backup_dir) / filename).exists()
+
+        # Listing should no longer include it
+        blist = client.get(BACKUPS_URL, headers=auth_headers)
+        assert blist.status_code == 200
+        filenames = [b["filename"] for b in blist.json()]
+        assert filename not in filenames
+
+    def test_delete_nonexistent_returns_404(
+        self, tmp_path, client: TestClient, auth_headers: dict
+    ):
+        _point_in(tmp_path, client, auth_headers)
+        resp = client.delete(
+            "/api/v1/backups/fitness-tracker-backup-2099-01-01T00-00-00.json",
+            headers=auth_headers,
+        )
+        assert resp.status_code == 404
+
+    def test_rejects_path_traversal(
+        self, tmp_path, client: TestClient, auth_headers: dict
+    ):
+        _point_in(tmp_path, client, auth_headers)
+        # Starlette normalizes '../' before routing, so the URL won't match
+        # the backup endpoint at all — safe (404) regardless.
+        resp = client.delete(
+            "/api/v1/backups/../../../etc/passwd", headers=auth_headers
+        )
+        assert resp.status_code in (400, 404)

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   DownloadSimpleIcon as DownloadSimple,
   ArrowCounterClockwiseIcon as ArrowCounterClockwise,
+  TrashIcon as Trash,
 } from "@phosphor-icons/react";
 import { api, type BackupConfigResponse, type BackupFileResponse, type BackupResultResponse } from "../api";
 
@@ -38,6 +39,7 @@ export default function BackupSection() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -79,6 +81,20 @@ export default function BackupSection() {
       loadData();
     } catch (e: unknown) {
       showMsg(e instanceof Error ? e.message : "Restore failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (filename: string) => {
+    setLoading(true);
+    setDeleteTarget(null);
+    try {
+      await api.deleteBackup(filename);
+      showMsg(`Deleted ${filename}`);
+      loadData();
+    } catch (e: unknown) {
+      showMsg(e instanceof Error ? e.message : "Delete failed");
     } finally {
       setLoading(false);
     }
@@ -169,14 +185,40 @@ export default function BackupSection() {
                       Cancel
                     </button>
                   </div>
+                ) : deleteTarget === b.filename ? (
+                  <div className="flex gap-1.5 shrink-0 ml-2">
+                    <button
+                      onClick={() => handleDelete(b.filename)}
+                      aria-label="Confirm delete"
+                      className="text-[10px] font-medium px-2 py-1 rounded bg-red-500/20 text-red-400"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(null)}
+                      aria-label="Cancel delete"
+                      className="text-[10px] font-medium px-2 py-1 rounded bg-fg/10 text-fg/50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 ) : (
-                  <button
-                    onClick={() => setRestoreTarget(b.filename)}
-                    aria-label={`Restore from ${b.filename}`}
-                    className="shrink-0 ml-2 text-fg/30 hover:text-accent transition-colors"
-                  >
-                    <ArrowCounterClockwise size={14} weight="bold" />
-                  </button>
+                  <div className="flex gap-1 shrink-0 ml-2">
+                    <button
+                      onClick={() => setRestoreTarget(b.filename)}
+                      aria-label={`Restore from ${b.filename}`}
+                      className="text-fg/30 hover:text-accent transition-colors"
+                    >
+                      <ArrowCounterClockwise size={14} weight="bold" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(b.filename)}
+                      aria-label={`Delete ${b.filename}`}
+                      className="text-fg/30 hover:text-red-400 transition-colors"
+                    >
+                      <Trash size={14} weight="bold" />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

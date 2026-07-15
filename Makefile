@@ -1,4 +1,4 @@
-.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed seed-fake-history remove-fake-history build lint lint-backend lint-frontend e2e clean help
+.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed seed-fake-history remove-fake-history build lint lint-backend lint-frontend e2e clean self-host help
 
 # ─── Config ──────────────────────────────────────────────
 
@@ -92,6 +92,16 @@ run: $(STAMP) seed frontend/node_modules ## Start backend + frontend, then open 
 
 build: frontend/node_modules ## Build the frontend for production
 	cd frontend && npm run build
+
+# ─── Self-Host ────────────────────────────────────────────
+
+self-host: ## Set up a self-host/ directory with everything needed to run the app
+	@mkdir -p self-host/data self-host/backups
+	@cp docker-compose.yml self-host/
+	@cp settings.toml.example self-host/settings.toml
+	@echo "self-host/ is ready."
+	@echo "  1. Edit self-host/settings.toml — set your own password."
+	@echo "  2. cd self-host && docker compose up"
 
 # ─── Test ────────────────────────────────────────────────
 

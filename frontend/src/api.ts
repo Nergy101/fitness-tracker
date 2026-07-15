@@ -953,6 +953,11 @@ export const api = {
       "/api/v1/backup/restore",
       { method: "POST", body: JSON.stringify({ filename }) },
     ),
+  deleteBackup: (filename: string) =>
+    fetchJSON<{ status: string; filename: string }>(
+      `/api/v1/backups/${encodeURIComponent(filename)}`,
+      { method: "DELETE" },
+    ),
 
   // Auth — best-effort server-side token revocation on logout.
   logout: async (): Promise<void> => {

@@ -308,6 +308,25 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
     }
 
 
+@router.delete("/backups/{filename}")
+def delete_backup(filename: str):
+    """Delete a backup file by filename."""
+    backup_dir = _get_backup_dir()
+    # Reject path traversal
+    if not filename or "/" in filename or "\\" in filename or ".." in filename or Path(filename).is_absolute():
+        raise HTTPException(400, "Invalid backup filename")
+    filepath = (backup_dir / filename).resolve()
+    if filepath.parent != backup_dir.resolve() or not filepath.is_file():
+        raise HTTPException(404, f"Backup file not found: {filename}")
+    if not filename.startswith("fitness-tracker-backup-") or not filename.endswith(".json"):
+        raise HTTPException(400, "Invalid backup filename")
+    try:
+        filepath.unlink()
+    except OSError as e:
+        raise HTTPException(500, f"Failed to delete backup: {e}")
+    return {"status": "deleted", "filename": filename}
+
+
 # ─── Scheduler ───────────────────────────────────────────
 
 _INTERVAL_SECONDS = {"daily": 24 * 3600, "weekly": 7 * 24 * 3600}

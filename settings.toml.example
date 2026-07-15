@@ -1,0 +1,22 @@
+# FitnessTracker server settings — example.
+# Copy this to settings.toml and fill in your values.
+#   make self-host    # does this for you automatically
+
+[auth]
+# Change this to a strong password you'll remember.
+password = "change-me-to-a-strong-password"
+
+[app]
+name = "FitnessTracker"
+
+[notifications]
+# Optional: VAPID keys for push notifications.
+# Generate with: npx web-push generate-vapid-keys
+private_key = ""
+public_key = ""
+subject = "mailto:you@example.com"
+
+[backup]
+# Where backups are stored inside the container.
+# The docker-compose bind-mounts ./backups → /backups, so leave this as-is.
+path = "/backups"
