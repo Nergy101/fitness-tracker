@@ -178,7 +178,7 @@ export default function HealthAndStatsTab() {
   }
 
   return (
-    <div className="health-stats-tab space-y-4 mx-auto w-full max-w-2xl">
+    <div className="health-stats-tab space-y-4">
       {/* ── Quick Stats ── */}
       <div className="grid grid-cols-2 gap-2">
         <StatCard

@@ -484,7 +484,7 @@ export default function StatsTab() {
   );
 
   return (
-    <div className="stats-tab space-y-4 mx-auto w-full max-w-2xl">
+    <div className="stats-tab space-y-4">
       {/* Training mix */}
       {mixWeeks.length > 0 && (
         <ChartCard

@@ -95,7 +95,8 @@ export default function App() {
     <ErrorBoundary>
       <div className="app-shell flex flex-col h-screen pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
-        <header className="px-4 py-3 flex items-center justify-between border-b border-fg/10 shrink-0">
+        <header className="px-4 py-3 border-b border-fg/10 shrink-0">
+          <div className="mx-auto w-full max-w-2xl flex items-center justify-between">
           <h1 className="text-lg font-bold">{tabTitle}</h1>
           <div className="flex items-center gap-3">
             <span className="text-xs text-fg/40">FitnessTracker</span>
@@ -115,9 +116,11 @@ export default function App() {
               Logout
             </button>
           </div>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-4">
+          <div className="mx-auto w-full max-w-2xl">
           {currentTab === "workout" && (
           <WorkoutTab
           onStartWorkout={setRunningWorkout}
@@ -130,9 +133,11 @@ export default function App() {
           )}
           {currentTab === "health" && <HealthAndStatsTab key={healthRefreshKey} />}
           {currentTab === "stats" && <StatsTab />}
+          </div>
         </main>
 
-        <nav className="bottom-nav flex items-center justify-around border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+4px)] shrink-0">
+        <nav className="bottom-nav border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+4px)] shrink-0">
+          <div className="mx-auto w-full max-w-2xl flex items-center justify-around">
           {TABS.map((tab) => (
             <button
               key={tab.id}
@@ -145,6 +150,7 @@ export default function App() {
               <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
             </button>
           ))}
+          </div>
         </nav>
 
         {showSettings && (
