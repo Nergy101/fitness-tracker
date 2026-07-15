@@ -917,8 +917,14 @@ test.describe("authenticated", () => {
     await expect(notesArea).toBeVisible();
     await notesArea.fill("E2E test notes — persistence check");
 
-    // Save by blurring (onBlur calls saveNotes)
+    // Save by blurring (onBlur calls saveNotes); wait for the PATCH to persist
+    // and propagate to the parent list before closing, so reopening reads the
+    // saved notes rather than the pre-update session.
+    const savePatch = page.waitForResponse(
+      (r) => /\/api\/v1\/sessions\/\d+$/.test(r.url()) && r.request().method() === "PATCH" && r.ok(),
+    );
     await notesArea.blur();
+    await savePatch;
 
     // Close the detail modal via the × button
     await page.locator("button").filter({ hasText: "×" }).click();
