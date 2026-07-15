@@ -86,3 +86,23 @@ body {
     opacity: 0;
   }
 }
+
+/* Loading spinner: the ring completes one full rotation in a single solid
+   activity color, then advances to the next color on the next rotation.
+   3s cycle at step-end = one color held per 1s rotation (see LoadingSpinner). */
+@property --spin-color {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #fb923c;
+}
+@keyframes spin-color {
+  0% {
+    --spin-color: var(--spin-c0);
+  }
+  33.334% {
+    --spin-color: var(--spin-c1);
+  }
+  66.667% {
+    --spin-color: var(--spin-c2);
+  }
+}

@@ -1,8 +1,10 @@
 import { ACTIVITY_COLORS } from "../activity";
 
-/** Conic-gradient ring that sweeps through the activity palette
- *  (workout → run → walk) as it spins — the shared app loader. */
-const RING = `conic-gradient(from 0deg, ${ACTIVITY_COLORS.workout}, ${ACTIVITY_COLORS.run}, ${ACTIVITY_COLORS.walk}, ${ACTIVITY_COLORS.workout})`;
+/** Ring loader that spins one full rotation in a single solid activity color,
+ *  then advances to the next color on each subsequent rotation (workout → run
+ *  → walk → …). Rotation and color-cycle animations are phase-locked: 1s per
+ *  rotation, 3s step-end color cycle. */
+const TAIL = `conic-gradient(from 0deg, transparent, var(--spin-color))`;
 
 export default function LoadingSpinner({
   label = "Loading",
@@ -21,14 +23,25 @@ export default function LoadingSpinner({
     >
       <span
         className="animate-spin rounded-full shrink-0"
-        style={{
-          width: size,
-          height: size,
-          background: RING,
-          WebkitMask: hole,
-          mask: hole,
-        }}
-      />
+        style={{ width: size, height: size }}
+      >
+        <span
+          className="block rounded-full"
+          style={
+            {
+              width: "100%",
+              height: "100%",
+              background: TAIL,
+              WebkitMask: hole,
+              mask: hole,
+              animation: "spin-color 3s step-end infinite",
+              "--spin-c0": ACTIVITY_COLORS.workout,
+              "--spin-c1": ACTIVITY_COLORS.run,
+              "--spin-c2": ACTIVITY_COLORS.walk,
+            } as React.CSSProperties
+          }
+        />
+      </span>
       {label && <span className="text-sm">{label}</span>}
     </div>
   );
