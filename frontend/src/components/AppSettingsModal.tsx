@@ -12,14 +12,16 @@ import { useLocale } from "../useLocale";
 import type { DateLocale } from "../locale";
 import HealthSettingsSection from "./health/HealthSettingsSection";
 import BackupSection from "./BackupSection";
+import CreditsSection from "./CreditsSection";
 import { useOnboarding } from "../useOnboarding";
 import { APP_VERSION } from "../version";
 
-type SettingsTab = "general" | "health";
+type SettingsTab = "general" | "health" | "credits";
 
 const SUB_TABS: { id: SettingsTab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "health", label: "Health" },
+  { id: "credits", label: "Credits" },
 ];
 
 const THEME_OPTIONS: { mode: ThemeMode; label: string; ariaLabel: string }[] = [
@@ -187,6 +189,8 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
               />
             </div>
           )}
+
+          {subTab === "credits" && <CreditsSection />}
         </div>
       </div>
     </div>
