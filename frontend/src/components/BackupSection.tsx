@@ -151,72 +151,72 @@ export default function BackupSection() {
         <p className="text-xs text-accent bg-accent/5 rounded-lg px-3 py-2">{message}</p>
       )}
 
-      {/* Restore */}
+      {/* Backups list */}
       {backups.length > 0 && (
         <div className="border-t border-fg/10 pt-3">
-          <p className="text-xs text-fg/40 mb-2">Restore from Backup</p>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+          <p className="text-xs text-fg/40 mb-2">Backups</p>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
             {backups.map((b) => (
               <div
                 key={b.filename}
-                className="flex items-center justify-between bg-bg rounded-lg px-3 py-2 text-xs"
+                className="flex items-center justify-between bg-bg rounded-lg px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-fg/80 truncate">{b.filename}</p>
-                  <p className="text-fg/30">
+                  <p className="text-sm text-fg/80 truncate">{b.filename}</p>
+                  <p className="text-xs text-fg/30 mt-0.5">
                     {formatTimestamp(b.created_at)} · {formatBytes(b.size_bytes)}
                     {" · "}{Object.values(b.table_counts).reduce((a, c) => a + c, 0)} records
                   </p>
                 </div>
                 {restoreTarget === b.filename ? (
-                  <div className="flex gap-1.5 shrink-0 ml-2">
+                  <div className="flex gap-2 shrink-0 ml-3">
                     <button
                       onClick={() => handleRestore(b.filename)}
                       aria-label="Confirm restore"
-                      className="text-[10px] font-medium px-2 py-1 rounded bg-red-500/20 text-red-400"
+                      className="text-xs font-medium px-3 py-1.5 rounded bg-red-500/20 text-red-400"
                     >
                       Confirm
                     </button>
                     <button
                       onClick={() => setRestoreTarget(null)}
                       aria-label="Cancel restore"
-                      className="text-[10px] font-medium px-2 py-1 rounded bg-fg/10 text-fg/50"
+                      className="text-xs font-medium px-3 py-1.5 rounded bg-fg/10 text-fg/50"
                     >
                       Cancel
                     </button>
                   </div>
                 ) : deleteTarget === b.filename ? (
-                  <div className="flex gap-1.5 shrink-0 ml-2">
+                  <div className="flex gap-2 shrink-0 ml-3">
                     <button
                       onClick={() => handleDelete(b.filename)}
                       aria-label="Confirm delete"
-                      className="text-[10px] font-medium px-2 py-1 rounded bg-red-500/20 text-red-400"
+                      className="text-xs font-medium px-3 py-1.5 rounded bg-red-500/20 text-red-400"
                     >
                       Delete
                     </button>
                     <button
                       onClick={() => setDeleteTarget(null)}
                       aria-label="Cancel delete"
-                      className="text-[10px] font-medium px-2 py-1 rounded bg-fg/10 text-fg/50"
+                      className="text-xs font-medium px-3 py-1.5 rounded bg-fg/10 text-fg/50"
                     >
                       Cancel
                     </button>
                   </div>
                 ) : (
-                  <div className="flex gap-1 shrink-0 ml-2">
+                  <div className="flex gap-0.5 shrink-0 ml-3">
                     <button
                       onClick={() => setRestoreTarget(b.filename)}
                       aria-label={`Restore from ${b.filename}`}
-                      className="text-fg/30 hover:text-accent transition-colors"
+                      className="p-2 text-fg/30 hover:text-accent transition-colors"
                     >
-                      <ArrowCounterClockwise size={14} weight="bold" />
+                      <ArrowCounterClockwise size={18} weight="bold" />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(b.filename)}
                       aria-label={`Delete ${b.filename}`}
-                      className="text-fg/30 hover:text-red-400 transition-colors"
+                      className="p-2 text-fg/30 hover:text-red-400 transition-colors"
                     >
-                      <Trash size={14} weight="bold" />
+                      <Trash size={18} weight="bold" />
                     </button>
                   </div>
                 )}
