@@ -5,7 +5,7 @@ import {
   SunIcon as Sun,
   SunHorizonIcon as SunHorizon,
 } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTheme, type ThemeMode } from "../useTheme";
 import { useAudio } from "../useAudio";
 import { useLocale } from "../useLocale";
@@ -15,6 +15,7 @@ import BackupSection from "./BackupSection";
 import CreditsSection from "./CreditsSection";
 import { useOnboarding } from "../useOnboarding";
 import { APP_VERSION } from "../version";
+import { useFocusTrap } from "../useFocusTrap";
 
 type SettingsTab = "general" | "health" | "credits";
 
@@ -52,6 +53,8 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
   const { locale, setLocale } = useLocale();
   const { reset: resetOnboarding } = useOnboarding();
   const [subTab, setSubTab] = useState<SettingsTab>("general");
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef, onClose);
 
   return (
     <div
@@ -59,6 +62,10 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
       onClick={onClose}
     >
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Settings"
         className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >

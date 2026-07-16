@@ -11,6 +11,7 @@ import {
 import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 import { formatDuration, localISO } from "../format";
+import { useFocusTrap } from "../useFocusTrap";
 
 type Phase = "warmup" | "cooldown" | "rest" | "exercise" | "roundrest" | "finished";
 
@@ -37,6 +38,9 @@ export default function WorkoutRunner({
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [showSwapPicker, setShowSwapPicker] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
+  const swapRef = useRef<HTMLDivElement>(null);
+  function closeSwap() { setShowSwapPicker(false); setSwapSearch(""); }
+  useFocusTrap(swapRef, closeSwap);
 
   const filteredSwapExercises = useMemo(() => {
     const q = swapSearch.toLowerCase();
@@ -563,16 +567,20 @@ export default function WorkoutRunner({
       {showSwapPicker && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
-          onClick={() => { setShowSwapPicker(false); setSwapSearch(""); }}
+          onClick={closeSwap}
         >
           <div
+            ref={swapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Swap exercise"
             className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[70vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold">Swap Exercise</h3>
               <button
-                onClick={() => { setShowSwapPicker(false); setSwapSearch(""); }}
+                onClick={closeSwap}
                 className="text-fg/40 hover:text-fg text-xl"
               >
                 &times;

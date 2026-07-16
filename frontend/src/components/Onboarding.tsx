@@ -12,6 +12,7 @@ import {
 import { api } from "../api";
 import { useLocale } from "../useLocale";
 import type { DateLocale } from "../locale";
+import { useFocusTrap } from "../useFocusTrap";
 
 type Slide =
   | { kind: "info"; icon: Icon; title: string; body: string }
@@ -79,6 +80,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const [goalWeight, setGoalWeight] = useState("");
   const { locale, setLocale } = useLocale();
   const touchStartX = useRef<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, onComplete);
 
   const last = SLIDES.length - 1;
   const go = (n: number) => setStep((s) => Math.min(Math.max(s + n, 0), last));
@@ -99,6 +102,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[60] bg-bg flex flex-col"
       role="dialog"
       aria-modal="true"
