@@ -153,6 +153,7 @@ function LineChart({
   color,
   formatValue,
   reference,
+  referenceColor,
   overlay,
   height = 90,
 }: {
@@ -160,6 +161,7 @@ function LineChart({
   color: string;
   formatValue: (v: number) => string;
   reference?: { value: number; label: string };
+  referenceColor?: string;
   overlay?: number[];
   height?: number;
 }) {
@@ -204,12 +206,12 @@ function LineChart({
             y1={py(reference.value)}
             x2={w}
             y2={py(reference.value)}
-            stroke={color}
+            stroke={referenceColor ?? color}
             strokeWidth="1"
             strokeDasharray="4 3"
             opacity={0.45}
           />
-          <text x={w} y={py(reference.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8">
+          <text x={w} y={py(reference.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8" fill={referenceColor ?? undefined}>
             {reference.label}
           </text>
         </g>
@@ -622,9 +624,10 @@ export default function StatsTab() {
             formatValue={(v) => `${v.toFixed(1)}`}
             reference={
               goal?.goal_weight_kg != null
-                ? { value: goal.goal_weight_kg, label: `goal ${goal.goal_weight_kg.toFixed(1)} kg` }
+                ? { value: goal.goal_weight_kg, label: `Goal: ${goal.goal_weight_kg.toFixed(1)} kg` }
                 : undefined
             }
+            referenceColor="#22c55e"
           />
         </ChartCard>
       )}

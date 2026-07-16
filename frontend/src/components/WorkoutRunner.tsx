@@ -91,6 +91,7 @@ export default function WorkoutRunner({
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   });
   const [sessionNotes, setSessionNotes] = useState("");
+  const [saving, setSaving] = useState(false);
   const savedRef = useRef(false);
   const savedSessionIdRef = useRef<number | null>(null);
 
@@ -476,6 +477,7 @@ export default function WorkoutRunner({
   async function saveSession() {
     if (savedRef.current) return;
     savedRef.current = true;
+    setSaving(true);
     try {
       const session = await api.createSession({
         template_id: workout.id,
@@ -522,10 +524,12 @@ export default function WorkoutRunner({
         return null;
       });
       await Promise.all(logPromises.filter(Boolean));
+      setSaving(false);
     } catch (err) {
       // Allow a retry (offline is queued by the api layer) rather than
       // silently dropping the session.
       savedRef.current = false;
+      setSaving(false);
       console.error("Failed to save session", err);
     }
   }
@@ -978,9 +982,16 @@ export default function WorkoutRunner({
 
           <button
             onClick={() => void handleDone()}
-            className="bg-accent text-on-accent rounded-xl px-8 py-3 font-semibold hover:bg-accent-hover transition-colors"
+            disabled={saving}
+            className="bg-accent text-on-accent rounded-xl px-8 py-3 font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
           >
-            Done
+            {saving ? (
+              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : null}
+            {saving ? "Saving..." : "Done"}
           </button>
         </div>
       )}
