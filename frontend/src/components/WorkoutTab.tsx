@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircleIcon as CheckCircle, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import {
@@ -11,6 +11,7 @@ import RunLogger from "./RunLogger";
 import BoxingLogger from "./BoxingLogger";
 import WorkoutCard from "./WorkoutCard";
 import WorkoutSkeleton from "./skeletons/WorkoutSkeleton";
+import { useFocusTrap } from "../useFocusTrap";
 
 interface WorkoutTabProps {
   onStartWorkout: (workout: WorkoutTemplate) => void;
@@ -31,6 +32,9 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [showEditor, setShowEditor] = useState(false);
   const [editing, setEditing] = useState<WorkoutTemplate | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; name: string } | null>(null);
+  const deleteModalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(deleteModalRef, () => setPendingDelete(null));
 
   useEffect(() => {
     Promise.all([api.getWorkouts(), api.getExercises()])
@@ -148,7 +152,13 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   }
 
   async function deleteWorkout(id: number, name: string) {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    setPendingDelete({ id, name });
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const { id, name } = pendingDelete;
+    setPendingDelete(null);
     try {
       await api.deleteWorkout(id);
       setTemplates((prev) => prev.filter((t) => t.id !== id));
@@ -235,6 +245,42 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
           onSave={onSave}
           onClose={() => setShowEditor(false)}
         />
+      )}
+
+      {/* Delete confirmation modal */}
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
+          onClick={() => setPendingDelete(null)}
+        >
+          <div
+            ref={deleteModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete workout"
+            className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold mb-1">Delete workout?</h2>
+            <p className="text-fg/60 text-sm mb-5">
+              Delete "{pendingDelete.name}"? This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPendingDelete(null)}
+                className="flex-1 border border-fg/15 text-fg/70 rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-fg/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void confirmDelete()}
+                className="flex-1 bg-red-500 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
