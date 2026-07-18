@@ -14,7 +14,9 @@ export function useFocusTrap(
   onClose: () => void,
 ) {
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     const container = containerRef.current;
