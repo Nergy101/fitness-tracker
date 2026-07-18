@@ -7,7 +7,7 @@ import {
   type ExerciseInput,
 } from "../api";
 import ExerciseImage from "./ExerciseImage";
-import LoadingSpinner from "./LoadingSpinner";
+import ExercisesSkeleton from "./skeletons/ExercisesSkeleton";
 import Stepper from "./Stepper";
 
 const CATEGORY_BADGE: Record<Category, string> = {
@@ -141,7 +141,7 @@ export default function ExercisesTab() {
       </div>
 
       {loading ? (
-        <LoadingSpinner label="Loading exercises" />
+        <ExercisesSkeleton />
       ) : error ? (
         <div className="flex flex-col items-center py-8 text-red-400">
           <SmileySad size={40} weight="regular" className="mb-3 opacity-80" />

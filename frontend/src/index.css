@@ -106,3 +106,27 @@ body {
     --spin-color: var(--spin-c2);
   }
 }
+
+/* Skeleton shimmer: a translucent gradient sweep that works in both themes.
+   Base uses --fg at very low opacity; the shine uses a slightly higher
+   opacity. Both flip between light/dark via CSS variables on :root/.dark. */
+:root {
+  --skeleton-base: color-mix(in srgb, var(--fg) 5%, transparent);
+  --skeleton-shine: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-shine) 37%,
+    var(--skeleton-base) 63%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}

@@ -35,7 +35,7 @@ import {
   type WorkoutSession,
 } from "../api";
 import { ACTIVITY_COLORS } from "../activity";
-import LoadingSpinner from "./LoadingSpinner";
+import HealthSkeleton from "./skeletons/HealthSkeleton";
 import ChartCard from "./ChartCard";
 import MeasurementsSection from "./health/MeasurementsSection";
 import SimpleChart from "./health/SimpleChart";
@@ -120,7 +120,7 @@ export default function HealthAndStatsTab() {
   };
 
   if (loading) {
-    return <LoadingSpinner label="Loading health data" />;
+    return <HealthSkeleton />;
   }
   if (!stats) {
     return <div className="text-center py-8 text-fg/40">Failed to load data.</div>;

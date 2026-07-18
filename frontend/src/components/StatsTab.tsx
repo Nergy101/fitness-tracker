@@ -27,7 +27,7 @@ import {
 import { ACTIVITY_COLORS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
 import ActivityLegend from "./ActivityLegend";
 import ChartCard from "./ChartCard";
-import LoadingSpinner from "./LoadingSpinner";
+import StatsSkeleton from "./skeletons/StatsSkeleton";
 import AppleHealthCharts from "./health/AppleHealthCharts";
 import MetricNamesDiagnostic from "./health/MetricNamesDiagnostic";
 import { niceTicks } from "./health/ticks";
@@ -455,7 +455,7 @@ export default function StatsTab() {
   }, []);
 
   if (loading) {
-    return <LoadingSpinner label="Loading stats" />;
+    return <StatsSkeleton />;
   }
   if (error || !stats) {
     return <div className="text-center py-8 text-fg/40">Failed to load data.</div>;
