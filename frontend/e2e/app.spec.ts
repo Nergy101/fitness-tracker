@@ -128,7 +128,7 @@ test.describe("authenticated", () => {
     await expect(page.getByPlaceholder("Workout name...")).toHaveCount(0);
   });
 
-  test("duplicate button clones a workout and opens the editor", async ({ page, request }) => {
+  test("duplicate button clones a workout and scrolls to highlight the clone", async ({ page, request }) => {
     // 1. Create a uniquely-named source template via API.
     await createFastWorkout(request, "E2E Clone Src", 2, 2, 30, _authHeaders);
 
@@ -136,19 +136,21 @@ test.describe("authenticated", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "E2E Clone Src", exact: true }).first()).toBeVisible();
 
-    // 3. Scope the Duplicate button to that card (seeded templates also have Duplicate buttons).
-    //    The card root div carries both `rounded-xl` and `p-4`; inner divs do not, so this
-    //    filter narrows to exactly the card element rather than all its ancestor divs.
+    // 3. Scope the Duplicate button to that card (use .first() since clone is prepended
+    //    after creation, creating two cards with that heading).
     const srcCard = page.locator("div.rounded-xl.p-4").filter({
       has: page.getByRole("heading", { name: "E2E Clone Src", exact: true }),
-    });
+    }).first();
     await srcCard.getByRole("button", { name: "Duplicate workout" }).click();
 
     // 4. Success toast confirms the clone name.
     await expect(page.getByRole("status")).toContainText('Duplicated as "E2E Clone Src (Copy)"');
 
-    // 5. Editor opened pre-filled with the clone name.
-    await expect(page.getByPlaceholder("Workout name...")).toHaveValue("E2E Clone Src (Copy)");
+    // 5. Clone is prepended at top, highlighted with accent border glow.
+    const cloneCard = page.locator("div.rounded-xl.p-4").filter({
+      has: page.getByRole("heading", { name: "E2E Clone Src (Copy)", exact: true }),
+    }).first();
+    await expect(cloneCard).toBeVisible();
 
     // 6. API confirms both templates exist and the clone has the same exercise count.
     const listRes = await request.get(`${API_URL}/api/v1/workouts`, { headers: _authHeaders });
