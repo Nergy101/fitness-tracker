@@ -363,7 +363,7 @@ test.describe("authenticated", () => {
         template_name: "Export Me",
         total_duration_seconds: 300,
         total_kcal_estimated: 42,
-        exercises: [],
+        exercises: [{ exercise_name: "Test", duration_seconds: 300, kcal_burned: 42, order_index: 0, completed: true }],
       },
       headers: _authHeaders,
     });
@@ -393,7 +393,7 @@ test.describe("authenticated", () => {
           total_duration_seconds: 120,
           total_kcal_estimated: 20,
           started_at: "2026-06-15T09:00:00",
-          exercises: [],
+          exercises: [{ exercise_name: "Import Test", duration_seconds: 120, kcal_burned: 20, order_index: 0, completed: true }],
         },
       ],
     });
