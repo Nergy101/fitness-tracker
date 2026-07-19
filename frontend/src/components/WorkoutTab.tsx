@@ -197,7 +197,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         <h2 className="text-sm text-fg/50 font-medium">My Workouts</h2>
         <button
           onClick={() => openEditor(null)}
-          className="bg-accent text-on-accent rounded-xl px-4 py-2 text-sm font-semibold hover:bg-accent-hover transition-colors"
+          className="bg-accent text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors"
         >
           + New Workout
         </button>
