@@ -87,6 +87,30 @@ export default function WorkoutRunner({
     setPaused(false);
   }
 
+  const [weightError, setWeightError] = useState<string | null>(null);
+  const [repsError, setRepsError] = useState<string | null>(null);
+
+  // Weight/reps validation
+  function validateWeight(value: string): string | null {
+    if (value === "" || value === "0") return null; // allow empty or bodyweight
+    const n = parseFloat(value);
+    if (isNaN(n)) return "Enter a number";
+    if (n < 0) return "Weight can't be negative";
+    if (n > 1000) return "That's a lot! Tap again to confirm";
+    return null;
+  }
+  function validateReps(value: string): string | null {
+    if (value === "") return null;
+    const n = parseInt(value, 10);
+    if (isNaN(n)) return "Enter a number";
+    if (n < 0) return "Reps can't be negative";
+    if (n === 0) return "Reps must be at least 1";
+    if (n > 200) return "That's a lot! Tap again to confirm";
+    return null;
+  }
+  const [weightConfirm, setWeightConfirm] = useState(false);
+  const [repsConfirm, setRepsConfirm] = useState(false);
+
   // Exercise logs: key = `${round}-${index}`, value = {weightKg, reps}
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weightKg: string; reps: string }>>({});
   const [pastLogs, setPastLogs] = useState<Record<number, ExerciseLog[]>>({});
@@ -122,6 +146,17 @@ export default function WorkoutRunner({
   useEffect(() => {
     api.getExercises().then(setAllExercises).catch(() => {});
   }, []);
+
+  // Preload all exercise images so they're available offline once the workout starts
+  useEffect(() => {
+    exercises.forEach((e) => {
+      const url = e.exercise?.image_url;
+      if (url) {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, [exercises]);
 
   const workDuration = useMemo(
     () =>
@@ -861,34 +896,64 @@ export default function WorkoutRunner({
             <p className="text-accent/70 text-xs mb-3 font-medium">{currentPastHint}</p>
           )}
           {/* Weight / reps logging */}
-          <div className="flex items-center gap-2 mb-4">
-            <input
-              type="number"
-              inputMode="decimal"
-              placeholder="kg"
-              value={exerciseLogs[logKey]?.weightKg ?? ""}
-              onChange={(e) => setExerciseLogs((prev) => ({
-                ...prev,
-                [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), weightKg: e.target.value },
-              }))}
-              disabled={paused}
-              className="w-20 bg-surface border border-fg/10 rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40"
-              aria-label="Weight in kg"
-            />
-            <span className="text-fg/20 text-sm">×</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              placeholder="reps"
-              value={exerciseLogs[logKey]?.reps ?? ""}
-              onChange={(e) => setExerciseLogs((prev) => ({
-                ...prev,
-                [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), reps: e.target.value },
-              }))}
-              disabled={paused}
-              className="w-20 bg-surface border border-fg/10 rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40"
-              aria-label="Reps"
-            />
+          <div className="flex flex-col items-center gap-1 mb-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="kg"
+                value={exerciseLogs[logKey]?.weightKg ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const err = validateWeight(v);
+                  setWeightError(err && err.includes("Tap again") ? null : err);
+                  setWeightConfirm(err != null && err.includes("Tap again"));
+                  setExerciseLogs((prev) => ({
+                    ...prev,
+                    [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), weightKg: v },
+                  }));
+                }}
+                disabled={paused}
+                className={`w-20 bg-surface border rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
+                  weightError ? "border-red-400" : "border-fg/10"
+                }`}
+                aria-label="Weight in kg"
+              />
+              <span className="text-fg/20 text-sm">×</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                placeholder="reps"
+                value={exerciseLogs[logKey]?.reps ?? ""}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const err = validateReps(v);
+                  setRepsError(err && err.includes("Tap again") ? null : err);
+                  setRepsConfirm(err != null && err.includes("Tap again"));
+                  setExerciseLogs((prev) => ({
+                    ...prev,
+                    [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), reps: v },
+                  }));
+                }}
+                disabled={paused}
+                className={`w-20 bg-surface border rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
+                  repsError ? "border-red-400" : "border-fg/10"
+                }`}
+                aria-label="Reps"
+              />
+            </div>
+            {(weightConfirm || repsConfirm) && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-400/80">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 22h20L12 2z"/></svg>
+                <span>Are you sure? The value will be saved anyway.</span>
+              </div>
+            )}
+            {(weightError && !weightConfirm) && (
+              <p className="text-xs text-red-400">{weightError}</p>
+            )}
+            {(repsError && !repsConfirm) && (
+              <p className="text-xs text-red-400">{repsError}</p>
+            )}
           </div>
           <div className="relative w-48 h-48 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">

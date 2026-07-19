@@ -46,6 +46,17 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
   const exerciseCount = exercises.length;
   const rounds = Math.max(1, workout.rounds || 8);
 
+  // Preload all exercise images so they're available offline once the workout starts
+  useEffect(() => {
+    exercises.forEach((e) => {
+      const url = e.exercise?.image_url;
+      if (url) {
+        const img = new Image();
+        img.src = url;
+      }
+    });
+  }, [exercises]);
+
   // Fixed sequence, built up front: a short lead-in, then work/rest pairs with
   // no trailing rest after the final work interval. Exercises (if any) cycle
   // across rounds; the rest segment previews the upcoming round's exercise.

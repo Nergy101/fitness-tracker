@@ -163,6 +163,7 @@ class TestStatsOverviewNoDoubleCount:
                 "total_kcal_estimated": 200.0,
                 "started_at": f"{today_iso}T08:00:00Z",
                 "finished_at": f"{today_iso}T09:00:00Z",
+                "exercises": [{"exercise_name": "Morning Routine", "duration_seconds": 3600, "kcal_burned": 200.0, "order_index": 0, "completed": True}],
             },
             headers=auth_headers,
         )
@@ -300,6 +301,7 @@ class TestStatsOverviewKcal:
                 "total_duration_seconds": 600,
                 "total_kcal_estimated": 100.0,
                 "started_at": f"{recent_iso}T08:00:00Z",
+                "exercises": [{"exercise_name": "Recent", "duration_seconds": 600, "kcal_burned": 100.0, "order_index": 0, "completed": True}],
             },
             headers=auth_headers,
         )
@@ -310,6 +312,7 @@ class TestStatsOverviewKcal:
                 "total_duration_seconds": 600,
                 "total_kcal_estimated": 500.0,
                 "started_at": f"{old_iso}T08:00:00Z",
+                "exercises": [{"exercise_name": "Old", "duration_seconds": 600, "kcal_burned": 500.0, "order_index": 0, "completed": True}],
             },
             headers=auth_headers,
         )
@@ -432,6 +435,7 @@ class TestStatsOverviewWeeklyKcalSplit:
                 "total_kcal_estimated": workout_kcal_value,
                 "started_at": f"{today_iso}T07:00:00Z",
                 "finished_at": f"{today_iso}T07:50:00Z",
+                "exercises": [{"exercise_name": "Strength", "duration_seconds": 3000, "kcal_burned": workout_kcal_value, "order_index": 0, "completed": True}],
             },
             headers=auth_headers,
         )

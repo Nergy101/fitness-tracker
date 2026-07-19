@@ -142,7 +142,13 @@ export default function WorkoutEditor({
   }
 
   function removeRow(key: number) {
-    setRows((prev) => prev.filter((r) => r.key !== key));
+    setRows((prev) => {
+      if (prev.length === 1) {
+        alert("Template must have at least 1 exercise");
+        return prev;
+      }
+      return prev.filter((r) => r.key !== key);
+    });
   }
 
   function togglePair(i: number) {

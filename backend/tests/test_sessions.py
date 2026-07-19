@@ -64,13 +64,20 @@ class TestCreateSession:
             "template_name": "Test",
             "total_duration_seconds": 120,
             "total_kcal_estimated": 20.0,
+            "exercises": [{
+                "exercise_name": "Jumping Jacks",
+                "duration_seconds": 120,
+                "kcal_burned": 20.0,
+                "order_index": 0,
+                "completed": True,
+            }],
         }, headers=auth_headers)
         assert resp.status_code == 201
         data = resp.json()
         assert data["template_name"] == "Test"
         assert data["total_duration_seconds"] == 120
         assert data["total_kcal_estimated"] == 20.0
-        assert data["exercises"] == []
+        assert data["exercises"][0]["exercise_name"] == "Jumping Jacks"
         assert "started_at" in data
 
     def test_create_with_exercises(self, client: TestClient, auth_headers: dict, seed_exercise):
@@ -142,7 +149,13 @@ class TestCreateSession:
             "template_name": "Gone Soon",
             "total_duration_seconds": 100,
             "total_kcal_estimated": 10.0,
-            "exercises": [],
+            "exercises": [{
+                "exercise_name": "Test",
+                "duration_seconds": 100,
+                "kcal_burned": 10.0,
+                "order_index": 0,
+                "completed": True,
+            }],
         }, headers=auth_headers)
         assert resp.status_code == 201
         assert resp.json()["template_name"] == "Gone Soon"
@@ -157,6 +170,13 @@ class TestCreateSession:
             "total_kcal_estimated": 200.0,
             "started_at": start,
             "finished_at": end,
+            "exercises": [{
+                "exercise_name": "Long Run",
+                "duration_seconds": 1800,
+                "kcal_burned": 200.0,
+                "order_index": 0,
+                "completed": True,
+            }],
         }, headers=auth_headers)
         assert resp.status_code == 201
         data = resp.json()
@@ -172,6 +192,13 @@ class TestUpdateSession:
             "template_name": "End Test",
             "total_duration_seconds": 100,
             "total_kcal_estimated": 10.0,
+            "exercises": [{
+                "exercise_name": "Push-ups",
+                "duration_seconds": 100,
+                "kcal_burned": 10.0,
+                "order_index": 0,
+                "completed": True,
+            }],
         }, headers=auth_headers).json()
         sid = create["id"]
 
@@ -223,6 +250,13 @@ class TestDeleteSession:
             "template_name": "Delete",
             "total_duration_seconds": 60,
             "total_kcal_estimated": 5.0,
+            "exercises": [{
+                "exercise_name": "Squats",
+                "duration_seconds": 60,
+                "kcal_burned": 5.0,
+                "order_index": 0,
+                "completed": True,
+            }],
         }, headers=auth_headers).json()
         sid = create["id"]
 
@@ -305,6 +339,13 @@ class TestDeleteSession:
             "template_name": "Regular Workout",
             "total_duration_seconds": 300,
             "total_kcal_estimated": 25.0,
+            "exercises": [{
+                "exercise_name": "Plank",
+                "duration_seconds": 300,
+                "kcal_burned": 25.0,
+                "order_index": 0,
+                "completed": True,
+            }],
         }, headers=auth_headers)
         assert create.status_code == 201
         sid = create.json()["id"]

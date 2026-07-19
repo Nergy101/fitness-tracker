@@ -390,6 +390,7 @@ class TestHealthScore:
         # Add a workout session (workout score)
         client.post("/api/v1/sessions", json={
             "template_name": "Test", "total_duration_seconds": 600, "total_kcal_estimated": 100.0,
+            "exercises": [{"exercise_name": "Push-ups", "duration_seconds": 60, "kcal_burned": 10, "order_index": 0, "completed": True}],
         }, headers=auth_headers)
         # Add a measurement
         client.post("/api/v1/health/measurements", json={

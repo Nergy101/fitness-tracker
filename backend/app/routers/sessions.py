@@ -90,6 +90,9 @@ def get_session(session_id: int, db: Session = Depends(get_db)):
 
 @router.post("", response_model=WorkoutSessionResponse, status_code=201)
 def create_session(data: WorkoutSessionCreate, db: Session = Depends(get_db)):
+    if not data.exercises or len(data.exercises) == 0:
+        raise HTTPException(status_code=400, detail="Cannot create a session with 0 exercises")
+
     template_name = data.template_name
     template_id = data.template_id
     if data.template_id:

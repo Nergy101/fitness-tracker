@@ -59,11 +59,10 @@ def _post_session(
         "template_name": template_name,
         "total_duration_seconds": total_duration_seconds,
         "total_kcal_estimated": total_kcal_estimated,
+        "exercises": exercises or [{"exercise_name": template_name, "duration_seconds": total_duration_seconds, "kcal_burned": total_kcal_estimated, "order_index": 0, "completed": True}],
     }
     if started_at is not None:
         payload["started_at"] = started_at
-    if exercises is not None:
-        payload["exercises"] = exercises
     resp = client.post(SESSIONS_URL, json=payload, headers=headers)
     assert resp.status_code == 201, resp.text
 

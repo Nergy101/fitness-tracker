@@ -33,6 +33,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [editing, setEditing] = useState<WorkoutTemplate | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: number; name: string } | null>(null);
+  const [highlightId, setHighlightId] = useState<number | null>(null);
   const deleteModalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(deleteModalRef, () => setPendingDelete(null));
 
@@ -171,9 +172,11 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   async function cloneWorkout(tpl: WorkoutTemplate) {
     try {
       const clone = await api.duplicateWorkout(tpl.id);
-      setTemplates((prev) => [...prev, clone]);
+      setTemplates((prev) => [clone, ...prev]);
+      setHighlightId(clone.id);
       setToast(`Duplicated as "${clone.name}"`);
-      openEditor(clone);
+      // Clear highlight after 2s
+      setTimeout(() => setHighlightId(null), 2000);
     } catch {
       setToast("Failed to duplicate workout");
     }
@@ -233,6 +236,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
               onDelete={deleteWorkout}
               onLog={logWorkout}
               onTogglePin={togglePin}
+              highlightId={highlightId}
             />
           ))}
         </div>

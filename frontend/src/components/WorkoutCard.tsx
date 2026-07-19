@@ -1,6 +1,7 @@
 import { TrashIcon as Trash, PushPinIcon as PushPin, CopyIcon as Copy } from "@phosphor-icons/react";
 import { type WorkoutTemplate } from "../api";
 import { formatDuration } from "../format";
+import { useEffect, useRef } from "react";
 
 interface WorkoutCardProps {
   template: WorkoutTemplate;
@@ -10,6 +11,7 @@ interface WorkoutCardProps {
   onDelete: (id: number, name: string) => void;
   onLog: (tpl: WorkoutTemplate) => void;
   onTogglePin: (tpl: WorkoutTemplate) => void;
+  highlightId?: number | null;
 }
 
 export default function WorkoutCard({
@@ -20,16 +22,28 @@ export default function WorkoutCard({
   onDelete,
   onLog,
   onTogglePin,
+  highlightId,
 }: WorkoutCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isHighlighted = highlightId === template.id;
+
+  useEffect(() => {
+    if (isHighlighted && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [isHighlighted]);
+
   return (
     <div
-      className={`bg-surface rounded-xl p-4 border transition-colors ${
-        template.is_pinned
-          ? "border-accent/30 shadow-[0_0_0_1px_rgba(var(--color-accent-rgb,99,102,241),0.15)]"
-          : "border-fg/5"
+      ref={cardRef}
+      className={`bg-surface rounded-xl p-4 border transition-all duration-500 ${
+        isHighlighted
+          ? "border-accent shadow-[0_0_12px_rgba(var(--color-accent-rgb,99,102,241),0.3)]"
+          : template.is_pinned
+            ? "border-accent/30 shadow-[0_0_0_1px_rgba(var(--color-accent-rgb,99,102,241),0.15)]"
+            : "border-fg/5"
       }`}
     >
-      {/* Title row: pin + name + buttons */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-2 flex-1 min-w-0">
           <button
@@ -97,14 +111,17 @@ export default function WorkoutCard({
           </button>
           <button
             onClick={() => onLog(template)}
-            className="border border-fg/20 text-fg/60 rounded-xl px-3 py-1.5 text-xs font-semibold hover:border-accent/40 hover:text-accent transition-colors"
-            title="Log this workout as completed"
+            disabled={template.exercises.length === 0}
+            className="border border-fg/20 text-fg/60 rounded-xl px-3 py-1.5 text-xs font-semibold hover:border-accent/40 hover:text-accent transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            title={template.exercises.length === 0 ? "Add exercises to start" : "Log this workout as completed"}
           >
             Log
           </button>
           <button
             onClick={() => onStart(template)}
-            className="bg-accent/20 text-accent rounded-xl px-3 py-1.5 text-xs font-semibold hover:bg-accent/30 transition-colors"
+            disabled={template.exercises.length === 0}
+            className="bg-accent/20 text-accent rounded-xl px-3 py-1.5 text-xs font-semibold hover:bg-accent/30 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            title={template.exercises.length === 0 ? "Add exercises to start" : undefined}
           >
             Start
           </button>
