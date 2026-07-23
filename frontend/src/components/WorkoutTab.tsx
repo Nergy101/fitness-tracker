@@ -204,7 +204,10 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       </div>
 
       {/* Log a Run */}
-      <RunLogger onRunLogged={() => onLogWorkout?.()} />
+      <RunLogger onRunLogged={() => onLogWorkout?.()} runType="run" />
+
+      {/* Log a Walk */}
+      <RunLogger onRunLogged={() => onLogWorkout?.()} runType="walk" />
 
       {/* Log Boxing */}
       <BoxingLogger onWorkoutLogged={() => onLogWorkout?.()} />

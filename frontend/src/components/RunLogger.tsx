@@ -1,11 +1,16 @@
 import { useState } from "react";
-import { PersonSimpleRunIcon as PersonSimpleRun, MapTrifoldIcon as MapTrifold } from "@phosphor-icons/react";
+import {
+  PersonSimpleRunIcon as PersonSimpleRun,
+  PersonSimpleWalkIcon as PersonSimpleWalk,
+  MapTrifoldIcon as MapTrifold,
+} from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
 
 interface RunLoggerProps {
   onRunLogged: () => void;
+  runType: "run" | "walk";
 }
 
 const DURATION_OPTIONS = [
@@ -23,23 +28,30 @@ function formatPace(secondsPerKm: number | null): string {
   return `${min}:${sec.toString().padStart(2, "0")} /km`;
 }
 
-export default function RunLogger({ onRunLogged }: RunLoggerProps) {
+export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
   const [showForm, setShowForm] = useState(false);
   const [runDuration, setRunDuration] = useState(1800);
   const [runCustomDuration, setRunCustomDuration] = useState("");
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [runDistance, setRunDistance] = useState("");
-  const [runType, setRunType] = useState<"run" | "walk">("run");
   const [runDate, setRunDate] = useState(new Date().toISOString().slice(0, 10));
   const [runNotes, setRunNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+
+  const isRun = runType === "run";
+  const Icon = isRun ? PersonSimpleRun : PersonSimpleWalk;
+  const label = isRun ? "Run" : "Walk";
+  const logLabel = `Log a ${label}`;
+  const saveLabel = `Save ${label}`;
+  const description = isRun
+    ? "Record a completed run with distance, duration, and pace"
+    : "Record a walk with distance, duration, and pace";
 
   function resetForm() {
     setRunDuration(1800);
     setRunCustomDuration("");
     setIsCustomDuration(false);
     setRunDistance("");
-    setRunType("run");
     setRunNotes("");
     setRunDate(new Date().toISOString().slice(0, 10));
   }
@@ -57,12 +69,12 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
         date: runDate,
         notes: runNotes,
       });
-      setToast("Run logged!");
+      setToast(`${label} logged!`);
       resetForm();
       setShowForm(false);
       onRunLogged();
     } catch {
-      setToast("Failed to log run");
+      setToast(`Failed to log ${label.toLowerCase()}`);
     }
   }
 
@@ -71,27 +83,28 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
       ? runDuration / parseFloat(runDistance)
       : null;
 
-  // ── Collapsed state: show "Log a Run" button ──
+  // ── Collapsed state ──
   if (!showForm) {
     return (
       <>
         {toast && (
           <Toast onDismiss={() => setToast(null)}>
-            <PersonSimpleRun size={18} weight="fill" />
+            <Icon size={18} weight="fill" />
             {toast}
           </Toast>
         )}
 
         <button
-          onClick={() => { resetForm(); setShowForm(true); }}
+          onClick={() => {
+            resetForm();
+            setShowForm(true);
+          }}
           className="w-full bg-surface rounded-xl p-4 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors mb-4 flex items-center gap-3"
         >
-          <PersonSimpleRun size={22} className="text-accent shrink-0" />
+          <Icon size={22} className="text-accent shrink-0" />
           <div className="text-left">
-            <p className="text-sm font-semibold text-fg">Log a Run</p>
-            <p className="text-[11px] text-fg/40 mt-0.5">
-              Record a completed run with distance, duration, and pace
-            </p>
+            <p className="text-sm font-semibold text-fg">{logLabel}</p>
+            <p className="text-[11px] text-fg/40 mt-0.5">{description}</p>
           </div>
         </button>
       </>
@@ -103,7 +116,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
     <>
       {toast && (
         <Toast onDismiss={() => setToast(null)}>
-          <PersonSimpleRun size={18} weight="fill" />
+          <Icon size={18} weight="fill" />
           {toast}
         </Toast>
       )}
@@ -111,36 +124,17 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
       <div className="bg-surface rounded-xl p-4 border border-accent/20 mb-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <PersonSimpleRun size={18} className="text-accent" />
-            <span className="text-sm font-semibold text-fg">
-              {`Log a ${runType === "walk" ? "Walk" : "Run"}`}
-            </span>
+            <Icon size={18} className="text-accent" />
+            <span className="text-sm font-semibold text-fg">{logLabel}</span>
           </div>
           <button
-            onClick={() => { resetForm(); setShowForm(false); }}
+            onClick={() => {
+              resetForm();
+              setShowForm(false);
+            }}
             className="text-xs text-fg/40 hover:text-fg"
           >
             Cancel
-          </button>
-        </div>
-
-        {/* Run / Walk toggle */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setRunType("run")}
-            className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
-              runType === "run" ? "bg-accent text-on-accent font-semibold" : "bg-bg text-fg/60 hover:text-fg"
-            }`}
-          >
-            Run
-          </button>
-          <button
-            onClick={() => setRunType("walk")}
-            className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
-              runType === "walk" ? "bg-accent text-on-accent font-semibold" : "bg-bg text-fg/60 hover:text-fg"
-            }`}
-          >
-            Walk
           </button>
         </div>
 
@@ -162,9 +156,13 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
                   }
                 }}
                 className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                  (opt.seconds === 0 ? isCustomDuration : runDuration === opt.seconds && !runCustomDuration)
-                    ? "bg-accent text-bg font-semibold"
-                    : "bg-bg text-fg/60 hover:text-fg"
+                  opt.seconds === 0
+                    ? isCustomDuration
+                      ? "bg-accent text-bg font-semibold"
+                      : "bg-bg text-fg/60 hover:text-fg"
+                    : runDuration === opt.seconds && !runCustomDuration
+                      ? "bg-accent text-bg font-semibold"
+                      : "bg-bg text-fg/60 hover:text-fg"
                 }`}
               >
                 {opt.label}
@@ -236,7 +234,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
           disabled={!runDistance || parseFloat(runDistance) <= 0}
           className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
         >
-          Save Run
+          {saveLabel}
         </button>
       </div>
     </>
