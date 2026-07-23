@@ -162,16 +162,15 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
               className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
             />
           </div>
-        </div>
-
-        <div>
-          <p className="text-xs text-fg/50 mb-1">Date</p>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
-          />
+          <div className="min-w-0">
+            <p className="text-xs text-fg/50 mb-1">Date</p>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full min-w-0 bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-accent/50"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
