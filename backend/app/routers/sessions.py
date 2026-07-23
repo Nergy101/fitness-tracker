@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
-from app.models.models import WorkoutSession, SessionExercise, WorkoutTemplate, ExerciseLog, RunEntry, BoxingEntry, is_mirror_session
+from app.models.models import WorkoutSession, SessionExercise, WorkoutTemplate, ExerciseLog, RunEntry, BoxingEntry, Exercise, is_mirror_session
 from app.schemas import WorkoutSessionCreate, WorkoutSessionEnd, WorkoutSessionResponse, SessionExerciseResponse, ExerciseLogCreate, ExerciseLogResponse
 from pydantic import BaseModel
 
@@ -17,6 +17,15 @@ router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 
 
 def _build_session_response(session: WorkoutSession) -> WorkoutSessionResponse:
+    # Resolve exercise image URLs in one query
+    exercise_ids = {se.exercise_id for se in session.exercises if se.exercise_id is not None}
+    image_map: dict[int, str] = {}
+    if session.exercises and exercise_ids:
+        db_session = Session.object_session(session)
+        if db_session:
+            rows = db_session.query(Exercise.id, Exercise.image_url).filter(Exercise.id.in_(exercise_ids)).all()
+            image_map = {eid: url for eid, url in rows if url}
+
     ex_responses = [
         SessionExerciseResponse(
             id=se.id,
@@ -27,6 +36,7 @@ def _build_session_response(session: WorkoutSession) -> WorkoutSessionResponse:
             kcal_burned=se.kcal_burned,
             order_index=se.order_index,
             completed=se.completed,
+            image_url=image_map.get(se.exercise_id) if se.exercise_id else None,
             logs=[
                 ExerciseLogResponse(
                     id=log.id,

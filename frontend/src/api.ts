@@ -95,6 +95,7 @@ export interface SessionExercise {
   kcal_burned: number;
   order_index: number;
   completed: boolean;
+  image_url: string | null;
   logs: ExerciseLog[];
 }
 

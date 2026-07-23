@@ -64,6 +64,7 @@ export default function WorkoutRunner({
   const [timerProgress, setTimerProgress] = useState(0);
   const [restCountdown, setRestCountdown] = useState(DEFAULT_REST);
   const [restProgress, setRestProgress] = useState(0);
+  const [longRest, setLongRest] = useState(false);
   const advanceRef = useRef<() => void>(() => {});
 
   const roundRef = useRef(0);
@@ -126,6 +127,7 @@ export default function WorkoutRunner({
   // Breathing cycle for cooldown: 4s inhale, 4s exhale
   const [breathPhase, setBreathPhase] = useState<"inhale" | "exhale">("inhale");
   const [breathProgress, setBreathProgress] = useState(0);
+  const halfVibrateRef = useRef(false);
 
   useEffect(() => {
     // Fetch last session's logs for each exercise to show hints
@@ -312,6 +314,8 @@ export default function WorkoutRunner({
           : (exercises[i - 1]?.rest_after_seconds || DEFAULT_REST);
       setRestCountdown(restSec);
       setRestProgress(0);
+      halfVibrateRef.current = false;
+      setLongRest(restSec > 60);
       const restStart = Date.now();
       clear();
       advanceRef.current = () => {
@@ -323,6 +327,11 @@ export default function WorkoutRunner({
         const elapsed = calcElapsed(restStart);
         setRestCountdown(Math.max(0, Math.ceil(restSec - elapsed)));
         setRestProgress(Math.min(1, elapsed / restSec));
+        // Halfway haptic alert for long rests (>60s)
+        if (restSec > 60 && !halfVibrateRef.current && elapsed >= restSec / 2) {
+          halfVibrateRef.current = true;
+          try { navigator.vibrate([100]); } catch { /* silent fallback on desktop */ }
+        }
         if (elapsed >= restSec) {
           clear();
           soundStart();
@@ -367,6 +376,7 @@ export default function WorkoutRunner({
       indexRef.current = 0;
       phaseRef.current = "roundrest";
       setPhase("roundrest");
+      setLongRest(false);
       setCurrentRound(nextRound);
       setCurrentIndex(0);
       speak(`Next up: ${exercises[0]?.exercise?.name ?? "exercise"}`);
@@ -508,6 +518,16 @@ export default function WorkoutRunner({
     const sec = s % 60;
     return `${m}:${String(sec).padStart(2, "0")}`;
   })();
+
+  // Dynamic rest timer color for long rests (>60s):
+  //   start → accent, halfway → amber, last 10s → green
+  const restTimerColor = useMemo(() => {
+    if (phase !== "rest" || !longRest) return "var(--accent)";
+    const remaining = Math.max(0, restCountdown);
+    if (remaining <= 10) return "#22c55e";           // green: go!
+    if (restProgress >= 0.5) return "#f59e0b";       // amber: halfway
+    return "var(--accent)";
+  }, [phase, longRest, restCountdown, restProgress]);
 
   // Persist the session as soon as the workout finishes (so it's never lost if
   // the user closes the summary) — capturing exercise logs entered during the
@@ -727,7 +747,7 @@ export default function WorkoutRunner({
               <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
               <circle
                 cx="50" cy="50" r="42" fill="none"
-                stroke="var(--accent)" strokeWidth="6"
+                stroke={restTimerColor} strokeWidth="6"
                 strokeDasharray={RING}
                 strokeDashoffset={restProgress * RING}
                 strokeLinecap="round"
@@ -735,7 +755,7 @@ export default function WorkoutRunner({
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-5xl font-bold text-accent">{restCountdown}</span>
+              <span className="text-5xl font-bold" style={{ color: restTimerColor }}>{restCountdown}</span>
             </div>
           </div>
           <p className="text-fg/30 text-sm mb-4">Get ready...</p>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, type WorkoutSession, type BoxingEntryResponse, type RunEntryResponse } from "../../api";
 import { formatDateRelative, formatDuration, localISO } from "../../format";
 import { useFocusTrap } from "../../useFocusTrap";
+import ExerciseImage from "../ExerciseImage";
 
 /** Modal showing a session's stats, per-exercise breakdown, date editing, and inline notes. */
 export default function SessionDetail({
@@ -261,35 +262,41 @@ export default function SessionDetail({
         </div>
 
         <div className="space-y-1.5 mb-4">
-          {session.exercises.map((ex, i) => (
-            <div
-              key={ex.id}
-              className="flex items-center gap-3 bg-surface rounded-lg p-2.5"
-            >
-              <span className="text-xs text-fg/30 w-5 text-right">{i + 1}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {ex.exercise_name}
-                </p>
-                <p className="text-xs text-fg/40">{ex.duration_seconds}s</p>
-                {ex.logs && ex.logs.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {ex.logs.map((log, li) => (
-                      <span key={li} className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded">
-                        {log.weight_kg != null ? `${log.weight_kg}kg` : ""}
-                        {log.weight_kg != null && log.reps != null ? " × " : ""}
-                        {log.reps != null ? `${log.reps}r` : ""}
+                  {session.exercises.map((ex, i) => (
+                    <div
+                      key={ex.id}
+                      className="flex items-center gap-3 bg-surface rounded-lg p-2.5"
+                    >
+                      <span className="text-xs text-fg/30 w-5 text-right">{i + 1}</span>
+                      <ExerciseImage
+                        src={ex.image_url}
+                        alt={ex.exercise_name}
+                        className="w-8 h-8 rounded-md shrink-0"
+                        category="strength"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {ex.exercise_name}
+                        </p>
+                        <p className="text-xs text-fg/40">{ex.duration_seconds}s</p>
+                        {ex.logs && ex.logs.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {ex.logs.map((log, li) => (
+                              <span key={li} className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded">
+                                {log.weight_kg != null ? `${log.weight_kg}kg` : ""}
+                                {log.weight_kg != null && log.reps != null ? " × " : ""}
+                                {log.reps != null ? `${log.reps}r` : ""}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs text-fg/30">
+                        {Math.round(ex.kcal_burned)} kcal
                       </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <span className="text-xs text-fg/30">
-                {Math.round(ex.kcal_burned)} kcal
-              </span>
-            </div>
-          ))}
-        </div>
+                    </div>
+                  ))}
+                </div>
 
         {isRunOrWalk && (
           <div className="flex gap-2 mb-3">

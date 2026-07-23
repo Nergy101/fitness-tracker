@@ -146,6 +146,7 @@ class ExerciseLogResponse(BaseModel):
 class SessionExerciseResponse(SessionExerciseBase):
     id: int
     session_id: int
+    image_url: Optional[str] = None
     logs: list[ExerciseLogResponse] = []
 
     model_config = {"from_attributes": True}
