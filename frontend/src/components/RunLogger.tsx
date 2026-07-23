@@ -27,6 +27,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
   const [showForm, setShowForm] = useState(false);
   const [runDuration, setRunDuration] = useState(1800);
   const [runCustomDuration, setRunCustomDuration] = useState("");
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [runDistance, setRunDistance] = useState("");
   const [runType, setRunType] = useState<"run" | "walk">("run");
   const [runDate, setRunDate] = useState(new Date().toISOString().slice(0, 10));
@@ -36,6 +37,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
   function resetForm() {
     setRunDuration(1800);
     setRunCustomDuration("");
+    setIsCustomDuration(false);
     setRunDistance("");
     setRunType("run");
     setRunNotes("");
@@ -150,11 +152,17 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
               <button
                 key={opt.label}
                 onClick={() => {
-                  setRunDuration(opt.seconds);
-                  setRunCustomDuration("");
+                  if (opt.seconds === 0) {
+                    setIsCustomDuration(true);
+                    setRunDuration(0);
+                  } else {
+                    setIsCustomDuration(false);
+                    setRunDuration(opt.seconds);
+                    setRunCustomDuration("");
+                  }
                 }}
                 className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                  runDuration === opt.seconds && !runCustomDuration
+                  (opt.seconds === 0 ? isCustomDuration : runDuration === opt.seconds && !runCustomDuration)
                     ? "bg-accent text-bg font-semibold"
                     : "bg-bg text-fg/60 hover:text-fg"
                 }`}
@@ -163,7 +171,7 @@ export default function RunLogger({ onRunLogged }: RunLoggerProps) {
               </button>
             ))}
           </div>
-          {runDuration === 0 && (
+          {isCustomDuration && (
             <input
               type="number"
               value={runCustomDuration}
