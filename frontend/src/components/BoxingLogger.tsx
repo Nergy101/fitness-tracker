@@ -182,7 +182,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full min-w-0 bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-accent/50"
+              className="w-full min-w-0 bg-bg border border-fg/10 rounded-lg px-2 py-1 text-xs leading-none outline-none focus:border-accent/50"
             />
           </div>
         </div>
