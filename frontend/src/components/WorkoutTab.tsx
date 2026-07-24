@@ -203,14 +203,12 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         </button>
       </div>
 
-      {/* Log a Run */}
-      <RunLogger onRunLogged={() => onLogWorkout?.()} runType="run" />
-
-      {/* Log a Walk */}
-      <RunLogger onRunLogged={() => onLogWorkout?.()} runType="walk" />
-
-      {/* Log Boxing */}
-      <BoxingLogger onWorkoutLogged={() => onLogWorkout?.()} />
+      {/* Quick-log row: Run, Walk, Boxing */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <RunLogger onRunLogged={() => onLogWorkout?.()} runType="run" />
+        <RunLogger onRunLogged={() => onLogWorkout?.()} runType="walk" />
+        <BoxingLogger onWorkoutLogged={() => onLogWorkout?.()} />
+      </div>
 
       {/* Workout Templates */}
       {loading ? (

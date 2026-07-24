@@ -43,9 +43,6 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
   const label = isRun ? "Run" : "Walk";
   const logLabel = `Log a ${label}`;
   const saveLabel = `Save ${label}`;
-  const description = isRun
-    ? "Record a run with distance, duration, and pace"
-    : "Record a walk with distance, duration, and pace";
 
   function resetForm() {
     setRunDuration(1800);
@@ -99,13 +96,10 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
             resetForm();
             setShowForm(true);
           }}
-          className="w-full bg-surface rounded-xl p-4 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors mb-4 flex items-center gap-3"
+          className="bg-surface rounded-xl p-3 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
         >
           <Icon size={22} className="text-accent shrink-0" />
-          <div className="text-left">
-            <p className="text-sm font-semibold text-fg">{logLabel}</p>
-            <p className="text-[11px] text-fg/40 mt-0.5">{description}</p>
-          </div>
+          <p className="text-xs font-semibold text-fg">{label}</p>
         </button>
       </>
     );

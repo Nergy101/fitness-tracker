@@ -670,7 +670,7 @@ test.describe("authenticated", () => {
     await page.goto("/");
 
     // Open the run logger
-    await page.getByText("Log a Run").click();
+    await page.getByText("Run").click();
 
     // Select 30m duration
     await page.getByRole("button", { name: "30m" }).click();
@@ -773,7 +773,7 @@ test.describe("authenticated", () => {
   test("run notes update persists in SessionDetail after closing and reopening", async ({ page }) => {
     // Log a run via UI with notes
     await page.goto("/");
-    await page.getByText("Log a Run").click();
+    await page.getByText("Run").click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.2");
     await page.getByRole("button", { name: "1h" }).click();
     await page.locator('input[placeholder="How did it feel?"]').fill("test-run-notes");
@@ -807,7 +807,7 @@ test.describe("authenticated", () => {
   test("boxing mirror session reflects notes on create and duration on update", async ({ page, request }) => {
     // Log a boxing session via UI
     await page.goto("/");
-    await page.getByText("Log Boxing").click();
+    await page.getByText("Boxing").click();
     await page.getByRole("button", { name: "30m" }).click();
     await page.getByText("Notes (optional)").locator("..").locator("input").fill("boxing-e2e-notes");
     await page.getByRole("button", { name: "Save Boxing Workout" }).click();
@@ -839,7 +839,7 @@ test.describe("authenticated", () => {
   test("boxing session is editable from the History tab", async ({ page, request }) => {
     // Log a 30m boxing session via UI
     await page.goto("/");
-    await page.getByText("Log Boxing").click();
+    await page.getByText("Boxing").click();
     await page.getByRole("button", { name: "30m" }).click();
     await page.getByRole("button", { name: "Save Boxing Workout" }).click();
     await expect(page.getByRole("status")).toContainText("Boxing workout logged!");
@@ -864,7 +864,7 @@ test.describe("authenticated", () => {
   test("run session is editable from the History tab", async ({ page, request }) => {
     // Log a 30m / 5.0km run via UI
     await page.goto("/");
-    await page.getByText("Log a Run").click();
+    await page.getByText("Run").click();
     await page.getByRole("button", { name: "30m" }).click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.0");
     await page.getByRole("button", { name: "Save Run" }).click();

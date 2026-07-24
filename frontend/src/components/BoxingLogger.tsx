@@ -78,15 +78,10 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
 
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="w-full bg-surface rounded-xl p-4 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors mb-4 flex items-center gap-3"
+          className="bg-surface rounded-xl p-3 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
         >
           <HandFist size={22} className="text-accent shrink-0" />
-          <div className="text-left">
-            <p className="text-sm font-semibold text-fg">Log Boxing</p>
-            <p className="text-[11px] text-fg/40 mt-0.5">
-              Record a boxing session by duration and intensity
-            </p>
-          </div>
+          <p className="text-xs font-semibold text-fg">Boxing</p>
         </button>
       </>
     );

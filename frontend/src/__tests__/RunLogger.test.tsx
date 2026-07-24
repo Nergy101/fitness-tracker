@@ -13,17 +13,14 @@ vi.mock("../api", () => ({
 }));
 
 describe("RunLogger", () => {
-  it("renders the collapsed Log a Run button initially", () => {
+  it("renders the collapsed Run button initially", () => {
     render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    expect(screen.getByText("Log a Run")).toBeInTheDocument();
-    expect(
-      screen.getByText("Record a run with distance, duration, and pace"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Run")).toBeInTheDocument();
   });
 
   it("expands the form when clicked", () => {
     render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Log a Run"));
+    fireEvent.click(screen.getByText("Run"));
     expect(screen.getByText("Save Run")).toBeInTheDocument();
     // Form fields should be visible
     expect(screen.getByPlaceholderText("e.g. 5.0")).toBeInTheDocument();
@@ -32,22 +29,22 @@ describe("RunLogger", () => {
 
   it("collapses the form when Cancel is clicked", () => {
     render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Log a Run"));
+    fireEvent.click(screen.getByText("Run"));
     fireEvent.click(screen.getByText("Cancel"));
     // Back to collapsed state
-    expect(screen.getByText("Log a Run")).toBeInTheDocument();
+    expect(screen.getByText("Run")).toBeInTheDocument();
   });
 
   it("shows custom duration input when Custom is selected", () => {
     render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Log a Run"));
+    fireEvent.click(screen.getByText("Run"));
     fireEvent.click(screen.getByText("Custom"));
     expect(screen.getByPlaceholderText("Minutes")).toBeInTheDocument();
   });
 
   it("shows pace preview when distance and duration are set", () => {
     render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Log a Run"));
+    fireEvent.click(screen.getByText("Run"));
 
     const distanceInput = screen.getByPlaceholderText("e.g. 5.0");
     fireEvent.change(distanceInput, { target: { value: "5" } });
