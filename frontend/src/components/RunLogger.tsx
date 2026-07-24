@@ -105,7 +105,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
     );
   }
 
-  // ── Form state ──
+  // ── Form as bottom sheet ──
   return (
     <>
       {toast && (
@@ -115,26 +115,45 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
         </Toast>
       )}
 
-      <div className="bg-surface rounded-xl p-4 border border-accent/20 mb-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Icon size={18} className="text-accent" />
-            <span className="text-sm font-semibold text-fg">{logLabel}</span>
-          </div>
-          <button
-            onClick={() => {
-              resetForm();
-              setShowForm(false);
-            }}
-            className="text-xs text-fg/40 hover:text-fg"
-          >
-            Cancel
-          </button>
-        </div>
+      {/* Collapsed button (always visible in grid) */}
+      <button
+        onClick={() => {
+          resetForm();
+          setShowForm(true);
+        }}
+        className="bg-surface rounded-xl p-3 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+      >
+        <Icon size={22} className="text-accent shrink-0" />
+        <p className="text-xs font-semibold text-fg">{label}</p>
+      </button>
 
-        {/* Duration quick-select */}
-        <div>
-          <p className="text-xs text-fg/50 mb-1.5">Duration</p>
+      {/* Bottom sheet overlay */}
+      {showForm && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+          onClick={() => { resetForm(); setShowForm(false); }}
+        >
+          <div
+            className="bg-surface rounded-t-2xl w-full max-h-[85vh] overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon size={18} className="text-accent" />
+                  <span className="text-sm font-semibold text-fg">{logLabel}</span>
+                </div>
+                <button
+                  onClick={() => { resetForm(); setShowForm(false); }}
+                  className="text-xs text-fg/40 hover:text-fg"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {/* Duration quick-select */}
+              <div>
+                <p className="text-xs text-fg/50 mb-1.5">Duration</p>
           <div className="flex gap-2 flex-wrap">
             {DURATION_OPTIONS.map((opt) => (
               <button
@@ -230,7 +249,10 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
         >
           {saveLabel}
         </button>
-      </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

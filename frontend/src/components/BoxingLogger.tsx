@@ -87,7 +87,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
     );
   }
 
-  // ── Form state ──
+  // ── Form as bottom sheet ──
   return (
     <>
       {toast && (
@@ -97,19 +97,38 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
         </Toast>
       )}
 
-      <div className="bg-surface rounded-xl p-4 border border-accent/20 mb-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <HandFist size={18} className="text-accent" />
-            <span className="text-sm font-semibold text-fg">Log Boxing</span>
-          </div>
-          <button
-            onClick={() => { resetForm(); setShowForm(false); }}
-            className="text-xs text-fg/40 hover:text-fg"
+      {/* Collapsed button (always visible in grid) */}
+      <button
+        onClick={() => { resetForm(); setShowForm(true); }}
+        className="bg-surface rounded-xl p-3 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+      >
+        <HandFist size={22} className="text-accent shrink-0" />
+        <p className="text-xs font-semibold text-fg">Boxing</p>
+      </button>
+
+      {/* Bottom sheet overlay */}
+      {showForm && (
+        <div
+          className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
+          onClick={() => { resetForm(); setShowForm(false); }}
+        >
+          <div
+            className="bg-surface rounded-t-2xl w-full max-h-[85vh] overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+            onClick={(e) => e.stopPropagation()}
           >
-            Cancel
-          </button>
-        </div>
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <HandFist size={18} className="text-accent" />
+                  <span className="text-sm font-semibold text-fg">Log Boxing</span>
+                </div>
+                <button
+                  onClick={() => { resetForm(); setShowForm(false); }}
+                  className="text-xs text-fg/40 hover:text-fg"
+                >
+                  Cancel
+                </button>
+              </div>
 
         {/* Duration quick-select */}
         <div>
@@ -211,7 +230,10 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
         >
           Save Boxing Workout
         </button>
-      </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
