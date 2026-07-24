@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   PersonSimpleRunIcon as PersonSimpleRun,
   MapTrifoldIcon as MapTrifold,
+  XIcon as X,
 } from "@phosphor-icons/react";
 import { Boot } from "@phosphor-icons/react/dist/csr/Boot";
 import Toast from "./Toast";
@@ -145,9 +146,10 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
                 </div>
                 <button
                   onClick={() => { resetForm(); setShowForm(false); }}
-                  className="text-xs text-fg/40 hover:text-fg"
+                  aria-label="Close"
+                  className="text-fg/40 hover:text-fg/70"
                 >
-                  Cancel
+                  <X size={18} />
                 </button>
               </div>
 
@@ -213,7 +215,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
             type="date"
             value={runDate}
             onChange={(e) => setRunDate(e.target.value)}
-            className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+            className="w-full min-w-0 bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
           />
         </div>
 

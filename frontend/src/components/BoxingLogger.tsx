@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { HandFistIcon as HandFist } from "@phosphor-icons/react";
+import { HandFistIcon as HandFist, XIcon as X } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
@@ -124,9 +124,10 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
                 </div>
                 <button
                   onClick={() => { resetForm(); setShowForm(false); }}
-                  className="text-xs text-fg/40 hover:text-fg"
+                  aria-label="Close"
+                  className="text-fg/40 hover:text-fg/70"
                 >
-                  Cancel
+                  <X size={18} />
                 </button>
               </div>
 
@@ -181,7 +182,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+            className="w-full min-w-0 bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
           />
         </div>
 

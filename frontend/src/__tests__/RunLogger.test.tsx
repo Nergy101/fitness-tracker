@@ -27,10 +27,10 @@ describe("RunLogger", () => {
     expect(screen.getByPlaceholderText("How did it feel?")).toBeInTheDocument();
   });
 
-  it("collapses the form when Cancel is clicked", () => {
+  it("collapses the form when Close is clicked", () => {
     render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
     fireEvent.click(screen.getByText("Run"));
-    fireEvent.click(screen.getByText("Cancel"));
+    fireEvent.click(screen.getByLabelText("Close"));
     // Back to collapsed state
     expect(screen.getByText("Run")).toBeInTheDocument();
   });
