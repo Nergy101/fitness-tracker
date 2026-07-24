@@ -196,27 +196,25 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs text-fg/50 mb-1">Distance (km)</p>
-            <input
-              type="number"
-              step="0.1"
-              value={runDistance}
-              onChange={(e) => setRunDistance(e.target.value)}
-              placeholder="e.g. 5.0"
-              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
-            />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs text-fg/50 mb-1">Date</p>
-            <input
-              type="date"
-              value={runDate}
-              onChange={(e) => setRunDate(e.target.value)}
-              className="w-full min-w-0 bg-bg border border-fg/10 rounded-lg px-2 py-1 text-xs leading-none outline-none focus:border-accent/50"
-            />
-          </div>
+        <div>
+          <p className="text-xs text-fg/50 mb-1">Distance (km)</p>
+          <input
+            type="number"
+            step="0.1"
+            value={runDistance}
+            onChange={(e) => setRunDistance(e.target.value)}
+            placeholder="e.g. 5.0"
+            className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+          />
+        </div>
+        <div>
+          <p className="text-xs text-fg/50 mb-1">Date</p>
+          <input
+            type="date"
+            value={runDate}
+            onChange={(e) => setRunDate(e.target.value)}
+            className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+          />
         </div>
 
         {/* Pace preview */}
