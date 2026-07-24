@@ -1,9 +1,9 @@
 import { useState } from "react";
 import {
   PersonSimpleRunIcon as PersonSimpleRun,
-  PersonSimpleWalkIcon as PersonSimpleWalk,
   MapTrifoldIcon as MapTrifold,
 } from "@phosphor-icons/react";
+import { Boot } from "@phosphor-icons/react/dist/csr/Boot";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
@@ -39,7 +39,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
   const [toast, setToast] = useState<string | null>(null);
 
   const isRun = runType === "run";
-  const Icon = isRun ? PersonSimpleRun : PersonSimpleWalk;
+  const Icon = isRun ? PersonSimpleRun : Boot;
   const label = isRun ? "Run" : "Walk";
   const logLabel = `Log a ${label}`;
   const saveLabel = `Save ${label}`;
