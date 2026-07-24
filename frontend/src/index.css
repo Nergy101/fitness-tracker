@@ -70,6 +70,18 @@ body {
   }
 }
 
+/* Native date/time controls size themselves from their internal segments
+   (day/month/year, AM/PM…) on some mobile browsers and can ignore an
+   explicit `width`, overflowing the viewport. `max-width` is honored as a
+   hard clamp regardless of that intrinsic sizing, so it's a required
+   belt-and-suspenders alongside the `w-full` Tailwind classes on these
+   inputs. */
+input[type="date"],
+input[type="time"] {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 /* Prevent text selection during workout timer */
 .no-select {
   -webkit-user-select: none;

@@ -215,7 +215,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
             type="date"
             value={runDate}
             onChange={(e) => setRunDate(e.target.value)}
-            className="w-full min-w-0 bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+            className="w-full max-w-full min-w-0 box-border bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
           />
         </div>
 
