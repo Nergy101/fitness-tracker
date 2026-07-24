@@ -17,7 +17,7 @@ describe("RunLogger", () => {
     render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
     expect(screen.getByText("Log a Run")).toBeInTheDocument();
     expect(
-      screen.getByText("Record a completed run with distance, duration, and pace"),
+      screen.getByText("Record a run with distance, duration, and pace"),
     ).toBeInTheDocument();
   });
 

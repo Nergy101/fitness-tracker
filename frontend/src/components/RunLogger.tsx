@@ -44,7 +44,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
   const logLabel = `Log a ${label}`;
   const saveLabel = `Save ${label}`;
   const description = isRun
-    ? "Record a completed run with distance, duration, and pace"
+    ? "Record a run with distance, duration, and pace"
     : "Record a walk with distance, duration, and pace";
 
   function resetForm() {
