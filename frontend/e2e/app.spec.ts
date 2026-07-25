@@ -166,28 +166,32 @@ test.describe("authenticated", () => {
   test("exercises tab loads the full seeded catalog", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Exercises" }).click();
-    // 76 seeded exercises -> 76 "kcal/min" meta lines.
+    // 195 seeded exercises -> 195 "kcal/min" meta lines.
     await expect(page.getByText("kcal/min").first()).toBeVisible();
-    await expect(page.getByText("kcal/min")).toHaveCount(76);
+    await expect(page.getByText("kcal/min")).toHaveCount(195);
     // Spot-check one calisthenics and one dumbbell entry.
-    await expect(page.getByRole("heading", { name: "Pull-ups" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Dumbbell Thrusters" })).toBeVisible();
+    const pullups = page.getByRole("heading", { name: "Pull-ups", exact: true });
+    await pullups.scrollIntoViewIfNeeded();
+    await expect(pullups).toBeVisible();
+    const thrusters = page.getByRole("heading", { name: "Dumbbell Thrusters", exact: true });
+    await thrusters.scrollIntoViewIfNeeded();
+    await expect(thrusters).toBeVisible();
   });
 
   test("category pills filter the exercise list", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Exercises" }).click();
-    await expect(page.getByText("kcal/min")).toHaveCount(76);
+    await expect(page.getByText("kcal/min")).toHaveCount(195);
 
-    // Cardio pill -> only the 11 cardio exercises remain.
+    // Cardio pill -> only the 37 cardio exercises remain.
     await page.getByRole("button", { name: "cardio", exact: true }).click();
-    await expect(page.getByText("kcal/min")).toHaveCount(11);
+    await expect(page.getByText("kcal/min")).toHaveCount(37);
     await expect(page.getByRole("heading", { name: "Jumping Jacks" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Push-ups" })).toHaveCount(0);
 
     // Back to All -> full catalog again.
     await page.getByRole("button", { name: "All", exact: true }).click();
-    await expect(page.getByText("kcal/min")).toHaveCount(76);
+    await expect(page.getByText("kcal/min")).toHaveCount(195);
   });
 
   test("exercise images render for matched exercises, icon fallback otherwise", async ({
