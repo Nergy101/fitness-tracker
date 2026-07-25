@@ -136,7 +136,8 @@ function StackedBarChart<T>({
               x={x + (slot - 4) / 2}
               y={height + 12}
               textAnchor="middle"
-              className="fill-fg/30"
+              className={i === data.length - 1 ? "fill-fg/60" : "fill-fg/30"}
+              fontWeight={i === data.length - 1 ? "bold" : "normal"}
               fontSize="8"
             >
               {label(d)}
@@ -240,7 +241,10 @@ function LineChart({
         <circle key={i} cx={px(i)} cy={py(p.value)} r="2.5" fill={color} />
       ))}
       {labelIdxs.map((idx) => (
-        <text key={idx} x={px(idx)} y={height + 13} textAnchor="middle" className="fill-fg/30" fontSize="8">
+        <text key={idx} x={px(idx)} y={height + 13} textAnchor="middle"
+          className={idx === points.length - 1 ? "fill-fg/60" : "fill-fg/30"}
+          fontWeight={idx === points.length - 1 ? "bold" : "normal"}
+          fontSize="8">
           {points[idx].label}
         </text>
       ))}
