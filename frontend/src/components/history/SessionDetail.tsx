@@ -15,10 +15,15 @@ export default function SessionDetail({
   onUpdate: (updated: WorkoutSession) => void;
 }) {
   const [notes, setNotes] = useState(session.notes || "");
+  const [durationMinutes, setDurationMinutes] = useState(
+    String(Math.round(session.total_duration_seconds / 60))
+  );
   const modalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(modalRef, onClose);
 
   const isBoxing = session.template_name.startsWith("Boxing:");
+  const isRunOrWalk = session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:");
+  const isRegular = !isBoxing && !isRunOrWalk;
   const [boxingEntry, setBoxingEntry] = useState<BoxingEntryResponse | null>(null);
   const [boxMinutes, setBoxMinutes] = useState("");
   const [boxKcalPerMin, setBoxKcalPerMin] = useState("");
@@ -103,7 +108,20 @@ export default function SessionDetail({
     }
   }
 
-  const isRunOrWalk = session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:");
+  async function saveDuration() {
+    const mins = parseInt(durationMinutes) || 0;
+    if (mins <= 0 || mins * 60 === session.total_duration_seconds) return;
+    try {
+      const updated = await api.updateSession(session.id, {
+        total_duration_seconds: mins * 60,
+      });
+      onUpdate(updated);
+      setDurationMinutes(String(Math.round(updated.total_duration_seconds / 60)));
+    } catch (err) {
+      console.error("Failed to save duration", err);
+    }
+  }
+
   const isRun = session.template_name.startsWith("Run:");
 
   const [runEntry, setRunEntry] = useState<RunEntryResponse | null>(null);
@@ -184,6 +202,8 @@ export default function SessionDetail({
   }
 
   const notesDirty = notes.trim() !== (session.notes || "");
+  const durationDirty =
+    isRegular && ((parseInt(durationMinutes) || 0) * 60 !== session.total_duration_seconds);
 
   return (
     <div
@@ -237,6 +257,32 @@ export default function SessionDetail({
             className="w-full bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-xs text-fg outline-none focus:border-accent/50"
           />
         </p>
+
+        {isRegular && (
+          <div className="bg-surface rounded-lg p-3 mb-3">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[10px] text-fg/40 font-medium">Duration (minutes)</p>
+              {durationDirty && (
+                <button
+                  onClick={saveDuration}
+                  className="text-[10px] text-accent font-medium hover:underline"
+                >
+                  Save
+                </button>
+              )}
+            </div>
+            <input
+              type="number"
+              min="1"
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(e.target.value)}
+              onBlur={saveDuration}
+              onKeyDown={(e) => { if (e.key === "Enter") saveDuration(); }}
+              aria-label="Session duration minutes"
+              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+            />
+          </div>
+        )}
 
         <div className="bg-surface rounded-lg p-3 mb-4">
           <div className="flex items-center justify-between mb-1">
