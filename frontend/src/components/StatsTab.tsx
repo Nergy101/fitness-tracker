@@ -542,7 +542,7 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_minutes },
               { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_minutes },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? `${(d as DailyActivityStat).label} ${shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale)}` : (d as WeeklyActivityStat).week_start.slice(5)}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
           />
           <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
@@ -572,7 +572,7 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_kcal },
               { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_kcal },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? `${(d as DailyActivityStat).label} ${shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale)}` : (d as WeeklyActivityStat).week_start.slice(5)}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
           />
           <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
@@ -591,7 +591,7 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_km },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_km },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? `${(d as DailyActivityStat).label} ${shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale)}` : (d as WeeklyActivityStat).week_start.slice(5)}
             formatValue={(v) => `${Math.round(v * 10) / 10}km`}
           />
           <ActivityLegend kinds={["run", "walk"]} />
