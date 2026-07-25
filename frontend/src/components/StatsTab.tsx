@@ -71,12 +71,14 @@ function StackedBarChart<T>({
   data,
   segments,
   label,
+  sublabel,
   formatValue,
   height = 80,
 }: {
   data: T[];
   segments: StackSegment<T>[];
   label: (d: T) => string;
+  sublabel?: (d: T) => string | undefined;
   formatValue: (v: number) => string;
   height?: number;
 }) {
@@ -92,9 +94,11 @@ function StackedBarChart<T>({
   const w = Math.max(300, gutter + wPerBar * data.length);
   const slot = (w - gutter) / data.length;
   const ticks = [max, max / 2];
+  const hasSub = sublabel != null;
+  const bottomPad = hasSub ? 28 : 20;
 
   return (
-    <svg viewBox={`0 0 ${w} ${height + 20}`} className="w-full">
+    <svg viewBox={`0 0 ${w} ${height + bottomPad}`} className="w-full">
       {ticks.map((t) => {
         const y = height - (t / max) * height;
         return (
@@ -113,6 +117,7 @@ function StackedBarChart<T>({
           .map((seg) => ({ color: seg.color, val: seg.value(d) }))
           .filter((p) => p.val > 0);
         let yCursor = height;
+        const isLast = i === data.length - 1;
         return (
           <g key={i}>
             {parts.map((p, j) => {
@@ -136,12 +141,23 @@ function StackedBarChart<T>({
               x={x + (slot - 4) / 2}
               y={height + 12}
               textAnchor="middle"
-              className={i === data.length - 1 ? "fill-fg/60" : "fill-fg/30"}
-              fontWeight={i === data.length - 1 ? "bold" : "normal"}
+              className={isLast ? "fill-fg/60" : "fill-fg/30"}
+              fontWeight={isLast ? "bold" : "normal"}
               fontSize="8"
             >
               {label(d)}
             </text>
+            {sublabel != null && sublabel(d) != null && (
+              <text
+                x={x + (slot - 4) / 2}
+                y={height + 22}
+                textAnchor="middle"
+                className={isLast ? "fill-fg/50" : "fill-fg/25"}
+                fontSize="7"
+              >
+                {sublabel(d)}
+              </text>
+            )}
           </g>
         );
       })}
@@ -542,7 +558,8 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_minutes },
               { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_minutes },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? `${(d as DailyActivityStat).label} ${shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale)}` : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
+            sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
           />
           <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
@@ -572,7 +589,8 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_kcal },
               { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_kcal },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? `${(d as DailyActivityStat).label} ${shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale)}` : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
+            sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
           />
           <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
@@ -591,7 +609,8 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_km },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_km },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? `${(d as DailyActivityStat).label} ${shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale)}` : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
+            sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => `${Math.round(v * 10) / 10}km`}
           />
           <ActivityLegend kinds={["run", "walk"]} />
