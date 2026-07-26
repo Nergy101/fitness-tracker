@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircleIcon as CheckCircle, CalendarBlankIcon as CalendarBlank, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
+import { CheckCircleIcon as CheckCircle, CalendarBlankIcon as CalendarBlank, FlameIcon as Flame, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import {
   api,
@@ -30,6 +30,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [consistencyPct, setConsistencyPct] = useState(0);
+  const [streakDays, setStreakDays] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [editing, setEditing] = useState<WorkoutTemplate | null>(null);
@@ -40,11 +41,12 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   useFocusTrap(deleteModalRef, () => setPendingDelete(null));
 
   useEffect(() => {
-    Promise.all([api.getWorkouts(), api.getExercises(), api.getStatsOverview().catch(() => null)])
-      .then(([tpls, exs, overview]) => {
+    Promise.all([api.getWorkouts(), api.getExercises(), api.getStatsOverview().catch(() => null), api.getPrs().catch(() => null)])
+      .then(([tpls, exs, overview, prs]) => {
         setTemplates(tpls);
         setAllExercises(exs);
         if (overview) setConsistencyPct(overview.consistency_score_pct);
+        if (prs) setStreakDays(prs.streak_days_30d);
       })
       .catch(() => setError("Failed to load workouts"))
       .finally(() => setLoading(false));
@@ -201,10 +203,18 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent text-sm font-semibold">
-          <CalendarBlank size={14} weight="fill" />
-          <span>{consistencyPct}%</span>
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent text-sm font-semibold">
+            <CalendarBlank size={14} weight="fill" />
+            <span>{consistencyPct}%</span>
+          </span>
+          {streakDays > 0 && (
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-orange-400/15 text-orange-400 text-sm font-semibold">
+              <Flame size={14} weight="fill" />
+              <span>{streakDays}</span>
+            </span>
+          )}
+        </div>
         <button
           onClick={() => openEditor(null)}
           className="bg-accent text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors"
