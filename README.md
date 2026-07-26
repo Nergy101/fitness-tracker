@@ -50,6 +50,172 @@ A complete fitness PWA — track workouts, runs, walks, boxing, health metrics, 
 - Push notification support (Web Push API)
 - Settings: health profile, backup/restore, notifications, Apple Health import
 
+## Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    Exercise ||--o{ WorkoutTemplateExercise : "included in"
+    Exercise ||--o{ SessionExercise : "logged as"
+    WorkoutTemplate ||--o{ WorkoutTemplateExercise : contains
+    WorkoutTemplate ||--o{ WorkoutSession : "creates"
+    WorkoutSession ||--o{ SessionExercise : contains
+    SessionExercise ||--o{ ExerciseLog : "sets logged"
+    RunEntry ||--o| WorkoutSession : "mirrors to"
+    BoxingEntry ||--o| WorkoutSession : "mirrors to"
+
+    Exercise {
+        int id PK
+        string name
+        string description
+        string category "cardio|strength|flexibility|other"
+        float default_kcal_per_min
+        int default_duration_seconds
+        string image_url
+    }
+
+    WorkoutTemplate {
+        int id PK
+        string name
+        string description
+        string mode "circuit|amrap|emom|tabata"
+        int rounds
+        int rest_between_rounds
+        int warmup_seconds
+        int cooldown_seconds
+        bool is_pinned
+    }
+
+    WorkoutTemplateExercise {
+        int id PK
+        int template_id FK
+        int exercise_id FK
+        int duration_seconds
+        int order_index
+    }
+
+    WorkoutSession {
+        int id PK
+        int template_id FK
+        string template_name
+        int run_entry_id FK
+        int boxing_entry_id FK
+        datetime started_at
+        int total_duration_seconds
+        float total_kcal_estimated
+        text notes
+    }
+
+    SessionExercise {
+        int id PK
+        int session_id FK
+        int exercise_id FK
+        string exercise_name
+        int duration_seconds
+        float kcal_burned
+        bool completed
+    }
+
+    ExerciseLog {
+        int id PK
+        int session_exercise_id FK
+        float weight_kg
+        int reps
+        int set_number
+    }
+
+    RunEntry {
+        int id PK
+        int duration_seconds
+        float distance_km
+        float pace_per_km
+        string run_type "run|walk"
+        date date
+        text notes
+    }
+
+    BoxingEntry {
+        int id PK
+        int duration_seconds
+        float kcal_per_min
+        int rounds
+        date date
+        text notes
+    }
+
+    UserProfile {
+        int id PK
+        float height_cm
+        date birthday
+        string gender
+        float goal_weight_kg
+        time reminder_time
+    }
+
+    WeightEntry {
+        int id PK
+        float weight_kg
+        date date
+        text notes
+    }
+
+    BodyMeasurement {
+        int id PK
+        date date
+        float waist_cm
+        float hips_cm
+        float chest_cm
+        float left_arm_cm
+        float right_arm_cm
+        float left_thigh_cm
+        float right_thigh_cm
+        float neck_cm
+    }
+
+    WellnessCheckin {
+        int id PK
+        date date
+        int mood "1-5"
+        int energy "1-5"
+        int stress "1-5"
+        float sleep_hours
+    }
+
+    HealthMetric {
+        int id PK
+        string metric_name
+        date date
+        string units
+        float qty
+        text data
+    }
+
+    HealthWorkout {
+        int id PK
+        string external_id UK
+        string name
+        datetime start
+        datetime end
+        float duration_seconds
+        float distance_km
+        float active_energy_kj
+        float avg_heart_rate
+    }
+```
+
+## CI/CD Pipeline
+
+```mermaid
+graph LR
+    A[Push to main] --> B[Lint<br/>ruff + eslint]
+    B --> C[Backend Tests<br/>258 pytest]
+    B --> D[Frontend Tests<br/>tsc + vitest 122]
+    C --> E[E2E Tests<br/>Playwright 38]
+    D --> E
+    E --> F[Docker Build<br/>multi-arch amd64 + arm64]
+    F --> G[Push to GHCR]
+    G --> H[Deploy via SSH<br/>docker compose pull + up]
+```
+
 ## Quick start
 
 ```bash
