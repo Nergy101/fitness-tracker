@@ -204,15 +204,24 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent text-sm font-semibold">
-            <CalendarBlank size={14} weight="fill" />
-            <span>{consistencyPct}%</span>
-          </span>
-          {streakDays > 0 && (
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-orange-400/15 text-orange-400 text-sm font-semibold">
-              <Flame size={14} weight="fill" />
-              <span>{streakDays}</span>
-            </span>
+          {loading ? (
+            <>
+              <div className="skeleton-shimmer rounded-full h-7 w-14" />
+              <div className="skeleton-shimmer rounded-full h-7 w-10" />
+            </>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent text-sm font-semibold transition-opacity duration-300">
+                <CalendarBlank size={14} weight="fill" />
+                <span>{consistencyPct}%</span>
+              </span>
+              {streakDays > 0 && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-orange-400/15 text-orange-400 text-sm font-semibold transition-opacity duration-300">
+                  <Flame size={14} weight="fill" />
+                  <span>{streakDays}</span>
+                </span>
+              )}
+            </>
           )}
         </div>
         <button
