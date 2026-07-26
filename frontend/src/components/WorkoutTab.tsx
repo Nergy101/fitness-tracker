@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircleIcon as CheckCircle, CalendarBlankIcon as CalendarBlank, FlameIcon as Flame, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
+import { CheckCircleIcon as CheckCircle, CalendarBlankIcon as CalendarBlank, ChartLineDownIcon as ChartLineDown, ChartLineUpIcon as ChartLineUp, FlameIcon as Flame, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import {
   api,
@@ -31,6 +31,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [loading, setLoading] = useState(true);
   const [consistencyPct, setConsistencyPct] = useState(0);
   const [streakDays, setStreakDays] = useState(0);
+  const [weightChangeKg, setWeightChangeKg] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [editing, setEditing] = useState<WorkoutTemplate | null>(null);
@@ -45,7 +46,10 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       .then(([tpls, exs, overview, prs]) => {
         setTemplates(tpls);
         setAllExercises(exs);
-        if (overview) setConsistencyPct(overview.consistency_score_pct);
+        if (overview) {
+          setConsistencyPct(overview.consistency_score_pct);
+          setWeightChangeKg(overview.avg_weight_change_kg);
+        }
         if (prs) setStreakDays(prs.streak_days_30d);
       })
       .catch(() => setError("Failed to load workouts"))
@@ -208,6 +212,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
             <>
               <div className="skeleton-shimmer rounded-full h-7 w-14" />
               <div className="skeleton-shimmer rounded-full h-7 w-10" />
+              <div className="skeleton-shimmer rounded-full h-7 w-16" />
             </>
           ) : (
             <>
@@ -219,6 +224,12 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
                 <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-orange-400/15 text-orange-400 text-sm font-semibold transition-opacity duration-300">
                   <Flame size={14} weight="fill" />
                   <span>{streakDays}</span>
+                </span>
+              )}
+              {weightChangeKg != null && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-400/15 text-purple-400 text-sm font-semibold transition-opacity duration-300">
+                  {weightChangeKg > 0 ? <ChartLineUp size={14} weight="fill" /> : <ChartLineDown size={14} weight="fill" />}
+                  <span>{weightChangeKg > 0 ? "+" : ""}{weightChangeKg.toFixed(1)} kg</span>
                 </span>
               )}
             </>
