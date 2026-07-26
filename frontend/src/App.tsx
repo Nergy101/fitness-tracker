@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   BarbellIcon as Barbell,
   ChartBarIcon as ChartBar,
@@ -66,6 +66,12 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [healthRefreshKey, setHealthRefreshKey] = useState(0);
   const touchStartX = useRef(0);
+  const [slideDir, setSlideDir] = useState<"left" | "right" | null>(null);
+
+  const navigateTab = useCallback((dir: "left" | "right", tab: TabId) => {
+    setSlideDir(dir);
+    setCurrentTab(tab);
+  }, [setCurrentTab]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -76,9 +82,9 @@ export default function App() {
     if (Math.abs(delta) < 50) return;
     const idx = TAB_IDS.indexOf(currentTab);
     if (delta > 0 && idx < TAB_IDS.length - 1) {
-      setCurrentTab(TAB_IDS[idx + 1]);
+      navigateTab("left", TAB_IDS[idx + 1]);
     } else if (delta < 0 && idx > 0) {
-      setCurrentTab(TAB_IDS[idx - 1]);
+      navigateTab("right", TAB_IDS[idx - 1]);
     }
   };
 
@@ -109,6 +115,18 @@ export default function App() {
 
   return (
     <ErrorBoundary>
+      <style>{`
+        @keyframes slide-in-right {
+          from { transform: translateX(30px); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
+        @keyframes slide-in-left {
+          from { transform: translateX(-30px); opacity: 0; }
+          to   { transform: translateX(0);     opacity: 1; }
+        }
+        .tab-slide-right { animation: slide-in-right 200ms ease-out; }
+        .tab-slide-left  { animation: slide-in-left  200ms ease-out; }
+      `}</style>
       <div className="app-shell flex flex-col h-screen pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
         <header className="px-4 py-3 border-b border-fg/10 shrink-0">
@@ -140,7 +158,11 @@ export default function App() {
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="mx-auto w-full max-w-2xl">
+          <div
+            className={`mx-auto w-full max-w-2xl ${slideDir ? `tab-slide-${slideDir}` : ""}`}
+            key={currentTab}
+            onAnimationEnd={() => setSlideDir(null)}
+          >
           {currentTab === "workout" && (
           <WorkoutTab
           onStartWorkout={setRunningWorkout}
@@ -158,10 +180,14 @@ export default function App() {
 
         <nav className="bottom-nav border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+4px)] shrink-0">
           <div className="mx-auto w-full max-w-2xl flex items-center justify-around">
-          {TABS.map((tab) => (
+          {TABS.map((tab) => {
+            const idx = TAB_IDS.indexOf(tab.id);
+            const curIdx = TAB_IDS.indexOf(currentTab);
+            const dir = idx > curIdx ? "left" : idx < curIdx ? "right" : null;
+            return (
             <button
               key={tab.id}
-              onClick={() => setCurrentTab(tab.id)}
+              onClick={() => dir ? navigateTab(dir, tab.id) : setCurrentTab(tab.id)}
               aria-label={tab.label}
               className={`flex flex-col items-center gap-1 px-4 py-2 rounded-full transition-colors ${
                 currentTab === tab.id
@@ -171,7 +197,7 @@ export default function App() {
             >
               <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
             </button>
-          ))}
+          )})}
           </div>
         </nav>
 
