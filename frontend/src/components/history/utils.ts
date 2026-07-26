@@ -9,9 +9,9 @@ export const SINGLE_LETTER = ["M", "T", "W", "T", "F", "S", "S"];
 export type RangeKey = "week" | "7d" | "30d";
 
 export const RANGES: { key: RangeKey; label: string }[] = [
-  { key: "week", label: "This week" },
   { key: "7d", label: "7 Days" },
   { key: "30d", label: "30 Days" },
+  { key: "week", label: "This week" },
 ];
 
 export function rangeStart(key: RangeKey): Date {
