@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { HandFistIcon as HandFist, XIcon as X } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
+import { randomNotePrompt } from "../notePrompts";
 
 interface BoxingLoggerProps {
   onWorkoutLogged: () => void;
@@ -32,6 +33,8 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+
+  const notePrompt = useMemo(() => randomNotePrompt(), []);
 
   function resetForm() {
     setDuration(1800);
@@ -217,7 +220,8 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
             type="text"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="How did it feel?"
+            placeholder={notePrompt}
+            aria-label="Notes"
             className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
           />
         </div>

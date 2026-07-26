@@ -146,11 +146,18 @@ export default function AppleHealthCharts({
   const hrLatest = hrRaw.length ? hrRaw[hrRaw.length - 1].value : null;
 
   // ── Workout intensity scatter ─────────────────────────────────────────────
+  // Normalize imported Apple Health workout names so language variants
+  // (e.g. Dutch "wandelen" + "buiten wandelen") merge under one label + color.
+  const NORMALIZE: Record<string, string> = {
+    wandelen: "Buiten Wandelen",
+    "buiten wandelen": "Buiten Wandelen",
+  };
+  const norm = (name: string) => NORMALIZE[name.toLowerCase()] ?? name;
   const validWorkouts = workouts.filter((w) => w.duration_min != null && w.avg_hr != null);
-  const workoutNames = [...new Set(validWorkouts.map((w) => w.name))].sort();
+  const workoutNames = [...new Set(validWorkouts.map((w) => norm(w.name)))].sort();
   const nameIdx = new Map(workoutNames.map((n, i) => [n, i]));
   const woSPts: SPt[] = validWorkouts.map((w) => {
-    const idx = nameIdx.get(w.name) ?? MAX_LEGEND;
+    const idx = nameIdx.get(norm(w.name)) ?? MAX_LEGEND;
     const colorIdx = Math.min(idx, MAX_LEGEND, SPORT_PALETTE.length - 1);
     return { x: w.duration_min!, y: w.avg_hr!, color: SPORT_PALETTE[colorIdx] };
   });

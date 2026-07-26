@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   BarbellIcon as Barbell,
   ChartBarIcon as ChartBar,
@@ -65,6 +65,22 @@ export default function App() {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [healthRefreshKey, setHealthRefreshKey] = useState(0);
+  const touchStartX = useRef(0);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const delta = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(delta) < 50) return;
+    const idx = TAB_IDS.indexOf(currentTab);
+    if (delta > 0 && idx < TAB_IDS.length - 1) {
+      setCurrentTab(TAB_IDS[idx + 1]);
+    } else if (delta < 0 && idx > 0) {
+      setCurrentTab(TAB_IDS[idx - 1]);
+    }
+  };
 
   if (!authenticated) {
     return <LoginScreen onLogin={() => setAuthenticated(true)} />;
@@ -119,7 +135,11 @@ export default function App() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-4 py-4">
+        <main
+          className="flex-1 overflow-y-auto px-4 py-4 touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <div className="mx-auto w-full max-w-2xl">
           {currentTab === "workout" && (
           <WorkoutTab

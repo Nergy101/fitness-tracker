@@ -23,7 +23,8 @@ export default function SessionCard({
 
   return (
     <div
-      className="bg-surface rounded-xl p-4 border border-fg/5 cursor-pointer hover:border-accent/30 transition-colors"
+      className="bg-surface rounded-xl p-4 border border-l-[3px] border-fg/5 cursor-pointer hover:border-accent/30 transition-colors"
+      style={{ borderLeftColor: ACTIVITY_COLORS[kind] }}
       onClick={() => onSelect(session)}
     >
       <div className="flex items-start justify-between">

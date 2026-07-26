@@ -780,7 +780,7 @@ test.describe("authenticated", () => {
     await page.getByText("Run").click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.2");
     await page.getByRole("button", { name: "1h" }).click();
-    await page.locator('input[placeholder="How did it feel?"]').fill("test-run-notes");
+    await page.getByRole("textbox", { name: "Notes" }).fill("test-run-notes");
     await page.getByRole("button", { name: "Save Run" }).click();
     await expect(page.getByRole("status")).toContainText("Run logged");
 

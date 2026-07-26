@@ -13,12 +13,6 @@ export default function WorkoutSkeleton() {
         <Skeleton width="120px" height="34px" rounded="xl" />
       </div>
 
-      {/* Run Logger placeholder */}
-      <div className="skeleton-shimmer rounded-xl mb-3 h-16 w-full" />
-
-      {/* Boxing Logger placeholder */}
-      <div className="skeleton-shimmer rounded-xl mb-4 h-16 w-full" />
-
       {/* 3 WorkoutCard placeholders */}
       {[...Array(3)].map((_, i) => (
         <div

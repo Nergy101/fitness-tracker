@@ -24,7 +24,7 @@ describe("RunLogger", () => {
     expect(screen.getByText("Save Run")).toBeInTheDocument();
     // Form fields should be visible
     expect(screen.getByPlaceholderText("e.g. 5.0")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("How did it feel?")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Notes" })).toBeInTheDocument();
   });
 
   it("collapses the form when Close is clicked", () => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   PersonSimpleRunIcon as PersonSimpleRun,
   MapTrifoldIcon as MapTrifold,
@@ -8,6 +8,7 @@ import { Boot } from "@phosphor-icons/react/dist/csr/Boot";
 import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
+import { randomNotePrompt } from "../notePrompts";
 
 interface RunLoggerProps {
   onRunLogged: () => void;
@@ -38,6 +39,8 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
   const [runDate, setRunDate] = useState(new Date().toISOString().slice(0, 10));
   const [runNotes, setRunNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+
+  const notePrompt = useMemo(() => randomNotePrompt(), []);
 
   const isRun = runType === "run";
   const Icon = isRun ? PersonSimpleRun : Boot;
@@ -237,7 +240,8 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
             type="text"
             value={runNotes}
             onChange={(e) => setRunNotes(e.target.value)}
-            placeholder="How did it feel?"
+            placeholder={notePrompt}
+            aria-label="Notes"
             className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
           />
         </div>

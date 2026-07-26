@@ -12,6 +12,7 @@ import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 import { formatDuration, localISO } from "../format";
 import { useFocusTrap } from "../useFocusTrap";
+import { randomNotePrompt } from "../notePrompts";
 
 type Phase = "warmup" | "cooldown" | "rest" | "exercise" | "roundrest" | "finished";
 
@@ -121,6 +122,8 @@ export default function WorkoutRunner({
   });
   const [sessionNotes, setSessionNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const notePrompt = useMemo(() => randomNotePrompt(), []);
   const savedRef = useRef(false);
   const savedSessionIdRef = useRef<number | null>(null);
 
@@ -1062,7 +1065,7 @@ export default function WorkoutRunner({
           </div>
 
           <div className="mb-5 w-full max-w-xs">
-            <label className="text-xs text-fg/40 block mb-1.5">How did it feel? (optional)</label>
+            <label className="text-xs text-fg/40 block mb-1.5">{notePrompt} (optional)</label>
             <textarea
               value={sessionNotes}
               onChange={(e) => setSessionNotes(e.target.value)}
