@@ -85,7 +85,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
           className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
           style={{ borderColor: ACTIVITY_COLORS.boxing }}
         >
-          <HandFist size={22} className="text-accent shrink-0" />
+          <HandFist size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.boxing }} />
           <p className="text-xs font-semibold text-fg">Boxing</p>
         </button>
       </>
@@ -108,7 +108,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
         className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
         style={{ borderColor: ACTIVITY_COLORS.boxing }}
       >
-        <HandFist size={22} className="text-accent shrink-0" />
+        <HandFist size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.boxing }} />
         <p className="text-xs font-semibold text-fg">Boxing</p>
       </button>
 

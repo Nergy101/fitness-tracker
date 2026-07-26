@@ -104,7 +104,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
           className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
           style={{ borderColor: ACTIVITY_COLORS[runType] }}
         >
-          <Icon size={22} className="text-accent shrink-0" />
+          <Icon size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS[runType] }} />
           <p className="text-xs font-semibold text-fg">{label}</p>
         </button>
       </>
@@ -130,7 +130,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
         className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
         style={{ borderColor: ACTIVITY_COLORS[runType] }}
       >
-        <Icon size={22} className="text-accent shrink-0" />
+        <Icon size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS[runType] }} />
         <p className="text-xs font-semibold text-fg">{label}</p>
       </button>
 
