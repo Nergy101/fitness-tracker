@@ -229,7 +229,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
               {weightChangeKg != null && (
                 <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-400/15 text-purple-400 text-sm font-semibold transition-opacity duration-300">
                   {weightChangeKg > 0 ? <ChartLineUp size={14} weight="fill" /> : <ChartLineDown size={14} weight="fill" />}
-                  <span>{weightChangeKg > 0 ? "+" : ""}{weightChangeKg.toFixed(1)} kg</span>
+                  <span>{weightChangeKg > 0 ? "+" : ""}{weightChangeKg.toFixed(1)}</span>
                 </span>
               )}
             </>
