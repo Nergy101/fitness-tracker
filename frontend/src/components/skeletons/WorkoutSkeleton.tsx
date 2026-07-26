@@ -1,18 +1,11 @@
 import Skeleton from "../Skeleton";
 
-/** 3-4 skeleton cards matching the WorkoutCard layout:
+/** WorkoutCard placeholders matching the real card layout:
  *  pin icon · title bar · action buttons
- *  description area (sometimes)
  *  metadata row · warmup/cooldown · work/rest/total */
 export default function WorkoutSkeleton() {
   return (
     <div className="workout-tab" aria-label="Loading workouts" role="status">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <Skeleton width="96px" height="16px" className="mb-0" />
-        <Skeleton width="120px" height="34px" rounded="xl" />
-      </div>
-
       {/* 3 WorkoutCard placeholders */}
       {[...Array(3)].map((_, i) => (
         <div
