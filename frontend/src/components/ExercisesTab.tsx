@@ -106,39 +106,43 @@ export default function ExercisesTab() {
 
   return (
     <div className="exercises-tab">
-      <div className="flex items-center justify-between mb-4">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          type="text"
-          placeholder="Search exercises..."
-          className="flex-1 bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50"
-        />
-        <button
-          onClick={openCreate}
-          className="ml-3 bg-accent text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors whitespace-nowrap"
-        >
-          + Add
-        </button>
-      </div>
-
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-        {(["all", "cardio", "strength", "flexibility", "other"] as const).map(
-          (cat) => (
+      {!loading && (
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              type="text"
+              placeholder="Search exercises..."
+              className="flex-1 bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50"
+            />
             <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
-                categoryFilter === cat
-                  ? "bg-accent text-on-accent"
-                  : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
-              }`}
+              onClick={openCreate}
+              className="ml-3 bg-accent text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors whitespace-nowrap"
             >
-              {cat === "all" ? "All" : cat}
+              + Add
             </button>
-          ),
-        )}
-      </div>
+          </div>
+
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+            {(["all", "cardio", "strength", "flexibility", "other"] as const).map(
+              (cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
+                    categoryFilter === cat
+                      ? "bg-accent text-on-accent"
+                      : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+                  }`}
+                >
+                  {cat === "all" ? "All" : cat}
+                </button>
+              ),
+            )}
+          </div>
+        </>
+      )}
 
       {loading ? (
         <ExercisesSkeleton />
