@@ -148,7 +148,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
       {/* Activity + summary — chart depends on the mode. */}
       {calendar ? (
         <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
-          <CalendarView sessions={rangeSessions} />
+          <CalendarView sessions={sessions} />
         </div>
       ) : (
         <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
