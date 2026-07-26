@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { HandFistIcon as HandFist, XIcon as X } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api } from "../api";
@@ -35,7 +35,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
-  const notePrompt = useMemo(() => randomNotePrompt(), []);
+  const [notePrompt, setNotePrompt] = useState(() => randomNotePrompt());
 
   function resetForm() {
     setDuration(1800);
@@ -44,6 +44,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
     setRounds(null);
     setNotes("");
     setDate(new Date().toISOString().slice(0, 10));
+    setNotePrompt(randomNotePrompt());
   }
 
   async function handleSubmit() {

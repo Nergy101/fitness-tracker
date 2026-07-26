@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   PersonSimpleRunIcon as PersonSimpleRun,
   MapTrifoldIcon as MapTrifold,
@@ -41,7 +41,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
   const [runNotes, setRunNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
-  const notePrompt = useMemo(() => randomNotePrompt(), []);
+  const [notePrompt, setNotePrompt] = useState(() => randomNotePrompt());
 
   const isRun = runType === "run";
   const Icon = isRun ? PersonSimpleRun : Boot;
@@ -56,6 +56,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
     setRunDistance("");
     setRunNotes("");
     setRunDate(new Date().toISOString().slice(0, 10));
+    setNotePrompt(randomNotePrompt());
   }
 
   async function handleSubmit() {
