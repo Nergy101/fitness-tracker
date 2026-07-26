@@ -163,8 +163,10 @@ export default function App() {
               key={tab.id}
               onClick={() => setCurrentTab(tab.id)}
               aria-label={tab.label}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors ${
-                currentTab === tab.id ? "text-accent" : "text-fg/40"
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-full transition-colors ${
+                currentTab === tab.id
+                  ? "text-accent bg-accent/15"
+                  : "text-fg/40"
               }`}
             >
               <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
