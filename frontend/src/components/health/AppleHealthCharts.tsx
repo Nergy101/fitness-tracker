@@ -263,7 +263,7 @@ export default function AppleHealthCharts({
           title="Workout Intensity"
           sub="duration vs avg HR"
         >
-          <ScatterChart points={woSPts} xLabel="Duration (min)" />
+          <ScatterChart points={woSPts} xLabel="Duration (min)" xStep={10} />
           <Legend items={woLegend} />
         </ChartCard>
       )}

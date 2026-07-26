@@ -8,7 +8,7 @@
  *   - dual-axis charts tint each side's tick labels in its series color
  */
 
-import { fmtTick, niceTicks } from "./ticks";
+import { fmtTick, niceTicks, ticksByStep } from "./ticks";
 
 const W = 300;
 const H = 100;
@@ -234,9 +234,11 @@ interface ScatterChartProps {
   points: SPt[];
   color?: string;
   xLabel?: string;
+  /** Fixed x-axis tick interval (e.g. 10 = every 10 min). Falls back to niceTicks when omitted. */
+  xStep?: number;
 }
 
-export function ScatterChart({ points, color = ACCENT, xLabel }: ScatterChartProps) {
+export function ScatterChart({ points, color = ACCENT, xLabel, xStep }: ScatterChartProps) {
   const n = points.length;
   if (n < 3) return null;
 
@@ -253,10 +255,14 @@ export function ScatterChart({ points, color = ACCENT, xLabel }: ScatterChartPro
     GL + ((x - (xLo - xPad)) / (xHi + xPad - (xLo - xPad))) * (W - GL);
   const ptY = (y: number) => yN(y, yLo - yPad, yHi + yPad);
 
+  const xTicks = xStep
+    ? ticksByStep(xLo, xHi, xStep)
+    : niceTicks(xLo, xHi);
+
   return (
     <svg viewBox={`0 0 ${W} ${H + 26}`} className="w-full">
       <YGrid ticks={niceTicks(yLo, yHi)} yOf={ptY} />
-      {niceTicks(xLo, xHi).map((t) => (
+      {xTicks.map((t) => (
         <g key={t}>
           <line x1={ptX(t)} y1={0} x2={ptX(t)} y2={H} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
           <text x={ptX(t)} y={H + 9} textAnchor="middle" className="fill-fg/30" fontSize="8">
