@@ -9,6 +9,7 @@ import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
+import { ACTIVITY_COLORS } from "../activity";
 
 interface RunLoggerProps {
   onRunLogged: () => void;
@@ -100,7 +101,8 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
             resetForm();
             setShowForm(true);
           }}
-          className="bg-surface rounded-xl p-3 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+          className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+          style={{ borderColor: ACTIVITY_COLORS[runType] }}
         >
           <Icon size={22} className="text-accent shrink-0" />
           <p className="text-xs font-semibold text-fg">{label}</p>
@@ -125,7 +127,8 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
           resetForm();
           setShowForm(true);
         }}
-        className="bg-surface rounded-xl p-3 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+        className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+        style={{ borderColor: ACTIVITY_COLORS[runType] }}
       >
         <Icon size={22} className="text-accent shrink-0" />
         <p className="text-xs font-semibold text-fg">{label}</p>

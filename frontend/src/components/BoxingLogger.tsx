@@ -4,6 +4,7 @@ import Toast from "./Toast";
 import { api } from "../api";
 import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
+import { ACTIVITY_COLORS } from "../activity";
 
 interface BoxingLoggerProps {
   onWorkoutLogged: () => void;
@@ -81,7 +82,8 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
 
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-surface rounded-xl p-3 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+          className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+          style={{ borderColor: ACTIVITY_COLORS.boxing }}
         >
           <HandFist size={22} className="text-accent shrink-0" />
           <p className="text-xs font-semibold text-fg">Boxing</p>
@@ -103,7 +105,8 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
       {/* Collapsed button (always visible in grid) */}
       <button
         onClick={() => { resetForm(); setShowForm(true); }}
-        className="bg-surface rounded-xl p-3 border-2 border-fg/20 border-dashed hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+        className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+        style={{ borderColor: ACTIVITY_COLORS.boxing }}
       >
         <HandFist size={22} className="text-accent shrink-0" />
         <p className="text-xs font-semibold text-fg">Boxing</p>
