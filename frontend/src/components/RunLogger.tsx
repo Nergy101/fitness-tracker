@@ -6,7 +6,7 @@ import {
 } from "@phosphor-icons/react";
 import { Boot } from "@phosphor-icons/react/dist/csr/Boot";
 import Toast from "./Toast";
-import { api } from "../api";
+import { api, OfflineError } from "../api";
 import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
 import { ACTIVITY_COLORS } from "../activity";
@@ -76,8 +76,12 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
       resetForm();
       setShowForm(false);
       onRunLogged();
-    } catch {
-      setToast(`Failed to log ${label.toLowerCase()}`);
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        setToast(`${label} queued for sync`);
+      } else {
+        setToast(`Failed to log ${label.toLowerCase()}`);
+      }
     }
   }
 

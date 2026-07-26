@@ -1,0 +1,276 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import HistoryTab from "../components/HistoryTab";
+import type { WorkoutSession } from "../api";
+
+// Mock the api module — data must be inlined since vi.mock factories are hoisted
+vi.mock("../api", () => ({
+  api: {
+    getAllSessions: vi.fn().mockResolvedValue([
+      {
+        id: 1,
+        template_id: 10,
+        template_name: "Morning Routine",
+        started_at: new Date().toISOString(),
+        finished_at: new Date().toISOString(),
+        total_duration_seconds: 1800,
+        total_kcal_estimated: 250,
+        notes: "",
+        boxing_entry_id: null,
+        run_entry_id: null,
+        exercises: [],
+      },
+      {
+        id: 2,
+        template_id: 11,
+        template_name: "Run: 5.0km",
+        started_at: new Date(Date.now() - 86400000).toISOString(),
+        finished_at: new Date(Date.now() - 86400000).toISOString(),
+        total_duration_seconds: 1500,
+        total_kcal_estimated: 350,
+        notes: "",
+        boxing_entry_id: null,
+        run_entry_id: null,
+        exercises: [],
+      },
+    ] as WorkoutSession[]),
+    deleteSession: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// Mock all subcomponents used by HistoryTab
+vi.mock("../components/CalendarView", () => ({
+  default: () => <div data-testid="calendar-view">CalendarView</div>,
+}));
+
+vi.mock("../components/skeletons/HistorySkeleton", () => ({
+  default: () => <div data-testid="history-skeleton">Loading...</div>,
+}));
+
+vi.mock("../components/history/DateRangeFilter", () => ({
+  default: ({
+    onRangeChange,
+    onToggleCalendar,
+    range,
+  }: {
+    onRangeChange: (key: string) => void;
+    onToggleCalendar: () => void;
+    range: string;
+  }) => (
+    <div data-testid="date-range-filter">
+      <button data-testid="range-7d" onClick={() => onRangeChange("7d")}>
+        7 Days
+      </button>
+      <button data-testid="range-30d" onClick={() => onRangeChange("30d")}>
+        30 Days
+      </button>
+      <button data-testid="range-week" onClick={() => onRangeChange("week")}>
+        This week
+      </button>
+      <button data-testid="toggle-calendar" onClick={onToggleCalendar}>
+        Calendar
+      </button>
+      <span data-testid="current-range">{range}</span>
+    </div>
+  ),
+}));
+
+vi.mock("../components/history/DayBars", () => ({
+  default: () => <div data-testid="day-bars">DayBars</div>,
+}));
+
+vi.mock("../components/history/HeatmapChart", () => ({
+  default: () => <div data-testid="heatmap-chart">HeatmapChart</div>,
+}));
+
+vi.mock("../components/history/ImportExport", () => ({
+  default: () => <div data-testid="import-export">ImportExport</div>,
+}));
+
+vi.mock("../components/history/SessionDetail", () => ({
+  default: ({
+    session,
+    onClose,
+  }: {
+    session: WorkoutSession;
+    onClose: () => void;
+    onUpdate: () => void;
+  }) => (
+    <div data-testid="session-detail">
+      <span>{session.template_name}</span>
+      <button data-testid="close-detail" onClick={onClose}>
+        Close
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock("../components/history/SessionList", () => ({
+  default: ({
+    sessions,
+    onSelect,
+    emptyLabel,
+  }: {
+    sessions: WorkoutSession[];
+    onSelect: (s: WorkoutSession) => void;
+    onEditDate: () => void;
+    onDelete: () => void;
+    emptyLabel: string;
+  }) => (
+    <div data-testid="session-list">
+      {sessions.length === 0 ? (
+        <span>{emptyLabel}</span>
+      ) : (
+        sessions.map((s) => (
+          <button key={s.id} data-testid={`session-${s.id}`} onClick={() => onSelect(s)}>
+            {s.template_name}
+          </button>
+        ))
+      )}
+    </div>
+  ),
+}));
+
+vi.mock("../components/history/StatsGrid", () => ({
+  default: () => <div data-testid="stats-grid">StatsGrid</div>,
+}));
+
+vi.mock("../components/history/WeekdayBarChart", () => ({
+  default: () => <div data-testid="weekday-bar-chart">WeekdayBarChart</div>,
+}));
+
+describe("HistoryTab", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // ── Smoke tests ──────────────────────────────────────────
+
+  it("shows loading skeleton initially", () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    expect(screen.getByTestId("history-skeleton")).toBeInTheDocument();
+  });
+
+  it("renders the range view after sessions load", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("date-range-filter")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("stats-grid")).toBeInTheDocument();
+    expect(screen.getByTestId("day-bars")).toBeInTheDocument();
+    expect(screen.getByTestId("session-list")).toBeInTheDocument();
+    expect(screen.getByTestId("import-export")).toBeInTheDocument();
+  });
+
+  it("renders session names in the list after load", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("session-1")).toHaveTextContent("Morning Routine");
+    expect(screen.getByTestId("session-2")).toHaveTextContent("Run: 5.0km");
+  });
+
+  it("shows 'View all' button in range view", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("View all")).toBeInTheDocument();
+    });
+  });
+
+  // ── Key interactions ─────────────────────────────────────
+
+  it("switches to all-time view when 'View all' is clicked", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("View all")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("View all"));
+
+    // Should show All time section and a Back button
+    await waitFor(() => {
+      expect(screen.getByText("All time")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Back")).toBeInTheDocument();
+    expect(screen.getByTestId("weekday-bar-chart")).toBeInTheDocument();
+  });
+
+  it("returns to range view when 'Back' is clicked from all-time view", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("View all")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("View all"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Back")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Back"));
+
+    await waitFor(() => {
+      expect(screen.getByText("View all")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Back")).not.toBeInTheDocument();
+  });
+
+  it("toggles calendar view when calendar button is clicked", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("toggle-calendar")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("toggle-calendar"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("calendar-view")).toBeInTheDocument();
+    });
+  });
+
+  it("opens session detail when a session is selected", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("session-1"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-detail")).toBeInTheDocument();
+    });
+    const detail = screen.getByTestId("session-detail");
+    expect(detail).toHaveTextContent("Morning Routine");
+  });
+
+  it("closes session detail when close is clicked", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("session-1"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("session-detail")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("close-detail"));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("session-detail")).not.toBeInTheDocument();
+    });
+  });
+});

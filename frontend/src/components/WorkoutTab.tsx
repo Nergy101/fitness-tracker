@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { CheckCircleIcon as CheckCircle, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
+import { CheckCircleIcon as CheckCircle, CalendarBlankIcon as CalendarBlank, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import {
   api,
+  OfflineError,
   type Exercise,
   type WorkoutTemplate,
 } from "../api";
@@ -28,6 +29,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
+  const [consistencyPct, setConsistencyPct] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
   const [editing, setEditing] = useState<WorkoutTemplate | null>(null);
@@ -38,10 +40,11 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   useFocusTrap(deleteModalRef, () => setPendingDelete(null));
 
   useEffect(() => {
-    Promise.all([api.getWorkouts(), api.getExercises()])
-      .then(([tpls, exs]) => {
+    Promise.all([api.getWorkouts(), api.getExercises(), api.getStatsOverview().catch(() => null)])
+      .then(([tpls, exs, overview]) => {
         setTemplates(tpls);
         setAllExercises(exs);
+        if (overview) setConsistencyPct(overview.consistency_score_pct);
       })
       .catch(() => setError("Failed to load workouts"))
       .finally(() => setLoading(false));
@@ -147,8 +150,12 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       });
       setToast("Workout logged!");
       onLogWorkout?.();
-    } catch {
-      setToast("Failed to log workout");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        setToast("Workout queued for sync");
+      } else {
+        setToast("Failed to log workout");
+      }
     }
   }
 
@@ -193,7 +200,11 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-end mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent text-sm font-semibold">
+          <CalendarBlank size={14} weight="fill" />
+          <span>{consistencyPct}%</span>
+        </span>
         <button
           onClick={() => openEditor(null)}
           className="bg-accent text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors"
@@ -286,7 +297,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
               </button>
               <button
                 onClick={() => void confirmDelete()}
-                className="flex-1 bg-red-500 text-white rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-red-600 transition-colors"
+                className="flex-1 bg-red-500 text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-red-600 transition-colors"
               >
                 Delete
               </button>

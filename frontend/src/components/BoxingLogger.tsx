@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { HandFistIcon as HandFist, XIcon as X } from "@phosphor-icons/react";
 import Toast from "./Toast";
-import { api } from "../api";
+import { api, OfflineError } from "../api";
 import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
 import { ACTIVITY_COLORS } from "../activity";
@@ -63,8 +63,12 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
       resetForm();
       setShowForm(false);
       onWorkoutLogged();
-    } catch {
-      setToast("Failed to log boxing workout");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        setToast("Boxing workout queued for sync");
+      } else {
+        setToast("Failed to log boxing workout");
+      }
     }
   }
 

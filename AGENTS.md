@@ -30,7 +30,7 @@ npm run dev
 |-------|---------|-------|
 | **Backend** | `cd backend && .venv/bin/python -m pytest tests/` | ~205 tests, in-memory SQLite |
 | **TypeScript** | `cd frontend && npx tsc --noEmit` | Must be clean |
-| **Vitest** | `cd frontend && npx vitest run` | ~55 tests |
+| **Vitest** | `cd frontend && npx vitest run` | ~240 tests |
 | **Build** | `cd frontend && npm run build` | PWA output, must pass |
 | **E2E** | `cd frontend && fuser -k 8100/tcp 5299/tcp; npx playwright test` | Kill stale servers first |
 

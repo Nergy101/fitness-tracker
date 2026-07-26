@@ -82,7 +82,7 @@ const GROUPS: CreditGroup[] = [
 
 function BrandIcon({ logo, label }: { logo: string; label: string }) {
   return (
-    <span className="w-7 h-7 shrink-0 rounded-md bg-white flex items-center justify-center ring-1 ring-fg/10">
+    <span className="w-7 h-7 shrink-0 rounded-md bg-surface flex items-center justify-center ring-1 ring-fg/10">
       <img src={logo} alt={label} className="w-5 h-5 object-contain" loading="lazy" />
     </span>
   );
