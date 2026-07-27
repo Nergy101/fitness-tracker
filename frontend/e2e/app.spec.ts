@@ -113,7 +113,7 @@ test.describe("authenticated", () => {
 
   test("saving a workout shows a success toast", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "+ New Workout" }).click();
+    await page.getByRole("button", { name: "+ Add" }).click();
     await page.getByPlaceholder("Workout name...").fill("Toast Test");
 
     // Add one exercise from the picker.

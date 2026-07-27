@@ -87,9 +87,9 @@ describe("WorkoutEditor", () => {
 
   // ── Smoke tests ──
 
-  it("renders with heading 'New Workout' when no template provided", () => {
+  it("renders with heading 'Add' when no template provided", () => {
     renderEditor(null);
-    expect(screen.getByText("New Workout")).toBeInTheDocument();
+    expect(screen.getByText("Add")).toBeInTheDocument();
   });
 
   it("renders workout name in heading when editing existing template", () => {
