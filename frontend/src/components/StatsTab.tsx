@@ -18,6 +18,7 @@ import {
   type GoalProgressResponse,
   type HealthInsightsResponse,
   type HealthSeries,
+  type InjuryMarkerResponse,
   type RunEntryResponse,
   type StatsOverviewResponse,
   type WeeklyActivityStat,
@@ -174,6 +175,8 @@ function LineChart({
   reference,
   referenceColor,
   overlay,
+  /** Red dot markers at specific indices — used for injury dates. */
+  markerIndices,
   height = 90,
 }: {
   points: { label: string; value: number }[];
@@ -182,6 +185,7 @@ function LineChart({
   reference?: { value: number; label: string };
   referenceColor?: string;
   overlay?: number[];
+  markerIndices?: Set<number>;
   height?: number;
 }) {
   if (points.length < 2) return null;
@@ -255,6 +259,9 @@ function LineChart({
       />
       {points.map((p, i) => (
         <circle key={i} cx={px(i)} cy={py(p.value)} r="2.5" fill={color} />
+      ))}
+      {markerIndices && Array.from(markerIndices).map((i) => (
+        <circle key={`inj-${i}`} cx={px(i)} cy={py(points[i].value)} r="4" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity={0.8} />
       ))}
       {labelIdxs.map((idx) => (
         <text key={idx} x={px(idx)} y={height + 13} textAnchor="middle"
@@ -445,6 +452,7 @@ export default function StatsTab() {
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
   const [health, setHealth] = useState<HealthInsightsResponse | null>(null);
   const [activity, setActivity] = useState<DailyActivityPoint[]>([]);
+  const [injuries, setInjuries] = useState<InjuryMarkerResponse[]>([]);
 
   const [chartMode, setChartMode] = useState<"daily" | "weekly">("daily");
   const { locale } = useLocale();
@@ -452,7 +460,7 @@ export default function StatsTab() {
   useEffect(() => {
     (async () => {
       try {
-        const [overview, runList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity] = await Promise.all([
+        const [overview, runList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity, injuryList] = await Promise.all([
           api.getStatsOverview(),
           api.getRuns().catch(() => [] as RunEntryResponse[]),
           api.getSessions().catch(() => [] as WorkoutSession[]),
@@ -460,6 +468,7 @@ export default function StatsTab() {
           api.getGoalProgress().catch(() => null),
           api.getHealthInsights(120).catch(() => null),
           api.getDailyActivity(120).catch(() => null),
+          api.getInjuries().catch(() => [] as InjuryMarkerResponse[]),
         ]);
         setStats(overview);
         setRuns(runList);
@@ -468,6 +477,7 @@ export default function StatsTab() {
         setGoal(goalProgress);
         setHealth(healthInsights);
         setActivity(dailyActivity?.days ?? []);
+        setInjuries(injuryList);
       } catch (e) {
         console.error("Failed to load stats data", e);
         setError(true);
@@ -500,6 +510,17 @@ export default function StatsTab() {
   const weightSeries = [...weightEntries]
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(-30);
+
+  // Compute which weight/paced-run points fall on injury dates
+  const injuryDateSet = new Set(injuries.map((i) => i.date));
+  const weightInjuryIndices = new Set<number>();
+  weightSeries.forEach((w, i) => {
+    if (injuryDateSet.has(w.date)) weightInjuryIndices.add(i);
+  });
+  const paceInjuryIndices = new Set<number>();
+  pacedRuns.forEach((r, i) => {
+    if (injuryDateSet.has(r.date)) paceInjuryIndices.add(i);
+  });
 
   const appMinByDate = new Map(
     activity.filter((d) => d.minutes > 0).map((d) => [d.date, d.minutes] as const),
@@ -629,6 +650,7 @@ export default function StatsTab() {
             color={ACTIVITY_COLORS.run}
             formatValue={(v) => formatPace(v)}
             reference={bestPace != null ? { value: bestPace, label: `best ${formatPace(bestPace)}/km` } : undefined}
+            markerIndices={paceInjuryIndices.size > 0 ? paceInjuryIndices : undefined}
           />
         </ChartCard>
       )}
@@ -654,6 +676,7 @@ export default function StatsTab() {
                 : undefined
             }
             referenceColor="#22c55e"
+            markerIndices={weightInjuryIndices.size > 0 ? weightInjuryIndices : undefined}
           />
         </ChartCard>
       )}
@@ -678,6 +701,13 @@ export default function StatsTab() {
             })}
           <AppleHealthCharts series={health.series} weightEntries={weightEntries} />
         </>
+      )}
+
+      {injuries.length > 0 && (
+        <div className="flex items-center gap-2 text-[10px] text-fg/30 mt-1">
+          <span className="w-2.5 h-2.5 rounded-full border-1.5 border-red-400 inline-block" style={{ borderWidth: "1.5px" }} />
+          <span>{injuries.length} injury {injuries.length === 1 ? "marker" : "markers"} shown as red circles on charts</span>
+        </div>
       )}
 
       <MetricNamesDiagnostic />

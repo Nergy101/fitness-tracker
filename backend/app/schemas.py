@@ -542,5 +542,35 @@ class DailyActivityPoint(BaseModel):
     kcal: float
 
 
+# ─── Injury Schemas ──────────────────────────────────────────
+
+class InjuryMarkerCreate(BaseModel):
+    date: DateField = None
+    body_part: str
+    severity: int = 3
+    notes: str = ""
+    resolved_date: DateField = None
+
+
+class InjuryMarkerUpdate(BaseModel):
+    date: DateField = None
+    body_part: Optional[str] = None
+    severity: Optional[int] = None
+    notes: Optional[str] = None
+    resolved_date: DateField = None
+
+
+class InjuryMarkerResponse(BaseModel):
+    id: int
+    date: date
+    body_part: str
+    severity: int
+    notes: str
+    resolved_date: Optional[date] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class DailyActivityResponse(BaseModel):
     days: list[DailyActivityPoint] = []

@@ -11,6 +11,7 @@ const mockGetWeightEntries = vi.fn();
 const mockGetGoalProgress = vi.fn();
 const mockGetHealthInsights = vi.fn();
 const mockGetDailyActivity = vi.fn();
+const mockGetInjuries = vi.fn();
 
 vi.mock("../api", () => ({
   api: {
@@ -21,6 +22,7 @@ vi.mock("../api", () => ({
     getGoalProgress: (...args: unknown[]) => mockGetGoalProgress(...args),
     getHealthInsights: (...args: unknown[]) => mockGetHealthInsights(...args),
     getDailyActivity: (...args: unknown[]) => mockGetDailyActivity(...args),
+    getInjuries: (...args: unknown[]) => mockGetInjuries(...args),
   },
 }));
 
@@ -176,6 +178,7 @@ describe("StatsTab", () => {
     mockGetGoalProgress.mockResolvedValue(null);
     mockGetHealthInsights.mockResolvedValue(null);
     mockGetDailyActivity.mockResolvedValue(null);
+    mockGetInjuries.mockResolvedValue([]);
   });
 
   // ── Smoke tests ──

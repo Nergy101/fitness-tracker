@@ -19,6 +19,10 @@ const mockGetMeasurements = vi.fn();
 const mockGetMeasurementChanges = vi.fn();
 const mockGetWellnessEntries = vi.fn();
 const mockGetWellnessTrends = vi.fn();
+const mockGetInjuries = vi.fn();
+const mockCreateInjury = vi.fn();
+const mockUpdateInjury = vi.fn();
+const mockDeleteInjury = vi.fn();
 
 vi.mock("../api", () => ({
   api: {
@@ -37,6 +41,10 @@ vi.mock("../api", () => ({
     getMeasurementChanges: (...args: unknown[]) => mockGetMeasurementChanges(...args),
     getWellnessEntries: (...args: unknown[]) => mockGetWellnessEntries(...args),
     getWellnessTrends: (...args: unknown[]) => mockGetWellnessTrends(...args),
+    getInjuries: (...args: unknown[]) => mockGetInjuries(...args),
+    createInjury: (...args: unknown[]) => mockCreateInjury(...args),
+    updateInjury: (...args: unknown[]) => mockUpdateInjury(...args),
+    deleteInjury: (...args: unknown[]) => mockDeleteInjury(...args),
   },
 }));
 
@@ -55,6 +63,7 @@ vi.mock("@phosphor-icons/react", () => {
     ArrowLeftIcon: createIcon("ArrowLeftIcon"),
     ArrowsLeftRightIcon: createIcon("ArrowsLeftRightIcon"),
     ArrowUpIcon: createIcon("ArrowUpIcon"),
+    BandaidsIcon: createIcon("BandaidsIcon"),
     BarbellIcon: createIcon("BarbellIcon"),
     CalendarBlankIcon: createIcon("CalendarBlankIcon"),
     CaretDownIcon: createIcon("CaretDownIcon"),
@@ -90,6 +99,7 @@ vi.mock("@phosphor-icons/react", () => {
     PlantIcon: createIcon("PlantIcon"),
     PlayCircleIcon: createIcon("PlayCircleIcon"),
     PlusIcon: createIcon("PlusIcon"),
+    PlusCircleIcon: createIcon("PlusCircleIcon"),
     PulseIcon: createIcon("PulseIcon"),
     PushPinIcon: createIcon("PushPinIcon"),
     RocketLaunchIcon: createIcon("RocketLaunchIcon"),
@@ -114,6 +124,7 @@ vi.mock("@phosphor-icons/react", () => {
     UploadSimpleIcon: createIcon("UploadSimpleIcon"),
     WarningIcon: createIcon("WarningIcon"),
     WifiSlashIcon: createIcon("WifiSlashIcon"),
+    XIcon: createIcon("XIcon"),
   };
 });
 
@@ -204,6 +215,7 @@ describe("HealthAndStatsTab", () => {
     mockGetMeasurementChanges.mockResolvedValue({ first: null, latest: null, deltas: {} });
     mockGetWellnessEntries.mockResolvedValue([]);
     mockGetWellnessTrends.mockResolvedValue({ weekly_averages: [] });
+    mockGetInjuries.mockResolvedValue([]);
   });
 
   // ── Smoke tests ──
@@ -300,7 +312,8 @@ describe("HealthAndStatsTab", () => {
       render(<HealthAndStatsTab />);
     });
     expect(await screen.findByPlaceholderText("kg")).toBeDefined();
-    expect(screen.getByText("Log")).toBeDefined();
+    const logButtons = screen.getAllByText("Log");
+    expect(logButtons.length).toBeGreaterThanOrEqual(1);
   });
 
   // ── Key interaction tests ──
@@ -310,7 +323,8 @@ describe("HealthAndStatsTab", () => {
       render(<HealthAndStatsTab />);
     });
     const input = await screen.findByPlaceholderText("kg");
-    const button = screen.getByText("Log");
+    const buttons = screen.getAllByText("Log");
+    const button = buttons[0]; // weight log button (first in DOM order)
 
     await act(async () => {
       fireEvent.change(input, { target: { value: "79.5" } });
@@ -342,7 +356,8 @@ describe("HealthAndStatsTab", () => {
     await act(async () => {
       render(<HealthAndStatsTab />);
     });
-    const button = await screen.findByText("Log");
+    const buttons = await screen.findAllByText("Log");
+    const button = buttons[0]; // weight log button
     await act(async () => {
       fireEvent.click(button);
     });

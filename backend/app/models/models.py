@@ -229,6 +229,22 @@ class BoxingEntry(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class InjuryMarker(Base):
+    """A minor injury signal — painful knee, sprained ankle, sore shoulder.
+    Users log these so they can correlate performance dips with physical
+    issues on the Health timeline and Stats graphs. Severity is 1–5
+    (1=niggling, 5=can't train).  A NULL resolved_date means it's still active."""
+    __tablename__ = "injury_markers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, nullable=False, default=lambda: date.today())
+    body_part = Column(String(255), nullable=False)
+    severity = Column(Integer, nullable=False, default=3)
+    notes = Column(Text, default="")
+    resolved_date = Column(Date, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class HealthWorkout(Base):
     """A workout imported from Apple Health. Keyed on the export's own UUID
     (`external_id`) so re-imports upsert. Scalar summary in columns; the full

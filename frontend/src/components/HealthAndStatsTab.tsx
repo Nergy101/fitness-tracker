@@ -38,6 +38,7 @@ import { ACTIVITY_COLORS } from "../activity";
 import HealthSkeleton from "./skeletons/HealthSkeleton";
 import ChartCard from "./ChartCard";
 import MeasurementsSection from "./health/MeasurementsSection";
+import InjurySection from "./health/InjurySection";
 import SimpleChart from "./health/SimpleChart";
 import { activityStats, shortDate } from "./health/utils";
 import WellnessSection from "./health/WellnessSection";
@@ -558,6 +559,9 @@ export default function HealthAndStatsTab() {
       )}
 
       {weights.length >= 2 && <SimpleChart entries={weights} />}
+
+      {/* ── Injury Timeline ── */}
+      <InjurySection />
 
       {/* ── Body Measurements ── */}
       <button

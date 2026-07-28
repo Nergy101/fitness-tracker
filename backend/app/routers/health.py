@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import (
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin, WorkoutSession,
-    RunEntry, is_mirror_session,
+    RunEntry, is_mirror_session, InjuryMarker,
 )
 from app.schemas import (
     UserProfileResponse, UserProfileUpdate,
@@ -15,6 +15,7 @@ from app.schemas import (
     BodyMeasurementCreate, BodyMeasurementResponse, MeasurementChangesResponse,
     WellnessCreate, WellnessResponse, WellnessTrendsResponse,
     HealthScoreResponse, PrsResponse,
+    InjuryMarkerCreate, InjuryMarkerUpdate, InjuryMarkerResponse,
 )
 
 router = APIRouter(prefix="/api/v1/health", tags=["health"])
@@ -623,3 +624,85 @@ def get_bmi(db: Session = Depends(get_db)):
         "weight_kg": latest_weight.weight_kg,
         "age": age,
     }
+
+
+# ─── Injury Markers ──────────────────────────────────────────
+
+
+@router.post("/injuries", response_model=InjuryMarkerResponse, status_code=201)
+def create_injury(data: InjuryMarkerCreate, db: Session = Depends(get_db)):
+    entry = InjuryMarker(
+        date=data.date or date.today(),
+        body_part=data.body_part,
+        severity=data.severity,
+        notes=data.notes,
+        resolved_date=data.resolved_date,
+    )
+    db.add(entry)
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@router.get("/injuries", response_model=list[InjuryMarkerResponse])
+def list_injuries(
+    active_only: bool = Query(False),
+    db: Session = Depends(get_db),
+):
+    q = db.query(InjuryMarker).order_by(InjuryMarker.date.desc())
+    if active_only:
+        q = q.filter(InjuryMarker.resolved_date == None)  # noqa: E711
+    return q.all()
+
+
+@router.get("/injuries/active", response_model=list[InjuryMarkerResponse])
+def list_active_injuries(db: Session = Depends(get_db)):
+    q = db.query(InjuryMarker).filter(InjuryMarker.resolved_date == None).order_by(InjuryMarker.date.desc())  # noqa: E711
+    return q.all()
+
+
+@router.get("/injuries/{injury_id}", response_model=InjuryMarkerResponse)
+def get_injury(injury_id: int, db: Session = Depends(get_db)):
+    entry = db.query(InjuryMarker).filter(InjuryMarker.id == injury_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Injury marker not found")
+    return entry
+
+
+@router.patch("/injuries/{injury_id}", response_model=InjuryMarkerResponse)
+def update_injury(injury_id: int, data: InjuryMarkerUpdate, db: Session = Depends(get_db)):
+    entry = db.query(InjuryMarker).filter(InjuryMarker.id == injury_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Injury marker not found")
+    if data.body_part is not None:
+        entry.body_part = data.body_part
+    if data.severity is not None:
+        entry.severity = data.severity
+    if data.notes is not None:
+        entry.notes = data.notes
+    if data.date is not None:
+        entry.date = data.date
+    # resolved_date: field was explicitly set in the JSON body; None means
+    # "clear resolution" (injury is active again), omitted means "don't change".
+    # Pydantic distinguishes these via the coerce validator:
+    #   - key absent → DateField stays untouched → `data.resolved_date is not
+    #     setattr target` check below
+    # We use a sentinel approach: the update schema has `resolved_date: DateField = None`,
+    # so the caller sends `"resolved_date": null` to clear it, and omits the key
+    # to leave it unchanged.  Pydantic's `model_dump(exclude_unset=True)` plus
+    # a flag-based approach handles this cleanly.
+    upd = data.model_dump(exclude_unset=True)
+    if "resolved_date" in upd:
+        entry.resolved_date = upd["resolved_date"]
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@router.delete("/injuries/{injury_id}", status_code=204)
+def delete_injury(injury_id: int, db: Session = Depends(get_db)):
+    entry = db.query(InjuryMarker).filter(InjuryMarker.id == injury_id).first()
+    if not entry:
+        raise HTTPException(status_code=404, detail="Injury marker not found")
+    db.delete(entry)
+    db.commit()
