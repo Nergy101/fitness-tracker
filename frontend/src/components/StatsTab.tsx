@@ -263,14 +263,20 @@ function LineChart({
       {markerIndices && Array.from(markerIndices).map((i) => (
         <circle key={`inj-${i}`} cx={px(i)} cy={py(points[i].value)} r="4" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity={0.8} />
       ))}
-      {labelIdxs.map((idx) => (
-        <text key={idx} x={px(idx)} y={height + 13} textAnchor="middle"
-          className={idx === points.length - 1 ? "fill-fg/60" : "fill-fg/30"}
-          fontWeight={idx === points.length - 1 ? "bold" : "normal"}
-          fontSize="8">
-          {points[idx].label}
-        </text>
-      ))}
+      {labelIdxs.map((idx) => {
+        const isLast = idx === points.length - 1;
+        return (
+          <text key={idx}
+            x={isLast ? w - 4 : px(idx)}
+            y={height + 13}
+            textAnchor={isLast ? "end" : "middle"}
+            className={isLast ? "fill-fg/60" : "fill-fg/30"}
+            fontWeight={isLast ? "bold" : "normal"}
+            fontSize="8">
+            {points[idx].label}
+          </text>
+        );
+      })}
     </svg>
   );
 }
@@ -408,13 +414,17 @@ function rollingAvg(values: number[], window: number): number[] {
   });
 }
 
-function HealthTrendChart({ series }: { series: HealthSeries }) {
+function HealthTrendChart({ series, injuryDateSet }: { series: HealthSeries; injuryDateSet: Set<string> }) {
   if (series.points.length === 0) return null;
   const meta = HEALTH_META[series.metric] ?? { icon: Pulse, color: "var(--accent)" };
   const MetricIcon = meta.icon;
   const latest = series.points[series.points.length - 1].value;
   const avg = series.points.reduce((s, p) => s + p.value, 0) / series.points.length;
   const values = series.points.map((p) => p.value);
+  const markerIndices = new Set<number>();
+  series.points.forEach((p, i) => {
+    if (injuryDateSet.has(p.date)) markerIndices.add(i);
+  });
   return (
     <ChartCard
       icon={<MetricIcon size={16} style={{ color: meta.color }} />}
@@ -428,6 +438,7 @@ function HealthTrendChart({ series }: { series: HealthSeries }) {
           formatValue={(v) => formatHealthValue(series.metric, v)}
           overlay={ROLLING_AVG_METRICS.has(series.metric) ? rollingAvg(values, 7) : undefined}
           reference={series.metric === "apple_exercise_time" ? { value: 30, label: "goal 30 min" } : undefined}
+          markerIndices={markerIndices.size > 0 ? markerIndices : undefined}
         />
       )}
       {series.points.length === 1 && (
@@ -697,7 +708,7 @@ export default function StatsTab() {
                   : s.metric === "active_energy"
                   ? combineHealthSeries(s, appKcalByDate)
                   : s;
-              return <HealthTrendChart key={s.metric} series={merged} />;
+              return <HealthTrendChart key={s.metric} series={merged} injuryDateSet={injuryDateSet} />;
             })}
           <AppleHealthCharts series={health.series} weightEntries={weightEntries} />
         </>
