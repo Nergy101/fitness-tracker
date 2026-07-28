@@ -164,7 +164,7 @@ export default function InjurySection() {
             <button
               onClick={submitInjury}
               disabled={!bodyPart.trim()}
-              className="flex-1 rounded-lg bg-red-500 hover:bg-red-600 text-white py-2 text-sm font-medium disabled:opacity-40 transition-colors"
+              className="flex-1 rounded-lg bg-red-500 hover:bg-red-600 text-on-accent py-2 text-sm font-medium disabled:opacity-40 transition-colors"
             >
               Log Injury
             </button>
