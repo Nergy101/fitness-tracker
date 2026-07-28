@@ -555,8 +555,6 @@ export default function StatsTab() {
 
   // Injury marker helpers for bar charts
   const injuryMarkDaily = (d: DailyActivityStat) => injuryDateSet.has(d.date);
-  const markInjured = (d: { date?: string; week_start?: string }) =>
-    injuryDateSet.has((d as DailyActivityStat).date ?? (d as WeeklyActivityStat).week_start ?? "");
 
   const appMinByDate = new Map(
     activity.filter((d) => d.minutes > 0).map((d) => [d.date, d.minutes] as const),
