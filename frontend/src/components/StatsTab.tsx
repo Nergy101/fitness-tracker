@@ -74,6 +74,8 @@ function StackedBarChart<T>({
   label,
   sublabel,
   formatValue,
+  /** Returns true if this data point falls on an injury date. */
+  injuryMark,
   height = 80,
 }: {
   data: T[];
@@ -81,6 +83,7 @@ function StackedBarChart<T>({
   label: (d: T) => string;
   sublabel?: (d: T) => string | undefined;
   formatValue: (v: number) => string;
+  injuryMark?: (d: T) => boolean;
   height?: number;
 }) {
   if (data.length === 0) return null;
@@ -160,6 +163,23 @@ function StackedBarChart<T>({
               </text>
             )}
           </g>
+        );
+      })}
+      {/* Red injury bands behind bars */}
+      {injuryMark && data.some(injuryMark) && data.map((d, i) => {
+        if (!injuryMark(d)) return null;
+        const x = gutter + i * slot;
+        return (
+          <rect
+            key={`inj-${i}`}
+            x={x}
+            y={0}
+            width={slot}
+            height={height}
+            fill="#ef4444"
+            opacity={0.08}
+            rx={2}
+          />
         );
       })}
     </svg>
@@ -533,6 +553,11 @@ export default function StatsTab() {
     if (injuryDateSet.has(r.date)) paceInjuryIndices.add(i);
   });
 
+  // Injury marker helpers for bar charts
+  const injuryMarkDaily = (d: DailyActivityStat) => injuryDateSet.has(d.date);
+  const markInjured = (d: { date?: string; week_start?: string }) =>
+    injuryDateSet.has((d as DailyActivityStat).date ?? (d as WeeklyActivityStat).week_start ?? "");
+
   const appMinByDate = new Map(
     activity.filter((d) => d.minutes > 0).map((d) => [d.date, d.minutes] as const),
   );
@@ -593,6 +618,7 @@ export default function StatsTab() {
             label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
+            injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
           />
           <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
           {chartMode === "weekly" && stats.current_month_vs_previous_pct != null && (
@@ -624,6 +650,7 @@ export default function StatsTab() {
             label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
+            injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
           />
           <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
         </ChartCard>
@@ -644,6 +671,7 @@ export default function StatsTab() {
             label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => `${Math.round(v * 10) / 10}km`}
+            injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
           />
           <ActivityLegend kinds={["run", "walk"]} />
         </ChartCard>
