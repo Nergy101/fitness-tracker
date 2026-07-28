@@ -137,7 +137,10 @@ export default function InjurySection() {
               max={5}
               value={severity}
               onChange={(e) => setSeverity(Number(e.target.value))}
-              className="w-full accent-red-400"
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+              className="w-full accent-red-400 touch-none"
               aria-label="Injury severity"
             />
             <div className="flex justify-between text-[10px] text-fg/30 mt-0.5">
