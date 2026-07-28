@@ -19,10 +19,6 @@ export default function InjurySection() {
   const [severity, setSeverity] = useState(3);
   const [notes, setNotes] = useState("");
 
-  useEffect(() => {
-    loadInjuries();
-  }, []);
-
   const loadInjuries = async () => {
     try {
       const data = await api.getInjuries();
@@ -33,6 +29,10 @@ export default function InjurySection() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadInjuries();
+  }, []);
 
   const activeCount = useMemo(() => injuries.filter((i) => !i.resolved_date).length, [injuries]);
 
