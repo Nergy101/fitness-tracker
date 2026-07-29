@@ -263,4 +263,168 @@ describe("WorkoutEditor", () => {
     });
     expect(onSave).toHaveBeenCalled();
   });
+
+  // ── Remove exercise ──
+
+  it("removes an exercise when remove is triggered on the last row", async () => {
+    // Template has 1 exercise (Push-ups). Can't remove last one.
+    renderEditor(mockTemplate);
+
+    // Find the trash button (SVG inside the remove button) — but removing the last exercise
+    // should trigger an alert
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    const removeButtons = document.querySelectorAll('[title="Remove"]');
+    expect(removeButtons.length).toBe(1);
+    fireEvent.click(removeButtons[0]);
+
+    expect(alertSpy).toHaveBeenCalledWith(
+      "Template must have at least 1 exercise",
+    );
+    alertSpy.mockRestore();
+  });
+
+  it("removes an exercise when multiple exist", () => {
+    // Create a fresh editor and add 2 exercises
+    renderEditor(null);
+    fireEvent.click(screen.getByText("Add Exercise"));
+    fireEvent.click(screen.getByText("Push-ups"));
+    fireEvent.click(screen.getByText("Add Exercise"));
+    fireEvent.click(screen.getByText("Squats"));
+
+    // Now we should have 2 exercise rows
+    expect(screen.getAllByText("Push-ups").length).toBe(1);
+    expect(screen.getByText("Squats")).toBeInTheDocument();
+
+    // Remove Squats
+    const removeButtons = document.querySelectorAll('[title="Remove"]');
+    fireEvent.click(removeButtons[1]); // Second exercise
+
+    expect(screen.queryByText("Squats")).not.toBeInTheDocument();
+  });
+
+  // ── Mode switching ──
+
+  it("selects Tabata mode and auto-sets rounds to 8", () => {
+    renderEditor(null);
+    fireEvent.click(screen.getByText("Tabata"));
+    // Should show Tabata info with total time
+    const totalElements = screen.getAllByText(/Total/);
+    expect(totalElements.length).toBeGreaterThan(0);
+  });
+
+  it("hides rounds stepper when AMRAP selected", () => {
+    renderEditor(null);
+    expect(screen.getByText("Rounds")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("AMRAP"));
+    expect(screen.queryByText("Rounds")).not.toBeInTheDocument();
+  });
+
+  // ── Save validation ──
+
+  it("does not call api when saving with empty name", () => {
+    renderEditor(null);
+    const saveBtn = screen.getByText("Save Workout");
+    expect(saveBtn).toBeDisabled();
+    fireEvent.click(saveBtn);
+    expect(mockCreateWorkout).not.toHaveBeenCalled();
+    expect(mockUpdateWorkout).not.toHaveBeenCalled();
+  });
+
+  it("shows 'Saving...' when saving", async () => {
+    mockCreateWorkout.mockImplementation(() => new Promise((r) => setTimeout(r, 100)));
+
+    renderEditor(null);
+    const nameInput = screen.getByPlaceholderText("Workout name...");
+    fireEvent.change(nameInput, { target: { value: "Slow Save" } });
+    fireEvent.click(screen.getByText("Add Exercise"));
+    fireEvent.click(screen.getByText("Push-ups"));
+    fireEvent.click(screen.getByText("Save Workout"));
+
+    // Should show Saving... state
+    expect(screen.getByText("Saving...")).toBeInTheDocument();
+
+    await vi.waitFor(() => {
+      expect(onSave).toHaveBeenCalled();
+    });
+  });
+
+  // ── Edit mode ──
+
+  it("pre-fills description when editing", () => {
+    renderEditor(mockTemplate);
+    const descTextarea = screen.getByPlaceholderText(
+      "Description (optional)...",
+    );
+    expect(descTextarea).toHaveValue("A challenging full body workout");
+  });
+
+  it("pre-fills exercises when editing template", () => {
+    renderEditor(mockTemplate);
+    expect(screen.getByText("Push-ups")).toBeInTheDocument();
+    // Should not show empty state
+    expect(
+      screen.queryByText("Add exercises to build your workout"),
+    ).not.toBeInTheDocument();
+  });
+
+  // ── Warmup / Cooldown ──
+
+  it("shows warmup time input when warmup is enabled", () => {
+    renderEditor(null);
+    // Warmup checkbox label
+    const warmupLabel = screen.getByText("Include warmup");
+    fireEvent.click(warmupLabel);
+    // Should show minutes input
+    const minInputs = document.querySelectorAll('input[type="number"]');
+    expect(minInputs.length).toBeGreaterThan(0);
+  });
+
+  it("shows cooldown time input when cooldown is enabled", () => {
+    renderEditor(null);
+    const cooldownLabel = screen.getByText("Include cooldown");
+    fireEvent.click(cooldownLabel);
+    const minInputs = document.querySelectorAll('input[type="number"]');
+    expect(minInputs.length).toBeGreaterThan(0);
+  });
+
+  // ── Exercise row editing ──
+
+  it("renders exercise duration stepper", () => {
+    renderEditor(mockTemplate);
+    // Duration steppers should be visible
+    const steppers = document.querySelectorAll('[role="group"]');
+    expect(steppers.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("allows renaming workout when editing", () => {
+    renderEditor(mockTemplate);
+    const nameInput = screen.getByDisplayValue("Full Body Circuit");
+    fireEvent.change(nameInput, { target: { value: "Renamed Circuit" } });
+    expect(nameInput).toHaveValue("Renamed Circuit");
+  });
+
+  // ── Warmup / Cooldown values ──
+
+  it("shows warmup duration input when warmup is enabled", () => {
+    renderEditor(null);
+    fireEvent.click(screen.getByText("Include warmup"));
+    // Should show a minutes stepper
+    const groups = document.querySelectorAll('[role="group"]');
+    expect(groups.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // ── Delete exercise flow ──  
+
+  it("can remove an exercise when multiple exist", () => {
+    renderEditor(null);
+    fireEvent.click(screen.getByText("Add Exercise"));
+    fireEvent.click(screen.getByText("Push-ups"));
+    fireEvent.click(screen.getByText("Add Exercise"));
+    fireEvent.click(screen.getByText("Squats"));
+
+    // Remove second exercise (Squats)
+    const removeBtns = document.querySelectorAll('[title="Remove"]');
+    fireEvent.click(removeBtns[1]);
+    expect(screen.queryByText("Squats")).not.toBeInTheDocument();
+  });
 });

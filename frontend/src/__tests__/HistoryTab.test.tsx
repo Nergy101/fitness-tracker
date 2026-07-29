@@ -3,38 +3,15 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import HistoryTab from "../components/HistoryTab";
 import type { WorkoutSession } from "../api";
 
+// Hoist mutable references so vi.mock factories can access them.
+let mockGetAllSessionsImpl: () => Promise<WorkoutSession[]> = async () => [];
+let mockDeleteSessionImpl = vi.fn();
+
 // Mock the api module — data must be inlined since vi.mock factories are hoisted
 vi.mock("../api", () => ({
   api: {
-    getAllSessions: vi.fn().mockResolvedValue([
-      {
-        id: 1,
-        template_id: 10,
-        template_name: "Morning Routine",
-        started_at: new Date().toISOString(),
-        finished_at: new Date().toISOString(),
-        total_duration_seconds: 1800,
-        total_kcal_estimated: 250,
-        notes: "",
-        boxing_entry_id: null,
-        run_entry_id: null,
-        exercises: [],
-      },
-      {
-        id: 2,
-        template_id: 11,
-        template_name: "Run: 5.0km",
-        started_at: new Date(Date.now() - 86400000).toISOString(),
-        finished_at: new Date(Date.now() - 86400000).toISOString(),
-        total_duration_seconds: 1500,
-        total_kcal_estimated: 350,
-        notes: "",
-        boxing_entry_id: null,
-        run_entry_id: null,
-        exercises: [],
-      },
-    ] as WorkoutSession[]),
-    deleteSession: vi.fn().mockResolvedValue(undefined),
+    getAllSessions: vi.fn().mockImplementation(() => mockGetAllSessionsImpl()),
+    deleteSession: vi.fn().mockImplementation((...args: unknown[]) => mockDeleteSessionImpl(...args)),
   },
 }));
 
@@ -140,8 +117,39 @@ vi.mock("../components/history/WeekdayBarChart", () => ({
 }));
 
 describe("HistoryTab", () => {
+  const defaultSessions: WorkoutSession[] = [
+    {
+      id: 1,
+      template_id: 10,
+      template_name: "Morning Routine",
+      started_at: new Date().toISOString(),
+      finished_at: new Date().toISOString(),
+      total_duration_seconds: 1800,
+      total_kcal_estimated: 250,
+      notes: "",
+      boxing_entry_id: null,
+      run_entry_id: null,
+      exercises: [],
+    },
+    {
+      id: 2,
+      template_id: 11,
+      template_name: "Run: 5.0km",
+      started_at: new Date(Date.now() - 86400000).toISOString(),
+      finished_at: new Date(Date.now() - 86400000).toISOString(),
+      total_duration_seconds: 1500,
+      total_kcal_estimated: 350,
+      notes: "",
+      boxing_entry_id: null,
+      run_entry_id: null,
+      exercises: [],
+    },
+  ];
+
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAllSessionsImpl = async () => [...defaultSessions];
+    mockDeleteSessionImpl = vi.fn().mockResolvedValue(undefined);
   });
 
   // ── Smoke tests ──────────────────────────────────────────
@@ -271,6 +279,60 @@ describe("HistoryTab", () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId("session-detail")).not.toBeInTheDocument();
+    });
+  });
+
+  // ── Error & empty states ──────────────────────────────────
+
+  it("shows error state when API fails", async () => {
+    mockGetAllSessionsImpl = async () => {
+      throw new Error("Network error");
+    };
+
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to load sessions")).toBeInTheDocument();
+    });
+  });
+
+  it("shows empty state when no sessions", async () => {
+    mockGetAllSessionsImpl = async () => [];
+
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("No sessions yet")).toBeInTheDocument();
+    });
+  });
+
+  // ── Range changes ────────────────────────────────────────
+
+  it("switches to 30d range and shows heatmap", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("range-30d")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("range-30d"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("heatmap-chart")).toBeInTheDocument();
+    });
+  });
+
+  it("switches to 'This week' range", async () => {
+    render(<HistoryTab refreshKey={0} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("range-week")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("range-week"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("day-bars")).toBeInTheDocument();
     });
   });
 });

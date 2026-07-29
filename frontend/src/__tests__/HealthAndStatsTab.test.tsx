@@ -460,4 +460,22 @@ describe("HealthAndStatsTab", () => {
     expect(screen.getAllByText("0").length).toBeGreaterThan(0);
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
+
+  // ── Injury section ──
+
+  it("shows injury section when injuries present", async () => {
+    mockGetInjuries.mockResolvedValue([
+      { id: 1, body_part: "Left knee", severity: 3, date: "2026-07-20", notes: null, resolved_date: null },
+    ]);
+    await act(async () => { render(<HealthAndStatsTab />); });
+    expect(await screen.findByText("Injury Timeline")).toBeDefined();
+  });
+
+  // ── Coach insight scenarios ──
+
+  it("shows no activity streak when 0", async () => {
+    mockGetPrs.mockResolvedValue({ ...makePrs(), streak_days_30d: 0, longest_streak_days: 0 });
+    await act(async () => { render(<HealthAndStatsTab />); });
+    expect(await screen.findByText(/no activity yet/)).toBeDefined();
+  });
 });

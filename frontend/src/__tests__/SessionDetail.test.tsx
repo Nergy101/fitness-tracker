@@ -221,4 +221,55 @@ describe("SessionDetail", () => {
     expect(screen.getByText("25 kcal")).toBeInTheDocument();
     expect(screen.getByText("40 kcal")).toBeInTheDocument();
   });
+
+  // ── Save flows ──
+
+  it("saves notes on blur when modified", async () => {
+    const onUpdate = vi.fn();
+    const { api } = await import("../api");
+    const session = makeSession();
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={onUpdate} />);
+
+    const textarea = screen.getByPlaceholderText("Add notes...");
+    fireEvent.change(textarea, { target: { value: "New notes value" } });
+    fireEvent.blur(textarea);
+
+    await vi.waitFor(() => {
+      expect(api.updateSession).toHaveBeenCalledWith(1, expect.objectContaining({ notes: "New notes value" }));
+    });
+  });
+
+  it("saves duration on blur when modified", async () => {
+    const session = makeSession({ boxing_entry_id: null, run_entry_id: null, template_name: "Morning Routine" });
+    const { api } = await import("../api");
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+
+    const durInput = screen.getByLabelText("Session duration minutes");
+    fireEvent.change(durInput, { target: { value: "20" } });
+    fireEvent.blur(durInput);
+
+    await vi.waitFor(() => {
+      expect(api.updateSession).toHaveBeenCalledWith(1, expect.objectContaining({ total_duration_seconds: 1200 }));
+    });
+  });
+
+  it("shows boxing edit fields when session has boxing_entry_id", async () => {
+    const { api } = await import("../api");
+    vi.mocked(api.getBoxing).mockResolvedValue([{
+      id: 5, duration_seconds: 1800, kcal_per_min: 12, rounds: 10,
+      date: "2026-07-25", notes: null, run_type: "boxing",
+    } as any]);
+
+    const session = makeSession({
+      template_name: "Boxing: 30min",
+      run_entry_id: null,
+      boxing_entry_id: 5,
+    });
+
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+
+    await vi.waitFor(() => {
+      expect(screen.getByLabelText("Boxing minutes")).toBeInTheDocument();
+    });
+  });
 });
