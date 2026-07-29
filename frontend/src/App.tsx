@@ -23,8 +23,10 @@ import { getStoredAuth, clearStoredAuth } from "./auth";
 import { useTheme } from "./useTheme";
 import ErrorBoundary from "./components/ErrorBoundary";
 import OfflineBanner from "./components/OfflineBanner";
+import UpdateBanner from "./components/UpdateBanner";
 import { useHashRoute } from "./useHashRoute";
 import { useOnboarding } from "./useOnboarding";
+import useServiceWorkerUpdate from "./useServiceWorkerUpdate";
 
 type TabId = "workout" | "exercises" | "history" | "health" | "stats";
 
@@ -67,6 +69,7 @@ export default function App() {
   const [healthRefreshKey, setHealthRefreshKey] = useState(0);
   const touchStartX = useRef(0);
   const [slideDir, setSlideDir] = useState<"left" | "right" | null>(null);
+  const { needRefresh, update: handleSWUpdate } = useServiceWorkerUpdate();
 
   const navigateTab = useCallback((dir: "left" | "right", tab: TabId) => {
     setSlideDir(dir);
@@ -129,6 +132,7 @@ export default function App() {
       `}</style>
       <div className="app-shell flex flex-col h-screen pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
+        {needRefresh && <UpdateBanner onUpdate={handleSWUpdate} />}
         <header className="px-4 py-3 border-b border-fg/10 shrink-0">
           <div className="mx-auto w-full max-w-2xl flex items-center justify-between">
           <h1 className="text-lg font-bold">{tabTitle}</h1>
