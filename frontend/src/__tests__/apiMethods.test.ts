@@ -55,7 +55,7 @@ describe("api methods", () => {
 
   // ── Workouts ──
   it("getWorkouts", async () => { mock([]); await api.getWorkouts(); expectGet("/api/v1/workouts"); });
-  it("createWorkout", async () => { mock({ id: 1 }); await api.createWorkout({ name: "Test", rounds: 1, rest_between_rounds: 30, exercises: [] }); expectPost("/api/v1/workouts"); });
+  it("createWorkout", async () => { mock({ id: 1 }); await api.createWorkout({ name: "Test", description: "", rounds: 1, rest_between_rounds: 30, exercises: [] }); expectPost("/api/v1/workouts"); });
   it("getWorkout", async () => { mock({}); await api.getWorkout(1); expectGet("/api/v1/workouts/1"); });
 
   // ── Exercises ──

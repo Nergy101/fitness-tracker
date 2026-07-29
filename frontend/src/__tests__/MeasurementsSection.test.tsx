@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import MeasurementsSection from "../components/health/MeasurementsSection";
+import type {
+  BodyMeasurementResponse,
+  MeasurementChangesResponse,
+} from "../api";
 
 const mockGetMeasurements = vi.fn().mockResolvedValue([]);
 const mockGetMeasurementChanges = vi.fn().mockResolvedValue(null);
@@ -8,9 +12,9 @@ const mockCreateMeasurement = vi.fn().mockResolvedValue({});
 
 vi.mock("../api", () => ({
   api: {
-    getMeasurements: (...args: any[]) => mockGetMeasurements(...args),
-    getMeasurementChanges: (...args: any[]) => mockGetMeasurementChanges(...args),
-    createMeasurement: (...args: any[]) => mockCreateMeasurement(...args),
+    getMeasurements: (...args: unknown[]) => mockGetMeasurements(...args),
+    getMeasurementChanges: (...args: unknown[]) => mockGetMeasurementChanges(...args),
+    createMeasurement: (...args: unknown[]) => mockCreateMeasurement(...args),
   },
 }));
 
@@ -46,10 +50,29 @@ describe("MeasurementsSection", () => {
   });
 
   it("renders latest measurements with values", async () => {
-    mockGetMeasurements.mockResolvedValue([
-      { id: 1, date: "2026-07-29", waist_cm: 80, hips_cm: 95, chest_cm: null, left_arm_cm: null, right_arm_cm: null, left_thigh_cm: null, right_thigh_cm: null, neck_cm: null } as any,
-    ]);
-    mockGetMeasurementChanges.mockResolvedValue({ first: null, latest: null, deltas: { waist_cm: -2.5, hips_cm: 1.0 } } as any);
+    const latest: BodyMeasurementResponse = {
+      id: 1,
+      date: "2026-07-29",
+      waist_cm: 80,
+      hips_cm: 95,
+      chest_cm: null,
+      left_arm_cm: null,
+      right_arm_cm: null,
+      left_thigh_cm: null,
+      right_thigh_cm: null,
+      neck_cm: null,
+      estimated_body_fat_pct: null,
+      body_fat_method: null,
+      notes: "",
+      created_at: "2026-07-29T00:00:00Z",
+    };
+    const changes: MeasurementChangesResponse = {
+      first: null,
+      latest: null,
+      deltas: { waist_cm: -2.5, hips_cm: 1.0 },
+    };
+    mockGetMeasurements.mockResolvedValue([latest]);
+    mockGetMeasurementChanges.mockResolvedValue(changes);
 
     render(<MeasurementsSection />);
     await waitFor(() => {

@@ -12,9 +12,9 @@ vi.mock("../api", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
-  CaretDownIcon: ({ size, className }: any) => <span data-icon="caret-down" data-size={size} />,
-  CaretUpIcon: ({ size, className }: any) => <span data-icon="caret-up" data-size={size} />,
-  PulseIcon: ({ size, className }: any) => <span data-icon="pulse" data-size={size} />,
+  CaretDownIcon: ({ size }: { size?: number }) => <span data-icon="caret-down" data-size={size} />,
+  CaretUpIcon: ({ size }: { size?: number }) => <span data-icon="caret-up" data-size={size} />,
+  PulseIcon: ({ size }: { size?: number }) => <span data-icon="pulse" data-size={size} />,
 }));
 
 describe("MetricNamesDiagnostic", () => {

@@ -6,7 +6,6 @@ import {
   RANGES,
   WEEKDAY_LABELS,
   SINGLE_LETTER,
-  type RangeKey,
 } from "../components/history/utils";
 import type { WorkoutSession } from "../api";
 

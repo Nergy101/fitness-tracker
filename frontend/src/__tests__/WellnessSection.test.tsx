@@ -16,16 +16,16 @@ vi.mock("../api", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
-  SmileyIcon: ({ size, weight, className }: any) => <span data-icon="smiley" data-size={size} />,
-  SmileyMehIcon: ({ size, weight, className }: any) => <span data-icon="smiley-meh" data-size={size} />,
-  SmileySadIcon: ({ size, weight, className }: any) => <span data-icon="smiley-sad" data-size={size} />,
-  SmileyStickerIcon: ({ size, weight, className }: any) => <span data-icon="smiley-sticker" data-size={size} />,
-  SmileyWinkIcon: ({ size, weight, className }: any) => <span data-icon="smiley-wink" data-size={size} />,
-  BarbellIcon: ({ size, weight, className }: any) => <span data-icon="barbell" data-size={size} />,
-  PersonSimpleRunIcon: ({ size, weight, className }: any) => <span data-icon="run" data-size={size} />,
-  SneakerIcon: ({ size, weight, className }: any) => <span data-icon="sneaker" data-size={size} />,
-  BoxingGloveIcon: ({ size, weight, className }: any) => <span data-icon="boxing" data-size={size} />,
-  HandFistIcon: ({ size, weight, className }: any) => <span data-icon="fist" data-size={size} />,
+  SmileyIcon: ({ size }: { size?: number }) => <span data-icon="smiley" data-size={size} />,
+  SmileyMehIcon: ({ size }: { size?: number }) => <span data-icon="smiley-meh" data-size={size} />,
+  SmileySadIcon: ({ size }: { size?: number }) => <span data-icon="smiley-sad" data-size={size} />,
+  SmileyStickerIcon: ({ size }: { size?: number }) => <span data-icon="smiley-sticker" data-size={size} />,
+  SmileyWinkIcon: ({ size }: { size?: number }) => <span data-icon="smiley-wink" data-size={size} />,
+  BarbellIcon: ({ size }: { size?: number }) => <span data-icon="barbell" data-size={size} />,
+  PersonSimpleRunIcon: ({ size }: { size?: number }) => <span data-icon="run" data-size={size} />,
+  SneakerIcon: ({ size }: { size?: number }) => <span data-icon="sneaker" data-size={size} />,
+  BoxingGloveIcon: ({ size }: { size?: number }) => <span data-icon="boxing" data-size={size} />,
+  HandFistIcon: ({ size }: { size?: number }) => <span data-icon="fist" data-size={size} />,
 }));
 
 const mockEntry: WellnessResponse = {
@@ -41,11 +41,11 @@ const mockEntry: WellnessResponse = {
 
 const mockTrends: WellnessTrendsResponse = {
   weekly_averages: [
-    { week_start: "2026-07-20", avg_mood: 3.5, avg_energy: 3.0, avg_stress: 2.5, avg_sleep: 7.0 },
-    { week_start: "2026-07-13", avg_mood: 4.0, avg_energy: 3.5, avg_stress: 2.0, avg_sleep: 7.5 },
-    { week_start: "2026-07-06", avg_mood: 3.0, avg_energy: 2.5, avg_stress: 3.0, avg_sleep: 6.5 },
-    { week_start: "2026-06-29", avg_mood: 3.8, avg_energy: 3.2, avg_stress: 2.2, avg_sleep: 7.8 },
-    { week_start: "2026-06-22", avg_mood: 4.2, avg_energy: 3.8, avg_stress: 1.8, avg_sleep: 8.0 },
+    { week_start: "2026-07-20", avg_mood: 3.5, avg_energy: 3.0, avg_stress: 2.5, avg_sleep: 7.0, entry_count: 5 },
+    { week_start: "2026-07-13", avg_mood: 4.0, avg_energy: 3.5, avg_stress: 2.0, avg_sleep: 7.5, entry_count: 6 },
+    { week_start: "2026-07-06", avg_mood: 3.0, avg_energy: 2.5, avg_stress: 3.0, avg_sleep: 6.5, entry_count: 4 },
+    { week_start: "2026-06-29", avg_mood: 3.8, avg_energy: 3.2, avg_stress: 2.2, avg_sleep: 7.8, entry_count: 7 },
+    { week_start: "2026-06-22", avg_mood: 4.2, avg_energy: 3.8, avg_stress: 1.8, avg_sleep: 8.0, entry_count: 3 },
   ],
 };
 

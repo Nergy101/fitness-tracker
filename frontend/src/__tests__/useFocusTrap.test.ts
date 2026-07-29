@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useFocusTrap } from "../useFocusTrap";
 import { renderHook } from "@testing-library/react";
-import { createRef } from "react";
+import type { RefObject } from "react";
 
 describe("useFocusTrap", () => {
   let container: HTMLElement;
@@ -15,10 +15,10 @@ describe("useFocusTrap", () => {
     document.body.removeChild(container);
   });
 
-  function createRefWithElement(el: HTMLElement) {
-    const ref = createRef<HTMLElement>();
-    (ref as any).current = el;
-    return ref;
+  function createRefWithElement(
+    el: HTMLElement | null,
+  ): RefObject<HTMLElement | null> {
+    return { current: el };
   }
 
   it("adds keyboard listener when container exists", () => {
@@ -26,7 +26,7 @@ describe("useFocusTrap", () => {
     const ref = createRefWithElement(container);
     const addSpy = vi.spyOn(document, "addEventListener");
 
-    renderHook(() => useFocusTrap(ref as any, onClose));
+    renderHook(() => useFocusTrap(ref, onClose));
 
     expect(addSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
     addSpy.mockRestore();
@@ -35,7 +35,7 @@ describe("useFocusTrap", () => {
   it("calls onClose when Escape is pressed", () => {
     const onClose = vi.fn();
     const ref = createRefWithElement(container);
-    renderHook(() => useFocusTrap(ref as any, onClose));
+    renderHook(() => useFocusTrap(ref, onClose));
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -43,9 +43,8 @@ describe("useFocusTrap", () => {
 
   it("does nothing when container is null", () => {
     const onClose = vi.fn();
-    const ref = createRef<HTMLElement>();
-    (ref as any).current = null;
-    renderHook(() => useFocusTrap(ref as any, onClose));
+    const ref = createRefWithElement(null);
+    renderHook(() => useFocusTrap(ref, onClose));
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(onClose).not.toHaveBeenCalled();
@@ -59,7 +58,7 @@ describe("useFocusTrap", () => {
     container.appendChild(button2);
     const ref = createRefWithElement(container);
 
-    renderHook(() => useFocusTrap(ref as any, onClose));
+    renderHook(() => useFocusTrap(ref, onClose));
 
     // Focus the last element
     button2.focus();
@@ -79,7 +78,7 @@ describe("useFocusTrap", () => {
     container.appendChild(button2);
     const ref = createRefWithElement(container);
 
-    renderHook(() => useFocusTrap(ref as any, onClose));
+    renderHook(() => useFocusTrap(ref, onClose));
 
     // Focus the first element
     button1.focus();
@@ -94,7 +93,7 @@ describe("useFocusTrap", () => {
   it("prevents default Tab when no focusable elements exist", () => {
     const onClose = vi.fn();
     const ref = createRefWithElement(container);
-    renderHook(() => useFocusTrap(ref as any, onClose));
+    renderHook(() => useFocusTrap(ref, onClose));
 
     const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true });
     const preventSpy = vi.spyOn(event, "preventDefault");
@@ -107,7 +106,7 @@ describe("useFocusTrap", () => {
     const ref = createRefWithElement(container);
     const removeSpy = vi.spyOn(document, "removeEventListener");
 
-    const { unmount } = renderHook(() => useFocusTrap(ref as any, onClose));
+    const { unmount } = renderHook(() => useFocusTrap(ref, onClose));
     unmount();
 
     expect(removeSpy).toHaveBeenCalledWith("keydown", expect.any(Function));
@@ -121,7 +120,7 @@ describe("useFocusTrap", () => {
     prevButton.focus();
 
     const ref = createRefWithElement(container);
-    const { unmount } = renderHook(() => useFocusTrap(ref as any, onClose));
+    const { unmount } = renderHook(() => useFocusTrap(ref, onClose));
 
     // Focus trap should have focused the first element in container
     // (but container has no focusable elements, so prevFocus stays)

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import AppleHealthCharts from "../components/health/AppleHealthCharts";
 import type { HealthSeries } from "../api";
 
@@ -8,11 +8,11 @@ const mockGetHealthWorkouts = vi.fn().mockResolvedValue({ workouts: [] });
 const mockGetDailyActivity = vi.fn().mockResolvedValue({ days: [] });
 const mockGetWellnessEntries = vi.fn().mockResolvedValue([]);
 
-vi.mock("../../api", () => ({
+vi.mock("../api", () => ({
   api: {
-    getHealthWorkouts: (...args: any[]) => mockGetHealthWorkouts(...args),
-    getDailyActivity: (...args: any[]) => mockGetDailyActivity(...args),
-    getWellnessEntries: (...args: any[]) => mockGetWellnessEntries(...args),
+    getHealthWorkouts: (...args: unknown[]) => mockGetHealthWorkouts(...args),
+    getDailyActivity: (...args: unknown[]) => mockGetDailyActivity(...args),
+    getWellnessEntries: (...args: unknown[]) => mockGetWellnessEntries(...args),
   },
 }));
 
@@ -46,11 +46,15 @@ vi.mock("../components/health/utils", () => ({
 describe("AppleHealthCharts", () => {
   const makeSleepSeries = (points: HealthSeries["points"]): HealthSeries => ({
     metric: "sleep_analysis",
+    label: "Sleep",
+    unit: "h",
     points,
   });
 
   const makeHrSeries = (points: HealthSeries["points"]): HealthSeries => ({
     metric: "heart_rate",
+    label: "Heart Rate",
+    unit: "bpm",
     points,
   });
 
@@ -66,8 +70,8 @@ describe("AppleHealthCharts", () => {
       <AppleHealthCharts
         series={[
           makeSleepSeries([
-            { date: "2026-07-01", value: 7.5, min: null, max: null, qty: null, stages: { deep: 2, core: 4, rem: 1.5 } },
-            { date: "2026-07-03", value: 6.8, min: null, max: null, qty: null, stages: { deep: 1.5, core: 4, rem: 1.3 } },
+            { date: "2026-07-01", value: 7.5, min: null, max: null, stages: { deep: 2, core: 4, rem: 1.5, awake: 0.2 } },
+            { date: "2026-07-03", value: 6.8, min: null, max: null, stages: { deep: 1.5, core: 4, rem: 1.3, awake: 0.1 } },
           ]),
         ]}
         weightEntries={[]}
@@ -83,8 +87,8 @@ describe("AppleHealthCharts", () => {
       <AppleHealthCharts
         series={[
           makeHrSeries([
-            { date: "2026-07-01", value: 65, min: 55, max: 75, qty: null, stages: null },
-            { date: "2026-07-03", value: 68, min: 58, max: 78, qty: null, stages: null },
+            { date: "2026-07-01", value: 65, min: 55, max: 75, stages: null },
+            { date: "2026-07-03", value: 68, min: 58, max: 78, stages: null },
           ]),
         ]}
         weightEntries={[]}
@@ -100,8 +104,8 @@ describe("AppleHealthCharts", () => {
       <AppleHealthCharts
         series={[
           makeSleepSeries([
-            { date: "2026-07-01", value: 7.5, min: null, max: null, qty: null, stages: null },
-            { date: "2026-07-03", value: 6.8, min: null, max: null, qty: null, stages: null },
+            { date: "2026-07-01", value: 7.5, min: null, max: null, stages: null },
+            { date: "2026-07-03", value: 6.8, min: null, max: null, stages: null },
           ]),
         ]}
         weightEntries={[]}
@@ -117,7 +121,7 @@ describe("AppleHealthCharts", () => {
       <AppleHealthCharts
         series={[
           makeSleepSeries([
-            { date: "2026-07-01", value: 7.5, min: null, max: null, qty: null, stages: null },
+            { date: "2026-07-01", value: 7.5, min: null, max: null, stages: null },
           ]),
         ]}
         weightEntries={[]}
@@ -133,7 +137,7 @@ describe("AppleHealthCharts", () => {
       <AppleHealthCharts
         series={[
           makeHrSeries([
-            { date: "2026-07-01", value: 65, min: null, max: null, qty: null, stages: null },
+            { date: "2026-07-01", value: 65, min: null, max: null, stages: null },
           ]),
         ]}
         weightEntries={[]}

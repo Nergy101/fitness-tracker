@@ -257,8 +257,8 @@ describe("SessionDetail", () => {
     const { api } = await import("../api");
     vi.mocked(api.getBoxing).mockResolvedValue([{
       id: 5, duration_seconds: 1800, kcal_per_min: 12, rounds: 10,
-      date: "2026-07-25", notes: null, run_type: "boxing",
-    } as any]);
+      date: "2026-07-25", notes: "", created_at: "2026-07-25T00:00:00Z",
+    }]);
 
     const session = makeSession({
       template_name: "Boxing: 30min",

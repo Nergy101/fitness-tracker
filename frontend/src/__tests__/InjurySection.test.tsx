@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import InjurySection from "../components/health/InjurySection";
-import type { InjuryMarkerResponse, InjuryMarkerCreate } from "../api";
+import type {
+  InjuryMarkerResponse,
+  InjuryMarkerCreate,
+  InjuryMarkerUpdate,
+} from "../api";
 
 const mockGetInjuries = vi.fn();
 const mockCreateInjury = vi.fn();
@@ -18,16 +22,16 @@ vi.mock("../api", () => ({
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
-  BandaidsIcon: ({ size, className }: any) => <span data-icon="bandaids" data-size={size} />,
-  PlusCircleIcon: ({ size, className }: any) => <span data-icon="plus-circle" data-size={size} />,
-  XIcon: ({ size, className }: any) => <span data-icon="x" data-size={size} />,
-  CaretUpIcon: ({ size, className }: any) => <span data-icon="caret-up" data-size={size} />,
-  CaretDownIcon: ({ size, className }: any) => <span data-icon="caret-down" data-size={size} />,
-  BarbellIcon: ({ size, weight, className }: any) => <span data-icon="barbell" data-size={size} />,
-  PersonSimpleRunIcon: ({ size, weight, className }: any) => <span data-icon="run" data-size={size} />,
-  SneakerIcon: ({ size, weight, className }: any) => <span data-icon="sneaker" data-size={size} />,
-  BoxingGloveIcon: ({ size, weight, className }: any) => <span data-icon="boxing" data-size={size} />,
-  HandFistIcon: ({ size, weight, className }: any) => <span data-icon="fist" data-size={size} />,
+  BandaidsIcon: ({ size }: { size?: number }) => <span data-icon="bandaids" data-size={size} />,
+  PlusCircleIcon: ({ size }: { size?: number }) => <span data-icon="plus-circle" data-size={size} />,
+  XIcon: ({ size }: { size?: number }) => <span data-icon="x" data-size={size} />,
+  CaretUpIcon: ({ size }: { size?: number }) => <span data-icon="caret-up" data-size={size} />,
+  CaretDownIcon: ({ size }: { size?: number }) => <span data-icon="caret-down" data-size={size} />,
+  BarbellIcon: ({ size }: { size?: number }) => <span data-icon="barbell" data-size={size} />,
+  PersonSimpleRunIcon: ({ size }: { size?: number }) => <span data-icon="run" data-size={size} />,
+  SneakerIcon: ({ size }: { size?: number }) => <span data-icon="sneaker" data-size={size} />,
+  BoxingGloveIcon: ({ size }: { size?: number }) => <span data-icon="boxing" data-size={size} />,
+  HandFistIcon: ({ size }: { size?: number }) => <span data-icon="fist" data-size={size} />,
 }));
 
 const activeInjury: InjuryMarkerResponse = {
@@ -63,7 +67,7 @@ describe("InjurySection", () => {
       resolved_date: data.resolved_date ?? null,
       created_at: "2026-07-29T00:00:00Z",
     }));
-    mockUpdateInjury.mockImplementation(async (id: number, data: any) => ({
+    mockUpdateInjury.mockImplementation(async (id: number, data: InjuryMarkerUpdate) => ({
       id,
       date: "2026-06-15",
       body_part: "right ankle",
