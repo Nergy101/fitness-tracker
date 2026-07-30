@@ -80,8 +80,12 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         prev.map((t) => (t.id === updated.id ? updated : t))
       );
       setToast(updated.is_pinned ? "Workout pinned" : "Workout unpinned");
-    } catch {
-      setToast("Failed to update pin");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        setToast("Pin update queued for sync");
+      } else {
+        setToast("Failed to update pin");
+      }
     }
   }
 
@@ -177,8 +181,12 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       await api.deleteWorkout(id);
       setTemplates((prev) => prev.filter((t) => t.id !== id));
       setToast(`"${name}" deleted`);
-    } catch {
-      setToast("Failed to delete workout");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        setToast("Deletion queued for sync");
+      } else {
+        setToast("Failed to delete workout");
+      }
     }
   }
 
@@ -190,8 +198,12 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       setToast(`Duplicated as "${clone.name}"`);
       // Clear highlight after 2s
       setTimeout(() => setHighlightId(null), 2000);
-    } catch {
-      setToast("Failed to duplicate workout");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        setToast("Duplication queued for sync");
+      } else {
+        setToast("Failed to duplicate workout");
+      }
     }
   }
 
