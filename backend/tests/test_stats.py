@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.models.models import WorkoutSession
 
 RUNS_URL = "/api/v1/runs"
+CYCLING_URL = "/api/v1/cycling"
 SESSIONS_URL = "/api/v1/sessions"
 WEIGHT_URL = "/api/v1/health/weight"
 OVERVIEW_URL = "/api/v1/stats/overview"
@@ -215,6 +216,30 @@ class TestStatsOverviewNoDoubleCount:
 
         assert wk["workout_minutes"] == 0.0
         assert wk["walk_minutes"] == 40.0   # 2400 s / 60
+
+    def test_cycling_minutes_counted_once(self, client: TestClient, auth_headers: dict):
+        """A cycling ride creates a 'Cycling: X.Xkm' mirror session. The ride
+        supplies cycling_minutes/cycling_km, the mirror supplies cycling_kcal —
+        the ride duration must not be counted twice."""
+        resp = client.post(
+            CYCLING_URL,
+            json={"duration_seconds": 1800, "distance_km": 12.0},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 201
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+
+        assert stats["total_sessions_all"] == 0, (
+            "Cycling mirror session must not count as a workout session"
+        )
+
+        wk = {w["week_start"]: w for w in stats["activity_weekly"]}[_this_week()]
+
+        assert wk["workout_minutes"] == 0.0
+        assert wk["cycling_minutes"] == 30.0, "1800 s must yield 30.0 minutes, not 60.0"
+        assert wk["cycling_km"] == 12.0
+        assert wk["cycling_kcal"] > 0.0
 
 
 # ---------------------------------------------------------------------------

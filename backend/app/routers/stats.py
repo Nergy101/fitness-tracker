@@ -56,7 +56,8 @@ def stats_overview(db: Session = Depends(get_db)):
                 weekly[wk]["boxing_min"] += (s.total_duration_seconds or 0) / 60
                 weekly[wk]["boxing_kcal"] += s.total_kcal_estimated or 0.0
             elif name.startswith("Cycling:"):
-                weekly[wk]["cycling_min"] += (s.total_duration_seconds or 0) / 60
+                # Minutes/km come from the CyclingEntry loop below; the mirror
+                # only carries the kcal estimate.
                 weekly[wk]["cycling_kcal"] += s.total_kcal_estimated or 0.0
             elif name.startswith("Walk:"):
                 weekly[wk]["walk_kcal"] += s.total_kcal_estimated or 0.0

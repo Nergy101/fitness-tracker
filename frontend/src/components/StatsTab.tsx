@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import {
   api,
+  type CyclingEntryResponse,
   type DailyActivityPoint,
   type GoalProgressResponse,
   type HealthInsightsResponse,
@@ -25,7 +26,7 @@ import {
   type WeightEntryResponse,
   type WorkoutSession,
 } from "../api";
-import { ACTIVITY_COLORS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
+import { ACTIVITY_COLORS, ACTIVITY_LABELS, activityKind, type ActivityKind } from "../activity";
 import ActivityLegend from "./ActivityLegend";
 import ChartCard from "./ChartCard";
 import StatsSkeleton from "./skeletons/StatsSkeleton";
@@ -347,12 +348,15 @@ interface DailyActivityStat {
   run_minutes: number;
   walk_minutes: number;
   boxing_minutes: number;
+  cycling_minutes: number;
   run_km: number;
   walk_km: number;
+  cycling_km: number;
   workout_kcal: number;
   run_kcal: number;
   walk_kcal: number;
   boxing_kcal: number;
+  cycling_kcal: number;
 }
 
 type ChartDatum = {
@@ -360,17 +364,21 @@ type ChartDatum = {
   run_minutes: number;
   walk_minutes: number;
   boxing_minutes: number;
+  cycling_minutes: number;
   run_km: number;
   walk_km: number;
+  cycling_km: number;
   workout_kcal: number;
   run_kcal: number;
   walk_kcal: number;
   boxing_kcal: number;
+  cycling_kcal: number;
 };
 
 function computeDailyActivity(
   sessions: WorkoutSession[],
   runs: RunEntryResponse[],
+  rides: CyclingEntryResponse[],
 ): DailyActivityStat[] {
   const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
   const now = new Date();
@@ -382,9 +390,9 @@ function computeDailyActivity(
     days.push({
       date: key,
       label: DAYS[(d.getDay() + 6) % 7],
-      workout_minutes: 0, run_minutes: 0, walk_minutes: 0, boxing_minutes: 0,
-      run_km: 0, walk_km: 0,
-      workout_kcal: 0, run_kcal: 0, walk_kcal: 0, boxing_kcal: 0,
+      workout_minutes: 0, run_minutes: 0, walk_minutes: 0, boxing_minutes: 0, cycling_minutes: 0,
+      run_km: 0, walk_km: 0, cycling_km: 0,
+      workout_kcal: 0, run_kcal: 0, walk_kcal: 0, boxing_kcal: 0, cycling_kcal: 0,
     });
   }
   for (const s of sessions) {
@@ -392,16 +400,10 @@ function computeDailyActivity(
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const entry = days.find((x) => x.date === key);
     if (!entry) continue;
-    const mins = s.total_duration_seconds / 60;
-    const kind = s.template_name.startsWith("Run") ? "run"
-      : s.template_name.startsWith("Walk") ? "walk"
-      : s.template_name.startsWith("Boxing") ? "boxing"
-      : "workout";
-    const minKey = `${kind}_minutes` as "workout_minutes" | "run_minutes" | "walk_minutes" | "boxing_minutes";
-    entry[minKey] += mins;
+    const kind = activityKind(s.template_name);
+    entry[`${kind}_minutes`] += s.total_duration_seconds / 60;
     if (s.total_kcal_estimated) {
-      const kcalKey = `${kind}_kcal` as "workout_kcal" | "run_kcal" | "walk_kcal" | "boxing_kcal";
-      entry[kcalKey] += s.total_kcal_estimated;
+      entry[`${kind}_kcal`] += s.total_kcal_estimated;
     }
   }
   for (const r of runs) {
@@ -414,6 +416,17 @@ function computeDailyActivity(
       entry[`${kind}_minutes`] = r.duration_seconds / 60;
     }
     entry[`${kind}_kcal`] += r.distance_km * (kind === "run" ? 60 : 45);
+  }
+  for (const c of rides) {
+    const key = c.date.slice(0, 10);
+    const entry = days.find((x) => x.date === key);
+    if (!entry) continue;
+    // Distance only lives on the ride; minutes/kcal already came from the
+    // "Cycling: X.Xkm" mirror session unless it is missing.
+    entry.cycling_km += c.distance_km;
+    if (entry.cycling_minutes === 0) {
+      entry.cycling_minutes = c.duration_seconds / 60;
+    }
   }
   return days;
 }
@@ -479,6 +492,7 @@ export default function StatsTab() {
 
   const [stats, setStats] = useState<StatsOverviewResponse | null>(null);
   const [runs, setRuns] = useState<RunEntryResponse[]>([]);
+  const [rides, setRides] = useState<CyclingEntryResponse[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [weightEntries, setWeightEntries] = useState<WeightEntryResponse[]>([]);
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
@@ -492,9 +506,10 @@ export default function StatsTab() {
   useEffect(() => {
     (async () => {
       try {
-        const [overview, runList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity, injuryList] = await Promise.all([
+        const [overview, runList, rideList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity, injuryList] = await Promise.all([
           api.getStatsOverview(),
           api.getRuns().catch(() => [] as RunEntryResponse[]),
+          api.getCycling().catch(() => [] as CyclingEntryResponse[]),
           api.getSessions().catch(() => [] as WorkoutSession[]),
           api.getWeightEntries().catch(() => [] as WeightEntryResponse[]),
           api.getGoalProgress().catch(() => null),
@@ -504,6 +519,7 @@ export default function StatsTab() {
         ]);
         setStats(overview);
         setRuns(runList);
+        setRides(rideList);
         setSessions(sessionList);
         setWeightEntries(wEntries);
         setGoal(goalProgress);
@@ -527,10 +543,10 @@ export default function StatsTab() {
   }
 
   const weeks = [...stats.activity_weekly].reverse();
-  const daily = computeDailyActivity(sessions, runs);
+  const daily = computeDailyActivity(sessions, runs, rides);
   const chartData = chartMode === "daily" ? daily : weeks;
-  const hasDistance = chartData.some((d: ChartDatum) => (d.run_km || 0) + (d.walk_km || 0) > 0);
-  const hasKcal = chartData.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) + (d.boxing_kcal || 0) > 0);
+  const hasDistance = chartData.some((d: ChartDatum) => (d.run_km || 0) + (d.walk_km || 0) + (d.cycling_km || 0) > 0);
+  const hasKcal = chartData.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) + (d.boxing_kcal || 0) + (d.cycling_kcal || 0) > 0);
   const mixWeeks = weeks.slice(-4);
 
   const pacedRuns = runs
@@ -613,13 +629,14 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_minutes },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_minutes },
               { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_minutes },
+              { color: ACTIVITY_COLORS.cycling, value: (d: ChartDatum) => d.cycling_minutes },
             ]}
             label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
             injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
           />
-          <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
+          <ActivityLegend kinds={["workout", "run", "walk", "boxing", "cycling"]} />
           {chartMode === "weekly" && stats.current_month_vs_previous_pct != null && (
             <div className="flex justify-between mt-2 text-[10px] text-fg/40">
               <span>This month: {formatHours(stats.current_month_minutes)}</span>
@@ -645,13 +662,14 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_kcal },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_kcal },
               { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_kcal },
+              { color: ACTIVITY_COLORS.cycling, value: (d: ChartDatum) => d.cycling_kcal },
             ]}
             label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
             injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
           />
-          <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
+          <ActivityLegend kinds={["workout", "run", "walk", "boxing", "cycling"]} />
         </ChartCard>
       )}
 
@@ -666,13 +684,14 @@ export default function StatsTab() {
             segments={[
               { color: ACTIVITY_COLORS.run, value: (d: ChartDatum) => d.run_km },
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_km },
+              { color: ACTIVITY_COLORS.cycling, value: (d: ChartDatum) => d.cycling_km },
             ]}
             label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => `${Math.round(v * 10) / 10}km`}
             injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
           />
-          <ActivityLegend kinds={["run", "walk"]} />
+          <ActivityLegend kinds={["run", "walk", "cycling"]} />
         </ChartCard>
       )}
 

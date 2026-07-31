@@ -6,6 +6,7 @@ import StatsTab from "../components/StatsTab";
 // Top-level mocks for vi.mock hoisting
 const mockGetStatsOverview = vi.fn();
 const mockGetRuns = vi.fn();
+const mockGetCycling = vi.fn();
 const mockGetSessions = vi.fn();
 const mockGetWeightEntries = vi.fn();
 const mockGetGoalProgress = vi.fn();
@@ -17,6 +18,7 @@ vi.mock("../api", () => ({
   api: {
     getStatsOverview: (...args: unknown[]) => mockGetStatsOverview(...args),
     getRuns: (...args: unknown[]) => mockGetRuns(...args),
+    getCycling: (...args: unknown[]) => mockGetCycling(...args),
     getSessions: (...args: unknown[]) => mockGetSessions(...args),
     getWeightEntries: (...args: unknown[]) => mockGetWeightEntries(...args),
     getGoalProgress: (...args: unknown[]) => mockGetGoalProgress(...args),
@@ -114,15 +116,15 @@ function makeStats() {
     activity_weekly: [
       {
         week_start: "2026-07-20",
-        workout_minutes: 120, run_minutes: 60, walk_minutes: 30, boxing_minutes: 0,
-        run_km: 10, walk_km: 3,
-        workout_kcal: 500, run_kcal: 400, walk_kcal: 100, boxing_kcal: 0,
+        workout_minutes: 120, run_minutes: 60, walk_minutes: 30, boxing_minutes: 0, cycling_minutes: 0,
+        run_km: 10, walk_km: 3, cycling_km: 0,
+        workout_kcal: 500, run_kcal: 400, walk_kcal: 100, boxing_kcal: 0, cycling_kcal: 0,
       },
       {
         week_start: "2026-07-13",
-        workout_minutes: 90, run_minutes: 45, walk_minutes: 20, boxing_minutes: 0,
-        run_km: 8, walk_km: 2,
-        workout_kcal: 400, run_kcal: 300, walk_kcal: 80, boxing_kcal: 0,
+        workout_minutes: 90, run_minutes: 45, walk_minutes: 20, boxing_minutes: 0, cycling_minutes: 0,
+        run_km: 8, walk_km: 2, cycling_km: 0,
+        workout_kcal: 400, run_kcal: 300, walk_kcal: 80, boxing_kcal: 0, cycling_kcal: 0,
       },
     ],
     total_kcal_burned: 1800,
@@ -131,6 +133,7 @@ function makeStats() {
     total_runs: 3,
     total_walks: 2,
     total_boxing: 0,
+    total_cycling: 0,
     current_month_minutes: 300,
     previous_month_minutes: 250,
     current_month_vs_previous_pct: 20,
@@ -174,6 +177,7 @@ describe("StatsTab", () => {
     vi.clearAllMocks();
     mockGetStatsOverview.mockResolvedValue(makeStats());
     mockGetRuns.mockResolvedValue(makeRuns());
+    mockGetCycling.mockResolvedValue([]);
     mockGetSessions.mockResolvedValue(makeSessions());
     mockGetWeightEntries.mockResolvedValue(makeWeights());
     mockGetGoalProgress.mockResolvedValue(null);
@@ -309,5 +313,71 @@ describe("StatsTab", () => {
       render(<StatsTab />);
     });
     expect(await screen.findByText("Daily Distance (km)")).toBeDefined();
+  });
+
+  // ── Cycling series ──
+
+  it("draws cycling minutes in the cycling color and labels the legend", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    mockGetRuns.mockResolvedValue([]);
+    mockGetSessions.mockResolvedValue([
+      {
+        id: 9, template_id: null, template_name: "Cycling: 12.0km",
+        started_at: `${today}T09:00:00`, finished_at: `${today}T09:30:00`,
+        total_duration_seconds: 1800, total_kcal_estimated: 320, notes: "",
+        boxing_entry_id: null, run_entry_id: null, cycling_entry_id: 4, exercises: [],
+      },
+    ]);
+    mockGetCycling.mockResolvedValue([
+      { id: 4, duration_seconds: 1800, distance_km: 12.0, date: today, notes: "", created_at: `${today}T09:00:00Z` },
+    ]);
+
+    await act(async () => {
+      render(<StatsTab />);
+    });
+    await screen.findByText("Daily Activity (min)");
+
+    // ACTIVITY_COLORS.cycling — violet-400
+    expect(document.querySelectorAll('rect[fill="#a78bfa"]').length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Cycling").length).toBeGreaterThan(0);
+  });
+
+  it("counts a cycling ride's minutes once, not once per mirror session", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    mockGetRuns.mockResolvedValue([]);
+    mockGetSessions.mockResolvedValue([
+      {
+        id: 9, template_id: null, template_name: "Cycling: 12.0km",
+        started_at: `${today}T09:00:00`, finished_at: `${today}T09:30:00`,
+        total_duration_seconds: 1800, total_kcal_estimated: 320, notes: "",
+        boxing_entry_id: null, run_entry_id: null, cycling_entry_id: 4, exercises: [],
+      },
+    ]);
+    mockGetCycling.mockResolvedValue([
+      { id: 4, duration_seconds: 1800, distance_km: 12.0, date: today, notes: "", created_at: `${today}T09:00:00Z` },
+    ]);
+
+    await act(async () => {
+      render(<StatsTab />);
+    });
+    await screen.findByText("Daily Activity (min)");
+
+    // Peak y-axis tick equals the single ride's 30 minutes.
+    expect(screen.getAllByText("30m").length).toBeGreaterThan(0);
+    expect(screen.queryByText("60m")).toBeNull();
+  });
+
+  it("renders cycling distance in the distance chart", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    mockGetRuns.mockResolvedValue([]);
+    mockGetCycling.mockResolvedValue([
+      { id: 4, duration_seconds: 1800, distance_km: 12.0, date: today, notes: "", created_at: `${today}T09:00:00Z` },
+    ]);
+
+    await act(async () => {
+      render(<StatsTab />);
+    });
+    expect(await screen.findByText("Daily Distance (km)")).toBeDefined();
+    expect(screen.getAllByText("12km").length).toBeGreaterThan(0);
   });
 });

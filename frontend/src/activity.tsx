@@ -30,7 +30,7 @@ export const ACTIVITY_COLORS: Record<ActivityKind, string> = {
   run: "#38bdf8", // sky-400
   walk: "#4ade80", // green-400
   boxing: "#f87171", // red-400
-  cycling: "#a78bfa", // purple-400
+  cycling: "#a78bfa", // violet-400
 };
 
 export const ACTIVITY_LABELS: Record<ActivityKind, string> = {

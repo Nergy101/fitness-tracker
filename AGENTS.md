@@ -81,6 +81,16 @@ Runs/walks create a mirror `WorkoutSession` with `"Run: X.Xkm"` / `"Walk: X.Xkm"
 The `is_mirror_session()` helper excludes these from workout stats so runs/walks aren't double-counted.
 If adding a new activity type that mirrors into sessions, update `is_mirror_session()` accordingly.
 
+In `stats.py`'s weekly aggregation the split is: the mirror session supplies **kcal only**,
+the dedicated entry (`RunEntry`, `CyclingEntry`) supplies **minutes + km**. Boxing is the
+exception — it has no distance, so its mirror supplies both minutes and kcal. Adding minutes
+on both sides doubles the activity bars (the cycling bug fixed in `test_cycling_minutes_counted_once`).
+
+When a new activity kind gets its own series, wire it into every StatsTab chart
+(`ChartDatum` fields, `computeDailyActivity`, the `segments` arrays, and `ActivityLegend kinds`)
+with its `ACTIVITY_COLORS` entry — the daily path classifies sessions via `activityKind()`,
+so a kind missing from `activity.tsx` silently lands in the workout bucket.
+
 ### total_duration_seconds — keep in sync across 3 locations
 
 When adding workout phases (warmup, cooldown, etc.), the total duration computation lives in:
