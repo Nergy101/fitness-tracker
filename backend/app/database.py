@@ -84,6 +84,23 @@ def run_migrations() -> None:
         if not stamped:
             run_alembic("stamp", PRE_ALEMBIC_BASELINE)
 
+    # Recover from a batch migration that died mid-flight. op.batch_alter_table()
+    # emulates ALTER on SQLite as: CREATE _alembic_tmp_X / copy rows / DROP X /
+    # RENAME tmp TO X. pysqlite autocommits DDL, so a failure part-way leaves the
+    # scratch table behind and every subsequent boot dies on "table
+    # _alembic_tmp_X already exists".
+    for tmp in [t for t in tables if t.startswith("_alembic_tmp_")]:
+        real = tmp[len("_alembic_tmp_"):]
+        with engine.begin() as conn:
+            if real in tables:
+                # The real table survived, so the crash predates its DROP and the
+                # scratch copy is pure debris.
+                conn.execute(text(f'DROP TABLE "{tmp}"'))
+            else:
+                # Crash landed between DROP and RENAME: the scratch table is the
+                # only copy of the data left. Finish the rename instead.
+                conn.execute(text(f'ALTER TABLE "{tmp}" RENAME TO "{real}"'))
+
     run_alembic("upgrade", "head")
 
 

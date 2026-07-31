@@ -343,7 +343,9 @@ class TestBatchMigrationsWithChildRows:
 
     def test_resumes_half_applied_cycling_migration(self, tmp_path):
         """Exact production crash state: stamped at the cycling migration's
-        parent, with the autocommitted cycling_entries table already present."""
+        parent, with BOTH autocommitted leftovers the aborted run left behind —
+        the cycling_entries table and the _alembic_tmp_workout_sessions scratch
+        table from the batch rebuild that failed on DROP."""
         db_file = tmp_path / "half_applied.db"
         url = _db_url(db_file)
 
@@ -365,6 +367,20 @@ class TestBatchMigrationsWithChildRows:
                 conn.execute(
                     text("CREATE INDEX ix_cycling_entries_id ON cycling_entries (id)")
                 )
+                # Scratch table from the batch rebuild that died on DROP TABLE
+                # workout_sessions. Empty, because the row copy is DML and got
+                # rolled back while the CREATE autocommitted.
+                conn.execute(
+                    text(
+                        "CREATE TABLE _alembic_tmp_workout_sessions ("
+                        "id INTEGER NOT NULL, template_id INTEGER, "
+                        "template_name VARCHAR(255), started_at DATETIME NOT NULL, "
+                        "finished_at DATETIME, total_duration_seconds INTEGER, "
+                        "total_kcal_estimated FLOAT, notes TEXT, "
+                        "run_entry_id INTEGER, boxing_entry_id INTEGER, "
+                        "cycling_entry_id INTEGER, PRIMARY KEY (id))"
+                    )
+                )
                 conn.commit()
         finally:
             setup_engine.dispose()
@@ -382,6 +398,7 @@ class TestBatchMigrationsWithChildRows:
                 assert conn.execute(
                     text("SELECT COUNT(*) FROM session_exercises")
                 ).scalar() == 1
+            names = set(inspect(verify_engine).get_table_names())
             cols = {
                 c["name"]
                 for c in inspect(verify_engine).get_columns("workout_sessions")
@@ -389,5 +406,49 @@ class TestBatchMigrationsWithChildRows:
             assert "cycling_entry_id" in cols, (
                 "resumed migration skipped the workout_sessions column"
             )
+            assert "_alembic_tmp_workout_sessions" not in names, (
+                "scratch table from the crashed batch rebuild was left behind"
+            )
+        finally:
+            verify_engine.dispose()
+
+    def test_recovers_scratch_table_when_real_table_was_dropped(self, tmp_path):
+        """The data-loss-adjacent branch: a batch rebuild that crashed between
+        DROP TABLE X and RENAME leaves the scratch table holding the only copy
+        of the rows.  It must be renamed into place, never dropped."""
+        db_file = tmp_path / "mid_rename.db"
+        url = _db_url(db_file)
+
+        assert _run(db_file).returncode == 0
+        _seed_session_with_child_rows(url)
+
+        setup_engine = create_engine(url)
+        try:
+            with setup_engine.connect() as conn:
+                conn.execute(text("PRAGMA foreign_keys=OFF"))
+                conn.execute(
+                    text(
+                        "CREATE TABLE _alembic_tmp_workout_sessions AS "
+                        "SELECT * FROM workout_sessions"
+                    )
+                )
+                conn.execute(text("DROP TABLE workout_sessions"))
+                conn.commit()
+        finally:
+            setup_engine.dispose()
+
+        proc = _run(db_file)
+        diag = proc.stdout + proc.stderr
+        assert proc.returncode == 0, f"mid-rename DB did not self-heal:\n{diag}"
+
+        verify_engine = create_engine(url)
+        try:
+            names = set(inspect(verify_engine).get_table_names())
+            assert "workout_sessions" in names, "scratch table was not renamed back"
+            assert "_alembic_tmp_workout_sessions" not in names
+            with verify_engine.connect() as conn:
+                assert conn.execute(
+                    text("SELECT COUNT(*) FROM workout_sessions")
+                ).scalar() == 1, "rows were lost recovering the scratch table"
         finally:
             verify_engine.dispose()
