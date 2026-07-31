@@ -125,6 +125,7 @@ export interface WorkoutSession {
   notes: string;
   boxing_entry_id: number | null;
   run_entry_id: number | null;
+  cycling_entry_id: number | null;
   exercises: SessionExercise[];
 }
 
@@ -310,6 +311,15 @@ export interface PrsResponse {
   longest_workout_seconds: number | null;
   most_kcal_workout: number | null;
   most_exercises_workout: number | null;
+  // Boxing
+  longest_boxing_seconds: number | null;
+  most_kcal_boxing: number | null;
+  total_boxing_hours: number;
+  // Cycling
+  longest_cycling_seconds: number | null;
+  longest_cycling_km: number | null;
+  most_kcal_cycling: number | null;
+  total_cycling_hours: number;
   // Overall
   longest_streak_days: number;
   streak_days_30d: number;
@@ -321,12 +331,15 @@ export interface WeeklyActivityStat {
   run_minutes: number;
   walk_minutes: number;
   boxing_minutes: number;
+  cycling_minutes: number;
   run_km: number;
   walk_km: number;
+  cycling_km: number;
   workout_kcal: number;
   run_kcal: number;
   walk_kcal: number;
   boxing_kcal: number;
+  cycling_kcal: number;
 }
 
 export interface StatsOverviewResponse {
@@ -337,6 +350,7 @@ export interface StatsOverviewResponse {
   total_runs: number;
   total_walks: number;
   total_boxing: number;
+  total_cycling: number;
   current_month_minutes: number;
   previous_month_minutes: number;
   current_month_vs_previous_pct: number | null;
@@ -526,6 +540,42 @@ export interface BoxingPrsResponse {
   most_kcal_session: number | null;
   total_hours_all_time: number;
   most_rounds_session: number | null;
+}
+
+// ─── Cycling Types ──────────────────────────────────────
+
+export interface CyclingEntryResponse {
+  id: number;
+  duration_seconds: number;
+  distance_km: number;
+  date: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface CyclingEntryCreate {
+  duration_seconds: number;
+  distance_km: number;
+  date?: string;
+  notes?: string;
+}
+
+export interface MonthlyCyclingStats {
+  month: string;
+  sessions: number;
+  total_minutes: number;
+  total_km: number;
+}
+
+export interface CyclingStatsResponse {
+  total_sessions: number;
+  total_duration_seconds: number;
+  total_hours: number;
+  total_distance_km: number;
+  avg_duration_seconds: number | null;
+  avg_distance_km: number | null;
+  total_kcal_estimated: number;
+  monthly_breakdown: MonthlyCyclingStats[];
 }
 
 // ─── Injury Types ──────────────────────────────────────
@@ -947,6 +997,24 @@ export const api = {
     fetchJSON<BoxingPrsResponse>("/api/v1/boxing/prs"),
   getBoxingTrends: (days = 120) =>
     fetchJSON<DailyActivityResponse>(`/api/v1/boxing/stats/trends?days=${days}`),
+
+  // ─── Cycling ─────────────────────────────────────────
+
+  getCycling: () => fetchJSON<CyclingEntryResponse[]>("/api/v1/cycling"),
+  createCycling: (data: CyclingEntryCreate) =>
+    fetchJSON<CyclingEntryResponse>("/api/v1/cycling", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateCycling: (id: number, data: CyclingEntryCreate) =>
+    fetchJSON<CyclingEntryResponse>(`/api/v1/cycling/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteCycling: (id: number) =>
+    fetchJSON<void>(`/api/v1/cycling/${id}`, { method: "DELETE" }),
+  getCyclingStats: () =>
+    fetchJSON<CyclingStatsResponse>("/api/v1/cycling/stats"),
 
   // ─── Injuries ────────────────────────────────────────
 

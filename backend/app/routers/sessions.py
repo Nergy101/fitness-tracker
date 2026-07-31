@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
-from app.models.models import WorkoutSession, SessionExercise, WorkoutTemplate, ExerciseLog, RunEntry, BoxingEntry, Exercise, is_mirror_session
+from app.models.models import WorkoutSession, SessionExercise, WorkoutTemplate, ExerciseLog, RunEntry, BoxingEntry, CyclingEntry, Exercise, is_mirror_session
 from app.schemas import WorkoutSessionCreate, WorkoutSessionEnd, WorkoutSessionResponse, SessionExerciseResponse, ExerciseLogCreate, ExerciseLogResponse
 from pydantic import BaseModel
 
@@ -63,6 +63,7 @@ def _build_session_response(session: WorkoutSession) -> WorkoutSessionResponse:
         notes=session.notes or "",
         boxing_entry_id=session.boxing_entry_id,
         run_entry_id=session.run_entry_id,
+        cycling_entry_id=session.cycling_entry_id,
         exercises=ex_responses,
     )
 
@@ -173,6 +174,7 @@ def delete_session(session_id: int, db: Session = Depends(get_db)):
     is_mirror = is_mirror_session(session)
     run_entry_id = session.run_entry_id
     boxing_entry_id = session.boxing_entry_id
+    cycling_entry_id = session.cycling_entry_id
     db.delete(session)
     db.flush()
     if is_mirror:
@@ -182,6 +184,10 @@ def delete_session(session_id: int, db: Session = Depends(get_db)):
                 db.delete(entry)
         elif boxing_entry_id:
             entry = db.get(BoxingEntry, boxing_entry_id)
+            if entry:
+                db.delete(entry)
+        elif cycling_entry_id:
+            entry = db.get(CyclingEntry, cycling_entry_id)
             if entry:
                 db.delete(entry)
     db.commit()

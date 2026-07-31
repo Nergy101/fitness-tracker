@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   BarbellIcon as Barbell,
+  BicycleIcon as Bicycle,
   CalendarBlankIcon as CalendarBlank,
   CaretDownIcon as CaretDown,
   CaretUpIcon as CaretUp,
@@ -162,7 +163,7 @@ export default function HealthAndStatsTab() {
 
   {
     const strength = mixWeeks.reduce((s, w) => s + w.workout_minutes, 0);
-    const cardio = mixWeeks.reduce((s, w) => s + w.run_minutes + w.walk_minutes + w.boxing_minutes, 0);
+    const cardio = mixWeeks.reduce((s, w) => s + w.run_minutes + w.walk_minutes + w.boxing_minutes + w.cycling_minutes, 0);
     const total = strength + cardio;
     if (total > 0) {
       const cardioShare = cardio / total;
@@ -174,7 +175,7 @@ export default function HealthAndStatsTab() {
     }
   }
 
-  if (stats.total_sessions_all === 0 && stats.total_runs === 0 && stats.total_walks === 0 && stats.total_boxing === 0) {
+  if (stats.total_sessions_all === 0 && stats.total_runs === 0 && stats.total_walks === 0 && stats.total_boxing === 0 && stats.total_cycling === 0) {
     insightLines.push({ icon: RocketLaunch, text: "Complete your first workout to see stats!" });
   }
 
@@ -328,6 +329,11 @@ export default function HealthAndStatsTab() {
           icon={<HandFist size={14} style={{ color: ACTIVITY_COLORS.boxing }} />}
           label="Total boxing"
           value={String(stats.total_boxing)}
+        />
+        <StatCard
+          icon={<Bicycle size={14} style={{ color: ACTIVITY_COLORS.cycling }} />}
+          label="Total cycling"
+          value={String(stats.total_cycling)}
         />
       </div>
 

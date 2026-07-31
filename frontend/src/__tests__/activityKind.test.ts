@@ -20,6 +20,12 @@ describe("activityKind", () => {
     expect(activityKind("Boxing: Heavy Bag")).toBe("boxing");
   });
 
+  it("classifies template names starting with 'Cycling:' as cycling", () => {
+    expect(activityKind("Cycling: 24.0km")).toBe("cycling");
+    expect(activityKind("Cycling: 10km")).toBe("cycling");
+    expect(activityKind("Cycling: Long Ride")).toBe("cycling");
+  });
+
   it("classifies all other template names as workout", () => {
     expect(activityKind("Full Body")).toBe("workout");
     expect(activityKind("Push-ups")).toBe("workout");

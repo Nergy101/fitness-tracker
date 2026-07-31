@@ -17,6 +17,13 @@ const nullPrs: PrsResponse = {
   longest_workout_seconds: null,
   most_kcal_workout: null,
   most_exercises_workout: null,
+  longest_boxing_seconds: null,
+  most_kcal_boxing: null,
+  total_boxing_hours: 0,
+  longest_cycling_seconds: null,
+  longest_cycling_km: null,
+  most_kcal_cycling: null,
+  total_cycling_hours: 0,
   longest_streak_days: 0,
   streak_days_30d: 0,
 };

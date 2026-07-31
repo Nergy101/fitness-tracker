@@ -74,6 +74,8 @@ async function resetData(request: APIRequestContext, headers: Record<string, str
   for (const r of await list("/api/v1/runs")) await del(`/api/v1/runs/${r.id}`);
   // Boxing entries: delete before sessions (deleting a boxing entry cascades to its mirror session).
   for (const b of await list("/api/v1/boxing")) await del(`/api/v1/boxing/${b.id}`);
+  // Cycling entries: delete before sessions (deleting a cycling entry cascades to its mirror session).
+  for (const c of await list("/api/v1/cycling")) await del(`/api/v1/cycling/${c.id}`);
   for (const s of await list("/api/v1/sessions")) await del(`/api/v1/sessions/${s.id}`);
   for (const w of await list("/api/v1/health/weight")) await del(`/api/v1/health/weight/${w.id}`);
   for (const m of await list("/api/v1/health/measurements")) await del(`/api/v1/health/measurements/${m.id}`);

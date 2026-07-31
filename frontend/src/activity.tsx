@@ -8,19 +8,21 @@
 
 import {
   BarbellIcon,
+  BicycleIcon as Bicycle,
   HandFistIcon,
   PersonSimpleRunIcon,
   SneakerIcon,
   type Icon,
 } from "@phosphor-icons/react";
 
-export type ActivityKind = "workout" | "run" | "walk" | "boxing";
+export type ActivityKind = "workout" | "run" | "walk" | "boxing" | "cycling";
 
 export const ACTIVITY_ICONS: Record<ActivityKind, Icon> = {
   workout: BarbellIcon,
   run: PersonSimpleRunIcon,
   walk: SneakerIcon,
   boxing: HandFistIcon,
+  cycling: Bicycle,
 };
 
 export const ACTIVITY_COLORS: Record<ActivityKind, string> = {
@@ -28,6 +30,7 @@ export const ACTIVITY_COLORS: Record<ActivityKind, string> = {
   run: "#38bdf8", // sky-400
   walk: "#4ade80", // green-400
   boxing: "#f87171", // red-400
+  cycling: "#a78bfa", // purple-400
 };
 
 export const ACTIVITY_LABELS: Record<ActivityKind, string> = {
@@ -35,11 +38,13 @@ export const ACTIVITY_LABELS: Record<ActivityKind, string> = {
   run: "Runs",
   walk: "Walks",
   boxing: "Boxing",
+  cycling: "Cycling",
 };
 
 export function activityKind(templateName: string): ActivityKind {
   if (templateName.startsWith("Run:")) return "run";
   if (templateName.startsWith("Walk:")) return "walk";
   if (templateName.startsWith("Boxing:")) return "boxing";
+  if (templateName.startsWith("Cycling:")) return "cycling";
   return "workout";
 }

@@ -26,6 +26,7 @@ vi.mock("@phosphor-icons/react", () => ({
   SneakerIcon: ({ size }: { size?: number }) => <span data-icon="sneaker" data-size={size} />,
   BoxingGloveIcon: ({ size }: { size?: number }) => <span data-icon="boxing" data-size={size} />,
   HandFistIcon: ({ size }: { size?: number }) => <span data-icon="fist" data-size={size} />,
+  BicycleIcon: ({ size }: { size?: number }) => <span data-icon="bicycle" data-size={size} />,
 }));
 
 const mockEntry: WellnessResponse = {

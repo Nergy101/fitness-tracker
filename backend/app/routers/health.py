@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import (
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin, WorkoutSession,
-    RunEntry, is_mirror_session, InjuryMarker,
+    RunEntry, BoxingEntry, CyclingEntry, is_mirror_session, InjuryMarker,
 )
 from app.schemas import (
     UserProfileResponse, UserProfileUpdate,
@@ -92,8 +92,8 @@ def personal_records(db: Session = Depends(get_db)):
         prs.longest_walk_km = max(e.distance_km for e in walks)
         prs.longest_walk_seconds = max(e.duration_seconds for e in walks)
 
-    # Kcal records come from sessions: run/walk kcal lives on the mirror
-    # session the runs router creates, workout kcal on real sessions.
+    # Kcal records come from sessions: run/walk/boxing/cycling kcal lives on the mirror
+    # session the respective routers create, workout kcal on real sessions.
     workouts = []
     for s in sessions:
         if not is_mirror_session(s):
@@ -103,6 +103,12 @@ def personal_records(db: Session = Depends(get_db)):
         if s.template_name.startswith("Walk:"):
             if kcal > (prs.most_kcal_walk or 0.0):
                 prs.most_kcal_walk = kcal
+        elif s.template_name.startswith("Boxing:"):
+            if kcal > (prs.most_kcal_boxing or 0.0):
+                prs.most_kcal_boxing = kcal
+        elif s.template_name.startswith("Cycling:"):
+            if kcal > (prs.most_kcal_cycling or 0.0):
+                prs.most_kcal_cycling = kcal
         elif kcal > (prs.most_kcal_run or 0.0):
             prs.most_kcal_run = kcal
 
@@ -110,6 +116,22 @@ def personal_records(db: Session = Depends(get_db)):
         prs.longest_workout_seconds = max(s.total_duration_seconds or 0 for s in workouts)
         prs.most_kcal_workout = max(s.total_kcal_estimated or 0.0 for s in workouts)
         prs.most_exercises_workout = max(len(s.exercises) for s in workouts)
+
+    # Boxing PRs
+    boxing_entries = db.query(BoxingEntry).all()
+    if boxing_entries:
+        prs.longest_boxing_seconds = max(e.duration_seconds for e in boxing_entries)
+        # most_kcal_boxing is already set from mirror sessions above
+        prs.total_boxing_hours = round(sum(e.duration_seconds for e in boxing_entries) / 3600, 1)
+
+    # Cycling PRs
+    cycling_entries = db.query(CyclingEntry).all()
+    if cycling_entries:
+        prs.longest_cycling_km = max(e.distance_km for e in cycling_entries)
+        longest_ride = next(e for e in cycling_entries if e.distance_km == prs.longest_cycling_km)
+        prs.longest_cycling_seconds = longest_ride.duration_seconds
+        # most_kcal_cycling is already set from mirror sessions above
+        prs.total_cycling_hours = round(sum(e.duration_seconds for e in cycling_entries) / 3600, 1)
 
     # Longest streak of consecutive days with any activity (runs, walks, or
     # workouts — mirrors share their run's date, so including them is harmless).

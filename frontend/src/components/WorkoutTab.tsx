@@ -10,6 +10,7 @@ import {
 import WorkoutEditor from "./WorkoutEditor";
 import RunLogger from "./RunLogger";
 import BoxingLogger from "./BoxingLogger";
+import CyclingLogger from "./CyclingLogger";
 import WorkoutCard from "./WorkoutCard";
 import WorkoutSkeleton from "./skeletons/WorkoutSkeleton";
 import { useFocusTrap } from "../useFocusTrap";
@@ -255,17 +256,18 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         </button>
       </div>
 
-      {/* Quick-log row: Run, Walk, Boxing */}
+      {/* Quick-log row: Run, Walk, Cycling, Boxing */}
       {loading ? (
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {[0, 1, 2].map((i) => (
+        <div className="grid grid-cols-4 gap-3 mb-4">
+          {[0, 1, 2, 3].map((i) => (
             <div key={i} className="skeleton-shimmer rounded-xl h-[72px]" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-4 gap-3 mb-4">
           <RunLogger onRunLogged={() => onLogWorkout?.()} runType="run" />
           <RunLogger onRunLogged={() => onLogWorkout?.()} runType="walk" />
+          <CyclingLogger onWorkoutLogged={() => onLogWorkout?.()} />
           <BoxingLogger onWorkoutLogged={() => onLogWorkout?.()} />
         </div>
       )}

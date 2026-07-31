@@ -44,6 +44,7 @@ function makeSession(overrides: Partial<WorkoutSession> = {}): WorkoutSession {
     notes: "Felt great",
     boxing_entry_id: null,
     run_entry_id: null,
+    cycling_entry_id: null,
     exercises: [
       {
         id: 101,

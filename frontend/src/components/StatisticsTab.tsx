@@ -259,16 +259,17 @@ function LineChart({
 
 /** 100% split bar of time per activity type over the given weeks. */
 function ActivityMixBar({ weeks }: { weeks: WeeklyActivityStat[] }) {
-  const minutes: Record<ActivityKind, number> = { workout: 0, run: 0, walk: 0, boxing: 0 };
+  const minutes: Record<ActivityKind, number> = { workout: 0, run: 0, walk: 0, boxing: 0, cycling: 0 };
   for (const w of weeks) {
     minutes.workout += w.workout_minutes;
     minutes.run += w.run_minutes;
     minutes.walk += w.walk_minutes;
     minutes.boxing += w.boxing_minutes;
+    minutes.cycling += w.cycling_minutes;
   }
-  const total = minutes.workout + minutes.run + minutes.walk + minutes.boxing;
+  const total = minutes.workout + minutes.run + minutes.walk + minutes.boxing + minutes.cycling;
   if (total <= 0) return null;
-  const kinds = (["workout", "run", "walk", "boxing"] as const).filter((k) => minutes[k] > 0);
+  const kinds = (["workout", "run", "walk", "boxing", "cycling"] as const).filter((k) => minutes[k] > 0);
 
   return (
     <div>
@@ -576,7 +577,7 @@ export default function StatisticsTab() {
             label={(d) => d.week_start}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
           />
-          <ActivityLegend kinds={["workout", "run", "walk"]} />
+          <ActivityLegend kinds={["workout", "run", "walk", "boxing", "cycling"]} />
           {stats.current_month_vs_previous_pct != null && (
             <div className="flex justify-between mt-2 text-[10px] text-fg/40">
               <span>This month: {formatHours(stats.current_month_minutes)}</span>
@@ -602,7 +603,7 @@ export default function StatisticsTab() {
             label={(d) => d.week_start}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
           />
-          <ActivityLegend kinds={["workout", "run", "walk"]} />
+          <ActivityLegend kinds={["workout", "run", "walk", "boxing", "cycling"]} />
         </ChartCard>
       )}
 

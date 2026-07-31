@@ -182,6 +182,7 @@ class WorkoutSessionResponse(BaseModel):
     notes: str
     boxing_entry_id: Optional[int] = None
     run_entry_id: Optional[int] = None
+    cycling_entry_id: Optional[int] = None
     exercises: list[SessionExerciseResponse] = []
 
     model_config = {"from_attributes": True}
@@ -355,7 +356,7 @@ class RunEntryResponse(BaseModel):
 
 class PrsResponse(BaseModel):
     """Activity-level personal records, split by type (runs / walks /
-    workouts) rather than per-exercise."""
+    workouts / boxing / cycling) rather than per-exercise."""
     # Runs
     longest_run_km: float | None = None
     longest_run_seconds: int | None = None
@@ -372,6 +373,15 @@ class PrsResponse(BaseModel):
     longest_workout_seconds: int | None = None
     most_kcal_workout: float | None = None
     most_exercises_workout: int | None = None
+    # Boxing
+    longest_boxing_seconds: int | None = None
+    most_kcal_boxing: float | None = None
+    total_boxing_hours: float = 0.0
+    # Cycling
+    longest_cycling_seconds: int | None = None
+    longest_cycling_km: float | None = None
+    most_kcal_cycling: float | None = None
+    total_cycling_hours: float = 0.0
     # Overall
     longest_streak_days: int = 0
     streak_days_30d: int = 0
@@ -379,18 +389,21 @@ class PrsResponse(BaseModel):
 
 class WeeklyActivityStats(BaseModel):
     """One week of activity, split by type so charts can stack without
-    double-counting (run/walk/boxing mirror sessions are excluded from workouts)."""
+    double-counting (run/walk/boxing/cycling mirror sessions are excluded from workouts)."""
     week_start: str
     workout_minutes: float
     run_minutes: float
     walk_minutes: float
     boxing_minutes: float = 0.0
+    cycling_minutes: float = 0.0
     run_km: float
     walk_km: float
+    cycling_km: float = 0.0
     workout_kcal: float
     run_kcal: float
     walk_kcal: float
     boxing_kcal: float = 0.0
+    cycling_kcal: float = 0.0
 
 
 class StatsOverviewResponse(BaseModel):
@@ -401,6 +414,7 @@ class StatsOverviewResponse(BaseModel):
     total_runs: int = 0
     total_walks: int = 0
     total_boxing: int = 0
+    total_cycling: int = 0
     current_month_minutes: float = 0.0
     previous_month_minutes: float = 0.0
     current_month_vs_previous_pct: float | None = None
@@ -468,6 +482,52 @@ class BoxingPrsResponse(BaseModel):
     most_kcal_session: float | None = None
     total_hours_all_time: float = 0.0
     most_rounds_session: int | None = None
+
+
+# ─── Cycling Schemas ────────────────────────────────────────
+
+class CyclingEntryCreate(BaseModel):
+    duration_seconds: int
+    distance_km: float
+    date: DateField = None
+    notes: str = ""
+
+
+class CyclingEntryResponse(BaseModel):
+    id: int
+    duration_seconds: int
+    distance_km: float
+    date: date
+    notes: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MonthlyCyclingStats(BaseModel):
+    month: str
+    sessions: int
+    total_minutes: int
+    total_km: float = 0.0
+
+
+class CyclingStatsResponse(BaseModel):
+    total_sessions: int = 0
+    total_duration_seconds: int = 0
+    total_hours: float = 0.0
+    total_distance_km: float = 0.0
+    avg_duration_seconds: float | None = None
+    avg_distance_km: float | None = None
+    total_kcal_estimated: float = 0.0
+    monthly_breakdown: list[MonthlyCyclingStats] = []
+
+
+class CyclingPrsResponse(BaseModel):
+    """Personal records for cycling rides."""
+    longest_ride_seconds: int | None = None
+    longest_ride_km: float | None = None
+    most_kcal_ride: float | None = None
+    total_hours_all_time: float = 0.0
 
 
 # ─── Apple Health import ───────────────────────────────────

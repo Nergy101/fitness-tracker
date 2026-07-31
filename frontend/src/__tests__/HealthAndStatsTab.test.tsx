@@ -65,6 +65,7 @@ vi.mock("@phosphor-icons/react", () => {
     ArrowUpIcon: createIcon("ArrowUpIcon"),
     BandaidsIcon: createIcon("BandaidsIcon"),
     BarbellIcon: createIcon("BarbellIcon"),
+    BicycleIcon: createIcon("BicycleIcon"),
     CalendarBlankIcon: createIcon("CalendarBlankIcon"),
     CaretDownIcon: createIcon("CaretDownIcon"),
     CaretLeftIcon: createIcon("CaretLeftIcon"),

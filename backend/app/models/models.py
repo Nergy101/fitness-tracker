@@ -62,6 +62,7 @@ class WorkoutSession(Base):
     template_name = Column(String(255), default="")  # snapshot in case template is deleted
     run_entry_id = Column(Integer, ForeignKey("run_entries.id"), nullable=True)
     boxing_entry_id = Column(Integer, ForeignKey("boxing_entries.id"), nullable=True)
+    cycling_entry_id = Column(Integer, ForeignKey("cycling_entries.id"), nullable=True)
     started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     finished_at = Column(DateTime, nullable=True)
     total_duration_seconds = Column(Integer, default=0)
@@ -71,7 +72,7 @@ class WorkoutSession(Base):
     exercises = relationship("SessionExercise", back_populates="session", cascade="all, delete-orphan", order_by="SessionExercise.order_index")
 
 
-MIRROR_PREFIXES = ("Run:", "Walk:", "Boxing:")
+MIRROR_PREFIXES = ("Run:", "Walk:", "Boxing:", "Cycling:")
 
 
 def is_mirror_session(session: "WorkoutSession") -> bool:
@@ -224,6 +225,20 @@ class BoxingEntry(Base):
     duration_seconds = Column(Integer, nullable=False)
     kcal_per_min = Column(Float, nullable=False, default=10.0)
     rounds = Column(Integer, nullable=True)
+    date = Column(Date, nullable=False, default=lambda: date.today())
+    notes = Column(Text, default="")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class CyclingEntry(Base):
+    """A standalone cycling ride log. Mirrors into WorkoutSession with a
+    'Cycling:' prefix so it appears in the unified History tab and activity
+    stats."""
+    __tablename__ = "cycling_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    duration_seconds = Column(Integer, nullable=False)
+    distance_km = Column(Float, nullable=False)
     date = Column(Date, nullable=False, default=lambda: date.today())
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

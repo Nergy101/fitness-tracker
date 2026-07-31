@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import CORS_ORIGINS, DATABASE_URL
 from app.database import run_migrations
 from app.logging_config import configure_logging
-from app.routers import exercises, workouts, sessions, health, runs, auth, stats, notifications, backup, health_import, boxing
+from app.routers import exercises, workouts, sessions, health, runs, auth, stats, notifications, backup, health_import, boxing, cycling
 
 # Configure logging as early as possible at startup.
 configure_logging()
@@ -75,6 +75,7 @@ app.include_router(notifications.router)
 app.include_router(backup.router)
 app.include_router(health_import.router)
 app.include_router(boxing.router)
+app.include_router(cycling.router)
 
 
 @app.get("/api/health")

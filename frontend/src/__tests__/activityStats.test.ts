@@ -14,6 +14,7 @@ function session(overrides: Partial<WorkoutSession>): WorkoutSession {
     notes: "",
     boxing_entry_id: null,
     run_entry_id: null,
+    cycling_entry_id: null,
     exercises: [],
     ...overrides,
   };

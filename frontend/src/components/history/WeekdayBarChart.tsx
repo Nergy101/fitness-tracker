@@ -7,20 +7,20 @@ import { WEEKDAY_LABELS } from "./utils";
 /** Bars per weekday (Mon–Sun), stacked by activity type. */
 export default function WeekdayBarChart({ sessions }: { sessions: WorkoutSession[] }) {
   const buckets = useMemo(() => {
-    const counts = Array.from({ length: 7 }, () => ({ workout: 0, run: 0, walk: 0, boxing: 0 }));
+    const counts = Array.from({ length: 7 }, () => ({ workout: 0, run: 0, walk: 0, boxing: 0, cycling: 0 }));
     for (const s of sessions) {
       const day = new Date(s.started_at).getDay(); // 0=Sun
       counts[(day + 6) % 7][activityKind(s.template_name)]++;
     }
     return counts;
   }, [sessions]);
-  const max = Math.max(1, ...buckets.map((b) => b.workout + b.run + b.walk + b.boxing));
+  const max = Math.max(1, ...buckets.map((b) => b.workout + b.run + b.walk + b.boxing + b.cycling));
 
   return (
     <div>
       <div className="flex items-end gap-1.5 h-40">
         {buckets.map((b, i) => {
-          const total = b.workout + b.run + b.walk + b.boxing;
+          const total = b.workout + b.run + b.walk + b.boxing + b.cycling;
           return (
             <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
               <span
@@ -35,7 +35,7 @@ export default function WeekdayBarChart({ sessions }: { sessions: WorkoutSession
                   background: total > 0 ? undefined : "var(--track)",
                 }}
               >
-                {(["boxing", "walk", "run", "workout"] as const).map((kind) =>
+                {(["cycling", "boxing", "walk", "run", "workout"] as const).map((kind) =>
                   b[kind] > 0 ? (
                     <div
                       key={kind}
@@ -52,7 +52,7 @@ export default function WeekdayBarChart({ sessions }: { sessions: WorkoutSession
           );
         })}
       </div>
-      <ActivityLegend kinds={["workout", "run", "walk", "boxing"]} />
+      <ActivityLegend kinds={["workout", "run", "walk", "boxing", "cycling"]} />
     </div>
   );
 }
