@@ -452,3 +452,111 @@ class TestBatchMigrationsWithChildRows:
                 ).scalar() == 1, "rows were lost recovering the scratch table"
         finally:
             verify_engine.dispose()
+
+
+class TestCyclingKcalRecalibration:
+    """The cycling kcal estimate is denormalised onto each ride's mirror
+    WorkoutSession and its SessionExercise, so recalibrating the formula in app
+    code leaves already-logged rides showing the old, ~35%-too-high number.
+    The data migration must rewrite them — and roll them back on downgrade."""
+
+    PARENT = "c4ff5c2c3579"  # add cycling_entries table
+    LEGACY_KCAL = 1000.8  # 0.45 x 80 kg x 27.8 km
+    RECALIBRATED_KCAL = 738.0  # (MET 7.15 - 1) x 80 kg x 1.5 h
+
+    def _seed_ride(self, url: str) -> None:
+        """A 27.8 km / 1.5 h ride with its mirror rows carrying the old estimate."""
+        engine = create_engine(url)
+        try:
+            with engine.connect() as conn:
+                conn.execute(
+                    text(
+                        "INSERT INTO weight_entries (id, weight_kg, date, notes) "
+                        "VALUES (1, 80.0, '2026-01-01', '')"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "INSERT INTO cycling_entries "
+                        "(id, duration_seconds, distance_km, date, notes) "
+                        "VALUES (1, 5400, 27.8, '2026-07-30', 'long ride')"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "INSERT INTO workout_sessions "
+                        "(id, template_id, template_name, started_at, "
+                        "total_duration_seconds, total_kcal_estimated, cycling_entry_id) "
+                        "VALUES (1, NULL, 'Cycling: 27.8km', '2026-07-30 00:00:00', "
+                        f"5400, {self.LEGACY_KCAL}, 1)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "INSERT INTO session_exercises "
+                        "(id, session_id, exercise_name, duration_seconds, "
+                        "kcal_burned, order_index, completed) "
+                        f"VALUES (1, 1, 'Cycling', 5400, {self.LEGACY_KCAL}, 0, 1)"
+                    )
+                )
+                conn.commit()
+        finally:
+            engine.dispose()
+
+    def _stored_kcal(self, url: str) -> tuple[float, float]:
+        engine = create_engine(url)
+        try:
+            with engine.connect() as conn:
+                session_kcal = conn.execute(
+                    text("SELECT total_kcal_estimated FROM workout_sessions WHERE id = 1")
+                ).scalar()
+                exercise_kcal = conn.execute(
+                    text("SELECT kcal_burned FROM session_exercises WHERE id = 1")
+                ).scalar()
+        finally:
+            engine.dispose()
+        return session_kcal, exercise_kcal
+
+    def test_rewrites_stored_estimates_and_rolls_them_back(self, tmp_path):
+        db_file = tmp_path / "recalibrate.db"
+        url = _db_url(db_file)
+
+        parent = _alembic(db_file, "upgrade", self.PARENT)
+        assert parent.returncode == 0, f"{parent.stdout}{parent.stderr}"
+        self._seed_ride(url)
+
+        up = _alembic(db_file, "upgrade", "head")
+        assert up.returncode == 0, f"upgrade failed:\n{up.stdout}{up.stderr}"
+        assert self._stored_kcal(url) == (
+            self.RECALIBRATED_KCAL,
+            self.RECALIBRATED_KCAL,
+        ), "migration left the pre-recalibration estimate in place"
+
+        down = _alembic(db_file, "downgrade", "-1")
+        assert down.returncode == 0, f"downgrade failed:\n{down.stdout}{down.stderr}"
+        assert self._stored_kcal(url) == (self.LEGACY_KCAL, self.LEGACY_KCAL), (
+            "downgrade must restore the flat-factor estimate"
+        )
+
+    def test_uses_the_default_weight_when_no_entry_predates_the_ride(self, tmp_path):
+        """No weight logged at all: fall back to 75 kg rather than skipping the
+        ride (which would silently leave the old estimate behind)."""
+        db_file = tmp_path / "recalibrate_no_weight.db"
+        url = _db_url(db_file)
+
+        assert _alembic(db_file, "upgrade", self.PARENT).returncode == 0
+        self._seed_ride(url)
+        engine = create_engine(url)
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("DELETE FROM weight_entries"))
+                conn.commit()
+        finally:
+            engine.dispose()
+
+        up = _alembic(db_file, "upgrade", "head")
+        assert up.returncode == 0, f"upgrade failed:\n{up.stdout}{up.stderr}"
+
+        # 75/80 of the 80 kg figure — same MET, same hours.
+        expected = round(self.RECALIBRATED_KCAL * 75.0 / 80.0, 1)
+        assert self._stored_kcal(url) == (expected, expected)

@@ -76,6 +76,43 @@ class TestCreateCycling:
         assert mirror["notes"] == "Long ride"
         assert "Cycling:" in mirror["template_name"]
 
+    def test_mirror_kcal_is_speed_based_active_energy(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """The mirror's kcal comes from average speed and the rider's weight:
+        24 km in 1.5 h is 16 km/h -> MET 6.16, so (6.16 - 1) x 80 kg x 1.5 h.
+        The superseded flat 0.45 kcal/kg/km factor would have said 864.0."""
+        client.post(
+            "/api/v1/health/weight",
+            json={"weight_kg": 80.0, "date": "2026-01-01"},
+            headers=auth_headers,
+        )
+        entry = client.post(self.URL, json={
+            "duration_seconds": 5400, "distance_km": 24.0,
+        }, headers=auth_headers).json()
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        mirror = next(s for s in sessions if s.get("cycling_entry_id") == entry["id"])
+
+        assert mirror["total_kcal_estimated"] == 619.2
+
+    def test_same_distance_at_double_the_speed_burns_more(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Distance alone cannot price a ride — the old factor scored these two
+        identically."""
+        slow = client.post(self.URL, json={
+            "duration_seconds": 7200, "distance_km": 24.0,
+        }, headers=auth_headers).json()
+        fast = client.post(self.URL, json={
+            "duration_seconds": 3600, "distance_km": 24.0,
+        }, headers=auth_headers).json()
+
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        by_entry = {s["cycling_entry_id"]: s["total_kcal_estimated"] for s in sessions}
+
+        assert by_entry[fast["id"]] > by_entry[slow["id"]]
+
 
 class TestUpdateCycling:
     URL = "/api/v1/cycling"

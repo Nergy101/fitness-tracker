@@ -91,6 +91,21 @@ When a new activity kind gets its own series, wire it into every StatsTab chart
 with its `ACTIVITY_COLORS` entry — the daily path classifies sessions via `activityKind()`,
 so a kind missing from `activity.tsx` silently lands in the workout bucket.
 
+### kcal estimates — stored, not derived
+
+Formulas live in `app/energy.py` (pure, no DB) and are called through a thin
+`_calc_*_kcal()` wrapper in each router that resolves the rider's weight nearest
+on-or-before the activity date. Cycling is speed-based (Compendium MET interpolated over
+average speed, then active = `(MET − 1) × kg × hours`); runs/walks are distance-based
+(0.97 / 0.5 kcal/kg/km). All of them report **active** energy, i.e. above resting —
+the same thing a watch calls active energy.
+
+The result is **denormalised** onto the mirror `WorkoutSession.total_kcal_estimated`
+and its `SessionExercise.kcal_burned`. Changing a formula therefore needs an Alembic
+**data migration** that recomputes existing rows (see `20260731_1300_recalibrate_cycling_kcal.py`),
+or old activities keep showing the old numbers in History, stats and PRs. Keep the
+superseded formula in `energy.py` so `downgrade()` is real.
+
 ### total_duration_seconds — keep in sync across 3 locations
 
 When adding workout phases (warmup, cooldown, etc.), the total duration computation lives in:

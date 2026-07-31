@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.energy import cycling_kcal
 from app.models.models import CyclingEntry, WorkoutSession, SessionExercise, WeightEntry
 from app.schemas import (
     CyclingEntryCreate, CyclingEntryResponse, CyclingStatsResponse, MonthlyCyclingStats,
@@ -12,17 +13,11 @@ from app.schemas import (
 
 router = APIRouter(prefix="/api/v1/cycling", tags=["cycling"])
 
-# Cycling calorie factor: ~0.45 kcal/kg/km for moderate cycling (MET 8, ~16 km/h).
-# This is an approximation — wind, hills, and speed all affect actual burn.
-CYCLING_FACTOR = 0.45
 
-
-def _calc_cycling_kcal(distance_km: float, db: Session, ride_date=None) -> float:
-    """Estimate calories burned: ~0.45 kcal/kg/km for moderate cycling.
-
-    Uses the weight entry nearest on-or-before `ride_date` (falling back to the
-    earliest entry, then a 75 kg default).
-    """
+def _rider_weight_kg(db: Session, ride_date=None) -> float:
+    """Weight nearest on-or-before `ride_date` (falling back to the earliest
+    entry, then a 75 kg default) so historical rides aren't recomputed with
+    today's weight."""
     entry = None
     if ride_date is not None:
         entry = (
@@ -33,13 +28,19 @@ def _calc_cycling_kcal(distance_km: float, db: Session, ride_date=None) -> float
         )
     if entry is None:
         entry = db.query(WeightEntry).order_by(WeightEntry.date.asc()).first()
-    weight_kg = entry.weight_kg if entry else 75.0
-    return round(CYCLING_FACTOR * weight_kg * distance_km, 1)
+    return entry.weight_kg if entry else 75.0
+
+
+def _calc_cycling_kcal(
+    distance_km: float, duration_seconds: int, db: Session, ride_date=None
+) -> float:
+    """Active kcal for a ride, from its average speed (see app.energy)."""
+    return cycling_kcal(distance_km, duration_seconds, _rider_weight_kg(db, ride_date))
 
 
 def _create_workout_session(entry: CyclingEntry, db: Session) -> None:
     """Mirror this cycling entry into a WorkoutSession for the unified History tab."""
-    kcal = _calc_cycling_kcal(entry.distance_km, db, entry.date)
+    kcal = _calc_cycling_kcal(entry.distance_km, entry.duration_seconds, db, entry.date)
 
     start = datetime.combine(entry.date, datetime.min.time())
     session = WorkoutSession(
@@ -103,7 +104,7 @@ def update_cycling(entry_id: int, data: CyclingEntryCreate, db: Session = Depend
     db.commit()
 
     # Sync the associated WorkoutSession mirror
-    kcal = _calc_cycling_kcal(entry.distance_km, db, entry.date)
+    kcal = _calc_cycling_kcal(entry.distance_km, entry.duration_seconds, db, entry.date)
     sessions = db.query(WorkoutSession).filter(
         WorkoutSession.cycling_entry_id == entry.id,
     ).all()
@@ -151,7 +152,9 @@ def cycling_stats(db: Session = Depends(get_db)):
     total_distance = sum(e.distance_km for e in entries)
     avg_duration = round(total_duration / total_sessions, 1) if total_sessions > 0 else None
     avg_distance = round(total_distance / total_sessions, 1) if total_sessions > 0 else None
-    total_kcal = round(sum(_calc_cycling_kcal(e.distance_km, db, e.date) for e in entries), 1)
+    total_kcal = round(
+        sum(_calc_cycling_kcal(e.distance_km, e.duration_seconds, db, e.date) for e in entries), 1
+    )
 
     # Monthly breakdown
     monthly: dict[str, MonthlyCyclingStats] = {}
@@ -188,7 +191,7 @@ def cycling_prs(db: Session = Depends(get_db)):
 
     longest_km = max(e.distance_km for e in entries)
     longest_ride = next(e for e in entries if e.distance_km == longest_km)
-    most_kcal = max(_calc_cycling_kcal(e.distance_km, db, e.date) for e in entries)
+    most_kcal = max(_calc_cycling_kcal(e.distance_km, e.duration_seconds, db, e.date) for e in entries)
     total_hours = round(sum(e.duration_seconds for e in entries) / 3600, 1)
 
     return CyclingPrsResponse(
