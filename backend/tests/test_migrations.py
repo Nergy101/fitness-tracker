@@ -80,6 +80,60 @@ def _run(db_path) -> subprocess.CompletedProcess:
     )
 
 
+def _alembic(db_path, *args: str) -> subprocess.CompletedProcess:
+    """Invoke the Alembic CLI against *db_path*.
+
+    Uses the venv binary for the same reason app.database.run_migrations does:
+    the local backend/alembic/ directory shadows the installed package, so
+    `python -m alembic` cannot be used here.
+    """
+    return subprocess.run(
+        [os.path.join(os.path.dirname(sys.executable), "alembic"), *args],
+        cwd=BACKEND_DIR,
+        env={
+            **os.environ,
+            "DATABASE_URL": _db_url(db_path),
+            "FITNESS_PASSWORD": "test-password-123",
+        },
+        capture_output=True,
+        text=True,
+    )
+
+
+def _seed_session_with_child_rows(url: str) -> None:
+    """Insert a workout_sessions row plus a session_exercises row pointing at
+    it.  The child row is the whole point: batch_alter_table() on SQLite drops
+    and recreates workout_sessions, which only fails once something references
+    it."""
+    engine = create_engine(url)
+    try:
+        with engine.connect() as conn:
+            conn.execute(
+                text(
+                    "INSERT INTO workout_templates "
+                    "(id, name, description, rounds, rest_between_rounds) "
+                    "VALUES (1, 'Full Body', 'seed', 1, 10)"
+                )
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO workout_sessions "
+                    "(id, template_id, template_name, started_at, total_duration_seconds) "
+                    "VALUES (1, 1, 'Full Body', '2026-07-01 10:00:00', 100)"
+                )
+            )
+            conn.execute(
+                text(
+                    "INSERT INTO session_exercises "
+                    "(id, session_id, exercise_name, duration_seconds, order_index) "
+                    "VALUES (1, 1, 'Push Ups', 30, 0)"
+                )
+            )
+            conn.commit()
+    finally:
+        engine.dispose()
+
+
 # ─── Tests ────────────────────────────────────────────────────────────────────
 
 
@@ -232,6 +286,108 @@ class TestRunMigrations:
             head = _alembic_head()
             assert version == head, (
                 f"Expected head stamp {head!r}, got {version!r}"
+            )
+        finally:
+            verify_engine.dispose()
+
+
+class TestBatchMigrationsWithChildRows:
+    """Production incident defended:
+
+    app.database registers an Engine-wide `PRAGMA foreign_keys=ON` listener.
+    Alembic's env.py builds its engine in the same process, so migrations
+    inherited FK enforcement.  op.batch_alter_table() emulates ALTER on SQLite
+    by copying the table and DROPping the original — which raises
+    "FOREIGN KEY constraint failed" as soon as a child row references it.
+
+    Every migration test above ran against an empty database, so the deploy
+    that added cycling_entries passed CI and then crash-looped in production
+    against real workout_sessions/session_exercises data.  Because pysqlite
+    autocommits DDL, the aborted run left cycling_entries behind WITHOUT the
+    alembic_version stamp, so each restart re-failed on "table already exists".
+    """
+
+    def test_head_migration_survives_populated_child_tables(self, tmp_path):
+        """Downgrade one revision from head, then migrate back up with child
+        rows present.  Pinned to no specific revision, so it keeps guarding
+        whichever migration is newest."""
+        db_file = tmp_path / "child_rows.db"
+        url = _db_url(db_file)
+
+        assert _run(db_file).returncode == 0
+        _seed_session_with_child_rows(url)
+
+        down = _alembic(db_file, "downgrade", "-1")
+        assert down.returncode == 0, f"downgrade failed:\n{down.stdout}{down.stderr}"
+
+        proc = _run(db_file)
+        diag = proc.stdout + proc.stderr
+        assert proc.returncode == 0, (
+            f"re-upgrading head with child rows present failed:\n{diag}"
+        )
+
+        verify_engine = create_engine(url)
+        try:
+            with verify_engine.connect() as conn:
+                assert conn.execute(
+                    text("SELECT version_num FROM alembic_version")
+                ).scalar() == _alembic_head()
+                assert conn.execute(
+                    text("SELECT COUNT(*) FROM workout_sessions")
+                ).scalar() == 1, "session row lost in batch table rebuild"
+                assert conn.execute(
+                    text("SELECT session_id FROM session_exercises")
+                ).scalar() == 1, "child row lost or re-pointed in batch table rebuild"
+        finally:
+            verify_engine.dispose()
+
+    def test_resumes_half_applied_cycling_migration(self, tmp_path):
+        """Exact production crash state: stamped at the cycling migration's
+        parent, with the autocommitted cycling_entries table already present."""
+        db_file = tmp_path / "half_applied.db"
+        url = _db_url(db_file)
+
+        parent = _alembic(db_file, "upgrade", "e538293b14d1")
+        assert parent.returncode == 0, f"{parent.stdout}{parent.stderr}"
+        _seed_session_with_child_rows(url)
+
+        setup_engine = create_engine(url)
+        try:
+            with setup_engine.connect() as conn:
+                conn.execute(
+                    text(
+                        "CREATE TABLE cycling_entries ("
+                        "id INTEGER NOT NULL, duration_seconds INTEGER NOT NULL, "
+                        "distance_km FLOAT NOT NULL, date DATE NOT NULL, "
+                        "notes TEXT, created_at DATETIME, PRIMARY KEY (id))"
+                    )
+                )
+                conn.execute(
+                    text("CREATE INDEX ix_cycling_entries_id ON cycling_entries (id)")
+                )
+                conn.commit()
+        finally:
+            setup_engine.dispose()
+
+        proc = _run(db_file)
+        diag = proc.stdout + proc.stderr
+        assert proc.returncode == 0, f"half-applied DB did not self-heal:\n{diag}"
+
+        verify_engine = create_engine(url)
+        try:
+            with verify_engine.connect() as conn:
+                assert conn.execute(
+                    text("SELECT version_num FROM alembic_version")
+                ).scalar() == _alembic_head()
+                assert conn.execute(
+                    text("SELECT COUNT(*) FROM session_exercises")
+                ).scalar() == 1
+            cols = {
+                c["name"]
+                for c in inspect(verify_engine).get_columns("workout_sessions")
+            }
+            assert "cycling_entry_id" in cols, (
+                "resumed migration skipped the workout_sessions column"
             )
         finally:
             verify_engine.dispose()

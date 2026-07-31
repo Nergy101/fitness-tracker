@@ -18,18 +18,29 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.create_table('cycling_entries',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('duration_seconds', sa.Integer(), nullable=False),
-    sa.Column('distance_km', sa.Float(), nullable=False),
-    sa.Column('date', sa.Date(), nullable=False),
-    sa.Column('notes', sa.Text(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_cycling_entries_id'), 'cycling_entries', ['id'], unique=False)
-
     insp = sa.inspect(op.get_bind())
+
+    # An earlier release of this migration aborted midway: SQLite DDL
+    # autocommits under pysqlite, so cycling_entries survived while the
+    # alembic_version stamp did not.  Re-running must not trip over the
+    # leftovers, or the deploy crash-loops on "table already exists".
+    if not insp.has_table("cycling_entries"):
+        op.create_table('cycling_entries',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('duration_seconds', sa.Integer(), nullable=False),
+        sa.Column('distance_km', sa.Float(), nullable=False),
+        sa.Column('date', sa.Date(), nullable=False),
+        sa.Column('notes', sa.Text(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=True),
+        sa.PrimaryKeyConstraint('id')
+        )
+
+    if not any(
+        ix["name"] == op.f('ix_cycling_entries_id')
+        for ix in insp.get_indexes("cycling_entries")
+    ):
+        op.create_index(op.f('ix_cycling_entries_id'), 'cycling_entries', ['id'], unique=False)
+
     cols = [c["name"] for c in insp.get_columns("workout_sessions")]
     with op.batch_alter_table("workout_sessions") as batch_op:
         if "cycling_entry_id" not in cols:
