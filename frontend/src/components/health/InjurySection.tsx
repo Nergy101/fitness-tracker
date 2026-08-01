@@ -14,7 +14,7 @@ export default function InjurySection() {
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Form state
   const [bodyPart, setBodyPart] = useState("");
