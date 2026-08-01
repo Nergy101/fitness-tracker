@@ -27,7 +27,7 @@ export default function InjurySection() {
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }, []);
 
-  const loadInjuries = async () => {
+  const loadInjuries = useCallback(async () => {
     try {
       const data = await api.getInjuries();
       setInjuries(data);
@@ -40,11 +40,11 @@ export default function InjurySection() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [flashToast]);
 
   useEffect(() => {
     loadInjuries();
-  }, []);
+  }, [loadInjuries]);
 
   const activeCount = useMemo(() => injuries.filter((i) => !i.resolved_date).length, [injuries]);
 

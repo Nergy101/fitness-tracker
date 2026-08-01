@@ -282,6 +282,7 @@ describe("InjurySection", () => {
 
   it("shows offline toast when submitInjury is queued offline", async () => {
     const { OfflineError: OE } = await import("../api");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGetInjuries.mockResolvedValue([]);
     mockCreateInjury.mockRejectedValue(new (OE as any)());
 

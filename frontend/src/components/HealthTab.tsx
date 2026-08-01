@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   CaretDownIcon as CaretDown,
   CaretUpIcon as CaretUp,
@@ -143,7 +143,7 @@ export default function HealthTab() {
   const [showMeas, setShowMeas] = useState(false);
   const [prefilled, setPrefilled] = useState(false);
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     try {
       const [
         w, st, g, b, pr,
@@ -169,9 +169,9 @@ export default function HealthTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [prefilled]);
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   const logWeight = async () => {
     const kg = parseFloat(newWeight);
