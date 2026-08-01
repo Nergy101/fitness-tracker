@@ -155,12 +155,14 @@ function makeRuns() {
 }
 
 function makeSessions() {
+  const today = new Date();
+  const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   return [
     {
       id: 1, template_id: 1, template_name: "Morning Routine",
-      started_at: "2026-07-25T08:00:00Z", finished_at: "2026-07-25T08:30:00Z",
+      started_at: `${ymd}T08:00:00Z`, finished_at: `${ymd}T08:30:00Z`,
       total_duration_seconds: 1800, total_kcal_estimated: 200, notes: "",
-      boxing_entry_id: null, run_entry_id: null, exercises: [],
+      boxing_entry_id: null, run_entry_id: null, cycling_entry_id: null, exercises: [],
     },
   ];
 }
