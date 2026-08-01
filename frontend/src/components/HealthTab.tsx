@@ -141,6 +141,7 @@ export default function HealthTab() {
   const [newWeight, setNewWeight] = useState("");
   const [showWellness, setShowWellness] = useState(false);
   const [showMeas, setShowMeas] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
 
   const loadAll = async () => {
     try {
@@ -158,6 +159,11 @@ export default function HealthTab() {
       setGoal(g);
       setBmi(b);
       setPrs(pr);
+      // Pre-fill weight input with last recorded weight on initial load
+      if (!prefilled && w.length > 0) {
+        setNewWeight(String(w[w.length - 1].weight_kg));
+        setPrefilled(true);
+      }
     } catch (e) {
       console.error("Failed to load health data", e);
     } finally {

@@ -19,6 +19,10 @@ vi.mock("../api", () => ({
     updateInjury: (...args: unknown[]) => mockUpdateInjury(...args),
     deleteInjury: (...args: unknown[]) => mockDeleteInjury(...args),
   },
+  OfflineError: class OfflineError extends Error {
+    readonly offline = true;
+    constructor(message = "offline") { super(message); this.name = "OfflineError"; }
+  },
 }));
 
 vi.mock("@phosphor-icons/react", () => ({
@@ -263,5 +267,99 @@ describe("InjurySection", () => {
       expect(screen.getByText("neck")).toBeInTheDocument();
     });
     expect(screen.getByText("5/5")).toBeInTheDocument();
+  });
+
+  // ── Error / failure path tests ─────────────────────────
+
+  it("shows error toast when loadInjuries fails", async () => {
+    mockGetInjuries.mockRejectedValue(new Error("Network down"));
+    render(<InjurySection />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to load injuries")).toBeInTheDocument();
+    });
+  });
+
+  it("shows offline toast when submitInjury is queued offline", async () => {
+    const { OfflineError: OE } = await import("../api");
+    mockGetInjuries.mockResolvedValue([]);
+    mockCreateInjury.mockRejectedValue(new (OE as any)());
+
+    render(<InjurySection />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/No injuries logged/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Log injury"));
+    fireEvent.change(screen.getByLabelText("Injury body part"), {
+      target: { value: "shoulder" },
+    });
+    fireEvent.click(screen.getByText("Log Injury"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Injury queued for sync")).toBeInTheDocument();
+    });
+  });
+
+  it("shows error toast when submitInjury fails with network error", async () => {
+    mockGetInjuries.mockResolvedValue([]);
+    mockCreateInjury.mockRejectedValue(new Error("500"));
+
+    render(<InjurySection />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/No injuries logged/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Log injury"));
+    fireEvent.change(screen.getByLabelText("Injury body part"), {
+      target: { value: "shoulder" },
+    });
+    fireEvent.click(screen.getByText("Log Injury"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to log injury")).toBeInTheDocument();
+    });
+  });
+
+  it("shows error toast when resolveInjury fails", async () => {
+    mockGetInjuries.mockResolvedValue([activeInjury]);
+    mockUpdateInjury.mockRejectedValue(new Error("Conflict"));
+
+    render(<InjurySection />);
+
+    await waitFor(() => {
+      expect(screen.getByText("heal")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("heal"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to update injury")).toBeInTheDocument();
+    });
+  });
+
+  it("shows error toast when deleteInjury fails", async () => {
+    mockGetInjuries.mockResolvedValue([resolvedInjury]);
+    mockDeleteInjury.mockRejectedValue(new Error("Forbidden"));
+
+    render(<InjurySection />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/1 healed injury/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText(/1 healed injury/));
+
+    await waitFor(() => {
+      expect(screen.getByText("right ankle")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Delete injury"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to delete injury")).toBeInTheDocument();
+    });
   });
 });

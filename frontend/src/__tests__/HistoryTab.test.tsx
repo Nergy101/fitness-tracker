@@ -149,6 +149,7 @@ describe("HistoryTab", () => {
   ];
 
   beforeEach(() => {
+    localStorage.clear();
     vi.clearAllMocks();
     mockGetAllSessionsImpl = async () => [...defaultSessions];
     mockDeleteSessionImpl = vi.fn().mockResolvedValue(undefined);

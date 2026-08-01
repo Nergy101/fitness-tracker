@@ -26,8 +26,14 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<WorkoutSession | null>(null);
-  const [range, setRange] = useState<RangeKey>("7d");
-  const [view, setView] = useState<"range" | "all">("range");
+  const [range, setRange] = useState<RangeKey>(() => {
+    const stored = localStorage.getItem("history-range");
+    return (stored as RangeKey) ?? "7d";
+  });
+  const [view, setView] = useState<"range" | "all">(() => {
+    const stored = localStorage.getItem("history-view");
+    return (stored as "range" | "all") ?? "range";
+  });
   const [calendar, setCalendar] = useState(false);
 
   useEffect(() => {
@@ -49,6 +55,10 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
       active = false;
     };
   }, [refreshKey]);
+
+  // Persist range/view selections to localStorage so they survive tab switches
+  useEffect(() => { localStorage.setItem("history-range", range); }, [range]);
+  useEffect(() => { localStorage.setItem("history-view", view); }, [view]);
 
   const rangeSessions = useMemo(() => {
     if (view === "all") return sessions;

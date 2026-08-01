@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   BandaidsIcon as Bandaids,
   PlusCircleIcon as PlusCircle,
@@ -6,25 +6,37 @@ import {
   CaretUpIcon as CaretUp,
   CaretDownIcon as CaretDown,
 } from "@phosphor-icons/react";
-import { api, type InjuryMarkerResponse, type InjuryMarkerCreate } from "../../api";
+import { api, OfflineError, type InjuryMarkerResponse, type InjuryMarkerCreate } from "../../api";
 
 export default function InjurySection() {
   const [injuries, setInjuries] = useState<InjuryMarkerResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // Form state
   const [bodyPart, setBodyPart] = useState("");
   const [severity, setSeverity] = useState(3);
   const [notes, setNotes] = useState("");
 
+  const flashToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
+  }, []);
+
   const loadInjuries = async () => {
     try {
       const data = await api.getInjuries();
       setInjuries(data);
-    } catch {
-      // silently fail
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        flashToast("You're offline — injury data may be stale");
+      } else {
+        flashToast("Failed to load injuries");
+      }
     } finally {
       setLoading(false);
     }
@@ -50,8 +62,13 @@ export default function InjurySection() {
       setSeverity(3);
       setNotes("");
       setShowForm(false);
-    } catch {
-      // silently fail
+      flashToast("Injury logged");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        flashToast("Injury queued for sync");
+      } else {
+        flashToast("Failed to log injury");
+      }
     }
   };
 
@@ -60,8 +77,13 @@ export default function InjurySection() {
       const today = new Date().toISOString().slice(0, 10);
       const updated = await api.updateInjury(id, { resolved_date: today });
       setInjuries((prev) => prev.map((i) => (i.id === id ? updated : i)));
-    } catch {
-      // silently fail
+      flashToast("Injury marked as healed");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        flashToast("Heal queued for sync");
+      } else {
+        flashToast("Failed to update injury");
+      }
     }
   };
 
@@ -69,8 +91,13 @@ export default function InjurySection() {
     try {
       await api.deleteInjury(id);
       setInjuries((prev) => prev.filter((i) => i.id !== id));
-    } catch {
-      // silently fail
+      flashToast("Injury deleted");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        flashToast("Delete queued for sync");
+      } else {
+        flashToast("Failed to delete injury");
+      }
     }
   };
 
@@ -88,6 +115,13 @@ export default function InjurySection() {
 
   return (
     <div className="bg-surface rounded-xl p-4 border border-fg/5">
+      {/* Toast notification */}
+      {toast && (
+        <div className="mb-3 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 text-xs text-accent text-center">
+          {toast}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
