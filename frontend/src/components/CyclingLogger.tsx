@@ -1,13 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   BicycleIcon as Bicycle,
-  PencilSimpleIcon as PencilSimple,
-  TrashIcon as Trash,
   XIcon as X,
 } from "@phosphor-icons/react";
 import Toast from "./Toast";
-import { api, OfflineError, type CyclingEntryResponse } from "../api";
-import { formatDuration, formatDate } from "../format";
+import { api, OfflineError } from "../api";
+import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
 import { ACTIVITY_COLORS } from "../activity";
 
@@ -34,18 +32,6 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
   const [toast, setToast] = useState<string | null>(null);
 
   const [notePrompt, setNotePrompt] = useState(() => randomNotePrompt());
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [entries, setEntries] = useState<CyclingEntryResponse[]>([]);
-  const [showConfirmDelete, setShowConfirmDelete] = useState<number | null>(null);
-
-  async function loadEntries() {
-    try {
-      const data = await api.getCycling();
-      setEntries(data);
-    } catch { /* silent */ }
-  }
-
-  useEffect(() => { loadEntries(); }, []);
 
   function resetForm() {
     setDuration(1800);
@@ -55,24 +41,6 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
     setNotes("");
     setDate(new Date().toISOString().slice(0, 10));
     setNotePrompt(randomNotePrompt());
-    setEditingId(null);
-  }
-
-  function startEdit(entry: CyclingEntryResponse) {
-    setEditingId(entry.id);
-    const mins = entry.duration_seconds;
-    const isPreset = DURATION_OPTIONS.some(o => o.seconds > 0 && o.seconds === mins);
-    setDuration(mins);
-    setIsCustomDuration(!isPreset);
-    if (!isPreset) {
-      setCustomDuration(String(Math.round(mins / 60)));
-    } else {
-      setCustomDuration("");
-    }
-    setDistanceKm(String(entry.distance_km));
-    setDate(entry.date);
-    setNotes(entry.notes);
-    setShowForm(true);
   }
 
   async function handleSubmit() {
@@ -81,50 +49,22 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
     if (isNaN(dist) || dist <= 0 || dur <= 0) return;
 
     try {
-      if (editingId) {
-        await api.updateCycling(editingId, {
-          duration_seconds: dur,
-          distance_km: dist,
-          date,
-          notes,
-        });
-        setToast("Cycling ride updated!");
-      } else {
-        await api.createCycling({
-          duration_seconds: dur,
-          distance_km: dist,
-          date,
-          notes,
-        });
-        setToast("Cycling ride logged!");
-      }
+      await api.createCycling({
+        duration_seconds: dur,
+        distance_km: dist,
+        date,
+        notes,
+      });
+      setToast("Cycling ride logged!");
       resetForm();
       setShowForm(false);
-      await loadEntries();
       onWorkoutLogged();
     } catch (e) {
       if (e instanceof OfflineError) {
-        setToast(editingId ? "Update queued for sync" : "Cycling ride queued for sync");
+        setToast("Cycling ride queued for sync");
       } else {
-        setToast(editingId ? "Failed to update cycling ride" : "Failed to log cycling ride");
+        setToast("Failed to log cycling ride");
       }
-    }
-  }
-
-  async function handleDelete(id: number) {
-    try {
-      await api.deleteCycling(id);
-      setToast("Cycling ride deleted");
-      setShowConfirmDelete(null);
-      await loadEntries();
-      onWorkoutLogged();
-    } catch (e) {
-      if (e instanceof OfflineError) {
-        setToast("Delete queued for sync");
-      } else {
-        setToast("Failed to delete cycling ride");
-      }
-      setShowConfirmDelete(null);
     }
   }
 
@@ -150,63 +90,6 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
           <Bicycle size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.cycling }} />
           <p className="text-xs font-semibold text-fg">Cycling</p>
         </button>
-
-        {/* Recent rides */}
-        {entries.length > 0 && (
-          <div className="mt-3 bg-surface rounded-xl p-3 border border-fg/5">
-            <p className="text-xs text-fg/40 font-medium mb-2">Recent Rides</p>
-            {entries.slice(0, 10).map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between py-1.5 border-b border-fg/5 last:border-b-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Bicycle size={14} style={{ color: ACTIVITY_COLORS.cycling }} className="shrink-0" />
-                  <div className="truncate">
-                    <span className="text-sm text-fg font-medium">{entry.distance_km.toFixed(1)} km</span>
-                    <span className="text-xs text-fg/30 ml-2">{formatDate(entry.date)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 ml-2">
-                  <button onClick={() => startEdit(entry)} aria-label="Edit" className="p-1.5 text-fg/40 hover:text-fg rounded-lg hover:bg-bg transition-colors">
-                    <PencilSimple size={14} />
-                  </button>
-                  <button onClick={() => setShowConfirmDelete(entry.id)} aria-label="Delete" className="p-1.5 text-fg/40 hover:text-red-400 rounded-lg hover:bg-bg transition-colors">
-                    <Trash size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Delete confirmation overlay */}
-        {showConfirmDelete !== null && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-            style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
-            onClick={() => setShowConfirmDelete(null)}
-          >
-            <div
-              className="bg-surface rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl border border-fg/10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-sm font-semibold text-fg mb-2">Delete ride?</p>
-              <p className="text-xs text-fg/50 mb-4">This will also remove it from your history. This action cannot be undone.</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowConfirmDelete(null)}
-                  className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-bg text-fg/60 hover:text-fg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDelete(showConfirmDelete)}
-                  className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-red-500/90 text-white hover:bg-red-500 transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </>
     );
   }
@@ -234,37 +117,6 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
         <p className="text-xs font-semibold text-fg">Cycling</p>
       </button>
 
-      {/* Delete confirmation overlay */}
-      {showConfirmDelete !== null && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
-          onClick={() => setShowConfirmDelete(null)}
-        >
-          <div
-            className="bg-surface rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl border border-fg/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-sm font-semibold text-fg mb-2">Delete ride?</p>
-            <p className="text-xs text-fg/50 mb-4">This will also remove it from your history. This action cannot be undone.</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowConfirmDelete(null)}
-                className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-bg text-fg/60 hover:text-fg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(showConfirmDelete)}
-                className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-red-500/90 text-white hover:bg-red-500 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Bottom sheet overlay */}
       {showForm && (
         <div
@@ -279,9 +131,7 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bicycle size={18} style={{ color: ACTIVITY_COLORS.cycling }} />
-                  <span className="text-sm font-semibold text-fg">
-                    {editingId ? "Edit Cycling Ride" : "Log a Cycling Ride"}
-                  </span>
+                  <span className="text-sm font-semibold text-fg">Log a Cycling Ride</span>
                 </div>
                 <button
                   onClick={() => { resetForm(); setShowForm(false); }}
@@ -386,7 +236,7 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
                 disabled={!distanceKm || parseFloat(distanceKm) <= 0}
                 className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
               >
-                {editingId ? "Update Cycling Ride" : "Save Cycling Ride"}
+                Save Cycling Ride
               </button>
             </div>
           </div>
