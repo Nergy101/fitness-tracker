@@ -396,8 +396,7 @@ function computeDailyActivity(
     });
   }
   for (const s of sessions) {
-    const d = new Date(s.started_at);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const key = s.started_at.slice(0, 10);
     const entry = days.find((x) => x.date === key);
     if (!entry) continue;
     const kind = activityKind(s.template_name);
