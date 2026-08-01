@@ -6,7 +6,7 @@ interface UpdateBannerProps {
 
 export default function UpdateBanner({ onUpdate }: UpdateBannerProps) {
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-accent/90 text-on-accent px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium pt-[calc(env(safe-area-inset-top,0px)+8px)]">
+    <div className="fixed top-0 left-0 right-0 z-50 bg-accent text-on-accent px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium pt-[calc(env(safe-area-inset-top,0px)+8px)]">
       <ArrowsClockwise size={16} weight="bold" />
       <span>New version available</span>
       <button

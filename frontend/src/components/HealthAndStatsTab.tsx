@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   BarbellIcon as Barbell,
-  BicycleIcon as Bicycle,
   CalendarBlankIcon as CalendarBlank,
   CaretDownIcon as CaretDown,
   CaretUpIcon as CaretUp,
@@ -329,11 +328,6 @@ export default function HealthAndStatsTab() {
           icon={<HandFist size={14} style={{ color: ACTIVITY_COLORS.boxing }} />}
           label="Total boxing"
           value={String(stats.total_boxing)}
-        />
-        <StatCard
-          icon={<Bicycle size={14} style={{ color: ACTIVITY_COLORS.cycling }} />}
-          label="Total cycling"
-          value={String(stats.total_cycling)}
         />
       </div>
 
