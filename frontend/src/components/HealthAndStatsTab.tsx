@@ -186,6 +186,7 @@ export default function HealthAndStatsTab() {
           icon={<CalendarBlank size={14} className="text-accent" />}
           label="Consistency (30d)"
           value={`${stats?.consistency_score_pct ?? 0}%`}
+          sub={stats?.consistency_score_pct === 100 && stats?.consistency_streak_days ? `${stats.consistency_streak_days} day${stats.consistency_streak_days === 1 ? "" : "s"} at 100%` : undefined}
         />
         <StatCard
           icon={<Fire size={14} className="text-orange-400" />}

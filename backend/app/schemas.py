@@ -410,6 +410,7 @@ class StatsOverviewResponse(BaseModel):
     activity_weekly: list[WeeklyActivityStats] = []
     total_kcal_burned: float = 0.0
     consistency_score_pct: float = 0.0
+    consistency_streak_days: int = 0
     total_sessions_all: int = 0
     total_runs: int = 0
     total_walks: int = 0

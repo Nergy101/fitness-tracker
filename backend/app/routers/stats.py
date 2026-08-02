@@ -154,6 +154,64 @@ def stats_overview(db: Session = Depends(get_db)):
     WALK_BONUS_CAP_KM = 20.0
     consistency_pct = round(min(100.0, base_pct + min(walk_km, WALK_BONUS_CAP_KM)), 1)
 
+    # ── 100% consistency streak (resets when score drops below 100) ──
+    # Walk backwards day-by-day, recomputing the 30-day consistency window.
+    streak_days = 0
+    all_activity_dates: set[date] = set()
+    for s in sessions:
+        all_activity_dates.add(_session_date(s))
+    for r in runs:
+        all_activity_dates.add(r.date)
+    boxing_entries = db.query(BoxingEntry).with_entities(BoxingEntry.date).all()
+    for (d,) in boxing_entries:
+        all_activity_dates.add(d)
+    cycling_rides = db.query(CyclingEntry).with_entities(CyclingEntry.date).all()
+    for (d,) in cycling_rides:
+        all_activity_dates.add(d)
+
+    WALK_BONUS_CAP_KM = 20.0
+    for days_back in range(0, 366):
+        window_end = today - timedelta(days=days_back)
+        window_start = window_end - timedelta(days=30)
+        # Collect qualifying days in this window
+        win_days: set[date] = set()
+        win_walk_km = 0.0
+        for d in all_activity_dates:
+            if window_start <= d <= window_end:
+                # Exclude walk mirror sessions — count only non-walk activity
+                win_days.add(d)
+        for r2 in runs:
+            if window_start <= r2.date <= window_end and r2.run_type == "walk":
+                win_walk_km += r2.distance_km
+        # Compute weeks in this window
+        week_start2 = _monday_of(window_start)
+        qw = 0
+        tw = 0
+        cursor2 = week_start2
+        while cursor2 <= window_end:
+            week_end2 = cursor2 + timedelta(days=6)
+            days_in_week = sum(
+                1 for d in win_days
+                if cursor2 <= d <= min(week_end2, window_end)
+            )
+            wwa = max(cursor2, window_start)
+            wwe = min(week_end2, window_end)
+            window_days2 = (wwe - wwa).days + 1
+            if window_days2 <= 0:
+                cursor2 = week_end2 + timedelta(days=1)
+                continue
+            target2 = max(1, round(3 * window_days2 / 7))
+            tw += 1
+            if days_in_week >= target2:
+                qw += 1
+            cursor2 = week_end2 + timedelta(days=1)
+        bp2 = round((qw / max(tw, 1)) * 100, 1)
+        cp2 = round(min(100.0, bp2 + min(win_walk_km, WALK_BONUS_CAP_KM)), 1)
+        if cp2 >= 100.0:
+            streak_days += 1
+        else:
+            break
+
     # Monthly comparison
     current_month_start = today.replace(day=1)
     prev_month_end = current_month_start - timedelta(days=1)
@@ -182,6 +240,7 @@ def stats_overview(db: Session = Depends(get_db)):
         activity_weekly=activity_weekly,
         total_kcal_burned=round(total_kcal, 1),
         consistency_score_pct=consistency_pct,
+        consistency_streak_days=streak_days,
         total_sessions_all=len(workouts),
         total_runs=sum(1 for r in runs if r.run_type != "walk"),
         total_walks=sum(1 for r in runs if r.run_type == "walk"),
