@@ -27,7 +27,13 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
   const [customDuration, setCustomDuration] = useState("");
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [distanceKm, setDistanceKm] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  // Local date helper — avoids UTC day-shift from toISOString()
+  const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const [date, setDate] = useState(todayStr);
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -39,7 +45,7 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
     setIsCustomDuration(false);
     setDistanceKm("");
     setNotes("");
-    setDate(new Date().toISOString().slice(0, 10));
+    setDate(todayStr());
     setNotePrompt(randomNotePrompt());
   }
 

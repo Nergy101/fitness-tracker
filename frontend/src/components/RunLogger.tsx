@@ -37,7 +37,12 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
   const [runCustomDuration, setRunCustomDuration] = useState("");
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [runDistance, setRunDistance] = useState("");
-  const [runDate, setRunDate] = useState(new Date().toISOString().slice(0, 10));
+  // Local date helper — avoids UTC day-shift from toISOString()
+  const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const [runDate, setRunDate] = useState(todayStr);
   const [runNotes, setRunNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -55,7 +60,7 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
     setIsCustomDuration(false);
     setRunDistance("");
     setRunNotes("");
-    setRunDate(new Date().toISOString().slice(0, 10));
+    setRunDate(todayStr());
     setNotePrompt(randomNotePrompt());
   }
 

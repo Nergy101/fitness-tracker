@@ -31,7 +31,12 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
   const [customDuration, setCustomDuration] = useState("");
   const [kcalPerMin, setKcalPerMin] = useState(DEFAULT_KCAL_PER_MIN);
   const [rounds, setRounds] = useState<number | null>(null);
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  // Local date helper — avoids UTC day-shift from toISOString()
+  const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const [date, setDate] = useState(todayStr);
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -43,7 +48,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
     setKcalPerMin(DEFAULT_KCAL_PER_MIN);
     setRounds(null);
     setNotes("");
-    setDate(new Date().toISOString().slice(0, 10));
+    setDate(todayStr());
     setNotePrompt(randomNotePrompt());
   }
 
