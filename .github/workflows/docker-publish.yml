@@ -21,6 +21,12 @@ jobs:
   lint:
     name: Lint (ruff + eslint)
     runs-on: ubuntu-latest
+    # Run when either stack or the workflow itself changes. Markdown/docs-only
+    # changes skip all test jobs (see paths filters below).
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/**"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -61,6 +67,9 @@ jobs:
   test:
     name: Backend unit tests
     runs-on: ubuntu-latest
+    paths:
+      - "backend/**"
+      - ".github/**"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -93,6 +102,9 @@ jobs:
   frontend-tests:
     name: Frontend type-check & unit tests
     runs-on: ubuntu-latest
+    paths:
+      - "frontend/**"
+      - ".github/**"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -126,6 +138,12 @@ jobs:
   e2e:
     name: E2E tests (Playwright)
     runs-on: ubuntu-latest
+    # E2E exercises the full stack (backend API + frontend UI) — runs when
+    # either side changes.
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/**"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -180,7 +198,10 @@ jobs:
     needs: [lint, test, frontend-tests, e2e]
     # Tests run on PRs, but images are published only from pushes to main
     # (and manual dispatches) — never from unreviewed PR code.
-    if: github.event_name != 'pull_request'
+    # `!cancelled() && !failure()` lets publish proceed when test jobs were
+    # skipped by path filters (e.g. docs-only changes) but not when a test
+    # actually failed.
+    if: github.event_name != 'pull_request' && !cancelled() && !failure()
     runs-on: ubuntu-latest
     permissions:
       contents: read
