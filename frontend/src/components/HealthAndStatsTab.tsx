@@ -36,6 +36,8 @@ import {
 } from "../api";
 import { ACTIVITY_COLORS } from "../activity";
 import { dayKey } from "../dateKey";
+import { formatWeekLabel } from "../locale";
+import { useLocale } from "../useLocale";
 import { SINGLE_LETTER } from "./history/utils";
 import HealthSkeleton from "./skeletons/HealthSkeleton";
 import ChartCard from "./ChartCard";
@@ -73,6 +75,7 @@ function consistencySub(stats: StatsOverviewResponse | null): string {
 
 export default function HealthAndStatsTab() {
   const [stats, setStats] = useState<StatsOverviewResponse | null>(null);
+  const { locale } = useLocale();
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [goal, setGoal] = useState<GoalProgressResponse | null>(null);
 
@@ -444,7 +447,7 @@ export default function HealthAndStatsTab() {
         const weekly = [...weeklyMap.entries()]
           .sort(([a], [b]) => a.localeCompare(b))
           .slice(-12)
-          .map(([week, v]) => ({ label: week.slice(5), minutes: v.minutes, kcal: v.kcal }));
+          .map(([week, v]) => ({ label: formatWeekLabel(week, locale), minutes: v.minutes, kcal: v.kcal }));
 
         const data = boxingChartMode === "daily" ? daily : weekly;
         const hasData = data.some((d: { minutes: number; kcal: number }) => d.minutes > 0);

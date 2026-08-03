@@ -39,3 +39,13 @@ export function shortDate(d: Date, locale: DateLocale = current): string {
   const month = d.getMonth() + 1;
   return locale === "mdy" ? `${month}/${day}` : `${day}/${month}`;
 }
+
+/** Chart x-axis label for a week-start ISO date ("2026-07-14") or an
+ *  already-short day label ("M"). ISO dates become locale-aware short labels
+ *  ("14/7" dmy, "7/14" mdy); anything else passes through unchanged. */
+export function formatWeekLabel(value: string, locale: DateLocale = current): string {
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return shortDate(new Date(value + "T12:00:00"), locale);
+  }
+  return value;
+}

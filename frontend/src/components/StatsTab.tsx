@@ -31,7 +31,7 @@ import { computeDailyActivity, type DailyActivityStat } from "../dailyActivity";
 import ActivityLegend from "./ActivityLegend";
 import ChartCard from "./ChartCard";
 import StatsSkeleton from "./skeletons/StatsSkeleton";
-import { shortDate } from "../locale";
+import { formatWeekLabel, shortDate } from "../locale";
 import { useLocale } from "../useLocale";
 import AppleHealthCharts from "./health/AppleHealthCharts";
 import MetricNamesDiagnostic from "./health/MetricNamesDiagnostic";
@@ -378,6 +378,7 @@ function rollingAvg(values: number[], window: number): number[] {
 }
 
 function HealthTrendChart({ series, injuryDateSet }: { series: HealthSeries; injuryDateSet: Set<string> }) {
+  const { locale } = useLocale();
   if (series.points.length === 0) return null;
   const meta = HEALTH_META[series.metric] ?? { icon: Pulse, color: "var(--accent)" };
   const MetricIcon = meta.icon;
@@ -396,7 +397,7 @@ function HealthTrendChart({ series, injuryDateSet }: { series: HealthSeries; inj
     >
       {series.points.length >= 2 && (
         <LineChart
-          points={series.points.map((p) => ({ label: p.date.slice(5), value: p.value }))}
+          points={series.points.map((p) => ({ label: formatWeekLabel(p.date, locale), value: p.value }))}
           color={meta.color}
           formatValue={(v) => formatHealthValue(series.metric, v)}
           overlay={ROLLING_AVG_METRICS.has(series.metric) ? rollingAvg(values, 7) : undefined}
@@ -560,7 +561,7 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_minutes },
               { color: ACTIVITY_COLORS.cycling, value: (d: ChartDatum) => d.cycling_minutes },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : formatWeekLabel((d as WeeklyActivityStat).week_start, locale)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => (v >= 120 ? `${(v / 60).toFixed(1)}h` : `${Math.round(v)}m`)}
             injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
@@ -593,7 +594,7 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.boxing, value: (d: ChartDatum) => d.boxing_kcal },
               { color: ACTIVITY_COLORS.cycling, value: (d: ChartDatum) => d.cycling_kcal },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : formatWeekLabel((d as WeeklyActivityStat).week_start, locale)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.round(v)))}
             injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
@@ -615,7 +616,7 @@ export default function StatsTab() {
               { color: ACTIVITY_COLORS.walk, value: (d: ChartDatum) => d.walk_km },
               { color: ACTIVITY_COLORS.cycling, value: (d: ChartDatum) => d.cycling_km },
             ]}
-            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : (d as WeeklyActivityStat).week_start.slice(5)}
+            label={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? (d as DailyActivityStat).label : formatWeekLabel((d as WeeklyActivityStat).week_start, locale)}
             sublabel={(d: WeeklyActivityStat | DailyActivityStat) => chartMode === "daily" ? shortDate(new Date((d as DailyActivityStat).date + "T12:00:00"), locale) : undefined}
             formatValue={(v) => `${Math.round(v * 10) / 10}km`}
             injuryMark={chartMode === "daily" ? (d: ChartDatum) => injuryMarkDaily(d as DailyActivityStat) : undefined}
@@ -632,7 +633,7 @@ export default function StatsTab() {
           sub="lower is faster"
         >
           <LineChart
-            points={pacedRuns.map((r) => ({ label: r.date.slice(5), value: r.pace_per_km as number }))}
+            points={pacedRuns.map((r) => ({ label: formatWeekLabel(r.date, locale), value: r.pace_per_km as number }))}
             color={ACTIVITY_COLORS.run}
             formatValue={(v) => formatPace(v)}
             reference={bestPace != null ? { value: bestPace, label: `best ${formatPace(bestPace)}/km` } : undefined}
@@ -653,7 +654,7 @@ export default function StatsTab() {
           }
         >
           <LineChart
-            points={weightSeries.map((e) => ({ label: e.date.slice(5), value: e.weight_kg }))}
+            points={weightSeries.map((e) => ({ label: formatWeekLabel(e.date, locale), value: e.weight_kg }))}
             color={WEIGHT_COLOR}
             formatValue={(v) => `${v.toFixed(1)}`}
             reference={
