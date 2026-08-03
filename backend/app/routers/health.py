@@ -1,9 +1,11 @@
 from datetime import date, datetime, timezone, timedelta
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.pagination import apply_pagination
 from app.models.models import (
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin, WorkoutSession,
     RunEntry, BoxingEntry, CyclingEntry, is_mirror_session, InjuryMarker,
@@ -208,8 +210,15 @@ def update_profile(data: UserProfileUpdate, db: Session = Depends(get_db)):
 
 
 @router.get("/weight", response_model=list[WeightEntryResponse])
-def list_weight(db: Session = Depends(get_db)):
-    return db.query(WeightEntry).order_by(WeightEntry.date.desc(), WeightEntry.created_at.desc()).all()
+def list_weight(
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(WeightEntry).order_by(WeightEntry.date.desc(), WeightEntry.created_at.desc())
+    query = apply_pagination(query, limit, offset, response)
+    return query.all()
 
 
 @router.post("/weight", response_model=WeightEntryResponse, status_code=201)
@@ -375,8 +384,15 @@ def goal_progress(db: Session = Depends(get_db)):
 
 
 @router.get("/measurements", response_model=list[BodyMeasurementResponse])
-def list_measurements(db: Session = Depends(get_db)):
-    return db.query(BodyMeasurement).order_by(BodyMeasurement.date.desc(), BodyMeasurement.created_at.desc()).all()
+def list_measurements(
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(BodyMeasurement).order_by(BodyMeasurement.date.desc(), BodyMeasurement.created_at.desc())
+    query = apply_pagination(query, limit, offset, response)
+    return query.all()
 
 
 @router.post("/measurements", response_model=BodyMeasurementResponse, status_code=201)
@@ -443,8 +459,15 @@ def measurement_changes(db: Session = Depends(get_db)):
 
 
 @router.get("/wellness", response_model=list[WellnessResponse])
-def list_wellness(db: Session = Depends(get_db)):
-    return db.query(WellnessCheckin).order_by(WellnessCheckin.date.desc()).all()
+def list_wellness(
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(WellnessCheckin).order_by(WellnessCheckin.date.desc())
+    query = apply_pagination(query, limit, offset, response)
+    return query.all()
 
 
 @router.post("/wellness", response_model=WellnessResponse, status_code=201)
@@ -669,11 +692,15 @@ def create_injury(data: InjuryMarkerCreate, db: Session = Depends(get_db)):
 @router.get("/injuries", response_model=list[InjuryMarkerResponse])
 def list_injuries(
     active_only: bool = Query(False),
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
     q = db.query(InjuryMarker).order_by(InjuryMarker.date.desc())
     if active_only:
         q = q.filter(InjuryMarker.resolved_date == None)  # noqa: E711
+    q = apply_pagination(q, limit, offset, response)
     return q.all()
 
 

@@ -1,9 +1,12 @@
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.pagination import apply_pagination
 from app.energy import cycling_kcal
 from app.models.models import CyclingEntry, WorkoutSession, SessionExercise, WeightEntry
 from app.schemas import (
@@ -70,8 +73,15 @@ def _create_workout_session(entry: CyclingEntry, db: Session) -> None:
 
 
 @router.get("", response_model=list[CyclingEntryResponse])
-def list_cycling(db: Session = Depends(get_db)):
-    return db.query(CyclingEntry).order_by(CyclingEntry.date.desc(), CyclingEntry.created_at.desc()).all()
+def list_cycling(
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(CyclingEntry).order_by(CyclingEntry.date.desc(), CyclingEntry.created_at.desc())
+    query = apply_pagination(query, limit, offset, response)
+    return query.all()
 
 
 @router.post("", response_model=CyclingEntryResponse, status_code=201)

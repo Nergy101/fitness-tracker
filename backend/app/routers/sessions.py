@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
@@ -70,8 +70,9 @@ def _build_session_response(session: WorkoutSession) -> WorkoutSessionResponse:
 
 @router.get("", response_model=list[WorkoutSessionResponse])
 def list_sessions(
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(100, ge=1),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
     db: Session = Depends(get_db),
 ):
     if limit < 1:
@@ -79,12 +80,14 @@ def list_sessions(
     if offset < 0:
         raise HTTPException(status_code=422, detail="offset must be >= 0")
     limit = min(limit, 200)
+    query = db.query(WorkoutSession).order_by(WorkoutSession.started_at.desc())
+    total = query.count()
+    response.headers["X-Total-Count"] = str(total)
     sessions = (
-        db.query(WorkoutSession)
+        query
         .options(
             selectinload(WorkoutSession.exercises).selectinload(SessionExercise.logs)
         )
-        .order_by(WorkoutSession.started_at.desc())
         .offset(offset)
         .limit(limit)
         .all()

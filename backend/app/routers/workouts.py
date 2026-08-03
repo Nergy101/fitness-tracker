@@ -1,10 +1,12 @@
 import re
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.database import get_db
+from app.pagination import apply_pagination
 from app.models.models import WorkoutTemplate, WorkoutTemplateExercise, Exercise, WorkoutSession
 from app.schemas import (
     WorkoutTemplateCreate, WorkoutTemplateUpdate, WorkoutTemplateResponse,
@@ -81,12 +83,19 @@ def _build_template_response(template: WorkoutTemplate) -> WorkoutTemplateRespon
 
 
 @router.get("", response_model=list[WorkoutTemplateResponse])
-def list_workouts(db: Session = Depends(get_db)):
-    templates = db.query(WorkoutTemplate).order_by(
+def list_workouts(
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(WorkoutTemplate).order_by(
         WorkoutTemplate.is_pinned.desc(),
         WorkoutTemplate.pinned_order.asc().nulls_last(),
         WorkoutTemplate.created_at.desc(),
-    ).all()
+    )
+    query = apply_pagination(query, limit, offset, response)
+    templates = query.all()
     return [_build_template_response(t) for t in templates]
 
 

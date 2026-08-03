@@ -1,9 +1,12 @@
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.pagination import apply_pagination
 from app.models.models import RunEntry, WorkoutSession, SessionExercise, WeightEntry
 from app.schemas import (
     RunEntryCreate, RunEntryResponse, RunStatsResponse,
@@ -75,8 +78,15 @@ def _create_workout_session(run: RunEntry, db: Session) -> None:
 
 
 @router.get("", response_model=list[RunEntryResponse])
-def list_runs(db: Session = Depends(get_db)):
-    return db.query(RunEntry).order_by(RunEntry.date.desc(), RunEntry.created_at.desc()).all()
+def list_runs(
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
+    db: Session = Depends(get_db),
+):
+    query = db.query(RunEntry).order_by(RunEntry.date.desc(), RunEntry.created_at.desc())
+    query = apply_pagination(query, limit, offset, response)
+    return query.all()
 
 
 @router.post("", response_model=RunEntryResponse, status_code=201)

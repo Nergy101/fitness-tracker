@@ -710,6 +710,7 @@ export async function fetchJSON<T>(
   url: string,
   options: RequestInit = {},
   timeoutMs = 15000,
+  onResponse?: (res: Response) => void,
 ): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -774,7 +775,36 @@ export async function fetchJSON<T>(
     throw new Error(`API error ${res.status}: ${text}`);
   }
   if (res.status === 204) return undefined as T;
+  onResponse?.(res);
   return (await res.json()) as T;
+}
+
+/** Server-side pagination result: the page items plus the total row count
+ *  reported by the `X-Total-Count` header (NER-230). */
+export interface Paginated<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+/** Fetch a paginated list endpoint. Appends limit/offset to `url` and reads
+ *  `X-Total-Count` from the response to compute `hasMore`. */
+export async function fetchJSONPage<T>(
+  url: string,
+  limit: number,
+  offset: number,
+  options: RequestInit = {},
+): Promise<Paginated<T>> {
+  const sep = url.includes("?") ? "&" : "?";
+  const pagedUrl = `${url}${sep}limit=${limit}&offset=${offset}`;
+  let total = 0;
+  const items = await fetchJSON<T[]>(pagedUrl, options, 15000, (res) => {
+    const header = res.headers.get("X-Total-Count");
+    if (header !== null) total = parseInt(header, 10) || 0;
+  });
+  return { items, total, limit, offset, hasMore: offset + items.length < total };
 }
 
 export const api = {
@@ -836,16 +866,18 @@ export const api = {
     if (qs.length) url += `?${qs.join("&")}`;
     return fetchJSON<WorkoutSession[]>(url);
   },
+  getSessionsPage: (limit: number, offset: number) =>
+    fetchJSONPage<WorkoutSession>("/api/v1/sessions", limit, offset),
   getAllSessions: async (): Promise<WorkoutSession[]> => {
     const PAGE = 100;
     const all: WorkoutSession[] = [];
     let offset = 0;
-    let page: WorkoutSession[];
-    do {
-      page = await api.getSessions({ limit: PAGE, offset });
-      all.push(...page);
+    for (;;) {
+      const page = await api.getSessionsPage(PAGE, offset);
+      all.push(...page.items);
+      if (!page.hasMore || page.items.length === 0) break;
       offset += PAGE;
-    } while (page.length === PAGE);
+    }
     return all;
   },
   getSession: (id: number) =>

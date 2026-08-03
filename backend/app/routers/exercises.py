@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.database import get_db
+from app.pagination import apply_pagination
 from app.models.models import Exercise, SessionExercise, ExerciseLog, WorkoutTemplateExercise
 from app.schemas import ExerciseCreate, ExerciseUpdate, ExerciseResponse, ExerciseLogResponse
 
@@ -10,11 +11,19 @@ router = APIRouter(prefix="/api/v1/exercises", tags=["exercises"])
 
 
 @router.get("", response_model=list[ExerciseResponse])
-def list_exercises(search: Optional[str] = Query(None), db: Session = Depends(get_db)):
+def list_exercises(
+    search: Optional[str] = Query(None),
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    response: Response = None,
+    db: Session = Depends(get_db),
+):
     query = db.query(Exercise)
     if search:
         query = query.filter(Exercise.name.ilike(f"%{search}%"))
-    return query.order_by(Exercise.name).all()
+    query = query.order_by(Exercise.name)
+    query = apply_pagination(query, limit, offset, response)
+    return query.all()
 
 
 @router.get("/{exercise_id}", response_model=ExerciseResponse)
