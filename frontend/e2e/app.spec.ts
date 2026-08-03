@@ -591,7 +591,7 @@ test.describe("authenticated", () => {
       page.waitForResponse(
         (r) => r.url().includes("/api/v1/health/wellness") && r.request().method() === "POST" && r.ok(),
       ),
-      page.getByRole("button", { name: "Log Check-in" }).click(),
+      page.getByRole("button", { name: "Log wellness check-in" }).click(),
     ]);
 
     // Verify via API
@@ -842,30 +842,71 @@ test.describe("authenticated", () => {
     expect(mirrorAfter.total_duration_seconds).toBe(2700);
   });
 
-  test("boxing session is editable from the History tab", async ({ page, request }) => {
-    // Log a 30m boxing session via UI
+  test("cycling ride logged via UI creates mirror session in history", async ({ page, request }) => {
     await page.goto("/");
-    await page.getByText("Boxing").click();
+
+    // Open the cycling logger and log a 30m ride over 15 km
+    await page.getByText("Cycling").click();
     await page.getByRole("button", { name: "30m" }).click();
-    await page.getByRole("button", { name: "Save Boxing Workout" }).click();
-    await expect(page.getByRole("status")).toContainText("Boxing workout logged!");
+    await page.locator('input[placeholder="e.g. 24.0"]').fill("15.0");
+    await page.getByRole("button", { name: "Save Cycling Ride" }).click();
+    await expect(page.getByRole("status")).toContainText("Cycling ride logged!");
 
-    // Open the boxing session detail from History
+    // Verify the cycling entry via API
+    const rides = await (await request.get(`${API_URL}/api/v1/cycling`, { headers: _authHeaders })).json();
+    const entry = rides.find((r: { distance_km: number }) => r.distance_km === 15.0);
+    expect(entry).toBeTruthy();
+    expect(entry.duration_seconds).toBe(1800);
+
+    // Verify the mirror session appears in History as "Cycling: 15.0km"
     await page.getByRole("button", { name: "History" }).click();
-    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "Boxing: 30min" }).first().click();
+    await expect(page.getByText("Cycling: 15.0km").first()).toBeVisible();
 
-    // Edit the duration to 45 minutes and save
-    await page.getByLabel("Boxing minutes").fill("45");
-    await page.getByRole("button", { name: "Save changes" }).click();
-
-    // Verify the boxing entry + mirror session updated to 45min / 2700s
-    await expect(async () => {
-      const sessions = await (await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })).json();
-      const mirror = sessions.find((s: { template_name: string }) => s.template_name.includes("Boxing: 45min"));
-      expect(mirror).toBeTruthy();
-      expect(mirror.total_duration_seconds).toBe(2700);
-    }).toPass();
+    // Verify mirror session via API with matching duration
+    const sessions = await (await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })).json();
+    const mirror = sessions.find((s: { template_name: string }) => s.template_name.includes("Cycling: 15.0km"));
+    expect(mirror).toBeTruthy();
+    expect(mirror.total_duration_seconds).toBe(1800);
   });
+
+  test("deleting a cycling entry removes it and the mirror session", async ({ request }) => {
+    const res = await request.post(`${API_URL}/api/v1/cycling`, {
+      data: { duration_seconds: 2700, distance_km: 22.0, notes: "to-delete-cycling" },
+      headers: _authHeaders,
+    });
+    const ride = await res.json();
+    expect(ride.id).toBeTruthy();
+
+    // Delete it
+    await request.delete(`${API_URL}/api/v1/cycling/${ride.id}`, { headers: _authHeaders });
+
+    // Verify gone from cycling entries
+    const rides = await (await request.get(`${API_URL}/api/v1/cycling`, { headers: _authHeaders })).json();
+    expect(rides.find((r: { id: number }) => r.id === ride.id)).toBeFalsy();
+
+    // Verify gone from sessions (mirror cascade)
+    const sessions = await (await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })).json();
+    const mirror = sessions.find((s: { template_name: string }) => s.template_name.includes("Cycling: 22.0km"));
+    expect(mirror).toBeFalsy();
+  });
+
+  test("cycling stats endpoint returns correct aggregates", async ({ request }) => {
+    await request.post(`${API_URL}/api/v1/cycling`, {
+      data: { duration_seconds: 1800, distance_km: 15.0, date: "2026-07-01" },
+      headers: _authHeaders,
+    });
+    await request.post(`${API_URL}/api/v1/cycling`, {
+      data: { duration_seconds: 3600, distance_km: 30.0, date: "2026-07-02" },
+      headers: _authHeaders,
+    });
+
+    const stats = await (await request.get(`${API_URL}/api/v1/cycling/stats`, { headers: _authHeaders })).json();
+    expect(stats.total_sessions).toBe(2);
+    expect(stats.total_distance_km).toBeCloseTo(45.0, 1);
+    expect(stats.total_duration_seconds).toBe(5400);
+  });
+
+
 
   test("run session is editable from the History tab", async ({ page, request }) => {
     // Log a 30m / 5.0km run via UI
@@ -933,6 +974,10 @@ test.describe("authenticated", () => {
     );
     await notesArea.blur();
     await savePatch;
+
+    // If the save hasn't flushed to the session prop yet, closing triggers the
+    // unsaved-changes confirm — accept it (the notes are already persisted).
+    page.on("dialog", (d) => void d.accept());
 
     // Close the detail modal via the × button
     await page.locator("button").filter({ hasText: "×" }).click();
