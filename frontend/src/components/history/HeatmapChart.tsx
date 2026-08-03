@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { WorkoutSession } from "../../api";
-import { countsByDay, dayKey, SINGLE_LETTER } from "./utils";
+import { dayKey } from "../../dateKey";
+import { countsByDay, SINGLE_LETTER } from "./utils";
 
 // GitHub-style intensity: transparent-ish → full accent as count rises.
 function cellColor(count: number): string {

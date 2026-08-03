@@ -146,7 +146,8 @@ function makeStats() {
       },
     ],
     total_kcal_burned: 1800,
-    consistency_score_pct: 75,
+    consistency_score_pct: 100,
+    consistency_streak_days: 42,
     total_sessions_all: 5,
     total_runs: 3,
     total_walks: 2,
@@ -231,11 +232,54 @@ describe("HealthAndStatsTab", () => {
       render(<HealthAndStatsTab />);
     });
     expect(await screen.findByText("Consistency (30d)")).toBeDefined();
-    expect(screen.getByText("75%")).toBeDefined();
+    expect(screen.getByText("100%")).toBeDefined();
     expect(screen.getByText("Total kcal (30d)")).toBeDefined();
     expect(screen.getByText("1,800")).toBeDefined();
     expect(screen.getByText("Weight chg (30d)")).toBeDefined();
     expect(screen.getByText("-0.5 kg")).toBeDefined();
+  });
+
+  it("says how long a perfect score has been held", async () => {
+    await act(async () => {
+      render(<HealthAndStatsTab />);
+    });
+    expect(await screen.findByText("100% for 42 days")).toBeDefined();
+  });
+
+  it("shows the chain length while the score is below 100", async () => {
+    mockGetStatsOverview.mockResolvedValue({
+      ...makeStats(),
+      consistency_score_pct: 14.3,
+      consistency_streak_days: 4,
+    });
+    await act(async () => {
+      render(<HealthAndStatsTab />);
+    });
+    expect(await screen.findByText("4 days unbroken")).toBeDefined();
+  });
+
+  it("nudges instead of bragging when there is no chain yet", async () => {
+    mockGetStatsOverview.mockResolvedValue({
+      ...makeStats(),
+      consistency_score_pct: 0,
+      consistency_streak_days: 0,
+    });
+    await act(async () => {
+      render(<HealthAndStatsTab />);
+    });
+    expect(await screen.findByText("log any activity to start")).toBeDefined();
+  });
+
+  it("keeps the day label singular for a one-day chain", async () => {
+    mockGetStatsOverview.mockResolvedValue({
+      ...makeStats(),
+      consistency_score_pct: 50,
+      consistency_streak_days: 1,
+    });
+    await act(async () => {
+      render(<HealthAndStatsTab />);
+    });
+    expect(await screen.findByText("1 day unbroken")).toBeDefined();
   });
 
   it("shows activity streak when prs has streak > 0", async () => {

@@ -8,12 +8,9 @@ import {
 import type { WorkoutSession } from "../api";
 import { formatDuration } from "../format";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind } from "../activity";
+import { dayKey } from "../dateKey";
 
 // ─── Helpers ──────────────────────────────────────────────
-
-function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",

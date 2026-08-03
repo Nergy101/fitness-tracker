@@ -4,7 +4,8 @@ import { ACTIVITY_COLORS } from "../../activity";
 import { shortDate } from "../../locale";
 import { useLocale } from "../../useLocale";
 import ActivityLegend from "../ActivityLegend";
-import { countsByDay, dayKey, SINGLE_LETTER, type DayCounts } from "./utils";
+import { dayKey } from "../../dateKey";
+import { countsByDay, SINGLE_LETTER, type DayCounts } from "./utils";
 
 /** Per-date bars with weekday letter + short date underneath. "week" shows
  *  Mon–Sun of the current week; "7d" shows a rolling window ending today

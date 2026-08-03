@@ -5,6 +5,7 @@ import { api, OfflineError } from "../api";
 import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
 import { ACTIVITY_COLORS } from "../activity";
+import { todayKey } from "../dateKey";
 
 interface BoxingLoggerProps {
   onWorkoutLogged: () => void;
@@ -31,12 +32,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
   const [customDuration, setCustomDuration] = useState("");
   const [kcalPerMin, setKcalPerMin] = useState(DEFAULT_KCAL_PER_MIN);
   const [rounds, setRounds] = useState<number | null>(null);
-  // Local date helper — avoids UTC day-shift from toISOString()
-  const todayStr = () => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  };
-  const [date, setDate] = useState(todayStr);
+  const [date, setDate] = useState(todayKey);
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -48,7 +44,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
     setKcalPerMin(DEFAULT_KCAL_PER_MIN);
     setRounds(null);
     setNotes("");
-    setDate(todayStr());
+    setDate(todayKey());
     setNotePrompt(randomNotePrompt());
   }
 

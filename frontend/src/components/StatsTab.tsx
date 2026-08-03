@@ -26,7 +26,8 @@ import {
   type WeightEntryResponse,
   type WorkoutSession,
 } from "../api";
-import { ACTIVITY_COLORS, ACTIVITY_LABELS, activityKind, type ActivityKind } from "../activity";
+import { ACTIVITY_COLORS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
+import { computeDailyActivity, type DailyActivityStat } from "../dailyActivity";
 import ActivityLegend from "./ActivityLegend";
 import ChartCard from "./ChartCard";
 import StatsSkeleton from "./skeletons/StatsSkeleton";
@@ -339,26 +340,10 @@ function ActivityMixBar({ weeks }: { weeks: WeeklyActivityStat[] }) {
   );
 }
 
-// ─── Daily Activity Types & Helpers ─────────────────────────
+// ─── Daily Activity Types ───────────────────────────────────
 
-interface DailyActivityStat {
-  date: string;
-  label: string;
-  workout_minutes: number;
-  run_minutes: number;
-  walk_minutes: number;
-  boxing_minutes: number;
-  cycling_minutes: number;
-  run_km: number;
-  walk_km: number;
-  cycling_km: number;
-  workout_kcal: number;
-  run_kcal: number;
-  walk_kcal: number;
-  boxing_kcal: number;
-  cycling_kcal: number;
-}
-
+/** Fields both the weekly (API) and the daily (computed) series expose, so one
+ *  chart component can render either. */
 type ChartDatum = {
   workout_minutes: number;
   run_minutes: number;
@@ -374,61 +359,6 @@ type ChartDatum = {
   boxing_kcal: number;
   cycling_kcal: number;
 };
-
-function computeDailyActivity(
-  sessions: WorkoutSession[],
-  runs: RunEntryResponse[],
-  rides: CyclingEntryResponse[],
-): DailyActivityStat[] {
-  const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
-  const now = new Date();
-  const days: DailyActivityStat[] = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    days.push({
-      date: key,
-      label: DAYS[(d.getDay() + 6) % 7],
-      workout_minutes: 0, run_minutes: 0, walk_minutes: 0, boxing_minutes: 0, cycling_minutes: 0,
-      run_km: 0, walk_km: 0, cycling_km: 0,
-      workout_kcal: 0, run_kcal: 0, walk_kcal: 0, boxing_kcal: 0, cycling_kcal: 0,
-    });
-  }
-  for (const s of sessions) {
-    const key = s.started_at.slice(0, 10);
-    const entry = days.find((x) => x.date === key);
-    if (!entry) continue;
-    const kind = activityKind(s.template_name);
-    entry[`${kind}_minutes`] += s.total_duration_seconds / 60;
-    if (s.total_kcal_estimated) {
-      entry[`${kind}_kcal`] += s.total_kcal_estimated;
-    }
-  }
-  for (const r of runs) {
-    const key = r.date.slice(0, 10);
-    const entry = days.find((x) => x.date === key);
-    if (!entry) continue;
-    const kind: "run" | "walk" = r.run_type === "walk" ? "walk" : "run";
-    entry[`${kind}_km`] += r.distance_km;
-    if (entry[`${kind}_minutes`] === 0) {
-      entry[`${kind}_minutes`] = r.duration_seconds / 60;
-    }
-    entry[`${kind}_kcal`] += r.distance_km * (kind === "run" ? 60 : 45);
-  }
-  for (const c of rides) {
-    const key = c.date.slice(0, 10);
-    const entry = days.find((x) => x.date === key);
-    if (!entry) continue;
-    // Distance only lives on the ride; minutes/kcal already came from the
-    // "Cycling: X.Xkm" mirror session unless it is missing.
-    entry.cycling_km += c.distance_km;
-    if (entry.cycling_minutes === 0) {
-      entry.cycling_minutes = c.duration_seconds / 60;
-    }
-  }
-  return days;
-}
 
 function formatHours(totalMinutes: number): string {
   const h = Math.floor(totalMinutes / 60);

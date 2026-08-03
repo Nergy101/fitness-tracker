@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RunLogger from "../components/RunLogger";
+import { todayKey } from "../dateKey";
 
 const mockCreateRun = vi.fn();
 
@@ -107,7 +108,7 @@ describe("RunLogger", () => {
     render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
     fireEvent.click(screen.getByText("Run"));
 
-    const dateInput = screen.getByDisplayValue(new Date().toISOString().slice(0, 10));
+    const dateInput = screen.getByDisplayValue(todayKey());
     fireEvent.change(dateInput, { target: { value: "2026-07-15" } });
     expect(dateInput).toHaveValue("2026-07-15");
   });

@@ -7,6 +7,7 @@ import {
   CaretDownIcon as CaretDown,
 } from "@phosphor-icons/react";
 import { api, OfflineError, type InjuryMarkerResponse, type InjuryMarkerCreate } from "../../api";
+import { todayKey } from "../../dateKey";
 
 export default function InjurySection() {
   const [injuries, setInjuries] = useState<InjuryMarkerResponse[]>([]);
@@ -74,8 +75,7 @@ export default function InjurySection() {
 
   const resolveInjury = async (id: number) => {
     try {
-      const d = new Date();
-      const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const today = todayKey();
       const updated = await api.updateInjury(id, { resolved_date: today });
       setInjuries((prev) => prev.map((i) => (i.id === id ? updated : i)));
       flashToast("Injury marked as healed");

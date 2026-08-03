@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import BoxingLogger from "../components/BoxingLogger";
+import { todayKey } from "../dateKey";
 
 const mockCreateBoxing = vi.fn().mockResolvedValue({ id: 1 });
 
@@ -96,13 +97,10 @@ describe("BoxingLogger", () => {
     expect(kcalInput).toBeInTheDocument();
   });
 
-  it("renders date input", () => {
+  it("defaults the date to the local calendar day, not the UTC one", () => {
     render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
     fireEvent.click(screen.getByText("Boxing"));
-    const dateInput = screen.getByDisplayValue(
-      new Date().toISOString().slice(0, 10),
-    );
-    expect(dateInput).toBeInTheDocument();
+    expect(screen.getByDisplayValue(todayKey())).toBeInTheDocument();
   });
 
   it("renders rounds optional input", () => {

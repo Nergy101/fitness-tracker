@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   rangeStart,
-  dayKey,
   countsByDay,
   RANGES,
   WEEKDAY_LABELS,
@@ -44,18 +43,6 @@ describe("history/utils", () => {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       expect(Math.abs(start.getTime() - thirtyDaysAgo.getTime())).toBeLessThan(1000);
-    });
-  });
-
-  describe("dayKey", () => {
-    it("formats date as YYYY-MM-DD", () => {
-      const d = new Date(2026, 6, 29); // July 29, 2026
-      expect(dayKey(d)).toBe("2026-07-29");
-    });
-
-    it("zero-pads single-digit month and day", () => {
-      const d = new Date(2026, 0, 5); // Jan 5, 2026
-      expect(dayKey(d)).toBe("2026-01-05");
     });
   });
 

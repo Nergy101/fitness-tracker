@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import React from "react";
 import StatsTab from "../components/StatsTab";
+import { dayKey } from "../dateKey";
 
 // Top-level mocks for vi.mock hoisting
 const mockGetStatsOverview = vi.fn();
@@ -111,24 +112,40 @@ vi.mock("../useLocale", () => ({
   useLocale: () => ({ locale: "dmy" as const }),
 }));
 
+// Fixtures are anchored to the clock: hardcoded dates silently fall out of the
+// rolling 7-day daily window a week after they are written.
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return dayKey(d);
+}
+
+function mondayBefore(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return dayKey(d);
+}
+
 function makeStats() {
   return {
     activity_weekly: [
       {
-        week_start: "2026-07-20",
+        week_start: mondayBefore(0),
         workout_minutes: 120, run_minutes: 60, walk_minutes: 30, boxing_minutes: 0, cycling_minutes: 0,
         run_km: 10, walk_km: 3, cycling_km: 0,
         workout_kcal: 500, run_kcal: 400, walk_kcal: 100, boxing_kcal: 0, cycling_kcal: 0,
       },
       {
-        week_start: "2026-07-13",
+        week_start: mondayBefore(7),
         workout_minutes: 90, run_minutes: 45, walk_minutes: 20, boxing_minutes: 0, cycling_minutes: 0,
         run_km: 8, walk_km: 2, cycling_km: 0,
         workout_kcal: 400, run_kcal: 300, walk_kcal: 80, boxing_kcal: 0, cycling_kcal: 0,
       },
     ],
     total_kcal_burned: 1800,
-    consistency_score_pct: 75,
+    consistency_score_pct: 100,
+    consistency_streak_days: 42,
     total_sessions_all: 5,
     total_runs: 3,
     total_walks: 2,
@@ -145,32 +162,36 @@ function makeRuns() {
   return [
     {
       id: 1, duration_seconds: 1500, distance_km: 5.0, pace_per_km: 300,
-      run_type: "run", date: "2026-07-24", notes: "", created_at: "2026-07-24T07:00:00Z",
+      run_type: "run", date: daysAgo(1), notes: "", created_at: `${daysAgo(1)}T07:00:00`,
     },
     {
       id: 2, duration_seconds: 1440, distance_km: 5.0, pace_per_km: 288,
-      run_type: "run", date: "2026-07-20", notes: "", created_at: "2026-07-20T07:00:00Z",
+      run_type: "run", date: daysAgo(5), notes: "", created_at: `${daysAgo(5)}T07:00:00`,
     },
   ];
 }
 
 function makeSessions() {
-  const today = new Date();
-  const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   return [
     {
       id: 1, template_id: 1, template_name: "Morning Routine",
-      started_at: `${ymd}T08:00:00Z`, finished_at: `${ymd}T08:30:00Z`,
+      started_at: `${daysAgo(2)}T08:00:00`, finished_at: `${daysAgo(2)}T08:30:00`,
       total_duration_seconds: 1800, total_kcal_estimated: 200, notes: "",
       boxing_entry_id: null, run_entry_id: null, cycling_entry_id: null, exercises: [],
+    },
+    {
+      id: 2, template_id: null, template_name: "Run: 5.0km",
+      started_at: `${daysAgo(1)}T07:00:00`, finished_at: `${daysAgo(1)}T07:25:00`,
+      total_duration_seconds: 1500, total_kcal_estimated: 363.8, notes: "",
+      boxing_entry_id: null, run_entry_id: 1, cycling_entry_id: null, exercises: [],
     },
   ];
 }
 
 function makeWeights() {
   return [
-    { id: 1, weight_kg: 80.5, date: "2026-07-25", notes: "", created_at: "2026-07-25T08:00:00Z" },
-    { id: 2, weight_kg: 81.0, date: "2026-07-18", notes: "", created_at: "2026-07-18T08:00:00Z" },
+    { id: 1, weight_kg: 80.5, date: daysAgo(2), notes: "", created_at: `${daysAgo(2)}T08:00:00` },
+    { id: 2, weight_kg: 81.0, date: daysAgo(9), notes: "", created_at: `${daysAgo(9)}T08:00:00` },
   ];
 }
 

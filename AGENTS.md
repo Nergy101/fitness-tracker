@@ -81,15 +81,21 @@ Runs/walks create a mirror `WorkoutSession` with `"Run: X.Xkm"` / `"Walk: X.Xkm"
 The `is_mirror_session()` helper excludes these from workout stats so runs/walks aren't double-counted.
 If adding a new activity type that mirrors into sessions, update `is_mirror_session()` accordingly.
 
-In `stats.py`'s weekly aggregation the split is: the mirror session supplies **kcal only**,
-the dedicated entry (`RunEntry`, `CyclingEntry`) supplies **minutes + km**. Boxing is the
-exception — it has no distance, so its mirror supplies both minutes and kcal. Adding minutes
-on both sides doubles the activity bars (the cycling bug fixed in `test_cycling_minutes_counted_once`).
+**One activity, one date.** An activity is stored twice: the entry (`RunEntry`,
+`CyclingEntry`) owns `distance_km`, the mirror session owns duration and the kcal
+estimate. Bucketing each half on its own date lets a drifted pair land on different
+days — that is how the same ride showed up as minutes on Friday and distance on
+Saturday. Both `stats.py`'s weekly loop and `frontend/src/dailyActivity.ts` therefore
+iterate **sessions**, join the entry through `run_entry_id` / `cycling_entry_id` for km,
+and only fall back to the entry's own date for entries with no mirror. Never add
+minutes from both sides — that double-counted cycling
+(`test_cycling_minutes_counted_once`, `test_drifted_entry_date_does_not_split_the_ride`).
 
-When a new activity kind gets its own series, wire it into every StatsTab chart
-(`ChartDatum` fields, `computeDailyActivity`, the `segments` arrays, and `ActivityLegend kinds`)
-with its `ACTIVITY_COLORS` entry — the daily path classifies sessions via `activityKind()`,
-so a kind missing from `activity.tsx` silently lands in the workout bucket.
+When a new activity kind gets its own series, wire it into `dailyActivity.ts`
+(`DailyActivityStat` fields + the session loop) and every StatsTab chart (`ChartDatum`
+fields, the `segments` arrays, `ActivityLegend kinds`) with its `ACTIVITY_COLORS` entry —
+sessions are classified via `activityKind()`, so a kind missing from `activity.tsx`
+silently lands in the workout bucket.
 
 ### kcal estimates — stored, not derived
 
@@ -129,6 +135,30 @@ Streaks allow at most 1 rest day between activity days. Mon + Wed = 3-day streak
 A 2-day gap breaks the streak. Both weight logging streaks and activity streaks use this rule.
 If changing streak logic, update BOTH `_longest_streak()` AND `weight_streak()` in `health.py`,
 plus any streak tests in `test_prs.py`.
+
+### Consistency score (3-day window) — not the same as a streak
+
+`consistency_score_pct` in `stats.py` is the share of rolling 3-day windows in the
+last 30 days that contain **at least one activity of any type** — workouts, runs,
+walks, boxing, rides all count. Two rest days in a row are fine; three break a window.
+100% means "never went three days without training".
+`consistency_streak_days` is how far back that has held, uncapped by the 30-day
+window, and drives the motivator sub-line on the Consistency card.
+
+This is deliberately **more lenient** than `_longest_streak()` / `weight_streak()`
+above (≤1 rest day). Do not "unify" them: the Consistency card and the Activity
+Streak card show different rules on purpose.
+
+### Local calendar days — never `toISOString().slice(0, 10)`
+
+`toISOString()` is UTC, so east of Greenwich it returns *yesterday* between midnight
+and the UTC offset — logging a ride at 00:30 in Amsterdam filed it on the previous
+day. Every day key comes from `dayKey()` / `todayKey()` in `frontend/src/dateKey.ts`:
+logger date defaults, chart buckets, calendar cells, injury resolve dates.
+
+Test fixtures must be **clock-relative** too (`daysAgo(2)`, not `"2026-07-25"`).
+Hardcoded dates silently drop out of the rolling 7-day window a week later and the
+suite fails on a date CI happens to run, not on a code change.
 
 ### Pre-commit checklist
 

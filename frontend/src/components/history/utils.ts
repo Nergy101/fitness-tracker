@@ -1,5 +1,6 @@
 import { activityKind, type ActivityKind } from "../../activity";
 import type { WorkoutSession } from "../../api";
+import { dayKey } from "../../dateKey";
 
 // Monday-first weekday labels; map JS getDay() (0=Sun) via (day + 6) % 7.
 export const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -26,11 +27,6 @@ export function rangeStart(key: RangeKey): Date {
   const d = new Date(now);
   d.setDate(now.getDate() - days);
   return d;
-}
-
-// Local-time YYYY-MM-DD key (avoids UTC off-by-one at day boundaries).
-export function dayKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export type DayCounts = Record<ActivityKind, number>;

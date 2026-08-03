@@ -35,6 +35,8 @@ import {
   type WorkoutSession,
 } from "../api";
 import { ACTIVITY_COLORS } from "../activity";
+import { dayKey } from "../dateKey";
+import { SINGLE_LETTER } from "./history/utils";
 import HealthSkeleton from "./skeletons/HealthSkeleton";
 import ChartCard from "./ChartCard";
 import MeasurementsSection from "./health/MeasurementsSection";
@@ -54,6 +56,17 @@ function bmiColor(cat: string | null): string {
     case "Obese": return "text-red-400";
     default: return "text-fg/50";
   }
+}
+
+/** Sub-line under the consistency score: how long the "never three days off"
+ *  chain has held. At 100% that is the number worth bragging about; below it,
+ *  it is the rebuild in progress. Distinct from the Activity Streak card, which
+ *  counts training days under the stricter one-rest-day rule. */
+function consistencySub(stats: StatsOverviewResponse | null): string {
+  const days = stats?.consistency_streak_days ?? 0;
+  if (days <= 0) return "log any activity to start";
+  const label = `${days} day${days === 1 ? "" : "s"}`;
+  return (stats?.consistency_score_pct ?? 0) >= 100 ? `100% for ${label}` : `${label} unbroken`;
 }
 
 // ─── Main Component ─────────────────────────────────────────
@@ -186,7 +199,7 @@ export default function HealthAndStatsTab() {
           icon={<CalendarBlank size={14} className="text-accent" />}
           label="Consistency (30d)"
           value={`${stats?.consistency_score_pct ?? 0}%`}
-          sub={stats?.consistency_score_pct === 100 && stats?.consistency_streak_days ? `${stats.consistency_streak_days} day${stats.consistency_streak_days === 1 ? "" : "s"} at 100%` : undefined}
+          sub={consistencySub(stats)}
         />
         <StatCard
           icon={<Fire size={14} className="text-orange-400" />}
@@ -398,7 +411,7 @@ export default function HealthAndStatsTab() {
 
       {/* ── Boxing Trend Charts ── */}
       {boxingTrends.length >= 2 && (() => {
-        const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
+        const DAYS = SINGLE_LETTER;
         const sorted = [...boxingTrends].sort((a, b) => a.date.localeCompare(b.date));
 
         // Daily view: last 7 days
@@ -407,7 +420,7 @@ export default function HealthAndStatsTab() {
         for (let i = 6; i >= 0; i--) {
           const d = new Date(now);
           d.setDate(now.getDate() - i);
-          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          const key = dayKey(d);
           const match = sorted.find((p) => p.date === key);
           daily.push({
             label: DAYS[(d.getDay() + 6) % 7],
@@ -422,7 +435,7 @@ export default function HealthAndStatsTab() {
           const d = new Date(p.date + "T12:00:00");
           const mon = new Date(d);
           mon.setDate(d.getDate() - (d.getDay() + 6) % 7);
-          const key = mon.toISOString().slice(0, 10);
+          const key = dayKey(mon);
           const w = weeklyMap.get(key) ?? { minutes: 0, kcal: 0 };
           w.minutes += p.minutes;
           w.kcal += p.kcal;

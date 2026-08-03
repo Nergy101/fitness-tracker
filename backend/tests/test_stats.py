@@ -19,7 +19,7 @@ from datetime import date, datetime, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.models.models import WorkoutSession
+from app.models.models import CyclingEntry, WorkoutSession
 
 RUNS_URL = "/api/v1/runs"
 CYCLING_URL = "/api/v1/cycling"
@@ -240,6 +240,53 @@ class TestStatsOverviewNoDoubleCount:
         assert wk["cycling_minutes"] == 30.0, "1800 s must yield 30.0 minutes, not 60.0"
         assert wk["cycling_km"] == 12.0
         assert wk["cycling_kcal"] > 0.0
+
+
+class TestStatsOverviewOneDatePerActivity:
+    """A ride/run is stored twice: the entry owns distance, the mirror session
+    owns duration and kcal. When the two disagree about the date, everything
+    still has to land on the mirror's week — otherwise minutes, energy and
+    distance show up on different days in the charts."""
+
+    def test_drifted_entry_date_does_not_split_the_ride(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        ride = client.post(
+            CYCLING_URL,
+            json={"duration_seconds": 5400, "distance_km": 27.8, "date": date.today().isoformat()},
+            headers=auth_headers,
+        ).json()
+
+        # Drift the entry a fortnight forward without touching its mirror.
+        entry = db.query(CyclingEntry).filter(CyclingEntry.id == ride["id"]).one()
+        entry.date = date.today() + timedelta(days=14)
+        db.commit()
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        buckets = {w["week_start"]: w for w in stats["activity_weekly"]}
+
+        wk = buckets[_this_week()]
+        assert wk["cycling_minutes"] == 90.0
+        assert wk["cycling_km"] == 27.8
+        assert wk["cycling_kcal"] > 0.0
+
+        drifted_week = _monday_of(date.today() + timedelta(days=14))
+        assert drifted_week not in buckets, (
+            "distance was bucketed on the entry's date instead of the mirror's"
+        )
+
+    def test_ride_without_a_mirror_still_counts_on_its_own_date(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Legacy/orphan rows (mirror deleted) must not vanish from the stats."""
+        db.add(CyclingEntry(duration_seconds=3600, distance_km=20.0, date=date.today(), notes=""))
+        db.commit()
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        wk = {w["week_start"]: w for w in stats["activity_weekly"]}[_this_week()]
+
+        assert wk["cycling_minutes"] == 60.0
+        assert wk["cycling_km"] == 20.0
 
 
 # ---------------------------------------------------------------------------
@@ -608,3 +655,118 @@ class TestDailyActivityEndpoint:
         assert len(days) == 1
         assert days[0]["minutes"] == 0.0
         assert days[0]["kcal"] == 0.0
+
+# ---------------------------------------------------------------------------
+# 8. Consistency score — "never three days without training"
+# ---------------------------------------------------------------------------
+
+
+class TestConsistencyScore:
+    """The score is the share of 3-day windows in the last 30 days that contain
+    at least one activity. Two rest days in a row are fine; three break it.
+    Every activity type counts — workouts, runs, walks, boxing, rides."""
+
+    def _log_workout(self, db: Session, days_ago: int) -> None:
+        db.add(WorkoutSession(
+            template_name="Strength",
+            started_at=_session_dt(days_ago),
+            total_duration_seconds=1800,
+            total_kcal_estimated=200.0,
+        ))
+        db.commit()
+
+    def test_empty_db_scores_zero(self, client: TestClient, auth_headers: dict):
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["consistency_score_pct"] == 0.0
+        assert stats["consistency_streak_days"] == 0
+
+    def test_every_third_day_is_still_100_pct(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Training every third day leaves two rest days between sessions, which
+        the rule explicitly allows."""
+        for days_ago in range(0, 33, 3):
+            self._log_workout(db, days_ago)
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["consistency_score_pct"] == 100.0
+
+    def test_walks_and_rides_count_toward_consistency(
+        self, client: TestClient, auth_headers: dict
+    ):
+        """Cardio-only weeks used to be punished: walks were excluded outright
+        and rides never counted at all."""
+        today = date.today()
+        for days_ago in range(0, 33, 3):
+            day = (today - timedelta(days=days_ago)).isoformat()
+            url, payload = (
+                (RUNS_URL, {"duration_seconds": 2400, "distance_km": 3.0, "run_type": "walk", "date": day})
+                if days_ago % 2
+                else (CYCLING_URL, {"duration_seconds": 3600, "distance_km": 20.0, "date": day})
+            )
+            assert client.post(url, json=payload, headers=auth_headers).status_code == 201
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["consistency_score_pct"] == 100.0
+        assert stats["consistency_streak_days"] >= 31
+
+    def test_a_three_day_gap_costs_score(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """One 3-day hole leaves a window with no activity, so the score drops
+        below 100 without collapsing."""
+        for days_ago in range(0, 33, 3):
+            if days_ago == 15:  # skip, widening 12->18 into a six-day hole
+                continue
+            self._log_workout(db, days_ago)
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert 0.0 < stats["consistency_score_pct"] < 100.0
+
+    def test_streak_counts_days_the_chain_held(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Trained today and 40 days back with no 3-day hole: the streak reports
+        all of it, uncapped by the 30-day scoring window."""
+        for days_ago in range(0, 41, 2):
+            self._log_workout(db, days_ago)
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["consistency_score_pct"] == 100.0
+        assert stats["consistency_streak_days"] == 41
+
+    def test_streak_stops_at_the_gap_but_survives_two_rest_days(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Activity today and 2 days ago keeps the chain; the 3-day hole before
+        that ends it, so only the recent days count."""
+        for days_ago in (0, 2, 6, 8):
+            self._log_workout(db, days_ago)
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        # Walking back from today: the windows ending today, -1 and -2 all catch
+        # the sessions on day 0 or day 2. The window ending -3 spans -3/-4/-5,
+        # which is empty, so the chain starts 3 days ago.
+        assert stats["consistency_streak_days"] == 3
+
+    def test_two_rest_days_today_still_hold_the_streak(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Rested today and yesterday after training the day before: still inside
+        the 3-day window, so the chain is intact and dates back to that session."""
+        self._log_workout(db, 2)
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["consistency_score_pct"] > 0.0
+        assert stats["consistency_streak_days"] == 3
+
+    def test_three_rest_days_today_break_the_streak(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Nothing logged for three days running: the window ending today is
+        empty, so the chain is broken even though the score stays positive."""
+        self._log_workout(db, 3)
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["consistency_streak_days"] == 0
+        assert stats["consistency_score_pct"] > 0.0
