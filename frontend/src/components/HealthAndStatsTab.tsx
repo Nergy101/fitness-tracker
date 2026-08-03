@@ -50,6 +50,7 @@ import { StatCard } from "./health/StatCard";
 import { ActivityStatsCard } from "./health/ActivityStatsCard";
 import { PersonalRecordsCard } from "./health/PersonalRecordsCard";
 
+import { logger } from "../logger";
 function bmiColor(cat: string | null): string {
   switch (cat) {
     case "Normal": return "text-green-400";
@@ -115,7 +116,7 @@ export default function HealthAndStatsTab() {
       setBoxingPrs(boxPrs);
       setBoxingTrends(boxTrends?.days ?? []);
     } catch (e) {
-      console.error("Failed to load health data", e);
+      logger.error("Failed to load health data", e);
     } finally {
       setLoading(false);
     }

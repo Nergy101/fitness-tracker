@@ -14,6 +14,7 @@ import { formatDuration, localISO } from "../format";
 import { useFocusTrap } from "../useFocusTrap";
 import { randomNotePrompt } from "../notePrompts";
 
+import { logger } from "../logger";
 type Phase = "warmup" | "cooldown" | "rest" | "exercise" | "roundrest" | "finished";
 
 const DEFAULT_REST = 5;
@@ -592,7 +593,7 @@ export default function WorkoutRunner({
       // silently dropping the session.
       savedRef.current = false;
       setSaving(false);
-      console.error("Failed to save session", err);
+      logger.error("Failed to save session", err);
     }
   }
 
@@ -658,12 +659,13 @@ export default function WorkoutRunner({
                 onClick={() => doSwap(ex)}
                 className="w-full text-left bg-bg rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-fg/5 transition-colors"
               >
-                <div className="w-10 h-10 rounded-lg bg-fg/5 flex items-center justify-center shrink-0 overflow-hidden">
-                  {ex.image_url ? (
-                    <img src={ex.image_url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-fg/30 text-lg font-bold">{ex.name.charAt(0)}</span>
-                  )}
+                <div className="w-10 h-10 shrink-0">
+                  <ExerciseImage
+                    src={ex.image_url}
+                    alt={ex.name}
+                    className="w-10 h-10 rounded-lg bg-fg/5"
+                    category={ex.category}
+                  />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-fg truncate">{ex.name}</p>

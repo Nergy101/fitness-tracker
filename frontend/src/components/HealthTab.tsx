@@ -23,6 +23,7 @@ import WellnessSection from "./health/WellnessSection";
 import { shortDate } from "./health/utils";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../activity";
 
+import { logger } from "../logger";
 // ─── Helpers ───────────────────────────────────────────────
 
 function bmiColor(cat: string | null): string {
@@ -165,7 +166,7 @@ export default function HealthTab() {
         setPrefilled(true);
       }
     } catch (e) {
-      console.error("Failed to load health data", e);
+      logger.error("Failed to load health data", e);
     } finally {
       setLoading(false);
     }

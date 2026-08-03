@@ -11,6 +11,7 @@ import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 import { formatDuration, localISO } from "../format";
 
+import { logger } from "../logger";
 // Tabata is a fixed-interval HIIT format: 20s work / 10s rest, repeated for a
 // configurable number of rounds (8 by default). Unlike the circuit runner it is
 // round-centric rather than exercise-centric.
@@ -204,7 +205,7 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
     } catch (err) {
       savedRef.current = false;
       setSaving(false);
-      console.error("Failed to save session", err);
+      logger.error("Failed to save session", err);
     }
   }
 

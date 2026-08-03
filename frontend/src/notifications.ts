@@ -7,6 +7,8 @@
  * - getNotificationStatus          — read current permission state
  */
 
+import { logger } from "./logger";
+
 // ─── Types ──────────────────────────────────────────────
 
 interface PushKeyPair {
@@ -86,7 +88,7 @@ export async function registerPushSubscription(): Promise<PushSubscriptionInfo |
     const { api } = await import("./api");
     await api.subscribePush(json);
   } catch (err) {
-    console.error("Failed to register push subscription with backend", err);
+    logger.error("Failed to register push subscription with backend", err);
     // Still return the subscription so the caller knows we're subscribed locally
   }
 
@@ -108,7 +110,7 @@ export async function unsubscribePush(): Promise<void> {
     const { api } = await import("./api");
     await api.unsubscribePush(endpoint);
   } catch (err) {
-    console.error("Failed to unregister push subscription from backend", err);
+    logger.error("Failed to unregister push subscription from backend", err);
   }
 }
 

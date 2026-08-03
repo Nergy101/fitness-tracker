@@ -199,12 +199,14 @@ export default function InjurySection() {
             <button
               onClick={submitInjury}
               disabled={!bodyPart.trim()}
+              aria-label="Log injury entry"
               className="flex-1 rounded-lg bg-red-500 hover:bg-red-600 text-on-accent py-2 text-sm font-medium disabled:opacity-40 transition-colors"
             >
               Log Injury
             </button>
             <button
               onClick={() => setShowForm(false)}
+              aria-label="Cancel injury form"
               className="px-4 rounded-lg bg-fg/5 hover:bg-fg/10 text-fg/50 text-sm transition-colors"
             >
               Cancel
@@ -237,6 +239,7 @@ export default function InjurySection() {
               </div>
               <button
                 onClick={() => resolveInjury(i.id)}
+                aria-label={`Mark ${i.body_part} as healed`}
                 className="text-[11px] text-fg/30 hover:text-green-400 shrink-0 ml-2 transition-colors"
               >
                 heal

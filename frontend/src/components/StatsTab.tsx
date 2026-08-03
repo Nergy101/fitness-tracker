@@ -38,6 +38,7 @@ import MetricNamesDiagnostic from "./health/MetricNamesDiagnostic";
 import { niceTicks } from "./health/ticks";
 import { combineHealthSeries } from "./health/utils";
 
+import { logger } from "../logger";
 const WEIGHT_COLOR = "#c084fc"; // purple-400
 
 // Per-metric presentation for imported Apple Health series.
@@ -457,7 +458,7 @@ export default function StatsTab() {
         setActivity(dailyActivity?.days ?? []);
         setInjuries(injuryList);
       } catch (e) {
-        console.error("Failed to load stats data", e);
+        logger.error("Failed to load stats data", e);
         setError(true);
       } finally {
         setLoading(false);

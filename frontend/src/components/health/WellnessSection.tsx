@@ -67,24 +67,29 @@ export default function WellnessSection() {
         <div>
           <p className="text-xs text-fg/50 mb-1">Mood: {moodIcon(mood)}</p>
           <input type="range" min="1" max="5" value={mood} onChange={(e) => setMood(parseInt(e.target.value))}
+            aria-label="Mood"
             className="w-full accent-accent" />
         </div>
         <div>
           <p className="text-xs text-fg/50 mb-1">Energy: {energy}/5</p>
           <input type="range" min="1" max="5" value={energy} onChange={(e) => setEnergy(parseInt(e.target.value))}
+            aria-label="Energy"
             className="w-full accent-accent" />
         </div>
         <div>
           <p className="text-xs text-fg/50 mb-1">Stress: {stress}/5</p>
           <input type="range" min="1" max="5" value={stress} onChange={(e) => setStress(parseInt(e.target.value))}
+            aria-label="Stress"
             className="w-full accent-accent" />
         </div>
         <div>
           <p className="text-xs text-fg/50 mb-1">Sleep: {sleep}h</p>
           <input type="range" min="3" max="12" step="0.5" value={sleep} onChange={(e) => setSleep(parseFloat(e.target.value))}
+            aria-label="Sleep hours"
             className="w-full accent-accent" />
         </div>
         <button onClick={submit}
+          aria-label="Log wellness check-in"
           className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold mt-1">
           Log Check-in
         </button>

@@ -8,6 +8,7 @@ import {
   getNotificationStatus,
   type NotificationStatus,
 } from "../../notifications";
+import { logger } from "../../logger";
 
 interface HealthSettingsSectionProps {
   /** Called after the profile was saved successfully. */
@@ -63,7 +64,7 @@ function HealthSettingsForm({
         if (sub) setPushSubscribed(true);
       }
     } catch (e) {
-      console.error("Push notification setup failed", e);
+      logger.error("Push notification setup failed", e);
     } finally {
       setPushLoading(false);
     }
@@ -76,7 +77,7 @@ function HealthSettingsForm({
       setPushSubscribed(false);
       setPushStatus("prompt"); // reset to prompt so user can re-enable
     } catch (e) {
-      console.error("Push unsubscribe failed", e);
+      logger.error("Push unsubscribe failed", e);
     } finally {
       setPushLoading(false);
     }
@@ -88,7 +89,7 @@ function HealthSettingsForm({
       setTestSent(true);
       setTimeout(() => setTestSent(false), 3000);
     } catch (e) {
-      console.error("Test notification failed", e);
+      logger.error("Test notification failed", e);
     }
   };
 
@@ -98,7 +99,7 @@ function HealthSettingsForm({
       await api.updateProfile(data);
       onSaved();
     } catch (e) {
-      console.error("Profile save failed", e);
+      logger.error("Profile save failed", e);
     } finally {
       setSaving(false);
     }
@@ -109,18 +110,21 @@ function HealthSettingsForm({
       <div>
         <label className="text-xs text-fg/50 block mb-1">Height (cm)</label>
         <input type="number" step="0.1" value={form.height_cm ?? ""}
+          aria-label="Height (cm)"
           onChange={(e) => setForm({ ...form, height_cm: e.target.value ? parseFloat(e.target.value) : undefined })}
           className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50" />
       </div>
       <div>
         <label className="text-xs text-fg/50 block mb-1">Birthday</label>
         <input type="date" value={form.birthday}
+          aria-label="Birthday"
           onChange={(e) => setForm({ ...form, birthday: e.target.value })}
           className="w-full max-w-full min-w-0 box-border bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50" />
       </div>
       <div>
         <label className="text-xs text-fg/50 block mb-1">Gender</label>
         <select value={form.gender}
+          aria-label="Gender"
           onChange={(e) => setForm({ ...form, gender: e.target.value })}
           className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50"
         >
@@ -133,12 +137,14 @@ function HealthSettingsForm({
       <div>
         <label className="text-xs text-fg/50 block mb-1">Goal Weight (kg)</label>
         <input type="number" step="0.1" value={form.goal_weight_kg ?? ""}
+          aria-label="Goal Weight (kg)"
           onChange={(e) => setForm({ ...form, goal_weight_kg: e.target.value ? parseFloat(e.target.value) : undefined })}
           className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50" />
       </div>
       <div>
         <label className="text-xs text-fg/50 block mb-1">Daily workout reminder at</label>
         <input type="time" value={form.reminder_time}
+          aria-label="Daily workout reminder time"
           onChange={(e) => setForm({ ...form, reminder_time: e.target.value })}
           className="w-full max-w-full min-w-0 box-border bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50" />
       </div>
@@ -162,6 +168,7 @@ function HealthSettingsForm({
               <button
                 onClick={handleTestNotification}
                 disabled={pushLoading}
+                aria-label="Send test notification"
                 className="flex-1 bg-accent/20 text-accent rounded-lg py-1.5 text-xs font-medium hover:bg-accent/30 transition-colors disabled:opacity-50"
               >
                 {testSent ? (
@@ -175,6 +182,7 @@ function HealthSettingsForm({
               <button
                 onClick={handleDisablePush}
                 disabled={pushLoading}
+                aria-label="Disable push notifications"
                 className="bg-red-400/10 text-red-400 rounded-lg py-1.5 px-3 text-xs font-medium hover:bg-red-400/20 transition-colors disabled:opacity-50"
               >
                 Disable
@@ -185,6 +193,7 @@ function HealthSettingsForm({
           <button
             onClick={handleEnablePush}
             disabled={pushLoading}
+            aria-label="Enable push notifications"
             className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50"
           >
             {pushLoading ? "Setting up..." : "Enable Push Notifications"}
@@ -194,12 +203,14 @@ function HealthSettingsForm({
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={form.notifications_enabled}
+          aria-label="Enable daily reminders"
           onChange={(e) => setForm({ ...form, notifications_enabled: e.target.checked })}
           className="accent-accent" />
         <span className="text-fg/80">Enable daily reminders</span>
       </label>
 
       <button onClick={() => save(form)} disabled={saving}
+        aria-label="Save settings"
         className="w-full bg-accent text-bg rounded-xl py-2.5 font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 mt-2">
         {saving ? "Saving..." : "Save Settings"}
       </button>

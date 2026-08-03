@@ -23,7 +23,7 @@ export default function Toast({ onDismiss, duration = 2500, children }: ToastPro
     <div
       role="status"
       aria-live="polite"
-      className="fixed left-1/2 -translate-x-1/2 bottom-24 z-[60] flex items-center gap-2 bg-accent text-on-accent rounded-full px-4 py-2.5 text-sm font-semibold shadow-lg"
+      className="fixed left-1/2 -translate-x-1/2 bottom-[calc(96px+env(safe-area-inset-bottom,0px))] z-[60] flex items-center gap-2 bg-accent text-on-accent rounded-full px-4 py-2.5 text-sm font-semibold shadow-lg"
     >
       {children}
     </div>

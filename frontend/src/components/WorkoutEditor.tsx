@@ -9,6 +9,7 @@ import ExerciseImage from "./ExerciseImage";
 import Stepper from "./Stepper";
 import { formatDuration } from "../format";
 
+import { logger } from "../logger";
 const TIME_CAP_OPTIONS = [
   { label: "5 min", seconds: 300 },
   { label: "10 min", seconds: 600 },
@@ -200,7 +201,7 @@ export default function WorkoutEditor({
       }
       onSave();
     } catch (err) {
-      console.error("Save failed", err);
+      logger.error("Save failed", err);
       alert("Failed to save workout");
     } finally {
       setSaving(false);
