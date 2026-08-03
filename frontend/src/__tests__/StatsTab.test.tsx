@@ -328,8 +328,8 @@ describe("StatsTab", () => {
     mockGetRuns.mockResolvedValue([
       {
         id: 1, duration_seconds: 1500, distance_km: 5.0, pace_per_km: 300,
-        run_type: "run", date: new Date().toISOString().slice(0, 10),
-        notes: "", created_at: new Date().toISOString(),
+        run_type: "run", date: daysAgo(0),
+        notes: "", created_at: `${daysAgo(0)}T07:00:00`,
       },
     ]);
     await act(async () => {
@@ -341,7 +341,7 @@ describe("StatsTab", () => {
   // ── Cycling series ──
 
   it("draws cycling minutes in the cycling color and labels the legend", async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = daysAgo(0);
     mockGetRuns.mockResolvedValue([]);
     mockGetSessions.mockResolvedValue([
       {
@@ -366,7 +366,7 @@ describe("StatsTab", () => {
   });
 
   it("counts a cycling ride's minutes once, not once per mirror session", async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = daysAgo(0);
     mockGetRuns.mockResolvedValue([]);
     mockGetSessions.mockResolvedValue([
       {
@@ -391,7 +391,7 @@ describe("StatsTab", () => {
   });
 
   it("renders cycling distance in the distance chart", async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = daysAgo(0);
     mockGetRuns.mockResolvedValue([]);
     mockGetCycling.mockResolvedValue([
       { id: 4, duration_seconds: 1800, distance_km: 12.0, date: today, notes: "", created_at: `${today}T09:00:00Z` },

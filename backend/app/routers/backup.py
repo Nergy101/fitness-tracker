@@ -21,19 +21,26 @@ from app.models.models import (
     Exercise, WorkoutTemplate, WorkoutTemplateExercise,
     WorkoutSession, SessionExercise, ExerciseLog,
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin,
-    RunEntry, BoxingEntry, PushSubscription, HealthMetric, HealthWorkout,
+    RunEntry, BoxingEntry, CyclingEntry, InjuryMarker, PushSubscription,
+    HealthMetric, HealthWorkout,
 )
 from app.settings import settings
 
-# Every data table, in FK-safe insert order (parents before children). Used
-# for dumps and to validate/spell restore statements.
+# Every data table, in FK-safe insert order (parents before children). This list
+# is the single source of truth: dumps iterate it, restores insert in this order
+# and delete in the reverse. A model missing here is silently absent from every
+# backup, and a restore then wipes its rows' parents — so add new models.
+# workout_sessions references run_entries / boxing_entries / cycling_entries,
+# which is why those precede it.
 BACKUP_MODELS = [
     Exercise, UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin,
-    RunEntry, BoxingEntry, PushSubscription,
+    RunEntry, BoxingEntry, CyclingEntry, InjuryMarker, PushSubscription,
     WorkoutTemplate, WorkoutTemplateExercise,
     WorkoutSession, SessionExercise, ExerciseLog,
     HealthMetric, HealthWorkout,
 ]
+RESTORE_INSERT_ORDER = [m.__tablename__ for m in BACKUP_MODELS]
+RESTORE_DELETE_ORDER = list(reversed(RESTORE_INSERT_ORDER))
 # table name -> allowed column names (guards restore against injected columns).
 ALLOWED_COLUMNS: dict[str, set[str]] = {
     m.__tablename__: {c.key for c in m.__table__.columns} for m in BACKUP_MODELS
@@ -245,34 +252,15 @@ def restore_backup(req: RestoreRequest, db: Session = Depends(get_db)):
     except OSError as e:
         raise HTTPException(400, f"Backup location '{backup_dir}' is not writable: {e}")
 
-    # children → parents for deletes (respects FK constraints once enforced).
-    delete_order = [
-        "exercise_logs", "session_exercises", "workout_sessions",
-        "workout_template_exercises", "workout_templates",
-        "push_subscriptions", "run_entries", "boxing_entries", "wellness_checkins",
-        "body_measurements", "weight_entries", "user_profiles", "exercises",
-        "health_metrics", "health_workouts",
-    ]
-
     inspector = inspect(db.get_bind())
     existing_tables = set(inspector.get_table_names())
 
     try:
-        for tname in delete_order:
+        for tname in RESTORE_DELETE_ORDER:
             if tname in existing_tables and tname in tables_data:
                 db.execute(text(f"DELETE FROM {tname}"))
 
-        # parents → children for inserts. workout_sessions references both
-        # run_entries and boxing_entries, so those precede it.
-        insert_order = [
-            "exercises", "user_profiles", "weight_entries", "body_measurements",
-            "wellness_checkins", "run_entries", "boxing_entries", "push_subscriptions",
-            "workout_templates", "workout_template_exercises",
-            "workout_sessions", "session_exercises", "exercise_logs",
-            "health_metrics", "health_workouts",
-        ]
-
-        for tname in insert_order:
+        for tname in RESTORE_INSERT_ORDER:
             rows = tables_data.get(tname, [])
             if not rows:
                 continue

@@ -18,7 +18,9 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.database import Base
 from app.models.models import HealthMetric, UserProfile
+from app.routers.backup import RESTORE_DELETE_ORDER, RESTORE_INSERT_ORDER
 
 BACKUP_URL = "/api/v1/backup"
 BACKUPS_URL = "/api/v1/backups"
@@ -74,6 +76,53 @@ class TestCreateBackup:
         counts = resp.json()["table_counts"]
         assert counts["health_metrics"] == 1
         assert counts["health_workouts"] == 1
+
+    def test_every_mapped_model_is_backed_up(
+        self, tmp_path, client: TestClient, auth_headers: dict
+    ):
+        """A model missing from BACKUP_MODELS is silently absent from every
+        backup — cycling_entries and injury_markers were, so rides and injuries
+        could not be restored at all. Adding a model must fail this test until
+        it is wired into the backup list."""
+        _point_in(tmp_path, client, auth_headers)
+
+        resp = client.post(BACKUP_URL, headers=auth_headers)
+        assert resp.status_code == 200
+
+        mapped = {mapper.class_.__tablename__ for mapper in Base.registry.mappers}
+        assert mapped == set(RESTORE_INSERT_ORDER), (
+            "add missing models to BACKUP_MODELS: "
+            f"{sorted(mapped - set(RESTORE_INSERT_ORDER))}"
+        )
+        assert set(resp.json()["table_counts"]) == mapped
+
+    def test_restore_order_covers_the_same_tables_both_ways(self):
+        """Deletes must be the exact reverse of inserts, or a restore either
+        leaves stale children behind or trips a foreign key."""
+        assert RESTORE_DELETE_ORDER == list(reversed(RESTORE_INSERT_ORDER))
+        assert RESTORE_INSERT_ORDER.index("cycling_entries") < RESTORE_INSERT_ORDER.index("workout_sessions")
+        assert RESTORE_INSERT_ORDER.index("run_entries") < RESTORE_INSERT_ORDER.index("workout_sessions")
+        assert RESTORE_INSERT_ORDER.index("boxing_entries") < RESTORE_INSERT_ORDER.index("workout_sessions")
+
+    def test_includes_cycling_and_injury_rows(
+        self, tmp_path, client: TestClient, auth_headers: dict
+    ):
+        _point_in(tmp_path, client, auth_headers)
+        assert client.post(
+            "/api/v1/cycling",
+            json={"duration_seconds": 5400, "distance_km": 27.8},
+            headers=auth_headers,
+        ).status_code == 201
+        assert client.post(
+            "/api/v1/health/injuries",
+            json={"body_part": "knee", "date": dt.date.today().isoformat()},
+            headers=auth_headers,
+        ).status_code in (200, 201)
+
+        counts = client.post(BACKUP_URL, headers=auth_headers).json()["table_counts"]
+        assert counts["cycling_entries"] == 1
+        assert counts["injury_markers"] == 1
+        assert counts["workout_sessions"] == 1  # the ride's mirror
 
     def test_unwritable_location_returns_400(
         self, tmp_path, client: TestClient, auth_headers: dict
@@ -131,6 +180,51 @@ class TestRestore:
         series = client.get(INSIGHTS_URL, headers=auth_headers).json()["series"]
         by_metric = {s["metric"]: s for s in series}
         assert by_metric["step_count"]["points"][0]["value"] == 9000
+
+    def test_round_trip_restores_rides_and_injuries(
+        self, tmp_path, client: TestClient, auth_headers: dict
+    ):
+        """The user-facing guarantee: wipe everything after a backup and the
+        rides, their mirror sessions and the injuries all come back."""
+        _point_in(tmp_path, client, auth_headers)
+        ride = client.post(
+            "/api/v1/cycling",
+            json={"duration_seconds": 5400, "distance_km": 27.8, "notes": "long ride"},
+            headers=auth_headers,
+        ).json()
+        client.post(
+            "/api/v1/health/injuries",
+            json={"body_part": "knee", "date": dt.date.today().isoformat(), "notes": "twinge"},
+            headers=auth_headers,
+        )
+
+        created = client.post(BACKUP_URL, headers=auth_headers)
+        assert created.status_code == 200
+
+        assert client.delete(f"/api/v1/cycling/{ride['id']}", headers=auth_headers).status_code == 204
+        for injury in client.get("/api/v1/health/injuries", headers=auth_headers).json():
+            client.delete(f"/api/v1/health/injuries/{injury['id']}", headers=auth_headers)
+        assert client.get("/api/v1/cycling", headers=auth_headers).json() == []
+
+        resp = client.post(
+            RESTORE_URL, json={"filename": created.json()["filename"]}, headers=auth_headers
+        )
+        assert resp.status_code == 200
+
+        rides = client.get("/api/v1/cycling", headers=auth_headers).json()
+        assert len(rides) == 1
+        assert rides[0]["distance_km"] == 27.8
+        assert rides[0]["notes"] == "long ride"
+
+        injuries = client.get("/api/v1/health/injuries", headers=auth_headers).json()
+        assert len(injuries) == 1
+        assert injuries[0]["body_part"] == "knee"
+
+        # The mirror session must come back pointing at the restored ride, or
+        # History and the cycling charts stay empty.
+        sessions = client.get("/api/v1/sessions", headers=auth_headers).json()
+        mirror = next(s for s in sessions if s["template_name"].startswith("Cycling:"))
+        assert mirror["cycling_entry_id"] == rides[0]["id"]
 
 
 class TestDeleteBackup:

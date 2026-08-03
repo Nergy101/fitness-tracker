@@ -9,6 +9,7 @@ import {
   type WorkoutSession,
   type WorkoutSessionInput,
 } from "../../api";
+import { todayKey } from "../../dateKey";
 
 // Bump when the export shape changes so future imports can migrate old files.
 const HISTORY_EXPORT_VERSION = 1;
@@ -71,7 +72,7 @@ export default function ImportExport({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `fitness-history-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `fitness-history-${todayKey()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }

@@ -72,8 +72,14 @@ style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
    - **Never** use `create_all()` or `drop_all()` in app code
 4. **Router** — add to most logical existing router; avoid creating new router files for single-model features
 5. **Register** in `main.py` — import + `app.include_router()`
-6. **Tests** — update any tests affected by new tables (especially `test_migrations.py` which uses `Base.metadata.create_all` for pre-Alembic adoption tests — new post-baseline tables need to be dropped in those tests)
-7. **Frontend** — types in `api.ts`, API methods, component, wire up
+6. **`BACKUP_MODELS`** in `routers/backup.py` — append the model in FK-safe position
+   (parents before children; anything `workout_sessions` references goes before it).
+   That list is the single source of truth: dumps iterate it and restores use it
+   forwards for inserts, reversed for deletes. Omitting a model means it is silently
+   missing from every backup and unrecoverable — `cycling_entries` and `injury_markers`
+   were, until `test_every_mapped_model_is_backed_up` started failing the omission.
+7. **Tests** — update any tests affected by new tables (especially `test_migrations.py` which uses `Base.metadata.create_all` for pre-Alembic adoption tests — new post-baseline tables need to be dropped in those tests)
+8. **Frontend** — types in `api.ts`, API methods, component, wire up
 
 ### Run/walk mirror pattern
 
