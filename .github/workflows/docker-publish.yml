@@ -18,15 +18,39 @@ env:
   IMAGE_PREFIX: ${{ github.repository_owner }}/fitness-tracker
 
 jobs:
+  # Detect which stack(s) changed so test jobs can be skipped when irrelevant
+  # (NER-249). GitHub doesn't support job-level `paths`, so this gates jobs
+  # via `needs` + `if` instead.
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      workflow: ${{ steps.filter.outputs.workflow }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - "backend/**"
+            frontend:
+              - "frontend/**"
+            workflow:
+              - ".github/**"
+
   lint:
     name: Lint (ruff + eslint)
-    runs-on: ubuntu-latest
+    needs: changes
     # Run when either stack or the workflow itself changes. Markdown/docs-only
-    # changes skip all test jobs (see paths filters below).
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/**"
+    # changes skip all test jobs.
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflow == 'true'
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -66,10 +90,9 @@ jobs:
 
   test:
     name: Backend unit tests
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
-    paths:
-      - "backend/**"
-      - ".github/**"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -101,10 +124,9 @@ jobs:
 
   frontend-tests:
     name: Frontend type-check & unit tests
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflow == 'true'
     runs-on: ubuntu-latest
-    paths:
-      - "frontend/**"
-      - ".github/**"
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -137,13 +159,11 @@ jobs:
 
   e2e:
     name: E2E tests (Playwright)
-    runs-on: ubuntu-latest
+    needs: changes
     # E2E exercises the full stack (backend API + frontend UI) — runs when
     # either side changes.
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/**"
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.workflow == 'true'
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
