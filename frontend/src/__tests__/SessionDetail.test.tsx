@@ -152,6 +152,59 @@ describe("SessionDetail", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("prompts before closing when there are unsaved changes", () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const onClose = vi.fn();
+    const session = makeSession();
+    render(<SessionDetail session={session} onClose={onClose} onUpdate={vi.fn()} />);
+
+    const notesTextarea = screen.getByPlaceholderText("Add notes...");
+    fireEvent.change(notesTextarea, { target: { value: "Edited but not saved" } });
+
+    fireEvent.click(screen.getByText("×"));
+    expect(confirmSpy).toHaveBeenCalledWith("You have unsaved changes. Discard them?");
+    expect(onClose).not.toHaveBeenCalled();
+
+    confirmSpy.mockRestore();
+  });
+
+  it("closes after confirming when there are unsaved changes", () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const onClose = vi.fn();
+    const session = makeSession();
+    render(<SessionDetail session={session} onClose={onClose} onUpdate={vi.fn()} />);
+
+    const notesTextarea = screen.getByPlaceholderText("Add notes...");
+    fireEvent.change(notesTextarea, { target: { value: "Edited but not saved" } });
+
+    fireEvent.click(screen.getByText("×"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    confirmSpy.mockRestore();
+  });
+
+  it("closes without prompting after saving", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const onClose = vi.fn();
+    const onUpdate = vi.fn();
+    const session = makeSession();
+    const { rerender } = render(<SessionDetail session={session} onClose={onClose} onUpdate={onUpdate} />);
+
+    const notesTextarea = screen.getByPlaceholderText("Add notes...");
+    fireEvent.change(notesTextarea, { target: { value: "Saved notes" } });
+    fireEvent.click(screen.getByText("Save"));
+
+    // Parent receives the updated session and passes it back down — notes are no longer dirty.
+    await screen.findByText("Saved notes");
+    rerender(<SessionDetail session={{ ...session, notes: "Saved notes" }} onClose={onClose} onUpdate={onUpdate} />);
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("×"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    confirmSpy.mockRestore();
+  });
+
   it("shows save button when notes are modified", () => {
     const session = makeSession();
     render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);

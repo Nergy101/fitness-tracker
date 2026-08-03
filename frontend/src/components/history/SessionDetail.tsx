@@ -4,6 +4,7 @@ import { formatDateRelative, formatDuration, localISO } from "../../format";
 import { useFocusTrap } from "../../useFocusTrap";
 import ExerciseImage from "../ExerciseImage";
 
+import { logger } from "../../logger";
 /** Modal showing a session's stats, per-exercise breakdown, date editing, and inline notes. */
 export default function SessionDetail({
   session,
@@ -18,8 +19,9 @@ export default function SessionDetail({
   const [durationMinutes, setDurationMinutes] = useState(
     String(Math.round(session.total_duration_seconds / 60))
   );
+  const [dateValue, setDateValue] = useState(() => toLocalDatetimeLocal(session.started_at));
   const modalRef = useRef<HTMLDivElement>(null);
-  useFocusTrap(modalRef, onClose);
+  useFocusTrap(modalRef, handleClose);
 
   const isBoxing = session.template_name.startsWith("Boxing:");
   const isRunOrWalk = session.template_name.startsWith("Run:") || session.template_name.startsWith("Walk:");
@@ -70,7 +72,7 @@ export default function SessionDetail({
       const e = list.find((b) => b.id === boxingEntry.id);
       if (e) setBoxingEntry(e);
     } catch (err) {
-      console.error("Failed to update boxing session", err);
+      logger.error("Failed to update boxing session", err);
     }
   }
 
@@ -92,7 +94,7 @@ export default function SessionDetail({
       });
       onUpdate(updated);
     } catch (err) {
-      console.error("Failed to update session date", err);
+      logger.error("Failed to update session date", err);
     }
   }
 
@@ -104,7 +106,7 @@ export default function SessionDetail({
       onUpdate(updated);
       setNotes(trimmed);
     } catch (err) {
-      console.error("Failed to save notes", err);
+      logger.error("Failed to save notes", err);
     }
   }
 
@@ -118,7 +120,7 @@ export default function SessionDetail({
       onUpdate(updated);
       setDurationMinutes(String(Math.round(updated.total_duration_seconds / 60)));
     } catch (err) {
-      console.error("Failed to save duration", err);
+      logger.error("Failed to save duration", err);
     }
   }
 
@@ -169,7 +171,7 @@ export default function SessionDetail({
       const e = list.find((r) => r.id === runEntry.id);
       if (e) setRunEntry(e);
     } catch (err) {
-      console.error("Failed to update run", err);
+      logger.error("Failed to update run", err);
     }
   }
 
@@ -197,19 +199,30 @@ export default function SessionDetail({
         onUpdate(updated);
       }
     } catch (err) {
-      console.error("Failed to toggle run type", err);
+      logger.error("Failed to toggle run type", err);
     }
   }
 
   const notesDirty = notes.trim() !== (session.notes || "");
   const durationDirty =
     isRegular && ((parseInt(durationMinutes) || 0) * 60 !== session.total_duration_seconds);
+  const dateDirty = dateValue !== toLocalDatetimeLocal(session.started_at);
+
+  const hasUnsavedChanges = notesDirty || durationDirty || dateDirty || boxDirty || runDirty;
+
+  /** Close, but only after confirming when there are unsaved edits. */
+  function handleClose() {
+    if (hasUnsavedChanges && !window.confirm("You have unsaved changes. Discard them?")) {
+      return;
+    }
+    onClose();
+  }
 
   return (
     <div
       className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleClose();
       }}
     >
       <div
@@ -221,7 +234,7 @@ export default function SessionDetail({
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">{session.template_name}</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-fg/40 hover:text-fg/70 text-xl leading-none"
           >
             &times;
@@ -252,8 +265,9 @@ export default function SessionDetail({
         <p className="text-xs text-fg/40 mb-3">
           <input
             type="datetime-local"
-            defaultValue={toLocalDatetimeLocal(session.started_at)}
-            onBlur={(e) => updateStartedAt(e.target.value)}
+            value={dateValue}
+            onChange={(e) => setDateValue(e.target.value)}
+            onBlur={() => updateStartedAt(dateValue)}
             className="w-full bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-xs text-fg outline-none focus:border-accent/50"
           />
         </p>
