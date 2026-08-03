@@ -346,7 +346,7 @@ export interface StatsOverviewResponse {
   activity_weekly: WeeklyActivityStat[];
   total_kcal_burned: number;
   consistency_score_pct: number;
-  consistency_streak_days: number;
+  consistency_days_at_100: number;
   total_sessions_all: number;
   total_runs: number;
   total_walks: number;

@@ -58,15 +58,15 @@ function bmiColor(cat: string | null): string {
   }
 }
 
-/** Sub-line under the consistency score: how long the "never three days off"
- *  chain has held. At 100% that is the number worth bragging about; below it,
- *  it is the rebuild in progress. Distinct from the Activity Streak card, which
- *  counts training days under the stricter one-rest-day rule. */
+/** Sub-line under the consistency score. At 100% it reports how long the score
+ *  has read 100% — the motivator. Below 100% the counter is 0 by definition, so
+ *  say why instead. Unrelated to the Activity Streak card, which counts training
+ *  days under the stricter one-rest-day rule. */
 function consistencySub(stats: StatsOverviewResponse | null): string {
-  const days = stats?.consistency_streak_days ?? 0;
-  if (days <= 0) return "log any activity to start";
-  const label = `${days} day${days === 1 ? "" : "s"}`;
-  return (stats?.consistency_score_pct ?? 0) >= 100 ? `100% for ${label}` : `${label} unbroken`;
+  const days = stats?.consistency_days_at_100 ?? 0;
+  if (days > 0) return `100% for ${days} day${days === 1 ? "" : "s"}`;
+  if ((stats?.consistency_score_pct ?? 0) > 0) return "a 3-day gap in the last 30d";
+  return "log any activity to start";
 }
 
 // ─── Main Component ─────────────────────────────────────────

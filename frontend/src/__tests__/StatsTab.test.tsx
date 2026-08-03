@@ -145,7 +145,7 @@ function makeStats() {
     ],
     total_kcal_burned: 1800,
     consistency_score_pct: 100,
-    consistency_streak_days: 42,
+    consistency_days_at_100: 3,
     total_sessions_all: 5,
     total_runs: 3,
     total_walks: 2,

@@ -27,38 +27,49 @@ CONSISTENCY_WINDOW_DAYS = 3
 CONSISTENCY_SCORE_DAYS = 30
 
 
-def _consistency(activity_days: set[date], today: date) -> tuple[float, int]:
-    """Consistency score and how long it has been perfect.
-
-    Score: the share of 3-day windows inside the last 30 days that contain at
-    least one activity — 100% means never three days off in a row.
-
-    Streak: how many days back from today that has held. Uncapped, so it keeps
-    climbing past the 30-day scoring window as a motivator.
-    """
-    def covered(window_end: date) -> bool:
-        return any(
-            window_end - timedelta(days=offset) in activity_days
+def _consistency_pct(activity_days: set[date], as_of: date) -> float:
+    """Share of the 3-day windows in the 30 days ending `as_of` that contain at
+    least one activity. 100% means never three days off in a row."""
+    window_ends = [
+        as_of - timedelta(days=offset)
+        for offset in range(CONSISTENCY_SCORE_DAYS - CONSISTENCY_WINDOW_DAYS + 1)
+    ]
+    covered = sum(
+        1
+        for end in window_ends
+        if any(
+            end - timedelta(days=offset) in activity_days
             for offset in range(CONSISTENCY_WINDOW_DAYS)
         )
+    )
+    return round(covered / len(window_ends) * 100, 1)
 
+
+def _consistency(activity_days: set[date], today: date) -> tuple[float, int]:
+    """Today's score, plus how many days it has *read* 100%.
+
+    The day counter answers "how long have I been at 100%", so it recomputes the
+    score as of each earlier day and stops at the first one below 100 — it is not
+    the length of the training chain. The two differ: the score covers a rolling
+    30 days, so a chain only reaches 100% once it is long enough to fill that
+    whole window. A 32-day chain has been at 100% for 3 days, not 32.
+    """
     if not activity_days:
         return 0.0, 0
 
-    window_ends = [
-        today - timedelta(days=offset)
-        for offset in range(CONSISTENCY_SCORE_DAYS - CONSISTENCY_WINDOW_DAYS + 1)
-    ]
-    pct = round(sum(1 for end in window_ends if covered(end)) / len(window_ends) * 100, 1)
+    pct = _consistency_pct(activity_days, today)
+    if pct < 100.0:
+        return pct, 0
 
-    earliest = min(activity_days)
-    streak_days = 0
+    # Nothing before the first activity can score 100%, so that bounds the walk.
+    floor = min(activity_days) - timedelta(days=CONSISTENCY_SCORE_DAYS)
+    days_at_100 = 0
     cursor = today
-    while cursor >= earliest and covered(cursor):
-        streak_days += 1
+    while cursor >= floor and _consistency_pct(activity_days, cursor) >= 100.0:
+        days_at_100 += 1
         cursor -= timedelta(days=1)
 
-    return pct, streak_days
+    return pct, days_at_100
 
 
 @router.get("/overview", response_model=StatsOverviewResponse)
@@ -170,7 +181,7 @@ def stats_overview(db: Session = Depends(get_db)):
     activity_days |= {r.date for r in runs}
     activity_days |= {c.date for c in cycling_rides}
     activity_days |= {b.date for b in boxing_entries}
-    consistency_pct, consistency_streak_days = _consistency(activity_days, today)
+    consistency_pct, consistency_days_at_100 = _consistency(activity_days, today)
 
     # Monthly comparison
     current_month_start = today.replace(day=1)
@@ -200,7 +211,7 @@ def stats_overview(db: Session = Depends(get_db)):
         activity_weekly=activity_weekly,
         total_kcal_burned=round(total_kcal, 1),
         consistency_score_pct=consistency_pct,
-        consistency_streak_days=consistency_streak_days,
+        consistency_days_at_100=consistency_days_at_100,
         total_sessions_all=len(workouts),
         total_runs=sum(1 for r in runs if r.run_type != "walk"),
         total_walks=sum(1 for r in runs if r.run_type == "walk"),

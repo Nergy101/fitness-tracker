@@ -148,8 +148,13 @@ plus any streak tests in `test_prs.py`.
 last 30 days that contain **at least one activity of any type** — workouts, runs,
 walks, boxing, rides all count. Two rest days in a row are fine; three break a window.
 100% means "never went three days without training".
-`consistency_streak_days` is how far back that has held, uncapped by the 30-day
-window, and drives the motivator sub-line on the Consistency card.
+`consistency_days_at_100` counts how many days the **score has read 100%** — it
+recomputes the score as of each earlier day and stops at the first one below 100.
+It is NOT the length of the training chain: the score covers a rolling window, so a
+chain must first fill that window before the score reaches 100. A dense chain of N
+days has been at 100% for `N - 27` (28 window ends must all sit inside the chain).
+Reporting the chain length here claimed "100% for 32 days" while the score had only
+just crossed 100 — see `test_days_at_100_counts_days_the_score_held_not_the_chain`.
 
 This is deliberately **more lenient** than `_longest_streak()` / `weight_streak()`
 above (≤1 rest day). Do not "unify" them: the Consistency card and the Activity

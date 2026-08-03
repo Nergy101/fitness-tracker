@@ -664,7 +664,13 @@ class TestDailyActivityEndpoint:
 class TestConsistencyScore:
     """The score is the share of 3-day windows in the last 30 days that contain
     at least one activity. Two rest days in a row are fine; three break it.
-    Every activity type counts — workouts, runs, walks, boxing, rides."""
+    Every activity type counts — workouts, runs, walks, boxing, rides.
+
+    `consistency_days_at_100` counts how many days the SCORE has read 100%, not
+    how long the training chain is. The score judges 28 rolling windows (ends
+    spanning the last 28 days, each covering 3 days), and a window is covered as
+    soon as its END is an activity day — so a dense chain of N days has been at
+    100% for N - 27 days: every window end has to sit inside the chain."""
 
     def _log_workout(self, db: Session, days_ago: int) -> None:
         db.add(WorkoutSession(
@@ -678,7 +684,7 @@ class TestConsistencyScore:
     def test_empty_db_scores_zero(self, client: TestClient, auth_headers: dict):
         stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
         assert stats["consistency_score_pct"] == 0.0
-        assert stats["consistency_streak_days"] == 0
+        assert stats["consistency_days_at_100"] == 0
 
     def test_every_third_day_is_still_100_pct(
         self, client: TestClient, auth_headers: dict, db: Session
@@ -708,7 +714,7 @@ class TestConsistencyScore:
 
         stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
         assert stats["consistency_score_pct"] == 100.0
-        assert stats["consistency_streak_days"] >= 31
+        assert stats["consistency_days_at_100"] >= 1
 
     def test_a_three_day_gap_costs_score(
         self, client: TestClient, auth_headers: dict, db: Session
@@ -723,50 +729,75 @@ class TestConsistencyScore:
         stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
         assert 0.0 < stats["consistency_score_pct"] < 100.0
 
-    def test_streak_counts_days_the_chain_held(
+    def test_days_at_100_counts_days_the_score_held_not_the_chain(
         self, client: TestClient, auth_headers: dict, db: Session
     ):
-        """Trained today and 40 days back with no 3-day hole: the streak reports
-        all of it, uncapped by the 30-day scoring window."""
-        for days_ago in range(0, 41, 2):
+        """35 consecutive training days: the score has only read 100% for the last
+        8 of them (35 - 27), even though the chain is 35 days long. Reporting 35
+        here was the bug — it claimed "100% for 32 days" on a score that was below
+        100 for most of those days."""
+        for days_ago in range(0, 35):
             self._log_workout(db, days_ago)
 
         stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
         assert stats["consistency_score_pct"] == 100.0
-        assert stats["consistency_streak_days"] == 41
+        assert stats["consistency_days_at_100"] == 8
 
-    def test_streak_stops_at_the_gap_but_survives_two_rest_days(
+    def test_days_at_100_is_one_the_day_the_score_first_hits_100(
         self, client: TestClient, auth_headers: dict, db: Session
     ):
-        """Activity today and 2 days ago keeps the chain; the 3-day hole before
-        that ends it, so only the recent days count."""
-        for days_ago in (0, 2, 6, 8):
+        """28 consecutive days is exactly enough to cover every window end."""
+        for days_ago in range(0, 28):
             self._log_workout(db, days_ago)
 
         stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
-        # Walking back from today: the windows ending today, -1 and -2 all catch
-        # the sessions on day 0 or day 2. The window ending -3 spans -3/-4/-5,
-        # which is empty, so the chain starts 3 days ago.
-        assert stats["consistency_streak_days"] == 3
+        assert stats["consistency_score_pct"] == 100.0
+        assert stats["consistency_days_at_100"] == 1
 
-    def test_two_rest_days_today_still_hold_the_streak(
+    def test_one_day_short_of_the_window_is_not_100_yet(
         self, client: TestClient, auth_headers: dict, db: Session
     ):
-        """Rested today and yesterday after training the day before: still inside
-        the 3-day window, so the chain is intact and dates back to that session."""
-        self._log_workout(db, 2)
+        """27 consecutive days: the oldest window end predates the chain, so the
+        score is still below 100 and there is nothing to brag about."""
+        for days_ago in range(0, 27):
+            self._log_workout(db, days_ago)
 
         stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
-        assert stats["consistency_score_pct"] > 0.0
-        assert stats["consistency_streak_days"] == 3
+        assert stats["consistency_score_pct"] < 100.0
+        assert stats["consistency_days_at_100"] == 0
 
-    def test_three_rest_days_today_break_the_streak(
+    def test_days_at_100_is_zero_while_the_score_is_below_100(
         self, client: TestClient, auth_headers: dict, db: Session
     ):
-        """Nothing logged for three days running: the window ending today is
-        empty, so the chain is broken even though the score stays positive."""
-        self._log_workout(db, 3)
+        """A recent chain that has not filled the 30-day window yet: the score is
+        below 100, so there is nothing to brag about yet."""
+        for days_ago in (0, 2, 4, 6):
+            self._log_workout(db, days_ago)
 
         stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
-        assert stats["consistency_streak_days"] == 0
-        assert stats["consistency_score_pct"] > 0.0
+        assert stats["consistency_score_pct"] < 100.0
+        assert stats["consistency_days_at_100"] == 0
+
+    def test_three_rest_days_today_drop_the_score_off_100(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """A perfect 40-day record, then three days off: the window ending today
+        is empty, so the score leaves 100 and the counter resets."""
+        for days_ago in range(3, 40):
+            self._log_workout(db, days_ago)
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["consistency_score_pct"] < 100.0
+        assert stats["consistency_days_at_100"] == 0
+
+    def test_two_rest_days_today_keep_the_score_at_100(
+        self, client: TestClient, auth_headers: dict, db: Session
+    ):
+        """Same record but only two days off — still inside every 3-day window,
+        so 100% holds and the counter keeps climbing."""
+        for days_ago in range(2, 40):
+            self._log_workout(db, days_ago)
+
+        stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
+        assert stats["consistency_score_pct"] == 100.0
+        assert stats["consistency_days_at_100"] >= 1

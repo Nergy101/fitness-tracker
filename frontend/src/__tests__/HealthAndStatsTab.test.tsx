@@ -147,7 +147,7 @@ function makeStats() {
     ],
     total_kcal_burned: 1800,
     consistency_score_pct: 100,
-    consistency_streak_days: 42,
+    consistency_days_at_100: 3,
     total_sessions_all: 5,
     total_runs: 3,
     total_walks: 2,
@@ -239,47 +239,52 @@ describe("HealthAndStatsTab", () => {
     expect(screen.getByText("-0.5 kg")).toBeDefined();
   });
 
-  it("says how long a perfect score has been held", async () => {
+  it("says how long the score has read 100%", async () => {
+    mockGetStatsOverview.mockResolvedValue({
+      ...makeStats(),
+      consistency_score_pct: 100,
+      consistency_days_at_100: 3,
+    });
     await act(async () => {
       render(<HealthAndStatsTab />);
     });
-    expect(await screen.findByText("100% for 42 days")).toBeDefined();
+    expect(await screen.findByText("100% for 3 days")).toBeDefined();
   });
 
-  it("shows the chain length while the score is below 100", async () => {
+  it("keeps the day label singular on the first day at 100%", async () => {
+    mockGetStatsOverview.mockResolvedValue({
+      ...makeStats(),
+      consistency_score_pct: 100,
+      consistency_days_at_100: 1,
+    });
+    await act(async () => {
+      render(<HealthAndStatsTab />);
+    });
+    expect(await screen.findByText("100% for 1 day")).toBeDefined();
+  });
+
+  it("explains the shortfall instead of counting days below 100%", async () => {
     mockGetStatsOverview.mockResolvedValue({
       ...makeStats(),
       consistency_score_pct: 14.3,
-      consistency_streak_days: 4,
+      consistency_days_at_100: 0,
     });
     await act(async () => {
       render(<HealthAndStatsTab />);
     });
-    expect(await screen.findByText("4 days unbroken")).toBeDefined();
+    expect(await screen.findByText("a 3-day gap in the last 30d")).toBeDefined();
   });
 
-  it("nudges instead of bragging when there is no chain yet", async () => {
+  it("nudges when nothing has been logged at all", async () => {
     mockGetStatsOverview.mockResolvedValue({
       ...makeStats(),
       consistency_score_pct: 0,
-      consistency_streak_days: 0,
+      consistency_days_at_100: 0,
     });
     await act(async () => {
       render(<HealthAndStatsTab />);
     });
     expect(await screen.findByText("log any activity to start")).toBeDefined();
-  });
-
-  it("keeps the day label singular for a one-day chain", async () => {
-    mockGetStatsOverview.mockResolvedValue({
-      ...makeStats(),
-      consistency_score_pct: 50,
-      consistency_streak_days: 1,
-    });
-    await act(async () => {
-      render(<HealthAndStatsTab />);
-    });
-    expect(await screen.findByText("1 day unbroken")).toBeDefined();
   });
 
   it("shows activity streak when prs has streak > 0", async () => {
