@@ -41,15 +41,10 @@
   --track: #ffffff10;
 }
 
-/* The app shell owns the viewport: `height: 100%` here plus `h-full` on the
-   shell keeps the bottom nav on screen, and `overflow: hidden` stops iOS
-   Safari rubber-banding the whole page behind the fixed chrome. Scrolling
-   happens in <main>, which is the only overflow-y-auto region. */
 html,
 body,
 #root {
   height: 100%;
-  overflow: hidden;
 }
 
 body {
