@@ -71,6 +71,20 @@ interface StackSegment<T> {
   value: (d: T) => number;
 }
 
+/** SVG rect with ONLY its top corners rounded (bottom edge stays square so it
+ *  sits flush on the segment below). `rx` on a plain `<rect>` rounds all four
+ *  corners, leaving visible notches where stacked segments meet. */
+function TopRoundedRect({
+  x, y, width, height, rx, fill, opacity,
+}: {
+  x: number; y: number; width: number; height: number;
+  rx: number; fill: string; opacity: number;
+}) {
+  const r = Math.min(rx, width / 2, height / 2);
+  const d = `M ${x} ${y + height} L ${x} ${y + r} A ${r} ${r} 0 0 1 ${x + r} ${y} L ${x + width - r} ${y} A ${r} ${r} 0 0 1 ${x + width} ${y + r} L ${x + width} ${y + height} Z`;
+  return <path d={d} fill={fill} opacity={opacity} />;
+}
+
 function StackedBarChart<T>({
   data,
   segments,
@@ -131,14 +145,24 @@ function StackedBarChart<T>({
               const barH = Math.max((p.val / max) * height, 1);
               yCursor -= barH;
               const isTop = j === parts.length - 1;
-              return (
+              return isTop ? (
+                <TopRoundedRect
+                  key={j}
+                  x={x}
+                  y={yCursor}
+                  width={slot - 4}
+                  height={barH}
+                  rx={2}
+                  fill={p.color}
+                  opacity={0.8}
+                />
+              ) : (
                 <rect
                   key={j}
                   x={x}
                   y={yCursor}
                   width={slot - 4}
                   height={barH}
-                  rx={isTop ? 2 : 0}
                   fill={p.color}
                   opacity={0.8}
                 />

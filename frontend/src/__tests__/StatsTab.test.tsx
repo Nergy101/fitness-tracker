@@ -360,9 +360,46 @@ describe("StatsTab", () => {
     });
     await screen.findByText("Daily Activity (min)");
 
-    // ACTIVITY_COLORS.cycling — violet-400
-    expect(document.querySelectorAll('rect[fill="#a78bfa"]').length).toBeGreaterThan(0);
+    // ACTIVITY_COLORS.cycling — violet-400. The top segment renders as a
+    // top-rounded <path> (only-top rounding), so match rect OR path.
+    expect(document.querySelectorAll('rect[fill="#a78bfa"], path[fill="#a78bfa"]').length).toBeGreaterThan(0);
     expect(screen.getAllByText("Cycling").length).toBeGreaterThan(0);
+  });
+
+  it("rounds only the top stacked segment; lower segments stay square", async () => {
+    const today = daysAgo(0);
+    mockGetRuns.mockResolvedValue([]);
+    mockGetCycling.mockResolvedValue([]);
+    mockGetSessions.mockResolvedValue([
+      {
+        id: 1, template_id: null, template_name: "Full Body Circuit",
+        started_at: `${today}T09:00:00`, finished_at: `${today}T09:40:00`,
+        total_duration_seconds: 2400, total_kcal_estimated: 320, notes: "",
+        boxing_entry_id: null, run_entry_id: null, cycling_entry_id: null, exercises: [],
+      },
+      {
+        id: 2, template_id: null, template_name: "Run: 5.0km",
+        started_at: `${today}T17:00:00`, finished_at: `${today}T17:25:00`,
+        total_duration_seconds: 1500, total_kcal_estimated: 240, notes: "",
+        boxing_entry_id: null, run_entry_id: 1, cycling_entry_id: null, exercises: [],
+      },
+    ]);
+
+    await act(async () => {
+      render(<StatsTab />);
+    });
+    await screen.findByText("Daily Activity (min)");
+
+    // Run is the top segment of a workout+run stack → rendered as a
+    // top-rounded <path>…
+    expect(document.querySelectorAll('path[fill="#38bdf8"]').length).toBeGreaterThan(0);
+    // …while workout (bottom segment) stays a plain square <rect>.
+    expect(document.querySelectorAll('rect[fill="#fb923c"]').length).toBeGreaterThan(0);
+    // No bar segment carries rx rounding anymore — bottom corners stay square.
+    const roundedRects = [...document.querySelectorAll("rect")].filter(
+      (r) => r.getAttribute("rx") !== null && r.getAttribute("rx") !== "0",
+    );
+    expect(roundedRects.length).toBe(0);
   });
 
   it("counts a cycling ride's minutes once, not once per mirror session", async () => {
