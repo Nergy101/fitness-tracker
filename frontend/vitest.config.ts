@@ -1,8 +1,18 @@
 import { defineConfig } from "vitest/config";
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      // VitePWA registers this virtual module during dev/build only; vitest
+      // needs the alias so the hook can be imported (and mocked) in tests.
+      "virtual:pwa-register/react": fileURLToPath(
+        new URL("./src/test/pwa-register-stub.ts", import.meta.url),
+      ),
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],

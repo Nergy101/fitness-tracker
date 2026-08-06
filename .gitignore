@@ -18,6 +18,9 @@ backend/backup_config.json
 /frontend/playwright-report/
 /frontend/blob-report/
 /frontend/.playwright/
+
+# Vitest coverage reports (generated)
+/frontend/coverage/
 .coverage
 
 # Self-host setup (local copies of compose + settings)
