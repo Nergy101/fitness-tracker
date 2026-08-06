@@ -1,4 +1,5 @@
 import {
+  DownloadSimpleIcon as DownloadSimple,
   MoonIcon as Moon,
   SpeakerHighIcon as SpeakerHigh,
   SpeakerSlashIcon as SpeakerSlash,
@@ -14,6 +15,7 @@ import HealthSettingsSection from "./health/HealthSettingsSection";
 import BackupSection from "./BackupSection";
 import CreditsSection from "./CreditsSection";
 import { useOnboarding } from "../useOnboarding";
+import { useInstallPrompt } from "../useInstallPrompt";
 import { APP_VERSION } from "../version";
 import { useFocusTrap } from "../useFocusTrap";
 
@@ -51,6 +53,7 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
   const { theme, mode, setMode } = useTheme();
   const { muted, toggleMuted } = useAudio();
   const { locale, setLocale } = useLocale();
+  const { state: installState, install } = useInstallPrompt();
   const { reset: resetOnboarding } = useOnboarding();
   const [subTab, setSubTab] = useState<SettingsTab>("general");
   const modalRef = useRef<HTMLDivElement>(null);
@@ -167,6 +170,30 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
                   className="accent-accent"
                 />
               </label>
+
+              {/* Install app */}
+              {installState.installable && (
+                <div className="border-t border-fg/10 pt-3.5 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2 text-sm text-fg/80">
+                    <DownloadSimple size={18} className="text-accent" weight="fill" />
+                    Install app
+                  </span>
+                  <button
+                    onClick={() => void install()}
+                    className="bg-accent text-on-accent text-xs font-medium px-3 py-1.5 rounded-full hover:bg-accent-hover transition-colors"
+                  >
+                    Install
+                  </button>
+                </div>
+              )}
+              {!installState.installable && installState.iosSafari && (
+                <div className="border-t border-fg/10 pt-3.5">
+                  <p className="text-xs text-fg/50">
+                    Tip: tap <span className="text-fg/80 font-medium">Share</span> in Safari, then{" "}
+                    <span className="text-fg/80 font-medium">Add to Home Screen</span> to install this app.
+                  </p>
+                </div>
+              )}
 
               {/* Backups */}
               <div className="border-t border-fg/10 pt-3.5">

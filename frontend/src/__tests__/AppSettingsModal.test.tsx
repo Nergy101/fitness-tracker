@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import AppSettingsModal from "../components/AppSettingsModal";
 
+// Mock useInstallPrompt (hoisted so tests can vary the state per render)
+const installMock = vi.hoisted(() => ({
+  state: { installable: false, standalone: false, iosSafari: false },
+  install: vi.fn(() => Promise.resolve("accepted" as const)),
+}));
+
+vi.mock("../useInstallPrompt", () => ({
+  useInstallPrompt: () => ({ state: installMock.state, install: installMock.install }),
+}));
+
 // Mock useTheme
 vi.mock("../useTheme", () => ({
   useTheme: () => ({
@@ -70,6 +80,7 @@ vi.mock("../components/CreditsSection", () => ({
 describe("AppSettingsModal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    installMock.state = { installable: false, standalone: false, iosSafari: false };
   });
 
   // ── Smoke tests ──────────────────────────────────────────
@@ -209,5 +220,39 @@ describe("AppSettingsModal", () => {
 
     fireEvent.click(screen.getByText("Replay intro tour"));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // ── Install app (PWA) ───────────────────────────────────
+
+  it("shows the install button when the app is installable", () => {
+    installMock.state = { installable: true, standalone: false, iosSafari: false };
+    render(<AppSettingsModal onClose={vi.fn()} onHealthSaved={vi.fn()} />);
+
+    expect(screen.getByText("Install app")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Install" })).toBeInTheDocument();
+  });
+
+  it("calls install() when the Install button is clicked", () => {
+    installMock.state = { installable: true, standalone: false, iosSafari: false };
+    render(<AppSettingsModal onClose={vi.fn()} onHealthSaved={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Install" }));
+
+    expect(installMock.install).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the Add to Home Screen hint on iOS Safari instead of the button", () => {
+    installMock.state = { installable: false, standalone: false, iosSafari: true };
+    render(<AppSettingsModal onClose={vi.fn()} onHealthSaved={vi.fn()} />);
+
+    expect(screen.getByText("Add to Home Screen")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Install" })).not.toBeInTheDocument();
+  });
+
+  it("hides all install UI when neither installable nor iOS", () => {
+    render(<AppSettingsModal onClose={vi.fn()} onHealthSaved={vi.fn()} />);
+
+    expect(screen.queryByRole("button", { name: "Install" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Add to Home Screen")).not.toBeInTheDocument();
   });
 });

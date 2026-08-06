@@ -12,6 +12,7 @@ import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 import { formatDuration, localISO } from "../format";
 import { useFocusTrap } from "../useFocusTrap";
+import { useWakeLock } from "../useWakeLock";
 import { randomNotePrompt } from "../notePrompts";
 
 import { logger } from "../logger";
@@ -163,6 +164,9 @@ export default function WorkoutRunner({
       }
     });
   }, [exercises]);
+
+  // Keep the screen awake for the whole session; released when finished or on unmount.
+  useWakeLock(phase !== "finished");
 
   const workDuration = useMemo(
     () =>

@@ -10,6 +10,7 @@ import {
 import ExerciseImage from "./ExerciseImage";
 import TopControls from "./TopControls";
 import { formatDuration, localISO } from "../format";
+import { useWakeLock } from "../useWakeLock";
 
 import { logger } from "../logger";
 // Tabata is a fixed-interval HIIT format: 20s work / 10s rest, repeated for a
@@ -91,6 +92,9 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
   const [timer, setTimer] = useState(READY_SECONDS);
   const [progress, setProgress] = useState(0);
   const [paused, setPaused] = useState(false);
+
+  // Keep the screen awake for the whole session; released when finished or on unmount.
+  useWakeLock(phase !== "finished");
 
   // Full-screen color flash on each transition — remounting via `flashKey`
   // replays the CSS animation from the top.

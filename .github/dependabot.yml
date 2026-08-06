@@ -1,3 +1,10 @@
+# Keep backend (pip), frontend (npm), Docker and GitHub Actions dependencies
+# up to date.
+#
+# main auto-deploys to production on push, so every Dependabot PR must pass
+# CI (docker-publish.yml runs lint, backend tests, frontend tests and E2E)
+# before it is merged. Minor/patch bumps are grouped per ecosystem to cut PR
+# noise; major bumps stay individual so they get explicit review.
 version: 2
 updates:
   - package-ecosystem: "pip"
@@ -6,9 +13,10 @@ updates:
       interval: "weekly"
       day: "monday"
     groups:
-      pip:
-        patterns:
-          - "*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -16,9 +24,10 @@ updates:
       interval: "weekly"
       day: "monday"
     groups:
-      npm:
-        patterns:
-          - "*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "docker"
     directory: "/backend"
@@ -26,9 +35,10 @@ updates:
       interval: "weekly"
       day: "monday"
     groups:
-      docker-backend:
-        patterns:
-          - "*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "docker"
     directory: "/frontend"
@@ -36,9 +46,10 @@ updates:
       interval: "weekly"
       day: "monday"
     groups:
-      docker-frontend:
-        patterns:
-          - "*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -46,6 +57,7 @@ updates:
       interval: "weekly"
       day: "monday"
     groups:
-      actions:
-        patterns:
-          - "*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
