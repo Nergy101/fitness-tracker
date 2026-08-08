@@ -117,6 +117,9 @@ export default function WorkoutRunner({
 
   // Exercise logs: key = `${round}-${index}`, value = {weightKg, reps}
   const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weightKg: string; reps: string }>>({});
+  // NER-210: last weight/reps entered per exercise this session, so the next
+  // set of the same exercise (and new exercises, from history) pre-fills.
+  const [lastSetByExercise, setLastSetByExercise] = useState<Record<number, { weightKg: string; reps: string }>>({});
   const [pastLogs, setPastLogs] = useState<Record<number, ExerciseLog[]>>({});
   const [sessionDate, setSessionDate] = useState(() => {
     const now = new Date();
@@ -514,6 +517,64 @@ export default function WorkoutRunner({
     if (parts.length === 0) return null;
     return `Last time: ${parts.join(" × ")}`;
   }, [currentExerciseId, pastLogs]);
+
+  // NER-210: pre-fill weight/reps with the last values used for this exercise
+  // this session, falling back to the most recent historical log so the first
+  // set of a new exercise starts from where you left off last time.
+  const prefillForCurrent = useMemo(() => {
+    if (!currentExerciseId) return { weightKg: "", reps: "" };
+    const session = lastSetByExercise[currentExerciseId];
+    if (session) return session;
+    const logs = pastLogs[currentExerciseId];
+    const last = logs && logs.length > 0 ? logs[0] : null;
+    if (last) {
+      return {
+        weightKg: last.weight_kg != null ? String(last.weight_kg) : "",
+        reps: last.reps != null ? String(last.reps) : "",
+      };
+    }
+    return { weightKg: "", reps: "" };
+  }, [currentExerciseId, lastSetByExercise, pastLogs]);
+
+  // NER-210: when a round of an exercise already logged this session starts,
+  // auto-commit the last values so the repeated set is captured even if the
+  // user doesn't touch the fields. Exercises only prefilled from history still
+  // require interaction, so skipping them never logs a phantom set.
+  useEffect(() => {
+    if (phase !== "exercise" || !currentExerciseId) return;
+    const session = lastSetByExercise[currentExerciseId];
+    if (!session) return;
+    setExerciseLogs((prev) => {
+      if (prev[logKey]) return prev;
+      return { ...prev, [logKey]: session };
+    });
+  }, [logKey, currentExerciseId, lastSetByExercise, phase]);
+
+  // NER-210: update the current set's weight/reps, seeding from the prefill so
+  // editing one field keeps the other, and remember per-exercise for next sets.
+  const touchedLogKeysRef = useRef<Set<string>>(new Set());
+  function updateLogEntry(field: "weightKg" | "reps", value: string) {
+    touchedLogKeysRef.current.add(logKey);
+    const base = exerciseLogs[logKey] ?? prefillForCurrent;
+    const next = { ...base, [field]: value };
+    setExerciseLogs((prev) => ({ ...prev, [logKey]: next }));
+    if (currentExerciseId != null) {
+      setLastSetByExercise((prev) => ({ ...prev, [currentExerciseId]: next }));
+    }
+  }
+
+  // Skipping an exercise must NOT save the auto-committed prefill — only sets
+  // the user actively touched (typed into) survive a skip.
+  function skipExercise() {
+    if (!touchedLogKeysRef.current.has(logKey)) {
+      setExerciseLogs((prev) => {
+        const next = { ...prev };
+        delete next[logKey];
+        return next;
+      });
+    }
+    advanceRef.current();
+  }
   const displayTime = (() => {
     const s = Math.ceil(timer);
     const m = Math.floor(s / 60);
@@ -931,16 +992,13 @@ export default function WorkoutRunner({
                 type="number"
                 inputMode="decimal"
                 placeholder="kg"
-                value={exerciseLogs[logKey]?.weightKg ?? ""}
+                value={exerciseLogs[logKey]?.weightKg ?? prefillForCurrent.weightKg}
                 onChange={(e) => {
                   const v = e.target.value;
                   const err = validateWeight(v);
                   setWeightError(err && err.includes("Tap again") ? null : err);
                   setWeightConfirm(err != null && err.includes("Tap again"));
-                  setExerciseLogs((prev) => ({
-                    ...prev,
-                    [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), weightKg: v },
-                  }));
+                  updateLogEntry("weightKg", v);
                 }}
                 disabled={paused}
                 className={`w-20 bg-surface border rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
@@ -953,16 +1011,13 @@ export default function WorkoutRunner({
                 type="number"
                 inputMode="numeric"
                 placeholder="reps"
-                value={exerciseLogs[logKey]?.reps ?? ""}
+                value={exerciseLogs[logKey]?.reps ?? prefillForCurrent.reps}
                 onChange={(e) => {
                   const v = e.target.value;
                   const err = validateReps(v);
                   setRepsError(err && err.includes("Tap again") ? null : err);
                   setRepsConfirm(err != null && err.includes("Tap again"));
-                  setExerciseLogs((prev) => ({
-                    ...prev,
-                    [logKey]: { ...(prev[logKey] ?? { weightKg: "", reps: "" }), reps: v },
-                  }));
+                  updateLogEntry("reps", v);
                 }}
                 disabled={paused}
                 className={`w-20 bg-surface border rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
@@ -1007,7 +1062,7 @@ export default function WorkoutRunner({
           <p className="text-fg/30 text-sm">{isAmrap ? "Go!" : isEmom ? "Go!" : "Go!"}</p>
           <div className="flex items-center gap-3 mt-4">
             <button
-              onClick={() => advanceRef.current()}
+              onClick={() => skipExercise()}
               className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
             >
               <SkipForward size={16} weight="fill" /> Skip

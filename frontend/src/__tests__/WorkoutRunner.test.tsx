@@ -3,15 +3,21 @@ import { render, screen, act, fireEvent } from "@testing-library/react";
 import WorkoutRunner from "../components/WorkoutRunner";
 import type { WorkoutTemplate } from "../api";
 
-const mockCreateSession = vi.fn().mockResolvedValue({ id: 1, exercises: [] });
+const mockCreateSession = vi.fn().mockResolvedValue({
+  id: 1,
+  exercises: [{ id: 5, order_index: 0, exercise_id: 100, exercise_name: "Push-ups", duration_seconds: 5, kcal_burned: 0, completed: true }],
+});
 const mockUpdateSession = vi.fn().mockResolvedValue({});
+const mockGetExerciseLogs = vi.fn().mockResolvedValue([]);
+const mockCreateExerciseLogs = vi.fn().mockResolvedValue([]);
 
 vi.mock("../api", () => ({
   api: {
     getExercises: vi.fn().mockResolvedValue([]),
-    getExerciseLogs: vi.fn().mockResolvedValue([]),
+    getExerciseLogs: (...args: unknown[]) => mockGetExerciseLogs(...args),
     createSession: (...args: unknown[]) => mockCreateSession(...args),
     updateSession: (...args: unknown[]) => mockUpdateSession(...args),
+    createExerciseLogs: (...args: unknown[]) => mockCreateExerciseLogs(...args),
   },
 }));
 
@@ -40,6 +46,25 @@ const mockTemplate: WorkoutTemplate = {
   work_duration_seconds: 90, rest_duration_seconds: 120, total_duration_seconds: 30,
 };
 
+const twoExerciseTemplate: WorkoutTemplate = {
+  ...mockTemplate,
+  exercises: [
+    mockTemplate.exercises[0],
+    {
+      id: 11, template_id: 1, exercise_id: 101, duration_seconds: 5,
+      rest_after_seconds: 5, order_index: 1, superset_group: null,
+      exercise: { id: 101, name: "Squats", description: "", category: "strength", default_kcal_per_min: 8, default_duration_seconds: 30, image_url: null, created_at: "" },
+    },
+  ],
+};
+
+function weightInput() {
+  return screen.getByLabelText("Weight in kg") as HTMLInputElement;
+}
+function repsInput() {
+  return screen.getByLabelText("Reps") as HTMLInputElement;
+}
+
 describe("WorkoutRunner", () => {
   const onFinish = vi.fn();
   const onCancel = vi.fn();
@@ -47,6 +72,7 @@ describe("WorkoutRunner", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    mockGetExerciseLogs.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -90,5 +116,68 @@ describe("WorkoutRunner", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
     fireEvent.click(screen.getByText("Stop"));
     expect(onCancel).toHaveBeenCalled();
+  });
+
+  it("pre-fills weight/reps with the values from the previous round (NER-210)", async () => {
+    renderRunner();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    // Enter the first exercise round
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    fireEvent.change(weightInput(), { target: { value: "80" } });
+    fireEvent.change(repsInput(), { target: { value: "10" } });
+    // Finish round 1 (5s exercise), pass round rest (10s), enter round 2
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+    expect(weightInput().value).toBe("80");
+    expect(repsInput().value).toBe("10");
+  });
+
+  it("pre-fills the first set of a new exercise from the most recent history log (NER-210)", async () => {
+    mockGetExerciseLogs.mockResolvedValue([
+      { id: 1, session_exercise_id: 5, weight_kg: 60, reps: 12, set_number: 1, created_at: "2026-07-01T00:00:00Z" },
+    ]);
+    renderRunner();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    expect(weightInput().value).toBe("60");
+    expect(repsInput().value).toBe("12");
+  });
+
+  it("clears the fields when moving to a new exercise (NER-210)", async () => {
+    renderRunner(twoExerciseTemplate);
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    // First exercise round
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    fireEvent.change(weightInput(), { target: { value: "80" } });
+    fireEvent.change(repsInput(), { target: { value: "10" } });
+    // Finish exercise 1 (5s) + rest (5s) -> exercise 2
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    // New exercise (no history, no session values) -> blank fields
+    expect(screen.getByText("Squats")).toBeInTheDocument();
+    expect(weightInput().value).toBe("");
+    expect(repsInput().value).toBe("");
+  });
+
+  it("does not save an auto-committed set when the exercise is skipped (NER-210)", async () => {
+    renderRunner();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    // Round 1: log 80x10
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    fireEvent.change(weightInput(), { target: { value: "80" } });
+    fireEvent.change(repsInput(), { target: { value: "10" } });
+    // Round 2 starts with auto-committed prefill; user skips it
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    // Finish (cooldown 0 -> finished) and let the save flush
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(mockCreateExerciseLogs).toHaveBeenCalledTimes(1);
+    // Only the round-1 set survives; the skipped round-2 prefill was dropped
+    expect(mockCreateExerciseLogs).toHaveBeenCalledWith(
+      1, 5,
+      [{ weight_kg: 80, reps: 10, set_number: 1 }],
+    );
   });
 });
