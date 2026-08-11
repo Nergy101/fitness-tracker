@@ -801,3 +801,50 @@ class TestConsistencyScore:
         stats = client.get(OVERVIEW_URL, headers=auth_headers).json()
         assert stats["consistency_score_pct"] == 100.0
         assert stats["consistency_days_at_100"] >= 1
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/stats/volume — total kg lifted per exercise per session day
+# ---------------------------------------------------------------------------
+
+
+class TestVolume:
+    VOLUME_URL = "/api/v1/stats/volume"
+    LOGS_TPL = SESSIONS_URL + "/{sid}/exercises/{seid}/logs"
+
+    def _post_bench_session(self, client, headers):
+        resp = client.post(SESSIONS_URL, json={
+            "template_name": "Push Day",
+            "exercises": [{
+                "exercise_name": "Bench Press", "duration_seconds": 30,
+                "kcal_burned": 5.0, "order_index": 0, "completed": True,
+            }],
+        }, headers=headers)
+        assert resp.status_code == 201, resp.text
+        s = resp.json()
+        return s["id"], s["exercises"][0]["id"]
+
+    def test_aggregates_volume_per_exercise_per_day(self, client: TestClient, auth_headers: dict):
+        sid, seid = self._post_bench_session(client, auth_headers)
+        client.post(self.LOGS_TPL.format(sid=sid, seid=seid), json=[
+            {"weight_kg": 70, "reps": 5, "set_number": 1},
+            {"weight_kg": 80, "reps": 3, "set_number": 2},
+        ], headers=auth_headers)
+
+        data = client.get(self.VOLUME_URL, headers=auth_headers).json()
+        assert len(data) == 1
+        row = data[0]
+        assert row["exercise_name"] == "Bench Press"
+        assert row["total_kg"] == 70 * 5 + 80 * 3  # 350 + 240 = 590
+        assert row["sets"] == 2
+        assert row["avg_weight"] == 75.0
+        assert row["max_weight"] == 80.0
+
+    def test_filters_by_exercise_id(self, client: TestClient, auth_headers: dict):
+        sid, seid = self._post_bench_session(client, auth_headers)
+        client.post(self.LOGS_TPL.format(sid=sid, seid=seid), json=[
+            {"weight_kg": 70, "reps": 5, "set_number": 1},
+        ], headers=auth_headers)
+
+        data = client.get(self.VOLUME_URL + "?exercise_id=999999", headers=auth_headers).json()
+        assert data == []

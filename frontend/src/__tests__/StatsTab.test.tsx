@@ -14,6 +14,7 @@ const mockGetGoalProgress = vi.fn();
 const mockGetHealthInsights = vi.fn();
 const mockGetDailyActivity = vi.fn();
 const mockGetInjuries = vi.fn();
+const mockGetVolume = vi.fn();
 
 vi.mock("../api", () => ({
   api: {
@@ -26,6 +27,7 @@ vi.mock("../api", () => ({
     getHealthInsights: (...args: unknown[]) => mockGetHealthInsights(...args),
     getDailyActivity: (...args: unknown[]) => mockGetDailyActivity(...args),
     getInjuries: (...args: unknown[]) => mockGetInjuries(...args),
+    getVolume: (...args: unknown[]) => mockGetVolume(...args),
   },
 }));
 
@@ -207,6 +209,7 @@ describe("StatsTab", () => {
     mockGetHealthInsights.mockResolvedValue(null);
     mockGetDailyActivity.mockResolvedValue(null);
     mockGetInjuries.mockResolvedValue([]);
+    mockGetVolume.mockResolvedValue([]);
   });
 
   // ── Smoke tests ──
@@ -230,6 +233,29 @@ describe("StatsTab", () => {
     expect(await screen.findByText("Activity")).toBeDefined();
     expect(screen.getByText("Daily")).toBeDefined();
     expect(screen.getByText("Weekly")).toBeDefined();
+  });
+
+  it("renders the volume section with exercise selector when volume exists", async () => {
+    mockGetVolume.mockResolvedValue([
+      {
+        date: dayKey(new Date()),
+        exercise_id: 1,
+        exercise_name: "Bench Press",
+        total_kg: 590,
+        sets: 2,
+        avg_weight: 75,
+        max_weight: 80,
+      },
+    ]);
+    await act(async () => {
+      render(<StatsTab />);
+    });
+    expect(await screen.findByText("Volume (total kg)")).toBeDefined();
+    expect(screen.getByLabelText("Volume exercise")).toBeDefined();
+    expect(screen.getByText("Bench Press")).toBeDefined();
+    // Filtering to that exercise keeps the chart rendered.
+    fireEvent.change(screen.getByLabelText("Volume exercise"), { target: { value: "1" } });
+    expect(screen.getByText("Bench Press")).toBeDefined();
   });
 
   it("renders daily activity chart by default", async () => {

@@ -334,6 +334,16 @@ export interface PrsResponse {
   }[];
 }
 
+export interface VolumePoint {
+  date: string;
+  exercise_id: number | null;
+  exercise_name: string;
+  total_kg: number;
+  sets: number;
+  avg_weight: number | null;
+  max_weight: number | null;
+}
+
 export interface WeeklyActivityStat {
   week_start: string;
   workout_minutes: number;
@@ -1046,6 +1056,11 @@ export const api = {
     fetchJSON<StatsOverviewResponse>("/api/v1/stats/overview"),
   getDailyActivity: (days = 120) =>
     fetchJSON<DailyActivityResponse>(`/api/v1/stats/daily-activity?days=${days}`),
+  getVolume: (exerciseId?: number, days = 30) => {
+    const params = new URLSearchParams({ days: String(days) });
+    if (exerciseId != null) params.set("exercise_id", String(exerciseId));
+    return fetchJSON<VolumePoint[]>(`/api/v1/stats/volume?${params.toString()}`);
+  },
 
 
   // Apple Health insights (imported via /api/v1/import/data)

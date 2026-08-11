@@ -617,6 +617,18 @@ class DailyActivityPoint(BaseModel):
     kcal: float
 
 
+class VolumePoint(BaseModel):
+    """Total kg lifted (weight × reps) for one exercise on one session day."""
+
+    date: str
+    exercise_id: int | None = None
+    exercise_name: str = ""
+    total_kg: float = 0.0
+    sets: int = 0
+    avg_weight: float | None = None
+    max_weight: float | None = None
+
+
 # ─── Injury Schemas ──────────────────────────────────────────
 
 class InjuryMarkerCreate(BaseModel):

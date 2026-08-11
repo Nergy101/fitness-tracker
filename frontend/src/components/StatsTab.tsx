@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChartPieSliceIcon as ChartPieSlice,
   FireIcon as Fire,
@@ -22,6 +22,7 @@ import {
   type InjuryMarkerResponse,
   type RunEntryResponse,
   type StatsOverviewResponse,
+  type VolumePoint,
   type WeeklyActivityStat,
   type WeightEntryResponse,
   type WorkoutSession,
@@ -454,14 +455,40 @@ export default function StatsTab() {
   const [health, setHealth] = useState<HealthInsightsResponse | null>(null);
   const [activity, setActivity] = useState<DailyActivityPoint[]>([]);
   const [injuries, setInjuries] = useState<InjuryMarkerResponse[]>([]);
+  const [volume, setVolume] = useState<VolumePoint[]>([]);
+  const [volumeExercise, setVolumeExercise] = useState<number | null>(null);
 
   const [chartMode, setChartMode] = useState<"daily" | "weekly">("daily");
   const { locale } = useLocale();
 
+  // Volume: distinct exercises for the selector, weekly total kg buckets, and a
+  // per-session series for the selected exercise.
+  const volumeExercises = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const p of volume) {
+      if (p.exercise_id != null) map.set(p.exercise_id, p.exercise_name);
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [volume]);
+  const selectedVolume = useMemo(
+    () => (volumeExercise == null ? volume : volume.filter((p) => p.exercise_id === volumeExercise)),
+    [volume, volumeExercise],
+  );
+  const dailyVolume = useMemo(
+    () =>
+      [...selectedVolume]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-30)
+        .map((p) => ({ label: formatWeekLabel(p.date, locale), kg: Math.round(p.total_kg) })),
+    [selectedVolume],
+  );
+
   useEffect(() => {
     (async () => {
       try {
-        const [overview, runList, rideList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity, injuryList] = await Promise.all([
+        const [overview, runList, rideList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity, injuryList, vol] = await Promise.all([
           api.getStatsOverview(),
           api.getRuns().catch(() => [] as RunEntryResponse[]),
           api.getCycling().catch(() => [] as CyclingEntryResponse[]),
@@ -471,6 +498,7 @@ export default function StatsTab() {
           api.getHealthInsights(120).catch(() => null),
           api.getDailyActivity(120).catch(() => null),
           api.getInjuries().catch(() => [] as InjuryMarkerResponse[]),
+          api.getVolume().catch(() => [] as VolumePoint[]),
         ]);
         setStats(overview);
         setRuns(runList);
@@ -481,6 +509,7 @@ export default function StatsTab() {
         setHealth(healthInsights);
         setActivity(dailyActivity?.days ?? []);
         setInjuries(injuryList);
+        setVolume(vol);
       } catch (e) {
         logger.error("Failed to load stats data", e);
         setError(true);
@@ -545,6 +574,70 @@ export default function StatsTab() {
           sub="last 4 weeks, by time"
         >
           <ActivityMixBar weeks={mixWeeks} />
+        </ChartCard>
+      )}
+
+      {/* Volume — total kg lifted */}
+      {volume.length > 0 && (
+        <ChartCard
+          icon={<TrendUp size={16} className="text-accent" />}
+          title="Volume (total kg)"
+          sub={volumeExercise == null ? "all exercises" : undefined}
+        >
+          <select
+            value={volumeExercise ?? ""}
+            onChange={(e) => setVolumeExercise(e.target.value ? Number(e.target.value) : null)}
+            className="w-full bg-surface border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg mb-3 outline-none focus:border-accent/50"
+            aria-label="Volume exercise"
+          >
+            <option value="">All exercises</option>
+            {volumeExercises.map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                {ex.name}
+              </option>
+            ))}
+          </select>
+
+          {dailyVolume.length > 0 ? (
+            (() => {
+              const barW = 12;
+              const gutter = 28;
+              const svgH = 80;
+              const svgW = Math.max(300, gutter + barW * dailyVolume.length);
+              const slot = (svgW - gutter) / dailyVolume.length;
+              const maxKg = Math.max(1, ...dailyVolume.map((d) => d.kg));
+              return (
+                <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
+                  {[maxKg, maxKg / 2].map((t) => {
+                    const y = svgH - (t / maxKg) * svgH;
+                    return (
+                      <g key={t}>
+                        <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
+                        <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                          {t >= 1000 ? `${(t / 1000).toFixed(1)}k` : String(Math.round(t))}
+                        </text>
+                      </g>
+                    );
+                  })}
+                  <line x1={gutter} y1={svgH} x2={svgW} y2={svgH} className="stroke-fg/10" strokeWidth="0.5" />
+                  {dailyVolume.map((d, i) => {
+                    const x = gutter + i * slot + 2;
+                    const h = Math.max((d.kg / maxKg) * svgH, 1);
+                    return (
+                      <g key={i}>
+                        <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill="var(--accent)" opacity={0.7} />
+                        <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                          {d.label}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              );
+            })()
+          ) : (
+            <p className="text-xs text-fg/40">No volume logged in this window.</p>
+          )}
         </ChartCard>
       )}
 
