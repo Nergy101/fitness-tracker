@@ -187,6 +187,7 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
         doFlash(REST_COLOR);
       }
     }
+    // eslint-disable-next-line react-hooks/immutability -- advanceRef is intentionally a ref-callback bridge, assigned in the timer effect and read by the keyboard-shortcut effect (same pattern as WorkoutRunner).
     advanceRef.current = () => begin(segIndex + 1);
     begin(0);
     intervalId = window.setInterval(() => {

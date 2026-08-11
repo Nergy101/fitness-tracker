@@ -482,7 +482,7 @@ export default function StatsTab() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(-30)
         .map((p) => ({ label: formatWeekLabel(p.date, locale), kg: Math.round(p.total_kg) })),
-    [selectedVolume],
+    [selectedVolume, locale],
   );
 
   useEffect(() => {
