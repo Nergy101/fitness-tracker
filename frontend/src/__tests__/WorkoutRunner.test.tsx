@@ -218,4 +218,23 @@ describe("WorkoutRunner", () => {
       [{ weight_kg: 80, reps: 10, set_number: 1 }],
     );
   });
+
+  it("Escape opens the stop confirmation and Keep going dismisses it", async () => {
+    renderRunner();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.getByText("Stop workout?")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Keep going"));
+    expect(screen.queryByText("Stop workout?")).toBeNull();
+  });
+
+  it("Spacebar advances from the rest phase to the exercise phase", async () => {
+    renderRunner();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.getByText("Skip rest")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: " " });
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.queryByText("Skip rest")).toBeNull();
+    expect(screen.getByText("Skip")).toBeInTheDocument();
+  });
 });

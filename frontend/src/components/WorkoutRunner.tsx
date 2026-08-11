@@ -85,6 +85,7 @@ export default function WorkoutRunner({
   const pauseStartRef = useRef(0);
   const pausedRef = useRef(false);
   const [paused, setPaused] = useState(false);
+  const [confirmStop, setConfirmStop] = useState(false);
 
   function doPause() {
     pausedRef.current = true;
@@ -177,6 +178,37 @@ export default function WorkoutRunner({
 
   // Keep the screen awake for the whole session; released when finished or on unmount.
   useWakeLock(phase !== "finished");
+
+  // Keyboard shortcuts (desktop): Space/Enter advance the current phase,
+  // Escape opens the stop confirmation. Ignored while typing in an input or
+  // when the swap picker / confirm dialog is open.
+  useEffect(() => {
+    const isEditable = (target: EventTarget | null) => {
+      const node = target as HTMLElement | null;
+      if (!node) return false;
+      const tag = node.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || node.isContentEditable;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showSwapPicker) {
+          closeSwap();
+        } else if (confirmStop) {
+          setConfirmStop(false);
+        } else {
+          setConfirmStop(true);
+        }
+        return;
+      }
+      if (confirmStop || phase === "finished") return;
+      if ((e.key === " " || e.key === "Enter") && !isEditable(e.target)) {
+        e.preventDefault();
+        advanceRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase, confirmStop, showSwapPicker]);
 
   const workDuration = useMemo(
     () =>
@@ -1235,6 +1267,29 @@ export default function WorkoutRunner({
       <div className="absolute top-6 right-4">
         <TopControls />
       </div>
+
+      {confirmStop && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div className="w-full max-w-xs bg-surface rounded-2xl border border-fg/10 p-6 text-center">
+            <h3 className="text-base font-semibold text-fg mb-2">Stop workout?</h3>
+            <p className="text-sm text-fg/50 mb-5">Progress on this session will be discarded.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmStop(false)}
+                className="flex-1 text-sm text-fg/60 hover:text-fg border border-fg/15 rounded-xl py-2.5 transition-colors"
+              >
+                Keep going
+              </button>
+              <button
+                onClick={onCancel}
+                className="flex-1 text-sm text-red-300 hover:text-red-200 border border-red-400/30 hover:border-red-400/50 rounded-xl py-2.5 transition-colors"
+              >
+                Stop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
