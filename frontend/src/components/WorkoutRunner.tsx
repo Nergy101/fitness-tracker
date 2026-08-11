@@ -3,6 +3,7 @@ import { api, type Exercise, type ExerciseLog, type WorkoutTemplate } from "../a
 import { soundStart, soundRest, soundFinish, speak } from "../sound";
 import {
   ArrowsLeftRightIcon as ArrowsLeftRight,
+  ArrowCounterClockwiseIcon as ArrowCounterClockwise,
   PauseCircleIcon as PauseCircle,
   PlayCircleIcon as PlayCircle,
   SkipForwardIcon as SkipForward,
@@ -24,6 +25,12 @@ const RING = 264;
 
 function kcalFor(durationSeconds: number, kcalPerMin: number): number {
   return (durationSeconds / 60) * kcalPerMin;
+}
+
+// exerciseLogs keys are `${round}-${index}`; split into the position they map to.
+function parseLogKey(key: string): { round: number; index: number } {
+  const [round, index] = key.split("-").map(Number);
+  return { round, index };
 }
 
 interface WorkoutRunnerProps {
@@ -209,6 +216,12 @@ export default function WorkoutRunner({
   };
 
   const swapKeyRef = useRef(0);
+
+  // Used to navigate the runner back to a previously-logged set on "Undo last
+  // set" — mirrors swapKeyRef's re-arm pattern so the timer engine restarts at
+  // the target exercise instead of continuing forward.
+  const backToRef = useRef<{ round: number; index: number } | null>(null);
+  const backTickRef = useRef(0);
 
   useEffect(() => {
     // Helper: compute elapsed seconds accounting for pause offsets
@@ -476,6 +489,17 @@ export default function WorkoutRunner({
     if (totalExercises === 0) {
       finish();
     } else {
+      // "Undo last set": jump the engine back to a previously-logged set's
+      // exercise (regardless of current phase) so the user can re-log it.
+      if (backTickRef.current > 0) {
+        backTickRef.current = 0;
+        const target = backToRef.current;
+        backToRef.current = null;
+        if (target) {
+          startExercise(target.round, target.index);
+          return;
+        }
+      }
       const r = roundRef.current;
       const i = indexRef.current;
       const p = phaseRef.current;
@@ -498,7 +522,7 @@ export default function WorkoutRunner({
       if (emomInterval) clearInterval(emomInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/refs -- swapKeyRef.current is bumped before a forced re-render; reading it here re-arms the timer engine only on swap
-  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, isAmrap, isEmom, timeCap, warmupSeconds, cooldownSeconds, swapKeyRef.current]);
+  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, isAmrap, isEmom, timeCap, warmupSeconds, cooldownSeconds, swapKeyRef.current, backTickRef.current]);
 
   const currentName = exercises[currentIndex]?.exercise?.name ?? "Exercise";
   const currentImage = exercises[currentIndex]?.exercise?.image_url ?? null;
@@ -574,6 +598,40 @@ export default function WorkoutRunner({
       });
     }
     advanceRef.current();
+  }
+
+  // NER-200: Keys of every set actually logged (weight or reps filled in), most
+  // recent first (highest round, then highest index). Drives the "Undo last set" button.
+  const loggedSetKeys = useMemo(
+    () =>
+      Object.entries(exerciseLogs)
+        .filter(([, v]) => v.weightKg || v.reps)
+        .map(([key]) => key)
+        .sort((a, b) => {
+          const A = parseLogKey(a);
+          const B = parseLogKey(b);
+          return B.round - A.round || B.index - A.index;
+        }),
+    [exerciseLogs],
+  );
+
+  // Remove the most recently logged set, then return the runner to that
+  // exercise so the user can re-log it correctly.
+  function undoLastSet() {
+    const mostRecent = loggedSetKeys[0];
+    if (!mostRecent) return;
+    const { round, index } = parseLogKey(mostRecent);
+    setExerciseLogs((prev) => {
+      const next = { ...prev };
+      delete next[mostRecent];
+      return next;
+    });
+    if (roundRef.current !== round || indexRef.current !== index) {
+      backToRef.current = { round, index };
+      backTickRef.current += 1;
+      setCurrentRound(round);
+      setCurrentIndex(index);
+    }
   }
   const displayTime = (() => {
     const s = Math.ceil(timer);
@@ -1067,6 +1125,16 @@ export default function WorkoutRunner({
             >
               <SkipForward size={16} weight="fill" /> Skip
             </button>
+            {loggedSetKeys.length > 0 && (
+              <button
+                onClick={undoLastSet}
+                className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+                aria-label="Undo last set"
+                title="Undo last set"
+              >
+                <ArrowCounterClockwise size={16} weight="fill" /> Undo last set
+              </button>
+            )}
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"

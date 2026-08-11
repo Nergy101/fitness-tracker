@@ -64,7 +64,6 @@ function weightInput() {
 function repsInput() {
   return screen.getByLabelText("Reps") as HTMLInputElement;
 }
-
 describe("WorkoutRunner", () => {
   const onFinish = vi.fn();
   const onCancel = vi.fn();
@@ -109,6 +108,45 @@ describe("WorkoutRunner", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
     // Should now show the exercise timer
     expect(screen.getByText("Push-ups")).toBeInTheDocument();
+  });
+
+  it("shows Undo last set after a set is logged and clears it on click", async () => {
+    renderRunner();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    // No undo button before anything is logged.
+    expect(screen.queryByRole("button", { name: "Undo last set" })).toBeNull();
+    // Log a set (weight + reps) on the current exercise.
+    fireEvent.change(screen.getByLabelText("Weight in kg"), { target: { value: "100" } });
+    fireEvent.change(screen.getByLabelText("Reps"), { target: { value: "10" } });
+    await act(async () => {});
+    expect(screen.getByRole("button", { name: "Undo last set" })).toBeInTheDocument();
+    // Undo removes the set and hides the button.
+    fireEvent.click(screen.getByRole("button", { name: "Undo last set" }));
+    await act(async () => {});
+    expect((screen.getByLabelText("Weight in kg") as HTMLInputElement).value).toBe("");
+    expect((screen.getByLabelText("Reps") as HTMLInputElement).value).toBe("");
+    expect(screen.queryByRole("button", { name: "Undo last set" })).toBeNull();
+  });
+
+  it("navigates back to the previous exercise when undoing after advancing", async () => {
+    renderRunner(twoExerciseTemplate);
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    // Log a set on exercise 0 (Push-ups).
+    fireEvent.change(screen.getByLabelText("Weight in kg"), { target: { value: "80" } });
+    await act(async () => {});
+    // Advance to the next exercise (rest -> exercise 1).
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    fireEvent.click(screen.getByText("Skip rest"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.getByText("Squats")).toBeInTheDocument();
+    // Undo pops back to the exercise whose set we just logged.
+    fireEvent.click(screen.getByRole("button", { name: "Undo last set" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(screen.getByText("Push-ups")).toBeInTheDocument();
+    expect((screen.getByLabelText("Weight in kg") as HTMLInputElement).value).toBe("");
   });
 
   it("calls onCancel when Stop is clicked", async () => {
