@@ -28,6 +28,7 @@ vi.mock("../api", () => ({
 vi.mock("@phosphor-icons/react", () => ({
   BandaidsIcon: ({ size }: { size?: number }) => <span data-icon="bandaids" data-size={size} />,
   PlusCircleIcon: ({ size }: { size?: number }) => <span data-icon="plus-circle" data-size={size} />,
+  CheckCircleIcon: ({ size }: { size?: number }) => <span data-icon="check-circle" data-size={size} />,
   XIcon: ({ size }: { size?: number }) => <span data-icon="x" data-size={size} />,
   CaretUpIcon: ({ size }: { size?: number }) => <span data-icon="caret-up" data-size={size} />,
   CaretDownIcon: ({ size }: { size?: number }) => <span data-icon="caret-down" data-size={size} />,
