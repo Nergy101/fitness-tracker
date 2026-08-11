@@ -673,11 +673,23 @@ export default function WorkoutRunner({
     const mostRecent = loggedSetKeys[0];
     if (!mostRecent) return;
     const { round, index } = parseLogKey(mostRecent);
+    // Clear the remembered last-set for that exercise too, so NER-210's
+    // auto-commit doesn't immediately re-populate the field — the user should
+    // re-log the set from a blank slate.
+    const removedExerciseId =
+      exercises[index]?.exercise?.id ?? exercises[index]?.exercise_id;
     setExerciseLogs((prev) => {
       const next = { ...prev };
       delete next[mostRecent];
       return next;
     });
+    if (removedExerciseId != null) {
+      setLastSetByExercise((prev) => {
+        const next = { ...prev };
+        delete next[removedExerciseId];
+        return next;
+      });
+    }
     if (roundRef.current !== round || indexRef.current !== index) {
       backToRef.current = { round, index };
       backTickRef.current += 1;
