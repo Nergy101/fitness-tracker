@@ -1,19 +1,67 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type WorkoutSession, type BoxingEntryResponse, type RunEntryResponse } from "../../api";
+import { PlayCircleIcon as PlayCircle } from "@phosphor-icons/react";
+import { api, type WorkoutSession, type BoxingEntryResponse, type RunEntryResponse, type WorkoutTemplate } from "../../api";
 import { formatDateRelative, formatDuration, localISO } from "../../format";
 import { useFocusTrap } from "../../useFocusTrap";
 import ExerciseImage from "../ExerciseImage";
 
 import { logger } from "../../logger";
+
+/** Build a startable WorkoutTemplate from a past session's exercises so the
+ * user can repeat the workout without recreating it by hand. */
+function sessionToTemplate(session: WorkoutSession): WorkoutTemplate {
+  return {
+    id: 0,
+    name: session.template_name,
+    description: "",
+    mode: "circuit",
+    time_cap_seconds: null,
+    rounds: 1,
+    rest_between_rounds: 180,
+    is_pinned: false,
+    pinned_order: null,
+    warmup_seconds: 0,
+    cooldown_seconds: 0,
+    created_at: session.started_at,
+    exercises: session.exercises.map((se, i) => ({
+      id: se.id,
+      template_id: 0,
+      exercise_id: se.exercise_id ?? 0,
+      duration_seconds: se.duration_seconds || 30,
+      rest_after_seconds: 5,
+      order_index: i,
+      superset_group: null,
+      exercise:
+        se.exercise_id != null
+          ? {
+              id: se.exercise_id,
+              name: se.exercise_name,
+              description: "",
+              category: "strength",
+              default_kcal_per_min: 5,
+              default_duration_seconds: se.duration_seconds || 30,
+              image_url: se.image_url,
+              created_at: "",
+            }
+          : null,
+    })),
+    work_duration_seconds: session.total_duration_seconds,
+    rest_duration_seconds: 0,
+    total_duration_seconds: session.total_duration_seconds,
+  };
+}
+
 /** Modal showing a session's stats, per-exercise breakdown, date editing, and inline notes. */
 export default function SessionDetail({
   session,
   onClose,
   onUpdate,
+  onStartWorkout,
 }: {
   session: WorkoutSession;
   onClose: () => void;
   onUpdate: (updated: WorkoutSession) => void;
+  onStartWorkout: (template: WorkoutTemplate) => void;
 }) {
   const [notes, setNotes] = useState(session.notes || "");
   const [durationMinutes, setDurationMinutes] = useState(
@@ -240,6 +288,18 @@ export default function SessionDetail({
             &times;
           </button>
         </div>
+
+        {isRegular && session.exercises.length > 0 && (
+          <button
+            onClick={() => {
+              onStartWorkout(sessionToTemplate(session));
+              onClose();
+            }}
+            className="w-full inline-flex items-center justify-center gap-2 text-sm text-accent/70 hover:text-accent border border-accent/30 hover:border-accent/50 rounded-xl py-2.5 mb-4 transition-colors"
+          >
+            <PlayCircle size={16} weight="fill" /> Repeat Workout
+          </button>
+        )}
 
         <div className="grid grid-cols-3 gap-3 mb-5">
           <div className="bg-surface rounded-lg p-3 text-center">

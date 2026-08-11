@@ -4,7 +4,7 @@ import {
   ClockCounterClockwiseIcon as ClockCounterClockwise,
   SmileySadIcon as SmileySad,
 } from "@phosphor-icons/react";
-import { api, type WorkoutSession } from "../api";
+import { api, type WorkoutSession, type WorkoutTemplate } from "../api";
 import CalendarView from "./CalendarView";
 import HistorySkeleton from "./skeletons/HistorySkeleton";
 import DateRangeFilter from "./history/DateRangeFilter";
@@ -19,9 +19,10 @@ import { rangeStart, type RangeKey } from "./history/utils";
 
 interface HistoryTabProps {
   refreshKey: number;
+  onStartWorkout: (template: WorkoutTemplate) => void;
 }
 
-export default function HistoryTab({ refreshKey }: HistoryTabProps) {
+export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabProps) {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +106,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
     <SessionDetail
       session={detail}
       onClose={() => setDetail(null)}
+      onStartWorkout={onStartWorkout}
       onUpdate={(updated) => {
         setDetail(updated);
         updateSession(updated);

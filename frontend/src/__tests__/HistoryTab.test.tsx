@@ -158,13 +158,13 @@ describe("HistoryTab", () => {
   // ── Smoke tests ──────────────────────────────────────────
 
   it("shows loading skeleton initially", () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     expect(screen.getByTestId("history-skeleton")).toBeInTheDocument();
   });
 
   it("renders the range view after sessions load", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("date-range-filter")).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe("HistoryTab", () => {
   });
 
   it("renders session names in the list after load", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("session-1")).toBeInTheDocument();
@@ -188,7 +188,7 @@ describe("HistoryTab", () => {
   });
 
   it("shows 'View all' button in range view", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("View all")).toBeInTheDocument();
@@ -198,7 +198,7 @@ describe("HistoryTab", () => {
   // ── Key interactions ─────────────────────────────────────
 
   it("switches to all-time view when 'View all' is clicked", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("View all")).toBeInTheDocument();
@@ -215,7 +215,7 @@ describe("HistoryTab", () => {
   });
 
   it("returns to range view when 'Back' is clicked from all-time view", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("View all")).toBeInTheDocument();
@@ -236,7 +236,7 @@ describe("HistoryTab", () => {
   });
 
   it("toggles calendar view when calendar button is clicked", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("toggle-calendar")).toBeInTheDocument();
@@ -250,7 +250,7 @@ describe("HistoryTab", () => {
   });
 
   it("opens session detail when a session is selected", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("session-1")).toBeInTheDocument();
@@ -266,7 +266,7 @@ describe("HistoryTab", () => {
   });
 
   it("closes session detail when close is clicked", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("session-1")).toBeInTheDocument();
@@ -292,7 +292,7 @@ describe("HistoryTab", () => {
       throw new Error("Network error");
     };
 
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("Failed to load sessions")).toBeInTheDocument();
@@ -302,7 +302,7 @@ describe("HistoryTab", () => {
   it("shows empty state when no sessions", async () => {
     mockGetAllSessionsImpl = async () => [];
 
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("No sessions yet")).toBeInTheDocument();
@@ -312,7 +312,7 @@ describe("HistoryTab", () => {
   // ── Range changes ────────────────────────────────────────
 
   it("switches to 30d range and shows heatmap", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("range-30d")).toBeInTheDocument();
@@ -326,7 +326,7 @@ describe("HistoryTab", () => {
   });
 
   it("switches to 'This week' range", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("range-week")).toBeInTheDocument();

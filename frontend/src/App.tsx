@@ -186,7 +186,7 @@ export default function App() {
           )}
           {currentTab === "exercises" && <ExercisesTab />}
           {currentTab === "history" && (
-            <HistoryTab refreshKey={historyRefreshKey} />
+            <HistoryTab refreshKey={historyRefreshKey} onStartWorkout={setRunningWorkout} />
           )}
           {currentTab === "health" && <HealthAndStatsTab key={healthRefreshKey} />}
           {currentTab === "stats" && <StatsTab />}

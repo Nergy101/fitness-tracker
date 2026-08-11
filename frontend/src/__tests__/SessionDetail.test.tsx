@@ -93,7 +93,7 @@ describe("SessionDetail", () => {
 
   it("renders the session name and stats", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     expect(screen.getByText("Morning Routine")).toBeInTheDocument();
     expect(screen.getByText("1800s")).toBeInTheDocument(); // formatDuration
@@ -103,7 +103,7 @@ describe("SessionDetail", () => {
 
   it("renders exercise list with names and durations", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     expect(screen.getByText("Push-ups")).toBeInTheDocument();
     expect(screen.getByText("Squats")).toBeInTheDocument();
@@ -112,14 +112,14 @@ describe("SessionDetail", () => {
 
   it("renders exercise logs with weight and reps", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     expect(screen.getByText("0kg × 15r")).toBeInTheDocument();
   });
 
   it("renders the notes field with existing notes", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const notesTextarea = screen.getByPlaceholderText("Add notes...");
     expect(notesTextarea).toBeInTheDocument();
@@ -128,7 +128,7 @@ describe("SessionDetail", () => {
 
   it("renders the date input", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const dateInput = screen.getByDisplayValue("2026-07-25T08:00");
     expect(dateInput).toBeInTheDocument();
@@ -136,7 +136,7 @@ describe("SessionDetail", () => {
 
   it("renders the relative time label", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     expect(screen.getByText("2d ago")).toBeInTheDocument();
   });
@@ -146,7 +146,7 @@ describe("SessionDetail", () => {
   it("calls onClose when close button is clicked", () => {
     const onClose = vi.fn();
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={onClose} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={onClose} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     fireEvent.click(screen.getByText("×"));
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -156,7 +156,7 @@ describe("SessionDetail", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
     const onClose = vi.fn();
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={onClose} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={onClose} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const notesTextarea = screen.getByPlaceholderText("Add notes...");
     fireEvent.change(notesTextarea, { target: { value: "Edited but not saved" } });
@@ -172,7 +172,7 @@ describe("SessionDetail", () => {
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const onClose = vi.fn();
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={onClose} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={onClose} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const notesTextarea = screen.getByPlaceholderText("Add notes...");
     fireEvent.change(notesTextarea, { target: { value: "Edited but not saved" } });
@@ -188,7 +188,7 @@ describe("SessionDetail", () => {
     const onClose = vi.fn();
     const onUpdate = vi.fn();
     const session = makeSession();
-    const { rerender } = render(<SessionDetail session={session} onClose={onClose} onUpdate={onUpdate} />);
+    const { rerender } = render(<SessionDetail session={session} onClose={onClose} onUpdate={onUpdate} onStartWorkout={vi.fn()} />);
 
     const notesTextarea = screen.getByPlaceholderText("Add notes...");
     fireEvent.change(notesTextarea, { target: { value: "Saved notes" } });
@@ -196,7 +196,7 @@ describe("SessionDetail", () => {
 
     // Parent receives the updated session and passes it back down — notes are no longer dirty.
     await screen.findByText("Saved notes");
-    rerender(<SessionDetail session={{ ...session, notes: "Saved notes" }} onClose={onClose} onUpdate={onUpdate} />);
+    rerender(<SessionDetail session={{ ...session, notes: "Saved notes" }} onClose={onClose} onUpdate={onUpdate} onStartWorkout={vi.fn()} />);
 
     expect(confirmSpy).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("×"));
@@ -207,7 +207,7 @@ describe("SessionDetail", () => {
 
   it("shows save button when notes are modified", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const notesTextarea = screen.getByPlaceholderText("Add notes...");
     fireEvent.change(notesTextarea, { target: { value: "Updated notes" } });
@@ -217,7 +217,7 @@ describe("SessionDetail", () => {
 
   it("shows duration edit section for regular workouts", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const durationInput = screen.getByLabelText("Session duration minutes");
     expect(durationInput).toBeInTheDocument();
@@ -226,7 +226,7 @@ describe("SessionDetail", () => {
 
   it("shows Save button when duration is modified", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const durationInput = screen.getByLabelText("Session duration minutes");
     fireEvent.change(durationInput, { target: { value: "45" } });
@@ -238,21 +238,21 @@ describe("SessionDetail", () => {
 
   it("does not show duration edit section for Run sessions", () => {
     const session = makeSession({ template_name: "Run: 5.0km" });
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     expect(screen.queryByLabelText("Session duration minutes")).not.toBeInTheDocument();
   });
 
   it("does not show duration edit section for Boxing sessions", () => {
     const session = makeSession({ template_name: "Boxing: Heavy Bag" });
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     expect(screen.queryByLabelText("Session duration minutes")).not.toBeInTheDocument();
   });
 
   it("renders run/walk toggle buttons for Run sessions", () => {
     const session = makeSession({ template_name: "Run: 5.0km" });
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const runButtons = screen.getAllByText("Run");
     expect(runButtons.length).toBeGreaterThanOrEqual(1);
@@ -261,7 +261,7 @@ describe("SessionDetail", () => {
 
   it("has the correct aria-modal dialog role", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveAttribute("aria-modal", "true");
@@ -270,7 +270,7 @@ describe("SessionDetail", () => {
 
   it("renders kcal for each exercise", () => {
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     expect(screen.getByText("25 kcal")).toBeInTheDocument();
     expect(screen.getByText("40 kcal")).toBeInTheDocument();
@@ -282,7 +282,7 @@ describe("SessionDetail", () => {
     const onUpdate = vi.fn();
     const { api } = await import("../api");
     const session = makeSession();
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={onUpdate} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={onUpdate} onStartWorkout={vi.fn()} />);
 
     const textarea = screen.getByPlaceholderText("Add notes...");
     fireEvent.change(textarea, { target: { value: "New notes value" } });
@@ -296,7 +296,7 @@ describe("SessionDetail", () => {
   it("saves duration on blur when modified", async () => {
     const session = makeSession({ boxing_entry_id: null, run_entry_id: null, template_name: "Morning Routine" });
     const { api } = await import("../api");
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     const durInput = screen.getByLabelText("Session duration minutes");
     fireEvent.change(durInput, { target: { value: "20" } });
@@ -320,10 +320,40 @@ describe("SessionDetail", () => {
       boxing_entry_id: 5,
     });
 
-    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} />);
+    render(<SessionDetail session={session} onClose={vi.fn()} onUpdate={vi.fn()} onStartWorkout={vi.fn()} />);
 
     await vi.waitFor(() => {
       expect(screen.getByLabelText("Boxing minutes")).toBeInTheDocument();
     });
+  });
+
+  it("shows Repeat Workout for a regular session and starts it on click", () => {
+    const session = makeSession();
+    const onStartWorkout = vi.fn();
+    render(
+      <SessionDetail
+        session={session}
+        onClose={vi.fn()}
+        onUpdate={vi.fn()}
+        onStartWorkout={onStartWorkout}
+      />,
+    );
+    fireEvent.click(screen.getByText("Repeat Workout"));
+    expect(onStartWorkout).toHaveBeenCalled();
+    const started = onStartWorkout.mock.calls[0][0];
+    expect(started.exercises.map((e: { exercise_name?: string; exercise: { name: string } | null }) => e.exercise?.name)).toEqual(["Push-ups", "Squats"]);
+  });
+
+  it("does not show Repeat Workout for mirror sessions", () => {
+    const session = makeSession({ template_name: "Run: 5.0km" });
+    render(
+      <SessionDetail
+        session={session}
+        onClose={vi.fn()}
+        onUpdate={vi.fn()}
+        onStartWorkout={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("Repeat Workout")).toBeNull();
   });
 });
