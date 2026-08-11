@@ -12,6 +12,7 @@ const mockGetPrs = vi.fn();
 const mockGetBoxingStats = vi.fn();
 const mockGetBoxingPrs = vi.fn();
 const mockGetBoxingTrends = vi.fn();
+const mockGetCyclingTrends = vi.fn();
 const mockGetGoalProgress = vi.fn();
 const mockCreateWeightEntry = vi.fn();
 const mockDeleteWeightEntry = vi.fn();
@@ -34,6 +35,7 @@ vi.mock("../api", () => ({
     getBoxingStats: (...args: unknown[]) => mockGetBoxingStats(...args),
     getBoxingPrs: (...args: unknown[]) => mockGetBoxingPrs(...args),
     getBoxingTrends: (...args: unknown[]) => mockGetBoxingTrends(...args),
+    getCyclingTrends: (...args: unknown[]) => mockGetCyclingTrends(...args),
     getGoalProgress: (...args: unknown[]) => mockGetGoalProgress(...args),
     createWeightEntry: (...args: unknown[]) => mockCreateWeightEntry(...args),
     deleteWeightEntry: (...args: unknown[]) => mockDeleteWeightEntry(...args),
@@ -210,6 +212,7 @@ describe("HealthAndStatsTab", () => {
     mockGetBoxingStats.mockResolvedValue(null);
     mockGetBoxingPrs.mockResolvedValue(null);
     mockGetBoxingTrends.mockResolvedValue(null);
+    mockGetCyclingTrends.mockResolvedValue(null);
     mockGetGoalProgress.mockResolvedValue(null);
     mockCreateWeightEntry.mockResolvedValue({});
     mockDeleteWeightEntry.mockResolvedValue(undefined);
@@ -237,6 +240,28 @@ describe("HealthAndStatsTab", () => {
     expect(screen.getByText("1,800")).toBeDefined();
     expect(screen.getByText("Weight chg (30d)")).toBeDefined();
     expect(screen.getByText("-0.5 kg")).toBeDefined();
+  });
+
+  it("renders the Cycling Trends section when rides exist", async () => {
+    const today = new Date();
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const yest = new Date(today);
+    yest.setDate(today.getDate() - 1);
+    mockGetCyclingTrends.mockResolvedValue({
+      days: [
+        { date: iso(yest), minutes: 45, kcal: 300 },
+        { date: iso(today), minutes: 60, kcal: 420 },
+      ],
+    });
+    await act(async () => {
+      render(<HealthAndStatsTab />);
+    });
+    expect(await screen.findByText("Cycling Trends")).toBeDefined();
+    expect(screen.getByText("Cycling Minutes (daily)")).toBeDefined();
+    expect(screen.getByText("Cycling kcal (daily)")).toBeDefined();
+    // Toggle to weekly still renders the section.
+    fireEvent.click(screen.getByRole("button", { name: "Weekly" }));
+    expect(screen.getByText("Cycling Minutes (weekly)")).toBeDefined();
   });
 
   it("says how long the score has read 100%", async () => {

@@ -1048,6 +1048,8 @@ export const api = {
     fetchJSON<void>(`/api/v1/cycling/${id}`, { method: "DELETE" }),
   getCyclingStats: () =>
     fetchJSON<CyclingStatsResponse>("/api/v1/cycling/stats"),
+  getCyclingTrends: (days = 120) =>
+    fetchJSON<DailyActivityResponse>(`/api/v1/cycling/stats/trends?days=${days}`),
 
   // ─── Injuries ────────────────────────────────────────
 

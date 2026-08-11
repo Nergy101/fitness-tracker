@@ -1,6 +1,6 @@
 """Tests for Cycling CRUD endpoints."""
 
-from datetime import date
+from datetime import date, timedelta
 from fastapi.testclient import TestClient
 
 
@@ -250,3 +250,41 @@ class TestCyclingPRs:
         assert data["longest_ride_seconds"] == 5400
         assert data["total_hours_all_time"] == 2.0
         assert data["most_kcal_ride"] is not None and data["most_kcal_ride"] > 0
+
+
+class TestCyclingTrends:
+    URL = "/api/v1/cycling/stats/trends"
+
+    def test_empty(self, client: TestClient, auth_headers: dict):
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["days"] == []
+
+    def test_aggregates_daily_minutes_and_kcal(self, client: TestClient, auth_headers: dict):
+        today = date.today()
+        d1 = today.isoformat()
+        d2 = (today - timedelta(days=1)).isoformat()
+        client.post("/api/v1/cycling", json={
+            "duration_seconds": 3600, "distance_km": 16.0, "date": d1,
+        }, headers=auth_headers)
+        client.post("/api/v1/cycling", json={
+            "duration_seconds": 5400, "distance_km": 24.0, "date": d2,
+        }, headers=auth_headers)
+
+        resp = client.get(self.URL, headers=auth_headers)
+        assert resp.status_code == 200
+        days = resp.json()["days"]
+        assert len(days) == 2
+        by_date = {d["date"]: d for d in days}
+        assert by_date[d1]["minutes"] == 60.0
+        assert by_date[d1]["kcal"] > 0
+        assert by_date[d2]["minutes"] == 90.0
+        assert by_date[d2]["kcal"] > 0
+
+    def test_respects_days_window(self, client: TestClient, auth_headers: dict):
+        old = (date.today() - timedelta(days=300)).isoformat()
+        client.post("/api/v1/cycling", json={
+            "duration_seconds": 3600, "distance_km": 16.0, "date": old,
+        }, headers=auth_headers)
+        resp = client.get(self.URL + "?days=30", headers=auth_headers)
+        assert resp.json()["days"] == []
