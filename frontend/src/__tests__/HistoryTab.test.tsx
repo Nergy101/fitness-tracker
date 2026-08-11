@@ -130,7 +130,13 @@ describe("HistoryTab", () => {
       boxing_entry_id: null,
       run_entry_id: null,
       cycling_entry_id: null,
-      exercises: [],
+      exercises: [
+        {
+          id: 101, session_id: 1, exercise_id: 5, exercise_name: "Push-ups",
+          duration_seconds: 120, kcal_burned: 25, order_index: 0, completed: true,
+          image_url: null, logs: [],
+        },
+      ],
     },
     {
       id: 2,
@@ -336,6 +342,28 @@ describe("HistoryTab", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("day-bars")).toBeInTheDocument();
+    });
+  });
+
+  it("filters sessions by exercise name search and clears", async () => {
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("session-2")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Search sessions by exercise"), {
+      target: { value: "push" },
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId("session-2")).toBeNull();
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/1 session with/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Clear search"));
+    await waitFor(() => {
+      expect(screen.getByTestId("session-2")).toBeInTheDocument();
     });
   });
 });

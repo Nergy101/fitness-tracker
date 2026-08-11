@@ -3,6 +3,7 @@ import {
   ArrowLeftIcon as ArrowLeft,
   ClockCounterClockwiseIcon as ClockCounterClockwise,
   SmileySadIcon as SmileySad,
+  XIcon as X,
 } from "@phosphor-icons/react";
 import { api, type WorkoutSession, type WorkoutTemplate } from "../api";
 import CalendarView from "./CalendarView";
@@ -27,6 +28,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<WorkoutSession | null>(null);
+  const [search, setSearch] = useState("");
   const [range, setRange] = useState<RangeKey>(() => {
     const stored = localStorage.getItem("history-range");
     return (stored as RangeKey) ?? "7d";
@@ -66,6 +68,15 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
     const start = rangeStart(range).getTime();
     return sessions.filter((s) => new Date(s.started_at).getTime() >= start);
   }, [sessions, range, view]);
+
+  // Case-insensitive filter by exercise name (matches any exercise in a session).
+  const searchedSessions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rangeSessions;
+    return rangeSessions.filter((s) =>
+      s.exercises.some((e) => e.exercise_name.toLowerCase().includes(q)),
+    );
+  }, [rangeSessions, search]);
 
   function updateSession(updated: WorkoutSession) {
     setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
@@ -174,12 +185,37 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
       )}
 
       {/* Done workouts in range */}
+      <div className="relative mb-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by exercise..."
+          className="w-full bg-surface border border-fg/10 rounded-xl pl-4 pr-9 py-2.5 text-sm text-fg outline-none focus:border-accent/50 placeholder:text-fg/20"
+          aria-label="Search sessions by exercise"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            aria-label="Clear search"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/40 hover:text-fg/70"
+          >
+            <X size={16} weight="bold" />
+          </button>
+        )}
+      </div>
+      {search.trim() && (
+        <p className="text-xs text-fg/40 mb-2">
+          {searchedSessions.length} session{searchedSessions.length !== 1 ? "s" : ""} with{" "}
+          &ldquo;{search.trim()}&rdquo;
+        </p>
+      )}
+
       <SessionList
-        sessions={rangeSessions}
+        sessions={searchedSessions}
         onSelect={setDetail}
         onEditDate={updateSession}
         onDelete={handleDelete}
-        emptyLabel="No workouts in this range."
+        emptyLabel="No workouts match that search."
       />
 
       {/* View all → all-time */}
