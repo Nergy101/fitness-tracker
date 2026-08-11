@@ -194,45 +194,26 @@ export default function App() {
           </div>
         </main>
 
-        <nav className="bottom-nav shrink-0 border-t border-fg/10 bg-surface pb-[env(safe-area-inset-bottom,0px)]">
-          <div className="relative mx-auto flex h-16 w-full max-w-2xl items-stretch">
-            {/* One pill slides between tabs instead of each button carrying its
-                own background — that is what gives the springy travel. */}
-            <div
-              className="pointer-events-none absolute left-0 top-1/2 flex justify-center transition-transform duration-300"
-              style={{
-                width: `${100 / TABS.length}%`,
-                transform: `translateX(${TAB_IDS.indexOf(currentTab) * 100}%) translateY(-50%)`,
-                transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
-              }}
-              aria-hidden="true"
+        <nav className="bottom-nav border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+4px)] shrink-0">
+          <div className="mx-auto w-full max-w-2xl flex items-center justify-around">
+          {TABS.map((tab) => {
+            const idx = TAB_IDS.indexOf(tab.id);
+            const curIdx = TAB_IDS.indexOf(currentTab);
+            const dir = idx > curIdx ? "left" : idx < curIdx ? "right" : null;
+            return (
+            <button
+              key={tab.id}
+              onClick={() => dir ? navigateTab(dir, tab.id) : setCurrentTab(tab.id)}
+              aria-label={tab.label}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-full transition-colors ${
+                currentTab === tab.id
+                  ? "text-accent bg-accent/15"
+                  : "text-fg/40"
+              }`}
             >
-              <div className="h-10 w-14 rounded-full bg-accent/15" />
-            </div>
-
-            {TABS.map((tab) => {
-              const idx = TAB_IDS.indexOf(tab.id);
-              const curIdx = TAB_IDS.indexOf(currentTab);
-              const dir = idx > curIdx ? "left" : idx < curIdx ? "right" : null;
-              const active = currentTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => dir ? navigateTab(dir, tab.id) : setCurrentTab(tab.id)}
-                  aria-label={tab.label}
-                  aria-current={active ? "page" : undefined}
-                  className={`relative z-10 flex flex-1 items-center justify-center transition-colors ${
-                    active ? "text-accent" : "text-fg/40"
-                  }`}
-                >
-                  <tab.icon
-                    size={24}
-                    weight={active ? "fill" : "regular"}
-                    className={`transition-transform duration-200 ${active ? "scale-110" : ""}`}
-                  />
-                </button>
-              );
-            })}
+              <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
+            </button>
+          )})}
           </div>
         </nav>
 
