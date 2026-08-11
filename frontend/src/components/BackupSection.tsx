@@ -4,7 +4,7 @@ import {
   ArrowCounterClockwiseIcon as ArrowCounterClockwise,
   TrashIcon as Trash,
 } from "@phosphor-icons/react";
-import { api, type BackupConfigResponse, type BackupFileResponse, type BackupResultResponse } from "../api";
+import { api, OfflineError, type BackupConfigResponse, type BackupFileResponse, type BackupResultResponse } from "../api";
 
 const SEGMENT_ON = "bg-accent/15 border-accent/30 text-accent";
 const SEGMENT_OFF = "border-fg/10 text-fg/40 hover:text-fg/70";
@@ -46,8 +46,11 @@ export default function BackupSection() {
       const [cfg, bkps] = await Promise.all([api.getBackupConfig(), api.listBackups()]);
       setConfig(cfg);
       setBackups(bkps);
-    } catch {
+    } catch (e) {
       // offline / backend not available
+      if (e instanceof OfflineError) {
+        setMessage("Backup list unavailable while offline.");
+      }
     }
   }, []);
 
@@ -66,7 +69,11 @@ export default function BackupSection() {
       showMsg(`Backup created: ${result.filename} (${formatBytes(result.size_bytes)})`);
       loadData();
     } catch (e: unknown) {
-      showMsg(e instanceof Error ? e.message : "Backup failed");
+      if (e instanceof OfflineError) {
+        showMsg("Backup queued for sync — it will run when you're back online.");
+      } else {
+        showMsg(e instanceof Error ? e.message : "Backup failed");
+      }
     } finally {
       setLoading(false);
     }

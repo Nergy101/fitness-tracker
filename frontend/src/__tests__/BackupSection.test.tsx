@@ -10,6 +10,9 @@ const mockRestoreBackup = vi.fn();
 const mockDeleteBackup = vi.fn();
 
 vi.mock("../api", () => ({
+  OfflineError: class OfflineError extends Error {
+    readonly offline = true;
+  },
   api: {
     getBackupConfig: (...args: unknown[]) => mockGetBackupConfig(...args),
     listBackups: (...args: unknown[]) => mockListBackups(...args),

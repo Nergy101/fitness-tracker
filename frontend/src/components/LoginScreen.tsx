@@ -78,8 +78,15 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
       const data = await res.json();
       setStoredAuth(data.token);
       onLogin();
-    } catch {
-      setError("Could not reach server");
+    } catch (e) {
+      // Raw fetch (not the api layer) — a network failure surfaces as a
+      // TypeError (or navigator.onLine goes false). Distinguish the offline
+      // case from a genuine server error.
+      if (e instanceof TypeError || navigator.onLine === false) {
+        setError("Can't reach the server — check your connection.");
+      } else {
+        setError("Could not reach server");
+      }
     } finally {
       setLoading(false);
     }
