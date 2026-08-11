@@ -194,8 +194,8 @@ export default function App() {
           </div>
         </main>
 
-        <nav className="bottom-nav border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+4px)] shrink-0">
-          <div className="mx-auto w-full max-w-2xl flex items-center justify-around">
+        <nav className="bottom-nav shrink-0 border-t border-fg/10 bg-surface pb-[env(safe-area-inset-bottom,0px)]">
+          <div className="mx-auto flex h-12 w-full max-w-2xl items-center justify-around">
           {TABS.map((tab) => {
             const idx = TAB_IDS.indexOf(tab.id);
             const curIdx = TAB_IDS.indexOf(currentTab);
@@ -205,7 +205,7 @@ export default function App() {
               key={tab.id}
               onClick={() => dir ? navigateTab(dir, tab.id) : setCurrentTab(tab.id)}
               aria-label={tab.label}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-full transition-colors ${
+              className={`flex h-10 w-14 items-center justify-center rounded-full transition-colors ${
                 currentTab === tab.id
                   ? "text-accent bg-accent/15"
                   : "text-fg/40"
