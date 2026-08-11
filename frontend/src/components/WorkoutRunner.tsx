@@ -7,6 +7,7 @@ import {
   PauseCircleIcon as PauseCircle,
   PlayCircleIcon as PlayCircle,
   SkipForwardIcon as SkipForward,
+  TrophyIcon as Trophy,
   XIcon as X,
 } from "@phosphor-icons/react";
 import ExerciseImage from "./ExerciseImage";
@@ -647,6 +648,25 @@ export default function WorkoutRunner({
     [exerciseLogs],
   );
 
+  const setCount = loggedSetKeys.length;
+
+  // A "personal best" this session: any logged weight beats the exercise's
+  // best previously-logged weight (first time ever logging it counts too).
+  const hasPr = useMemo(
+    () =>
+      Object.entries(exerciseLogs).some(([key, v]) => {
+        if (!v.weightKg) return false;
+        const idx = parseInt(key.split("-")[1], 10);
+        const exId = exercises[idx]?.exercise?.id ?? exercises[idx]?.exercise_id;
+        if (exId == null) return false;
+        const past = pastLogs[exId];
+        if (!past || past.length === 0) return true;
+        const pastMax = Math.max(...past.map((p) => p.weight_kg ?? 0));
+        return parseFloat(v.weightKg) > pastMax;
+      }),
+    [exerciseLogs, exercises, pastLogs],
+  );
+
   // Remove the most recently logged set, then return the runner to that
   // exercise so the user can re-log it correctly.
   function undoLastSet() {
@@ -1179,7 +1199,8 @@ export default function WorkoutRunner({
       )}
 
       {phase === "finished" && (
-        <div className="flex flex-col items-center justify-center h-full px-6 text-center">
+        <div className="flex flex-col items-center justify-center h-full px-6 text-center celebrate-in">
+          <style>{`@keyframes celebrate-in { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } } .celebrate-in { animation: celebrate-in 350ms cubic-bezier(0.34,1.56,0.64,1); }`}</style>
           <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mb-6">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5">
               <path d="M20 6 9 17l-5-5" />
@@ -1188,23 +1209,34 @@ export default function WorkoutRunner({
           <h2 className="text-2xl font-bold text-fg mb-2">
             {isAmrap ? "Time!" : "Workout Complete!"}
           </h2>
-          <p className="text-fg/50 text-sm mb-6">{workout.name || "Workout"}</p>
+          <p className="text-fg/50 text-sm mb-4">{workout.name || "Workout"}</p>
 
-          <div className="grid grid-cols-3 gap-4 mb-8 w-full max-w-xs">
+          {hasPr && (
+            <div className="flex items-center gap-1.5 text-yellow-400 text-sm font-semibold mb-4">
+              <Trophy size={16} weight="fill" />
+              New personal best!
+            </div>
+          )}
+
+          <div className="grid grid-cols-4 gap-3 mb-8 w-full max-w-md">
             <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-fg">
+              <p className="text-xl font-bold text-fg">
                 {isAmrap ? formatDuration(timeCap) : `${Math.floor(totalDuration / 60)}m`}
               </p>
               <p className="text-xs text-fg/40">Duration</p>
             </div>
             <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-fg">
+              <p className="text-xl font-bold text-fg">
                 {isAmrap ? amrapRounds : totalExercises}
               </p>
               <p className="text-xs text-fg/40">{isAmrap ? "Rounds" : "Exercises"}</p>
             </div>
             <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-accent">{Math.round(totalKcal)}</p>
+              <p className="text-xl font-bold text-fg">{setCount}</p>
+              <p className="text-xs text-fg/40">Sets</p>
+            </div>
+            <div className="bg-surface rounded-xl p-3">
+              <p className="text-xl font-bold text-accent">{Math.round(totalKcal)}</p>
               <p className="text-xs text-fg/40">Kcal</p>
             </div>
           </div>
