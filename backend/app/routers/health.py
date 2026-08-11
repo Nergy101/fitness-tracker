@@ -8,7 +8,7 @@ from app.database import get_db
 from app.pagination import apply_pagination
 from app.models.models import (
     UserProfile, WeightEntry, BodyMeasurement, WellnessCheckin, WorkoutSession,
-    RunEntry, BoxingEntry, CyclingEntry, is_mirror_session, InjuryMarker,
+    RunEntry, BoxingEntry, CyclingEntry, SessionExercise, ExerciseLog, is_mirror_session, InjuryMarker,
 )
 from app.schemas import (
     UserProfileResponse, UserProfileUpdate,
@@ -16,7 +16,7 @@ from app.schemas import (
     GoalProgressResponse,
     BodyMeasurementCreate, BodyMeasurementResponse, MeasurementChangesResponse,
     WellnessCreate, WellnessResponse, WellnessTrendsResponse,
-    HealthScoreResponse, PrsResponse,
+    HealthScoreResponse, PrsResponse, Exercise1Rm,
     InjuryMarkerCreate, InjuryMarkerUpdate, InjuryMarkerResponse,
 )
 
@@ -56,6 +56,20 @@ def _longest_streak(days: set[date]) -> int:
                 break
         best = max(best, length)
     return best
+
+
+def _estimated_1rm(weight_kg: float, reps: int) -> float:
+    """Estimate a one-rep max from a logged set.
+
+    Epley: ``weight × (1 + reps/30)`` for reps ≤ 10. Above that Epley grows
+    increasingly optimistic, so for reps > 10 we fall back to Brzycki
+    (``weight × 36 / (37 − reps)``), which stays grounded at high rep counts.
+    The two agree at 10 reps (× 1.333)."""
+    if reps <= 1:
+        return weight_kg
+    if reps <= 10:
+        return weight_kg * (1 + reps / 30)
+    return weight_kg * 36 / (37 - reps)
 
 
 @router.get("/prs", response_model=PrsResponse)
@@ -134,6 +148,33 @@ def personal_records(db: Session = Depends(get_db)):
         prs.longest_cycling_seconds = longest_ride.duration_seconds
         # most_kcal_cycling is already set from mirror sessions above
         prs.total_cycling_hours = round(sum(e.duration_seconds for e in cycling_entries) / 3600, 1)
+
+    # Strength: best estimated 1RM per exercise, from every logged set.
+    logs = (
+        db.query(ExerciseLog, SessionExercise, WorkoutSession)
+        .join(SessionExercise, ExerciseLog.session_exercise_id == SessionExercise.id)
+        .join(WorkoutSession, SessionExercise.session_id == WorkoutSession.id)
+        .filter(ExerciseLog.weight_kg.isnot(None), ExerciseLog.reps.isnot(None))
+        .all()
+    )
+    best_1rm: dict[str, dict] = {}
+    for log, se, sess in logs:
+        est = _estimated_1rm(log.weight_kg, log.reps)
+        key = str(se.exercise_id) if se.exercise_id is not None else (se.exercise_name or "unknown")
+        cur = best_1rm.get(key)
+        if cur is None or est > cur["estimated_1rm_kg"]:
+            best_1rm[key] = {
+                "exercise_id": se.exercise_id,
+                "exercise_name": se.exercise_name or "",
+                "estimated_1rm_kg": round(est, 1),
+                "weight_kg": log.weight_kg,
+                "reps": log.reps,
+                "date": sess.started_at.strftime("%Y-%m-%d") if sess.started_at else "",
+            }
+    prs.best_1rm_per_exercise = [
+        Exercise1Rm(**v)
+        for v in sorted(best_1rm.values(), key=lambda v: -v["estimated_1rm_kg"])
+    ]
 
     # Longest streak of consecutive days with any activity (runs, walks, or
     # workouts — mirrors share their run's date, so including them is harmless).

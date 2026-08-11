@@ -26,6 +26,7 @@ const nullPrs: PrsResponse = {
   total_cycling_hours: 0,
   longest_streak_days: 0,
   streak_days_30d: 0,
+  best_1rm_per_exercise: [],
 };
 
 describe("PersonalRecordsCard", () => {
@@ -97,5 +98,26 @@ describe("PersonalRecordsCard", () => {
     const prs: PrsResponse = { ...nullPrs, longest_run_km: 8.0 };
     render(<PersonalRecordsCard prs={prs} boxingPrs={null} />);
     expect(screen.getByText("Personal Records")).toBeInTheDocument();
+  });
+
+  it("renders the estimated 1RM section with its producing set", () => {
+    const prs: PrsResponse = {
+      ...nullPrs,
+      best_1rm_per_exercise: [
+        {
+          exercise_id: 5,
+          exercise_name: "Bench Press",
+          estimated_1rm_kg: 82.5,
+          weight_kg: 70,
+          reps: 5,
+          date: "2026-07-30",
+        },
+      ],
+    };
+    render(<PersonalRecordsCard prs={prs} boxingPrs={null} />);
+    expect(screen.getByText("Strength (est. 1RM)")).toBeInTheDocument();
+    expect(screen.getByText("Bench Press")).toBeInTheDocument();
+    expect(screen.getByText("5×70 kg · 2026-07-30")).toBeInTheDocument();
+    expect(screen.getByText(/82\.5 kg/)).toBeInTheDocument();
   });
 });

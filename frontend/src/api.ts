@@ -323,6 +323,15 @@ export interface PrsResponse {
   // Overall
   longest_streak_days: number;
   streak_days_30d: number;
+  // Strength (per-exercise estimated one-rep max)
+  best_1rm_per_exercise: {
+    exercise_id: number | null;
+    exercise_name: string;
+    estimated_1rm_kg: number;
+    weight_kg: number | null;
+    reps: number | null;
+    date: string;
+  }[];
 }
 
 export interface WeeklyActivityStat {

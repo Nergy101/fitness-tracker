@@ -198,6 +198,7 @@ function makePrs() {
     longest_walk_km: 5, longest_walk_seconds: 3600, most_kcal_walk: 200,
     longest_workout_seconds: 5400, most_kcal_workout: 800, most_exercises_workout: 8,
     longest_streak_days: 14, streak_days_30d: 7,
+    best_1rm_per_exercise: [],
   };
 }
 
