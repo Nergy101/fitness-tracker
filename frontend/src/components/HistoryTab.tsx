@@ -6,6 +6,7 @@ import {
   XIcon as X,
 } from "@phosphor-icons/react";
 import { api, type WorkoutSession, type WorkoutTemplate } from "../api";
+import { formatDuration } from "../format";
 import CalendarView from "./CalendarView";
 import HistorySkeleton from "./skeletons/HistorySkeleton";
 import DateRangeFilter from "./history/DateRangeFilter";
@@ -29,6 +30,8 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<WorkoutSession | null>(null);
   const [search, setSearch] = useState("");
+  const [grouped, setGrouped] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [range, setRange] = useState<RangeKey>(() => {
     const stored = localStorage.getItem("history-range");
     return (stored as RangeKey) ?? "7d";
@@ -77,6 +80,25 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
       s.exercises.some((e) => e.exercise_name.toLowerCase().includes(q)),
     );
   }, [rangeSessions, search]);
+
+  // Sessions grouped by template name, with per-group rollups (count, total
+  // duration, total kcal), most-frequent template first.
+  const groups = useMemo(() => {
+    const map = new Map<string, WorkoutSession[]>();
+    for (const s of searchedSessions) {
+      const key = s.template_name || "Untitled";
+      map.set(key, [...(map.get(key) ?? []), s]);
+    }
+    return [...map.entries()]
+      .map(([name, list]) => ({
+        name,
+        count: list.length,
+        totalDuration: list.reduce((a, s) => a + (s.total_duration_seconds || 0), 0),
+        totalKcal: Math.round(list.reduce((a, s) => a + (s.total_kcal_estimated || 0), 0)),
+        sessions: list,
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [searchedSessions]);
 
   function updateSession(updated: WorkoutSession) {
     setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
@@ -210,13 +232,62 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
         </p>
       )}
 
-      <SessionList
-        sessions={searchedSessions}
-        onSelect={setDetail}
-        onEditDate={updateSession}
-        onDelete={handleDelete}
-        emptyLabel="No workouts match that search."
-      />
+      {searchedSessions.length > 0 && (
+        <button
+          onClick={() => {
+            setGrouped((g) => !g);
+            setExpandedGroup(null);
+          }}
+          className="mb-2 text-xs text-fg/50 hover:text-fg transition-colors"
+        >
+          {grouped ? "Show flat list" : "Group by template"}
+        </button>
+      )}
+
+      {grouped ? (
+        <div className="space-y-2">
+          {groups.map((g) => {
+            const open = expandedGroup === g.name;
+            return (
+              <div key={g.name} className="bg-surface rounded-xl border border-fg/10 overflow-hidden">
+                <button
+                  onClick={() => setExpandedGroup(open ? null : g.name)}
+                  className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
+                  aria-expanded={open}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-fg truncate">{g.name}</p>
+                    <p className="text-xs text-fg/40">
+                      {g.count} session{g.count !== 1 ? "s" : ""} · {formatDuration(g.totalDuration)} ·{" "}
+                      {g.totalKcal} kcal
+                    </p>
+                  </div>
+                  <span className="text-fg/40 shrink-0">{open ? "−" : "+"}</span>
+                </button>
+                {open && (
+                  <div className="border-t border-fg/10 p-2">
+                    <SessionList
+                      sessions={g.sessions}
+                      onSelect={setDetail}
+                      onEditDate={updateSession}
+                      onDelete={handleDelete}
+                      emptyLabel="No sessions"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <SessionList
+          sessions={searchedSessions}
+          onSelect={setDetail}
+          onEditDate={updateSession}
+          onDelete={handleDelete}
+          emptyLabel="No workouts match that search."
+        />
+      )}
 
       {/* View all → all-time */}
       <button

@@ -366,4 +366,25 @@ describe("HistoryTab", () => {
       expect(screen.getByTestId("session-2")).toBeInTheDocument();
     });
   });
+
+  it("groups sessions by template and expands a group", async () => {
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Group by template"));
+    // Both template names appear as group headers; toggle label flips.
+    expect(screen.getByText("Morning Routine")).toBeInTheDocument();
+    expect(screen.getByText("Run: 5.0km")).toBeInTheDocument();
+    expect(screen.getByText("Show flat list")).toBeInTheDocument();
+    // Expand the Morning Routine group → its session renders inside.
+    fireEvent.click(screen.getByText("Morning Routine"));
+    expect(screen.getAllByText("Morning Routine").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/1 session ·/).length).toBeGreaterThanOrEqual(1);
+    // Toggle back to flat list restores both session buttons.
+    fireEvent.click(screen.getByText("Show flat list"));
+    await waitFor(() => {
+      expect(screen.getByTestId("session-2")).toBeInTheDocument();
+    });
+  });
 });
