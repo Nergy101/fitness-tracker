@@ -59,11 +59,11 @@ class WorkoutSession(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     template_id = Column(Integer, ForeignKey("workout_templates.id"), nullable=True)
-    template_name = Column(String(255), default="")  # snapshot in case template is deleted
+    template_name = Column(String(255), default="", index=True)  # snapshot in case template is deleted
     run_entry_id = Column(Integer, ForeignKey("run_entries.id"), nullable=True)
     boxing_entry_id = Column(Integer, ForeignKey("boxing_entries.id"), nullable=True)
     cycling_entry_id = Column(Integer, ForeignKey("cycling_entries.id"), nullable=True)
-    started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     finished_at = Column(DateTime, nullable=True)
     total_duration_seconds = Column(Integer, default=0)
     total_kcal_estimated = Column(Float, default=0.0)
@@ -87,7 +87,7 @@ class SessionExercise(Base):
     __tablename__ = "session_exercises"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("workout_sessions.id"), nullable=False)
+    session_id = Column(Integer, ForeignKey("workout_sessions.id"), nullable=False, index=True)
     exercise_id = Column(Integer, ForeignKey("exercises.id"), nullable=True)
     exercise_name = Column(String(255), default="")  # snapshot
     duration_seconds = Column(Integer, default=30)
@@ -135,7 +135,7 @@ class WeightEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     weight_kg = Column(Float, nullable=False)
-    date = Column(Date, nullable=False, default=lambda: date.today())
+    date = Column(Date, nullable=False, default=lambda: date.today(), index=True)
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -180,7 +180,7 @@ class RunEntry(Base):
     distance_km = Column(Float, nullable=False)
     pace_per_km = Column(Float, nullable=True)  # computed: seconds per km
     run_type = Column(String(10), nullable=False, default="run")  # run | walk
-    date = Column(Date, nullable=False, default=lambda: date.today())
+    date = Column(Date, nullable=False, default=lambda: date.today(), index=True)
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -225,7 +225,7 @@ class BoxingEntry(Base):
     duration_seconds = Column(Integer, nullable=False)
     kcal_per_min = Column(Float, nullable=False, default=10.0)
     rounds = Column(Integer, nullable=True)
-    date = Column(Date, nullable=False, default=lambda: date.today())
+    date = Column(Date, nullable=False, default=lambda: date.today(), index=True)
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -239,7 +239,7 @@ class CyclingEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     duration_seconds = Column(Integer, nullable=False)
     distance_km = Column(Float, nullable=False)
-    date = Column(Date, nullable=False, default=lambda: date.today())
+    date = Column(Date, nullable=False, default=lambda: date.today(), index=True)
     notes = Column(Text, default="")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
