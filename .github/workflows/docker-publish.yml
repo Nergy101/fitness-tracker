@@ -291,7 +291,11 @@ jobs:
   deploy:
     name: Deploy to server
     needs: [publish]
-    if: github.event_name != 'pull_request'
+    # `!cancelled() && !failure()` so a test job that was SKIPPED by the
+    # path-filter (e.g. Backend tests on a frontend-only change) does not
+    # cascade-skip this deploy — a skipped job is not a failure. Matches the
+    # guard on publish; only a genuinely failed test blocks the deploy.
+    if: github.event_name != 'pull_request' && !cancelled() && !failure()
     runs-on: ubuntu-latest
     environment:
       name: Production
