@@ -194,7 +194,7 @@ export default function App() {
           </div>
         </main>
 
-        <nav className="bottom-nav shrink-0 border-t border-fg/10 bg-surface pb-[env(safe-area-inset-bottom,0px)]">
+        <nav className="bottom-nav shrink-0 border-t border-fg/10 bg-surface">
           <div className="mx-auto flex h-12 w-full max-w-2xl items-center justify-around">
           {TABS.map((tab) => {
             const idx = TAB_IDS.indexOf(tab.id);
