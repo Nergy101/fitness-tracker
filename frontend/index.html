@@ -3,12 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Locks scale to keep the app-like fixed layout in standalone PWA mode.
-         NOTE: iOS Safari ignores maximum-scale/user-scalable, so this does NOT
-         stop the focus auto-zoom — the >=16px input font-size in index.css does. -->
+    <!-- viewport-fit=cover is what lets the page paint the full screen in a
+         standalone iOS app; without it the web view is letterboxed inside the
+         safe area and the leftover strip shows the page background, which no
+         CSS can reclaim (measured on an iPhone 17 Pro: 812px viewport in an
+         874px screen, a 62px loss).
+
+         `maximum-scale=1.0, user-scalable=no` used to be here to stop the
+         input-focus auto-zoom. It never did that — iOS overrides both for
+         accessibility, which is why the real fix is the >=16px control
+         font-size in index.css — and it is the prime suspect for defeating
+         viewport-fit=cover in the installed app, so it is gone. Keep this
+         declaration minimal; adding scale locks back risks the letterbox. -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <meta name="theme-color" content="#1e1e2e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
