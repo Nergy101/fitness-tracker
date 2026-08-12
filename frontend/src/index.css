@@ -41,14 +41,19 @@
   --track: #ffffff10;
 }
 
-/* The app shell owns the viewport: `height: 100%` here plus `h-full` on the
-   shell keeps the bottom nav on screen, and `overflow: hidden` stops iOS
-   Safari rubber-banding the whole page behind the fixed chrome. Scrolling
-   happens in <main>, which is the only overflow-y-auto region. */
+/* The app shell owns the viewport. `100vh` — NOT `100%` — is mandatory here:
+   with `viewport-fit=cover` + `black-translucent`, a percentage height silently
+   collapses the webview back to the non-cover layout, letterboxing the page
+   into the safe area (measured on an iPhone 17 Pro: 812px viewport in an 874px
+   screen, a 62px loss). `100vh` is the only value correct from PWA cold start
+   (`100dvh` reads wrong until a rotation). Combined with `h-full` on the shell
+   it keeps the bottom nav on screen, and `overflow: hidden` stops iOS Safari
+   rubber-banding the whole page behind the fixed chrome. Scrolling happens in
+   <main>, which is the only overflow-y-auto region. */
 html,
 body,
 #root {
-  height: 100%;
+  height: 100vh;
   overflow: hidden;
 }
 
@@ -87,31 +92,21 @@ input[type="time"] {
   box-sizing: border-box;
 }
 
-/* Bottom nav padding — the one place browser and installed app must differ.
-   In a browser tab the inset has to be honored: iOS Safari's toolbar strip
-   sits in it, and content padded flat would land under it. Installed
-   (standalone) there is no browser chrome, yet iOS still reports the full
-   ~34px home-indicator inset, which lifts the icon row visibly off the bottom
-   edge — that is the gap this app kept regrowing. So standalone gets a flat
-   0.75rem, the same spacing the desktop/preview render has always shown.
+/* Bottom nav padding. In a browser tab the inset has to be honored: iOS
+   Safari's toolbar strip sits in it, and content padded flat would land under
+   it. Installed (standalone) the full ~34px home-indicator inset is still
+   reported and still needed — the indicator sits inside the page once
+   viewport-fit=cover works, so the icon row has to clear it.
 
-   Detection is deliberately doubled: the `display-mode` media query, plus a
-   `.standalone` class main.tsx sets from `navigator.standalone` for iOS
-   webviews that don't answer the query. Either one alone has failed on iOS.
-   Not written as a Tailwind `pb-[…]` utility on the element: unlayered rules
-   here would silently outrank it, so the padding lives in one place only. */
+   This used to force a flat 0.75rem in standalone because the icon row seemed
+   to sit too high — but that gap was the letterbox (the page was 62px shorter
+   than the screen, per the 100vh fix above), not the padding. With the page
+   now covering the full screen, `max(env(safe-area-inset-bottom), 0.75rem)`
+   is correct in both modes and there is no standalone override to drift.
+   Written here (not as a Tailwind `pb-[…]` utility) so the padding lives in
+   one place and unlayered rules can't silently outrank it. */
 .bottom-nav {
   padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
-}
-
-@media (display-mode: standalone) {
-  .bottom-nav {
-    padding-bottom: 0.75rem;
-  }
-}
-
-:root.standalone .bottom-nav {
-  padding-bottom: 0.75rem;
 }
 
 /* Prevent text selection during workout timer */
