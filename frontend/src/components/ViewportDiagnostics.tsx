@@ -21,9 +21,12 @@ import { useCallback, useEffect, useState } from "react";
 
 interface Readings {
   screenH: number;
+  screenW: number;
   innerH: number;
+  innerW: number;
   clientH: number;
   visualH: number;
+  visualScale: number;
   insetTop: number;
   insetBottom: number;
   navBottom: number;
@@ -32,6 +35,8 @@ interface Readings {
   standaloneProp: boolean;
   displayModeQuery: boolean;
   dpr: number;
+  /** The live meta tag — proves which index.html the app actually booted. */
+  viewportMeta: string;
 }
 
 /** env() is not readable from JS, so measure it off a throwaway probe element. */
@@ -56,9 +61,12 @@ function measure(): Readings {
   const innerH = Math.round(window.innerHeight);
   return {
     screenH: Math.round(window.screen.height),
+    screenW: Math.round(window.screen.width),
     innerH,
+    innerW: Math.round(window.innerWidth),
     clientH: Math.round(document.documentElement.clientHeight),
     visualH: Math.round(window.visualViewport?.height ?? 0),
+    visualScale: window.visualViewport?.scale ?? 0,
     insetTop: Math.round(insets.top),
     insetBottom: Math.round(insets.bottom),
     navBottom,
@@ -70,6 +78,10 @@ function measure(): Readings {
       typeof window.matchMedia === "function" &&
       window.matchMedia("(display-mode: standalone)").matches,
     dpr: window.devicePixelRatio,
+    viewportMeta:
+      document
+        .querySelector('meta[name="viewport"]')
+        ?.getAttribute("content") ?? "—",
   };
 }
 
@@ -107,12 +119,18 @@ export default function ViewportDiagnostics() {
   // leftover strip is painted by the propagated body background, not by the nav.
   const letterboxed = r !== null && r.screenH - r.innerH > 2;
 
+  // A visual viewport narrower than the screen means the page is laid out at a
+  // scaled-down width and blown back up, which shortens the height too — a
+  // different fault from a letterbox, and one the height numbers alone hide.
+  const scaled = r !== null && Math.abs(r.screenW - r.innerW) > 2;
+
   const rows: Array<[string, string]> = r
     ? [
-        ["screen height", `${r.screenH}`],
-        ["window.innerHeight", `${r.innerH}`],
+        ["screen w × h", `${r.screenW} × ${r.screenH}`],
+        ["window.inner w × h", `${r.innerW} × ${r.innerH}`],
         ["documentElement.clientHeight", `${r.clientH}`],
         ["visualViewport.height", `${r.visualH}`],
+        ["visualViewport.scale", `${r.visualScale}`],
         ["safe-area top / bottom", `${r.insetTop} / ${r.insetBottom}`],
         ["nav bottom edge", `${r.navBottom}`],
         ["gap under nav", `${r.navGap}`],
@@ -141,8 +159,13 @@ export default function ViewportDiagnostics() {
         <>
           <p className="text-[11px] leading-snug text-fg/60">
             {letterboxed
-              ? `Letterboxed: the page is ${r.screenH - r.innerH}px shorter than the screen. The strip under the nav is outside the page — CSS padding cannot remove it.`
+              ? `Letterboxed: the page is ${r.screenH - r.innerH}px shorter than the screen${scaled ? ` and ${r.screenW - r.innerW}px narrower` : ""}. The strip under the nav is outside the page — CSS padding cannot remove it.`
               : `Page covers the screen. Any visible gap is the nav's own ${r.navPadBottom} padding.`}
+          </p>
+          {/* The booted shell's own meta tag: if this still shows a scale lock,
+              the device is running a stale precached index.html, not the fix. */}
+          <p className="font-mono text-[10px] leading-snug text-fg/40 break-all">
+            meta: {r.viewportMeta}
           </p>
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[11px]">
             {rows.map(([label, value]) => (
