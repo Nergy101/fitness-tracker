@@ -14,6 +14,7 @@ import type { DateLocale } from "../locale";
 import HealthSettingsSection from "./health/HealthSettingsSection";
 import BackupSection from "./BackupSection";
 import CreditsSection from "./CreditsSection";
+import ViewportDiagnostics from "./ViewportDiagnostics";
 import { useOnboarding } from "../useOnboarding";
 import { useInstallPrompt } from "../useInstallPrompt";
 import { APP_VERSION } from "../version";
@@ -198,6 +199,12 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
               {/* Backups */}
               <div className="border-t border-fg/10 pt-3.5">
                 <BackupSection />
+              </div>
+
+              {/* Viewport diagnostics — the installed PWA has no devtools, so
+                  layout bugs that only reproduce on device get measured here. */}
+              <div className="border-t border-fg/10 pt-3.5">
+                <ViewportDiagnostics />
               </div>
 
               {/* Intro tour */}
