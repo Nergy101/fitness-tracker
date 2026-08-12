@@ -90,4 +90,27 @@ describe("installPrompt store", () => {
     expect(state.installable).toBe(false);
     expect(state.iosSafari).toBe(false);
   });
+
+  it("reports standalone on iOS via navigator.standalone without the media query", async () => {
+    // An iOS home-screen web app: no matchMedia answer for display-mode, so
+    // navigator.standalone is the only signal. The bottom-nav padding keys on
+    // this, so losing it puts the home-indicator gap back.
+    vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue(IOS_SAFARI_UA);
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false } as unknown as MediaQueryList),
+    );
+    Object.defineProperty(window.navigator, "standalone", {
+      value: true,
+      configurable: true,
+    });
+    const store = await loadStore();
+
+    const state = store.getInstallPromptState();
+    expect(state.standalone).toBe(true);
+    // Already installed, so the Add to Home Screen hint must stay hidden.
+    expect(state.iosSafari).toBe(false);
+
+    Reflect.deleteProperty(window.navigator, "standalone");
+  });
 });

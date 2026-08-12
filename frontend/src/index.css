@@ -87,6 +87,33 @@ input[type="time"] {
   box-sizing: border-box;
 }
 
+/* Bottom nav padding — the one place browser and installed app must differ.
+   In a browser tab the inset has to be honored: iOS Safari's toolbar strip
+   sits in it, and content padded flat would land under it. Installed
+   (standalone) there is no browser chrome, yet iOS still reports the full
+   ~34px home-indicator inset, which lifts the icon row visibly off the bottom
+   edge — that is the gap this app kept regrowing. So standalone gets a flat
+   0.75rem, the same spacing the desktop/preview render has always shown.
+
+   Detection is deliberately doubled: the `display-mode` media query, plus a
+   `.standalone` class main.tsx sets from `navigator.standalone` for iOS
+   webviews that don't answer the query. Either one alone has failed on iOS.
+   Not written as a Tailwind `pb-[…]` utility on the element: unlayered rules
+   here would silently outrank it, so the padding lives in one place only. */
+.bottom-nav {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+@media (display-mode: standalone) {
+  .bottom-nav {
+    padding-bottom: 0.75rem;
+  }
+}
+
+:root.standalone .bottom-nav {
+  padding-bottom: 0.75rem;
+}
+
 /* Prevent text selection during workout timer */
 .no-select {
   -webkit-user-select: none;
