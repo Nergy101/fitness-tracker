@@ -57,24 +57,6 @@ function formatHealthValue(metric: string, v: number): string {
   return String(Math.round(v));
 }
 
-// Category reference lines (dashed y-axis guides) for imported health metrics.
-// Each line sits at a threshold between bands (very low / low / medium / high / very high).
-const HEALTH_REFERENCE_LINES: Record<string, { value: number; label: string }[]> = {
-  vo2_max: [
-    { value: 30, label: "very low" },
-    { value: 38, label: "low" },
-    { value: 47, label: "medium" },
-    { value: 55, label: "high" },
-  ],
-  resting_heart_rate: [
-    { value: 55, label: "very low" },
-    { value: 65, label: "low" },
-    { value: 80, label: "medium" },
-    { value: 90, label: "high" },
-  ],
-  step_count: [{ value: 10000, label: "10k goal" }],
-};
-
 /** Seconds-per-km as "m:ss" (e.g. 324 → "5:24"). */
 function formatPace(secondsPerKm: number): string {
   const m = Math.floor(secondsPerKm / 60);
@@ -179,7 +161,6 @@ function LineChart({
   color,
   formatValue,
   reference,
-  references,
   overlay,
   height = 90,
 }: {
@@ -187,20 +168,20 @@ function LineChart({
   color: string;
   formatValue: (v: number) => string;
   reference?: { value: number; label: string };
-  /** Extra dashed reference lines (e.g. category bands like "low"/"high"). */
-  references?: { value: number; label: string }[];
   /** Same-length smoothed series (e.g. 7-day rolling average), drawn dashed. */
   overlay?: number[];
   height?: number;
 }) {
   if (points.length < 2) return null;
   const w = 300;
-  const allRefs = [...(reference ? [reference] : []), ...(references ?? [])];
-  const refVals = allRefs.map((r) => r.value);
   const values = points.map((p) => p.value);
-  let lo = Math.min(...values, ...refVals);
-  let hi = Math.max(...values, ...refVals);
-  const trueMin = Math.min(...values, ...refVals);
+  let lo = Math.min(...values);
+  let hi = Math.max(...values);
+  if (reference) {
+    lo = Math.min(lo, reference.value);
+    hi = Math.max(hi, reference.value);
+  }
+  const trueMin = Math.min(...values, reference?.value ?? Infinity);
   const pad = (hi - lo) * 0.12 || 1;
   // Don't pad the floor below zero for non-negative series (e.g. steps that
   // dip near 0) — a negative axis label reads as nonsense.
@@ -227,23 +208,23 @@ function LineChart({
           </g>
         );
       })}
-      {allRefs.map((r) => (
-        <g key={r.value}>
+      {reference && (
+        <g>
           <line
             x1={24}
-            y1={py(r.value)}
+            y1={py(reference.value)}
             x2={w}
-            y2={py(r.value)}
+            y2={py(reference.value)}
             stroke={color}
             strokeWidth="1"
             strokeDasharray="4 3"
             opacity={0.45}
           />
-          <text x={w} y={py(r.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8">
-            {r.label}
+          <text x={w} y={py(reference.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8">
+            {reference.label}
           </text>
         </g>
-      ))}
+      )}
       {overlay && overlay.length === points.length && (
         <polyline
           points={overlay.map((v, i) => `${px(i)},${py(v)}`).join(" ")}
@@ -377,7 +358,6 @@ function HealthTrendChart({ series }: { series: HealthSeries }) {
           formatValue={(v) => formatHealthValue(series.metric, v)}
           overlay={ROLLING_AVG_METRICS.has(series.metric) ? rollingAvg(values, 7) : undefined}
           reference={series.metric === "apple_exercise_time" ? { value: 30, label: "goal 30 min" } : undefined}
-          references={HEALTH_REFERENCE_LINES[series.metric]}
         />
       )}
       {series.points.length === 1 && (
