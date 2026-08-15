@@ -76,8 +76,8 @@ def _migrations_status() -> dict:
     """Check that alembic_version exists and is stamped at the migration head.
 
     Returns a dict with 'status' ('ok'|'error'|'not-applied') and the current
-    version for diagnostics. In-memory/test DBs use create_all and have no
-    alembic_version table — reported as 'not-applied'.
+    version for diagnostics. In-memory/test DBs bootstrap their schema directly
+    and have no alembic_version table — reported as 'not-applied'.
     """
     try:
         inspector = inspect(engine)

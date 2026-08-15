@@ -105,7 +105,8 @@ class TestHealthEndpoint:
         assert client.get(self.URL).json()["database"] == "ok"
 
     def test_migration_checks_not_applied_on_memory_db(self, client: TestClient):
-        """In-memory test DB uses create_all, so no alembic_version table.
+        """In-memory test DB bootstraps its schema directly, so no alembic_version
+        table exists.
 
         The migrations status must be reported as 'not-applied' (never crash).
         """
