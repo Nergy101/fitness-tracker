@@ -1,4 +1,4 @@
-import { HandFistIcon as HandFist, TrophyIcon as Trophy } from "@phosphor-icons/react";
+import { BarbellIcon as Barbell, HandFistIcon as HandFist, TrophyIcon as Trophy } from "@phosphor-icons/react";
 import { type BoxingPrsResponse, type PrsResponse } from "../../api";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, ACTIVITY_LABELS, type ActivityKind } from "../../activity";
 import { formatDuration } from "../../format";
@@ -59,7 +59,8 @@ export function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxi
   ] : [];
 
   const hasAny =
-    [...runRecords, ...walkRecords, ...workoutRecords, ...boxingRecords].some((r) => r.value != null);
+    [...runRecords, ...walkRecords, ...workoutRecords, ...boxingRecords].some((r) => r.value != null) ||
+    prs.best_1rm_per_exercise.length > 0;
   if (!hasAny) return null;
 
   return (
@@ -82,6 +83,34 @@ export function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxi
               <div key={r.label} className="bg-bg rounded-lg p-2">
                 <p className="text-fg/50">{r.label}</p>
                 <p className="text-sm font-bold text-fg">{r.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {prs.best_1rm_per_exercise.length > 0 && (
+        <div className="mb-3 last:mb-0">
+          <p className="flex items-center gap-1.5 text-xs text-fg/40 mb-1.5">
+            <Barbell size={14} className="shrink-0 text-violet-400" />
+            Strength (est. 1RM)
+          </p>
+          <div className="space-y-1.5">
+            {prs.best_1rm_per_exercise.map((e) => (
+              <div
+                key={e.exercise_id ?? e.exercise_name}
+                className="flex items-center justify-between gap-3 bg-bg rounded-lg px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-fg truncate">{e.exercise_name}</p>
+                  <p className="text-xs text-fg/40">
+                    {e.weight_kg != null && e.reps != null
+                      ? `${e.reps}×${e.weight_kg} kg · ${e.date}`
+                      : e.date}
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-fg shrink-0">
+                  {e.estimated_1rm_kg} kg <span className="font-normal text-fg/40">est.</span>
+                </p>
               </div>
             ))}
           </div>

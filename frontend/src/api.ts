@@ -323,6 +323,25 @@ export interface PrsResponse {
   // Overall
   longest_streak_days: number;
   streak_days_30d: number;
+  // Strength (per-exercise estimated one-rep max)
+  best_1rm_per_exercise: {
+    exercise_id: number | null;
+    exercise_name: string;
+    estimated_1rm_kg: number;
+    weight_kg: number | null;
+    reps: number | null;
+    date: string;
+  }[];
+}
+
+export interface VolumePoint {
+  date: string;
+  exercise_id: number | null;
+  exercise_name: string;
+  total_kg: number;
+  sets: number;
+  avg_weight: number | null;
+  max_weight: number | null;
 }
 
 export interface WeeklyActivityStat {
@@ -807,11 +826,68 @@ export async function fetchJSONPage<T>(
   return { items, total, limit, offset, hasMore: offset + items.length < total };
 }
 
+// ─── Exercise list cache ───────────────────────────────────────────────
+// The exercise catalog is near-static seeded data, so we serve it from
+// localStorage to make startup instant and work offline, then refresh in the
+// background once the cache is stale (TTL). Search queries always hit the API.
+const EXERCISES_CACHE_KEY = "fitness_exercises_cache_v1";
+const EXERCISES_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+interface ExerciseCache {
+  version: number;
+  cachedAt: number;
+  exercises: Exercise[];
+}
+
+function readExerciseCache(): ExerciseCache | null {
+  try {
+    const raw = localStorage.getItem(EXERCISES_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ExerciseCache;
+    if (!parsed || !Array.isArray(parsed.exercises)) return null;
+    return parsed;
+  } catch {
+    return null; // missing or corrupted — fall back to the API
+  }
+}
+
+function writeExerciseCache(exercises: Exercise[]): void {
+  try {
+    localStorage.setItem(
+      EXERCISES_CACHE_KEY,
+      JSON.stringify({ version: 1, cachedAt: Date.now(), exercises }),
+    );
+  } catch {
+    // storage full / unavailable — ignore
+  }
+}
+
+function fetchExercisesFresh(): Promise<Exercise[]> {
+  return fetchJSON<Exercise[]>("/api/v1/exercises").then((exercises) => {
+    writeExerciseCache(exercises);
+    return exercises;
+  });
+}
+
 export const api = {
   // Exercises
   getExercises: (search?: string) => {
-    const params = search ? `?search=${encodeURIComponent(search)}` : "";
-    return fetchJSON<Exercise[]>(`/api/v1/exercises${params}`);
+    if (search) {
+      const params = `?search=${encodeURIComponent(search)}`;
+      return fetchJSON<Exercise[]>(`/api/v1/exercises${params}`);
+    }
+    const cached = readExerciseCache();
+    if (cached) {
+      const stale = Date.now() - cached.cachedAt >= EXERCISES_CACHE_TTL_MS;
+      if (stale) {
+        // Serve cached immediately; refresh in the background so the next
+        // load sees any newly-seeded exercises.
+        fetchExercisesFresh().catch(() => {});
+      }
+      return Promise.resolve(cached.exercises);
+    }
+    // No cache yet (first load, or it was cleared) — fetch and populate it.
+    return fetchExercisesFresh().catch(() => [] as Exercise[]);
   },
   getExercise: (id: number) => fetchJSON<Exercise>(`/api/v1/exercises/${id}`),
   createExercise: (data: ExerciseInput) =>
@@ -980,6 +1056,11 @@ export const api = {
     fetchJSON<StatsOverviewResponse>("/api/v1/stats/overview"),
   getDailyActivity: (days = 120) =>
     fetchJSON<DailyActivityResponse>(`/api/v1/stats/daily-activity?days=${days}`),
+  getVolume: (exerciseId?: number, days = 30) => {
+    const params = new URLSearchParams({ days: String(days) });
+    if (exerciseId != null) params.set("exercise_id", String(exerciseId));
+    return fetchJSON<VolumePoint[]>(`/api/v1/stats/volume?${params.toString()}`);
+  },
 
 
   // Apple Health insights (imported via /api/v1/import/data)
@@ -1048,6 +1129,8 @@ export const api = {
     fetchJSON<void>(`/api/v1/cycling/${id}`, { method: "DELETE" }),
   getCyclingStats: () =>
     fetchJSON<CyclingStatsResponse>("/api/v1/cycling/stats"),
+  getCyclingTrends: (days = 120) =>
+    fetchJSON<DailyActivityResponse>(`/api/v1/cycling/stats/trends?days=${days}`),
 
   // ─── Injuries ────────────────────────────────────────
 

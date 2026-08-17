@@ -289,15 +289,18 @@ interface BandChartProps {
   points: BandPt[];
   color?: string;
   xLabels?: [string, string, string];
+  /** Dashed category reference lines (e.g. HR zone thresholds). */
+  references?: { value: number; label: string }[];
 }
 
-export function BandChart({ points, color = ACCENT, xLabels }: BandChartProps) {
+export function BandChart({ points, color = ACCENT, xLabels, references }: BandChartProps) {
   const n = points.length;
   if (n < 2) return null;
 
+  const refVals = (references ?? []).map((r) => r.value);
   const allVals = points.flatMap((p) => [p.min, p.max, p.avg]);
-  const lo = Math.min(...allVals);
-  const hi = Math.max(...allVals);
+  const lo = Math.min(...allVals, ...refVals);
+  const hi = Math.max(...allVals, ...refVals);
   const pad = hi === lo ? 2 : (hi - lo) * 0.1;
   const yLo = lo - pad;
   const yHi = hi + pad;
@@ -316,6 +319,14 @@ export function BandChart({ points, color = ACCENT, xLabels }: BandChartProps) {
   return (
     <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
       <YGrid ticks={niceTicks(yLo, yHi)} yOf={yOf} />
+      {(references ?? []).map((r) => (
+        <g key={r.value}>
+          <line x1={GL} y1={yOf(r.value)} x2={W} y2={yOf(r.value)} stroke={color} strokeWidth="1" strokeDasharray="4 3" opacity="0.35" />
+          <text x={W - 2} y={yOf(r.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8">
+            {r.label}
+          </text>
+        </g>
+      ))}
       <polygon points={`${topEdge} ${botEdge}`} fill={color} opacity="0.15" />
       <polyline
         points={avgLine}

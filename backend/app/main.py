@@ -9,6 +9,7 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from app.config import CORS_ORIGINS, DATABASE_URL
 from app.database import run_migrations
+from app.health_check import run_health_checks
 from app.logging_config import configure_logging
 from app.routers import exercises, workouts, sessions, health, runs, auth, stats, notifications, backup, health_import, boxing, cycling
 
@@ -83,4 +84,4 @@ app.include_router(cycling.router)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return run_health_checks(app.version)

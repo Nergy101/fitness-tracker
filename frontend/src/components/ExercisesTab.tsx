@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { SmileySadIcon as SmileySad } from "@phosphor-icons/react";
 import {
   api,
+  OfflineError,
   type Category,
   type Exercise,
   type ExerciseInput,
@@ -42,8 +43,12 @@ export default function ExercisesTab() {
     try {
       setExercises(await api.getExercises());
       setError(null);
-    } catch {
-      setError("Failed to load exercises");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        setError("Exercises unavailable while offline.");
+      } else {
+        setError("Failed to load exercises");
+      }
     } finally {
       setLoading(false);
     }

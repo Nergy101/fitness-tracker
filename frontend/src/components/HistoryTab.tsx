@@ -3,8 +3,10 @@ import {
   ArrowLeftIcon as ArrowLeft,
   ClockCounterClockwiseIcon as ClockCounterClockwise,
   SmileySadIcon as SmileySad,
+  XIcon as X,
 } from "@phosphor-icons/react";
-import { api, type WorkoutSession } from "../api";
+import { api, type WorkoutSession, type WorkoutTemplate } from "../api";
+import { formatDuration } from "../format";
 import CalendarView from "./CalendarView";
 import HistorySkeleton from "./skeletons/HistorySkeleton";
 import DateRangeFilter from "./history/DateRangeFilter";
@@ -19,13 +21,17 @@ import { rangeStart, type RangeKey } from "./history/utils";
 
 interface HistoryTabProps {
   refreshKey: number;
+  onStartWorkout: (template: WorkoutTemplate) => void;
 }
 
-export default function HistoryTab({ refreshKey }: HistoryTabProps) {
+export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabProps) {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<WorkoutSession | null>(null);
+  const [search, setSearch] = useState("");
+  const [grouped, setGrouped] = useState(false);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [range, setRange] = useState<RangeKey>(() => {
     const stored = localStorage.getItem("history-range");
     return (stored as RangeKey) ?? "7d";
@@ -66,6 +72,34 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
     return sessions.filter((s) => new Date(s.started_at).getTime() >= start);
   }, [sessions, range, view]);
 
+  // Case-insensitive filter by exercise name (matches any exercise in a session).
+  const searchedSessions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rangeSessions;
+    return rangeSessions.filter((s) =>
+      s.exercises.some((e) => e.exercise_name.toLowerCase().includes(q)),
+    );
+  }, [rangeSessions, search]);
+
+  // Sessions grouped by template name, with per-group rollups (count, total
+  // duration, total kcal), most-frequent template first.
+  const groups = useMemo(() => {
+    const map = new Map<string, WorkoutSession[]>();
+    for (const s of searchedSessions) {
+      const key = s.template_name || "Untitled";
+      map.set(key, [...(map.get(key) ?? []), s]);
+    }
+    return [...map.entries()]
+      .map(([name, list]) => ({
+        name,
+        count: list.length,
+        totalDuration: list.reduce((a, s) => a + (s.total_duration_seconds || 0), 0),
+        totalKcal: Math.round(list.reduce((a, s) => a + (s.total_kcal_estimated || 0), 0)),
+        sessions: list,
+      }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }, [searchedSessions]);
+
   function updateSession(updated: WorkoutSession) {
     setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   }
@@ -105,6 +139,7 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
     <SessionDetail
       session={detail}
       onClose={() => setDetail(null)}
+      onStartWorkout={onStartWorkout}
       onUpdate={(updated) => {
         setDetail(updated);
         updateSession(updated);
@@ -172,13 +207,87 @@ export default function HistoryTab({ refreshKey }: HistoryTabProps) {
       )}
 
       {/* Done workouts in range */}
-      <SessionList
-        sessions={rangeSessions}
-        onSelect={setDetail}
-        onEditDate={updateSession}
-        onDelete={handleDelete}
-        emptyLabel="No workouts in this range."
-      />
+      <div className="relative mb-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by exercise..."
+          className="w-full bg-surface border border-fg/10 rounded-xl pl-4 pr-9 py-2.5 text-sm text-fg outline-none focus:border-accent/50 placeholder:text-fg/20"
+          aria-label="Search sessions by exercise"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch("")}
+            aria-label="Clear search"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/40 hover:text-fg/70"
+          >
+            <X size={16} weight="bold" />
+          </button>
+        )}
+      </div>
+      {search.trim() && (
+        <p className="text-xs text-fg/40 mb-2">
+          {searchedSessions.length} session{searchedSessions.length !== 1 ? "s" : ""} with{" "}
+          &ldquo;{search.trim()}&rdquo;
+        </p>
+      )}
+
+      {searchedSessions.length > 0 && (
+        <button
+          onClick={() => {
+            setGrouped((g) => !g);
+            setExpandedGroup(null);
+          }}
+          className="mb-2 text-xs text-fg/50 hover:text-fg transition-colors"
+        >
+          {grouped ? "Show flat list" : "Group by template"}
+        </button>
+      )}
+
+      {grouped ? (
+        <div className="space-y-2">
+          {groups.map((g) => {
+            const open = expandedGroup === g.name;
+            return (
+              <div key={g.name} className="bg-surface rounded-xl border border-fg/10 overflow-hidden">
+                <button
+                  onClick={() => setExpandedGroup(open ? null : g.name)}
+                  className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
+                  aria-expanded={open}
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-fg truncate">{g.name}</p>
+                    <p className="text-xs text-fg/40">
+                      {g.count} session{g.count !== 1 ? "s" : ""} · {formatDuration(g.totalDuration)} ·{" "}
+                      {g.totalKcal} kcal
+                    </p>
+                  </div>
+                  <span className="text-fg/40 shrink-0">{open ? "−" : "+"}</span>
+                </button>
+                {open && (
+                  <div className="border-t border-fg/10 p-2">
+                    <SessionList
+                      sessions={g.sessions}
+                      onSelect={setDetail}
+                      onEditDate={updateSession}
+                      onDelete={handleDelete}
+                      emptyLabel="No sessions"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <SessionList
+          sessions={searchedSessions}
+          onSelect={setDetail}
+          onEditDate={updateSession}
+          onDelete={handleDelete}
+          emptyLabel="No workouts match that search."
+        />
+      )}
 
       {/* View all → all-time */}
       <button

@@ -5,6 +5,7 @@ import {
 } from "@phosphor-icons/react";
 import {
   api,
+  OfflineError,
   type SessionExerciseInput,
   type WorkoutSession,
   type WorkoutSessionInput,
@@ -101,8 +102,14 @@ export default function ImportExport({
         await api.createSession(p);
       }
       onImported(await api.getSessions());
-    } catch {
-      onError("Could not import that file.");
+    } catch (e) {
+      if (e instanceof OfflineError) {
+        // The api layer queues each createSession call, so the import is not
+        // lost — it completes when the user comes back online.
+        onError("Import queued for sync — it will complete when you're back online.");
+      } else {
+        onError("Could not import that file.");
+      }
     } finally {
       setImporting(false);
     }

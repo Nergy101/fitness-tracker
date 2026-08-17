@@ -422,3 +422,54 @@ class TestPrsStreak30d:
             f"90-day-old activity must not count in the 30-day window, "
             f"got {data['streak_days_30d']}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Estimated one-rep max per exercise (Epley, Brzycki fallback)
+# ---------------------------------------------------------------------------
+
+
+class TestEstimated1Rm:
+    LOGS_TPL = SESSIONS_URL + "/{sid}/exercises/{seid}/logs"
+
+    def _session_with_squats(self, client, headers):
+        resp = client.post(SESSIONS_URL, json={
+            "template_name": "Leg Day",
+            "exercises": [{
+                "exercise_name": "Squats", "duration_seconds": 30,
+                "kcal_burned": 5.0, "order_index": 0, "completed": True,
+            }],
+        }, headers=headers)
+        assert resp.status_code == 201, resp.text
+        sess = resp.json()
+        se = sess["exercises"][0]
+        return sess["id"], se["id"]
+
+    def test_picks_the_strongest_epley_set_per_exercise(self, client: TestClient, auth_headers: dict):
+        sid, seid = self._session_with_squats(client, auth_headers)
+        client.post(self.LOGS_TPL.format(sid=sid, seid=seid), json=[
+            {"weight_kg": 70, "reps": 5, "set_number": 1},
+            {"weight_kg": 80, "reps": 3, "set_number": 2},
+        ], headers=auth_headers)
+
+        data = _get_prs(client, auth_headers)
+        entries = data["best_1rm_per_exercise"]
+        assert len(entries) == 1
+        e = entries[0]
+        assert e["exercise_name"] == "Squats"
+        # 3x80 → 80*(1+3/30)=88.0 beats 5x70 → 70*(1+5/30)≈81.7.
+        assert e["estimated_1rm_kg"] == 88.0
+        assert e["weight_kg"] == 80.0
+        assert e["reps"] == 3
+        assert e["date"]  # non-empty date string
+
+    def test_uses_brzycki_for_reps_over_10(self, client: TestClient, auth_headers: dict):
+        sid, seid = self._session_with_squats(client, auth_headers)
+        client.post(self.LOGS_TPL.format(sid=sid, seid=seid), json=[
+            {"weight_kg": 60, "reps": 12, "set_number": 1},
+        ], headers=auth_headers)
+
+        data = _get_prs(client, auth_headers)
+        e = data["best_1rm_per_exercise"][0]
+        # Epley would say 60*(1+12/30)=84.0; Brzycki = 60*36/(37-12)=86.4.
+        assert e["estimated_1rm_kg"] == 86.4

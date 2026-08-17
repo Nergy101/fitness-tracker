@@ -38,6 +38,24 @@ def _db_url(db_path) -> str:
     return f"sqlite:///{db_path}"
 
 
+def _drop_post_baseline_indexes(engine) -> None:
+    """create_all() builds the CURRENT model schema, which already carries the
+    indexes a post-baseline migration adds again (NER-299). Drop them on the kept
+    pre-baseline tables so adoption can recreate them — exactly like the
+    post-baseline *tables* are dropped in these tests. (cycling_entries and
+    boxing_entries are dropped whole here, so their date indexes vanish with them.)"""
+    with engine.connect() as conn:
+        for name in (
+            "ix_workout_sessions_started_at",
+            "ix_workout_sessions_template_name",
+            "ix_session_exercises_session_id",
+            "ix_weight_entries_date",
+            "ix_run_entries_date",
+        ):
+            conn.execute(text(f"DROP INDEX IF EXISTS {name}"))
+        conn.commit()
+
+
 def _alembic_head() -> str:
     """Current Alembic head revision, derived by parsing the migration files.
     (Importing `alembic` in-process fails here: the local backend/alembic/
@@ -160,6 +178,7 @@ class TestRunMigrations:
             BoxingEntry.__table__.drop(bind=setup_engine)
             CyclingEntry.__table__.drop(bind=setup_engine)
             InjuryMarker.__table__.drop(bind=setup_engine)
+            _drop_post_baseline_indexes(setup_engine)
             with setup_engine.connect() as conn:
                 conn.execute(
                     text(
@@ -215,6 +234,7 @@ class TestRunMigrations:
             HealthWorkout.__table__.drop(bind=setup_engine)
             BoxingEntry.__table__.drop(bind=setup_engine)
             CyclingEntry.__table__.drop(bind=setup_engine)
+            _drop_post_baseline_indexes(setup_engine)
             with setup_engine.connect() as conn:
                 # alembic_version with Alembic's real DDL but zero rows.
                 conn.execute(
@@ -532,7 +552,7 @@ class TestCyclingKcalRecalibration:
             self.RECALIBRATED_KCAL,
         ), "migration left the pre-recalibration estimate in place"
 
-        down = _alembic(db_file, "downgrade", "-1")
+        down = _alembic(db_file, "downgrade", self.PARENT)
         assert down.returncode == 0, f"downgrade failed:\n{down.stdout}{down.stderr}"
         assert self._stored_kcal(url) == (self.LEGACY_KCAL, self.LEGACY_KCAL), (
             "downgrade must restore the flat-factor estimate"

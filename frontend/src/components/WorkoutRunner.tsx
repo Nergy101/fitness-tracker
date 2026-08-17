@@ -3,9 +3,11 @@ import { api, type Exercise, type ExerciseLog, type WorkoutTemplate } from "../a
 import { soundStart, soundRest, soundFinish, speak } from "../sound";
 import {
   ArrowsLeftRightIcon as ArrowsLeftRight,
+  ArrowCounterClockwiseIcon as ArrowCounterClockwise,
   PauseCircleIcon as PauseCircle,
   PlayCircleIcon as PlayCircle,
   SkipForwardIcon as SkipForward,
+  TrophyIcon as Trophy,
   XIcon as X,
 } from "@phosphor-icons/react";
 import ExerciseImage from "./ExerciseImage";
@@ -24,6 +26,12 @@ const RING = 264;
 
 function kcalFor(durationSeconds: number, kcalPerMin: number): number {
   return (durationSeconds / 60) * kcalPerMin;
+}
+
+// exerciseLogs keys are `${round}-${index}`; split into the position they map to.
+function parseLogKey(key: string): { round: number; index: number } {
+  const [round, index] = key.split("-").map(Number);
+  return { round, index };
 }
 
 interface WorkoutRunnerProps {
@@ -78,6 +86,7 @@ export default function WorkoutRunner({
   const pauseStartRef = useRef(0);
   const pausedRef = useRef(false);
   const [paused, setPaused] = useState(false);
+  const [confirmStop, setConfirmStop] = useState(false);
 
   function doPause() {
     pausedRef.current = true;
@@ -171,6 +180,37 @@ export default function WorkoutRunner({
   // Keep the screen awake for the whole session; released when finished or on unmount.
   useWakeLock(phase !== "finished");
 
+  // Keyboard shortcuts (desktop): Space/Enter advance the current phase,
+  // Escape opens the stop confirmation. Ignored while typing in an input or
+  // when the swap picker / confirm dialog is open.
+  useEffect(() => {
+    const isEditable = (target: EventTarget | null) => {
+      const node = target as HTMLElement | null;
+      if (!node) return false;
+      const tag = node.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || node.isContentEditable;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showSwapPicker) {
+          closeSwap();
+        } else if (confirmStop) {
+          setConfirmStop(false);
+        } else {
+          setConfirmStop(true);
+        }
+        return;
+      }
+      if (confirmStop || phase === "finished") return;
+      if ((e.key === " " || e.key === "Enter") && !isEditable(e.target)) {
+        e.preventDefault();
+        advanceRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [phase, confirmStop, showSwapPicker]);
+
   const workDuration = useMemo(
     () =>
       exercises.reduce((sum, e) => sum + (e.duration_seconds || 30), 0) *
@@ -209,6 +249,12 @@ export default function WorkoutRunner({
   };
 
   const swapKeyRef = useRef(0);
+
+  // Used to navigate the runner back to a previously-logged set on "Undo last
+  // set" — mirrors swapKeyRef's re-arm pattern so the timer engine restarts at
+  // the target exercise instead of continuing forward.
+  const backToRef = useRef<{ round: number; index: number } | null>(null);
+  const backTickRef = useRef(0);
 
   useEffect(() => {
     // Helper: compute elapsed seconds accounting for pause offsets
@@ -476,6 +522,17 @@ export default function WorkoutRunner({
     if (totalExercises === 0) {
       finish();
     } else {
+      // "Undo last set": jump the engine back to a previously-logged set's
+      // exercise (regardless of current phase) so the user can re-log it.
+      if (backTickRef.current > 0) {
+        backTickRef.current = 0;
+        const target = backToRef.current;
+        backToRef.current = null;
+        if (target) {
+          startExercise(target.round, target.index);
+          return;
+        }
+      }
       const r = roundRef.current;
       const i = indexRef.current;
       const p = phaseRef.current;
@@ -498,7 +555,7 @@ export default function WorkoutRunner({
       if (emomInterval) clearInterval(emomInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/refs -- swapKeyRef.current is bumped before a forced re-render; reading it here re-arms the timer engine only on swap
-  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, isAmrap, isEmom, timeCap, warmupSeconds, cooldownSeconds, swapKeyRef.current]);
+  }, [exercises, totalExercises, rounds, restBetween, totalDuration, totalKcal, workout.id, workout.name, isAmrap, isEmom, timeCap, warmupSeconds, cooldownSeconds, swapKeyRef.current, backTickRef.current]);
 
   const currentName = exercises[currentIndex]?.exercise?.name ?? "Exercise";
   const currentImage = exercises[currentIndex]?.exercise?.image_url ?? null;
@@ -574,6 +631,71 @@ export default function WorkoutRunner({
       });
     }
     advanceRef.current();
+  }
+
+  // NER-200: Keys of every set actually logged (weight or reps filled in), most
+  // recent first (highest round, then highest index). Drives the "Undo last set" button.
+  const loggedSetKeys = useMemo(
+    () =>
+      Object.entries(exerciseLogs)
+        .filter(([, v]) => v.weightKg || v.reps)
+        .map(([key]) => key)
+        .sort((a, b) => {
+          const A = parseLogKey(a);
+          const B = parseLogKey(b);
+          return B.round - A.round || B.index - A.index;
+        }),
+    [exerciseLogs],
+  );
+
+  const setCount = loggedSetKeys.length;
+
+  // A "personal best" this session: any logged weight beats the exercise's
+  // best previously-logged weight (first time ever logging it counts too).
+  const hasPr = useMemo(
+    () =>
+      Object.entries(exerciseLogs).some(([key, v]) => {
+        if (!v.weightKg) return false;
+        const idx = parseInt(key.split("-")[1], 10);
+        const exId = exercises[idx]?.exercise?.id ?? exercises[idx]?.exercise_id;
+        if (exId == null) return false;
+        const past = pastLogs[exId];
+        if (!past || past.length === 0) return true;
+        const pastMax = Math.max(...past.map((p) => p.weight_kg ?? 0));
+        return parseFloat(v.weightKg) > pastMax;
+      }),
+    [exerciseLogs, exercises, pastLogs],
+  );
+
+  // Remove the most recently logged set, then return the runner to that
+  // exercise so the user can re-log it correctly.
+  function undoLastSet() {
+    const mostRecent = loggedSetKeys[0];
+    if (!mostRecent) return;
+    const { round, index } = parseLogKey(mostRecent);
+    // Clear the remembered last-set for that exercise too, so NER-210's
+    // auto-commit doesn't immediately re-populate the field — the user should
+    // re-log the set from a blank slate.
+    const removedExerciseId =
+      exercises[index]?.exercise?.id ?? exercises[index]?.exercise_id;
+    setExerciseLogs((prev) => {
+      const next = { ...prev };
+      delete next[mostRecent];
+      return next;
+    });
+    if (removedExerciseId != null) {
+      setLastSetByExercise((prev) => {
+        const next = { ...prev };
+        delete next[removedExerciseId];
+        return next;
+      });
+    }
+    if (roundRef.current !== round || indexRef.current !== index) {
+      backToRef.current = { round, index };
+      backTickRef.current += 1;
+      setCurrentRound(round);
+      setCurrentIndex(index);
+    }
   }
   const displayTime = (() => {
     const s = Math.ceil(timer);
@@ -1067,6 +1189,16 @@ export default function WorkoutRunner({
             >
               <SkipForward size={16} weight="fill" /> Skip
             </button>
+            {loggedSetKeys.length > 0 && (
+              <button
+                onClick={undoLastSet}
+                className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+                aria-label="Undo last set"
+                title="Undo last set"
+              >
+                <ArrowCounterClockwise size={16} weight="fill" /> Undo last set
+              </button>
+            )}
             <button
               onClick={() => (paused ? doResume() : doPause())}
               className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
@@ -1079,7 +1211,8 @@ export default function WorkoutRunner({
       )}
 
       {phase === "finished" && (
-        <div className="flex flex-col items-center justify-center h-full px-6 text-center">
+        <div className="flex flex-col items-center justify-center h-full px-6 text-center celebrate-in">
+          <style>{`@keyframes celebrate-in { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } } .celebrate-in { animation: celebrate-in 350ms cubic-bezier(0.34,1.56,0.64,1); }`}</style>
           <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mb-6">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5">
               <path d="M20 6 9 17l-5-5" />
@@ -1088,23 +1221,34 @@ export default function WorkoutRunner({
           <h2 className="text-2xl font-bold text-fg mb-2">
             {isAmrap ? "Time!" : "Workout Complete!"}
           </h2>
-          <p className="text-fg/50 text-sm mb-6">{workout.name || "Workout"}</p>
+          <p className="text-fg/50 text-sm mb-4">{workout.name || "Workout"}</p>
 
-          <div className="grid grid-cols-3 gap-4 mb-8 w-full max-w-xs">
+          {hasPr && (
+            <div className="flex items-center gap-1.5 text-yellow-400 text-sm font-semibold mb-4">
+              <Trophy size={16} weight="fill" />
+              New personal best!
+            </div>
+          )}
+
+          <div className="grid grid-cols-4 gap-3 mb-8 w-full max-w-md">
             <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-fg">
+              <p className="text-xl font-bold text-fg">
                 {isAmrap ? formatDuration(timeCap) : `${Math.floor(totalDuration / 60)}m`}
               </p>
               <p className="text-xs text-fg/40">Duration</p>
             </div>
             <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-fg">
+              <p className="text-xl font-bold text-fg">
                 {isAmrap ? amrapRounds : totalExercises}
               </p>
               <p className="text-xs text-fg/40">{isAmrap ? "Rounds" : "Exercises"}</p>
             </div>
             <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-accent">{Math.round(totalKcal)}</p>
+              <p className="text-xl font-bold text-fg">{setCount}</p>
+              <p className="text-xs text-fg/40">Sets</p>
+            </div>
+            <div className="bg-surface rounded-xl p-3">
+              <p className="text-xl font-bold text-accent">{Math.round(totalKcal)}</p>
               <p className="text-xs text-fg/40">Kcal</p>
             </div>
           </div>
@@ -1167,6 +1311,29 @@ export default function WorkoutRunner({
       <div className="absolute top-6 right-4">
         <TopControls />
       </div>
+
+      {confirmStop && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div className="w-full max-w-xs bg-surface rounded-2xl border border-fg/10 p-6 text-center">
+            <h3 className="text-base font-semibold text-fg mb-2">Stop workout?</h3>
+            <p className="text-sm text-fg/50 mb-5">Progress on this session will be discarded.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmStop(false)}
+                className="flex-1 text-sm text-fg/60 hover:text-fg border border-fg/15 rounded-xl py-2.5 transition-colors"
+              >
+                Keep going
+              </button>
+              <button
+                onClick={onCancel}
+                className="flex-1 text-sm text-red-300 hover:text-red-200 border border-red-400/30 hover:border-red-400/50 rounded-xl py-2.5 transition-colors"
+              >
+                Stop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

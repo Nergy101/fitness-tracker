@@ -31,9 +31,20 @@ const listeners = new Set<() => void>();
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let installed = false;
 
-function isStandalone(): boolean {
+/**
+ * Running as an installed app rather than in a browser tab.
+ *
+ * Two probes because neither alone covers iOS: `navigator.standalone` is the
+ * only signal old iOS home-screen web apps expose, and the `display-mode`
+ * query is the standard one every other engine (and modern WebKit) answers.
+ * Exported because the layout keys on it too — see `.bottom-nav` in index.css.
+ */
+export function isStandalone(): boolean {
   if (typeof window === "undefined") return false;
   try {
+    if ((navigator as Navigator & { standalone?: boolean }).standalone === true) {
+      return true;
+    }
     return (
       typeof window.matchMedia === "function" &&
       window.matchMedia("(display-mode: standalone)").matches

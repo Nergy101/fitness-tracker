@@ -134,10 +134,10 @@ export default function App() {
         .tab-slide-right { animation: slide-in-right 200ms ease-out; }
         .tab-slide-left  { animation: slide-in-left  200ms ease-out; }
       `}</style>
-      <div className="app-shell flex flex-col h-screen pt-[env(safe-area-inset-top)]">
+      <div className="app-shell flex flex-col h-full overflow-hidden pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
         {needRefresh && <UpdateBanner onUpdate={handleSWUpdate} />}
-        <header className="px-4 py-3 border-b border-fg/10 shrink-0">
+        <header className="flex h-14 shrink-0 items-center border-b border-fg/10 px-4">
           <div className="mx-auto w-full max-w-2xl flex items-center justify-between">
           <h1 className="text-lg font-bold">{tabTitle}</h1>
           <div className="flex items-center gap-3">
@@ -162,7 +162,7 @@ export default function App() {
         </header>
 
         <main
-          className="flex-1 overflow-y-auto px-4 py-4 touch-pan-y"
+          className="min-h-0 flex-1 overflow-y-auto px-4 py-4 touch-pan-y"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -186,7 +186,7 @@ export default function App() {
           )}
           {currentTab === "exercises" && <ExercisesTab />}
           {currentTab === "history" && (
-            <HistoryTab refreshKey={historyRefreshKey} />
+            <HistoryTab refreshKey={historyRefreshKey} onStartWorkout={setRunningWorkout} />
           )}
           {currentTab === "health" && <HealthAndStatsTab key={healthRefreshKey} />}
           {currentTab === "stats" && <StatsTab />}
@@ -194,8 +194,10 @@ export default function App() {
           </div>
         </main>
 
-        <nav className="bottom-nav border-t border-fg/10 bg-surface px-2 py-2 pb-[calc(env(safe-area-inset-bottom,0px)+4px)] shrink-0">
-          <div className="mx-auto w-full max-w-2xl flex items-center justify-around">
+        {/* Bottom padding is owned by `.bottom-nav` in index.css, not a Tailwind
+            utility — it has to differ between browser and installed app. */}
+        <nav className="bottom-nav shrink-0 border-t border-fg/10 bg-surface">
+          <div className="mx-auto flex h-12 w-full max-w-2xl items-center justify-around">
           {TABS.map((tab) => {
             const idx = TAB_IDS.indexOf(tab.id);
             const curIdx = TAB_IDS.indexOf(currentTab);
@@ -205,7 +207,7 @@ export default function App() {
               key={tab.id}
               onClick={() => dir ? navigateTab(dir, tab.id) : setCurrentTab(tab.id)}
               aria-label={tab.label}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-full transition-colors ${
+              className={`flex h-10 w-14 items-center justify-center rounded-full transition-colors ${
                 currentTab === tab.id
                   ? "text-accent bg-accent/15"
                   : "text-fg/40"

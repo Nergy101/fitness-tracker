@@ -37,7 +37,12 @@ class TestAuthMiddleware:
         """Health check should be public."""
         resp = client.get(self.PUBLIC_HEALTH)
         assert resp.status_code == 200
-        assert resp.json() == {"status": "ok"}
+        data = resp.json()
+        # The health payload is additive — status is present and public (no auth).
+        assert data["status"] in ("ok", "degraded")
+        assert "version" in data
+        assert "database" in data
+        assert "migrations" in data
 
     def test_auth_login_public(self, client: TestClient):
         """Auth endpoint should be public."""

@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 
 from typing import Optional
+from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.orm import Session
@@ -11,7 +12,7 @@ from app.energy import cycling_kcal
 from app.models.models import CyclingEntry, WorkoutSession, SessionExercise, WeightEntry
 from app.schemas import (
     CyclingEntryCreate, CyclingEntryResponse, CyclingStatsResponse, MonthlyCyclingStats,
-    CyclingPrsResponse,
+    CyclingPrsResponse, DailyActivityPoint, DailyActivityResponse,
 )
 
 router = APIRouter(prefix="/api/v1/cycling", tags=["cycling"])
@@ -210,3 +211,29 @@ def cycling_prs(db: Session = Depends(get_db)):
         most_kcal_ride=round(most_kcal, 1),
         total_hours_all_time=total_hours,
     )
+
+
+@router.get("/stats/trends", response_model=DailyActivityResponse)
+def cycling_trends(days: int = 120, db: Session = Depends(get_db)):
+    """Daily cycling minutes + kcal for the most recent `days` window.
+
+    Kcal is the speed-based estimate (same `_calc_cycling_kcal` used when a
+    ride is logged), so the Health chart matches the History/PR numbers.
+    """
+    cutoff = date.today() - timedelta(days=max(days, 1))
+    entries = (
+        db.query(CyclingEntry)
+        .filter(CyclingEntry.date >= cutoff)
+        .order_by(CyclingEntry.date.asc())
+        .all()
+    )
+
+    per_day: dict[date, dict[str, float]] = defaultdict(lambda: {"minutes": 0.0, "kcal": 0.0})
+    for e in entries:
+        per_day[e.date]["minutes"] += e.duration_seconds / 60
+        per_day[e.date]["kcal"] += _calc_cycling_kcal(e.distance_km, e.duration_seconds, db, e.date)
+
+    return DailyActivityResponse(days=[
+        DailyActivityPoint(date=d.isoformat(), minutes=round(v["minutes"], 1), kcal=round(v["kcal"], 1))
+        for d, v in sorted(per_day.items())
+    ])

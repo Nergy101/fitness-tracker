@@ -354,6 +354,18 @@ class RunEntryResponse(BaseModel):
 # ─── PR / Stats Schemas ────────────────────────────────────
 
 
+class Exercise1Rm(BaseModel):
+    """Best estimated one-rep max for a single exercise, from the logged set
+    (weight × reps) that produced it via the Epley/Brzycki estimate."""
+
+    exercise_id: int | None = None
+    exercise_name: str = ""
+    estimated_1rm_kg: float = 0.0
+    weight_kg: float | None = None
+    reps: int | None = None
+    date: str = ""
+
+
 class PrsResponse(BaseModel):
     """Activity-level personal records, split by type (runs / walks /
     workouts / boxing / cycling) rather than per-exercise."""
@@ -385,6 +397,8 @@ class PrsResponse(BaseModel):
     # Overall
     longest_streak_days: int = 0
     streak_days_30d: int = 0
+    # Strength (per-exercise estimated one-rep max)
+    best_1rm_per_exercise: list[Exercise1Rm] = []
 
 
 class WeeklyActivityStats(BaseModel):
@@ -601,6 +615,18 @@ class DailyActivityPoint(BaseModel):
     date: str
     minutes: float
     kcal: float
+
+
+class VolumePoint(BaseModel):
+    """Total kg lifted (weight × reps) for one exercise on one session day."""
+
+    date: str
+    exercise_id: int | None = None
+    exercise_name: str = ""
+    total_kg: float = 0.0
+    sets: int = 0
+    avg_weight: float | None = None
+    max_weight: float | None = None
 
 
 # ─── Injury Schemas ──────────────────────────────────────────

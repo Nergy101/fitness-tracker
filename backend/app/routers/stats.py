@@ -1,13 +1,17 @@
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import WorkoutSession, RunEntry, BoxingEntry, CyclingEntry, WeightEntry, is_mirror_session
+from app.models.models import (
+    WorkoutSession, RunEntry, BoxingEntry, CyclingEntry, WeightEntry,
+    SessionExercise, ExerciseLog, is_mirror_session,
+)
 from app.schemas import (
     DailyActivityPoint, DailyActivityResponse, StatsOverviewResponse, WeeklyActivityStats,
+    VolumePoint,
 )
 
 router = APIRouter(prefix="/api/v1/stats", tags=["stats"])
@@ -244,3 +248,54 @@ def daily_activity(days: int = 120, db: Session = Depends(get_db)):
         DailyActivityPoint(date=d.isoformat(), minutes=round(v["minutes"], 1), kcal=round(v["kcal"], 1))
         for d, v in sorted(per_day.items())
     ])
+
+
+@router.get("/volume", response_model=list[VolumePoint])
+def volume(
+    exercise_id: int | None = None,
+    days: int = 30,
+    db: Session = Depends(get_db),
+):
+    """Total kg lifted (weight × reps) per exercise per session day, for the
+    most recent `days`. Optionally filtered to a single exercise. The frontend
+    aggregates these into a per-exercise volume trend and a weekly total."""
+    cutoff = date.today() - timedelta(days=max(days, 1))
+    q = (
+        db.query(ExerciseLog, SessionExercise, WorkoutSession)
+        .join(SessionExercise, ExerciseLog.session_exercise_id == SessionExercise.id)
+        .join(WorkoutSession, SessionExercise.session_id == WorkoutSession.id)
+        .filter(ExerciseLog.weight_kg.isnot(None), ExerciseLog.reps.isnot(None))
+        .filter(WorkoutSession.started_at >= datetime.combine(cutoff, datetime.min.time()))
+    )
+    if exercise_id is not None:
+        q = q.filter(SessionExercise.exercise_id == exercise_id)
+    rows = q.all()
+
+    per_day: dict[tuple[date, str], dict] = {}
+    for log, se, sess in rows:
+        d = _session_date(sess)
+        key = (d, str(se.exercise_id) if se.exercise_id is not None else (se.exercise_name or "unknown"))
+        bucket = per_day.setdefault(key, {
+            "exercise_id": se.exercise_id,
+            "exercise_name": se.exercise_name or "",
+            "total_kg": 0.0,
+            "sets": 0,
+            "weights": [],
+        })
+        bucket["total_kg"] += (log.weight_kg or 0.0) * (log.reps or 0)
+        bucket["sets"] += 1
+        bucket["weights"].append(log.weight_kg)
+
+    points: list[VolumePoint] = []
+    for (d, _), b in sorted(per_day.items()):
+        weights = b["weights"]
+        points.append(VolumePoint(
+            date=d.isoformat(),
+            exercise_id=b["exercise_id"],
+            exercise_name=b["exercise_name"],
+            total_kg=round(b["total_kg"], 1),
+            sets=b["sets"],
+            avg_weight=round(sum(weights) / len(weights), 1) if weights else None,
+            max_weight=max(weights) if weights else None,
+        ))
+    return points

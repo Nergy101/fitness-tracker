@@ -5,6 +5,11 @@ Checks:
   1. Every migration has both upgrade() and downgrade() defined
   2. No backend code uses drop_all() or create_all() for schema management
      (excludes database.py which has a guarded in-memory fallback)
+
+The destructive-pattern scan is AST-aware: it only flags actual calls to
+``create_all`` / ``drop_all`` (e.g. ``Base.metadata.create_all(...)`` or a bare
+``create_all(...)``), so docstrings, comments, and prose that merely *mention*
+these tokens are not treated as violations.
 """
 
 import ast
@@ -19,6 +24,23 @@ MIGRATIONS_DIR = BACKEND_DIR / "alembic" / "versions"
 # seed_fake_history.py) and the migration tests, which use create_all to
 # simulate legacy pre-Alembic databases.
 ALLOWED_FILES = {"database.py", "seed_fake_history.py", "test_migrations.py"}
+
+# Destructive/schema-management call names we reject outside ALLOWED_FILES.
+DESTRUCTIVE_CALLS = {"create_all", "drop_all"}
+
+
+def _called_function_name(call: ast.Call) -> str | None:
+    """Return the function name invoked by ``call``, or None if not applicable.
+
+    Handles both bare calls (``create_all(...)`` -> ``Name``) and attribute
+    calls (``Base.metadata.create_all(...)`` -> ``Attribute`` with ``attr``).
+    """
+    func = call.func
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return None
 
 
 def check_migration_reversibility() -> list[str]:
@@ -43,10 +65,20 @@ def check_migration_reversibility() -> list[str]:
     return errors
 
 
+def _find_destructive_calls(tree: ast.AST) -> list[int]:
+    """Return line numbers of real create_all/drop_all calls in ``tree``."""
+    lines = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            name = _called_function_name(node)
+            if name in DESTRUCTIVE_CALLS:
+                lines.append(node.lineno)
+    return sorted(lines)
+
+
 def check_no_destructive_patterns() -> list[str]:
-    """Scan backend code for drop_all() / create_all() calls."""
+    """Scan backend code for drop_all() / create_all() calls (AST-aware)."""
     errors = []
-    patterns = ["drop_all", "create_all"]
     skip_dirs = {"__pycache__", ".pytest_cache", "alembic", ".venv", "venv",
                  "site-packages", "node_modules"}
 
@@ -55,26 +87,19 @@ def check_no_destructive_patterns() -> list[str]:
             continue
         if py_file.name == "validate_migrations.py":
             continue
-
-        try:
-            content = py_file.read_text()
-        except Exception:
+        if py_file.name in ALLOWED_FILES:
             continue
 
-        for pattern in patterns:
-            if pattern not in content:
-                continue
+        try:
+            tree = ast.parse(py_file.read_text())
+        except (SyntaxError, OSError):
+            continue
 
-            if py_file.name in ALLOWED_FILES:
-                continue
-
-            for i, line in enumerate(content.splitlines(), 1):
-                if pattern in line and not line.strip().startswith("#"):
-                    errors.append(
-                        f"{py_file.relative_to(BACKEND_DIR)}:{i}: "
-                        f"found '{pattern}' — use Alembic migrations instead"
-                    )
-                    break  # one report per file per pattern
+        for lineno in _find_destructive_calls(tree):
+            errors.append(
+                f"{py_file.relative_to(BACKEND_DIR)}:{lineno}: "
+                f"found create_all()/drop_all() call — use Alembic migrations instead"
+            )
 
     return errors
 

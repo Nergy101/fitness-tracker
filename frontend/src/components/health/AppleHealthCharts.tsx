@@ -71,6 +71,15 @@ const MAX_LEGEND = 6;
 
 const SYNC_HINT = "More data needed for trend — keep syncing";
 
+// Heart-rate zone thresholds (bpm) shown as dashed guides on the daily
+// min–max band: <60 very low, 60–100 low, 100–140 medium, 140–180 high, >180 very high.
+const HR_RANGE_REFERENCES = [
+  { value: 60, label: "very low" },
+  { value: 100, label: "low" },
+  { value: 140, label: "medium" },
+  { value: 180, label: "high" },
+];
+
 function threeXLabels(pts: { date: string }[]): [string, string, string] {
   const n = pts.length;
   return [shortDate(pts[0].date), shortDate(pts[Math.floor(n / 2)].date), shortDate(pts[n - 1].date)];
@@ -249,7 +258,7 @@ export default function AppleHealthCharts({
           sub={`avg ${Math.round(hrLatest!)} bpm`}
         >
           {hrBandPts.length >= 2 ? (
-            <BandChart points={hrBandPts} color="#f472b6" xLabels={threeXLabels(hrBanded)} />
+            <BandChart points={hrBandPts} color="#f472b6" xLabels={threeXLabels(hrBanded)} references={HR_RANGE_REFERENCES} />
           ) : (
             <p className="text-[10px] text-fg/30 text-center py-2">{SYNC_HINT}</p>
           )}

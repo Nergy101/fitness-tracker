@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   BandaidsIcon as Bandaids,
+  CheckCircleIcon as CheckCircle,
   PlusCircleIcon as PlusCircle,
   XIcon as X,
   CaretUpIcon as CaretUp,
@@ -240,9 +241,9 @@ export default function InjurySection() {
               <button
                 onClick={() => resolveInjury(i.id)}
                 aria-label={`Mark ${i.body_part} as healed`}
-                className="text-[11px] text-fg/30 hover:text-green-400 shrink-0 ml-2 transition-colors"
+                className="shrink-0 ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-green-400 hover:text-green-300 border border-green-400/40 hover:border-green-400/70 hover:bg-green-400/10 rounded-full px-2.5 py-1 transition-colors"
               >
-                heal
+                <CheckCircle size={13} weight="bold" /> heal
               </button>
             </div>
           ))}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChartPieSliceIcon as ChartPieSlice,
   FireIcon as Fire,
@@ -22,6 +22,7 @@ import {
   type InjuryMarkerResponse,
   type RunEntryResponse,
   type StatsOverviewResponse,
+  type VolumePoint,
   type WeeklyActivityStat,
   type WeightEntryResponse,
   type WorkoutSession,
@@ -56,6 +57,24 @@ function formatHealthValue(metric: string, v: number): string {
   if (metric === "vo2_max" || metric === "sleep_analysis") return v.toFixed(1);
   return String(Math.round(v));
 }
+
+// Category reference lines (dashed y-axis guides) for imported health metrics.
+// Each line sits at a threshold between bands (very low / low / medium / high / very high).
+const HEALTH_REFERENCE_LINES: Record<string, { value: number; label: string }[]> = {
+  vo2_max: [
+    { value: 30, label: "very low" },
+    { value: 38, label: "low" },
+    { value: 47, label: "medium" },
+    { value: 55, label: "high" },
+  ],
+  resting_heart_rate: [
+    { value: 55, label: "very low" },
+    { value: 65, label: "low" },
+    { value: 80, label: "medium" },
+    { value: 90, label: "high" },
+  ],
+  step_count: [{ value: 10000, label: "10k goal" }],
+};
 
 /** Seconds-per-km as "m:ss" (e.g. 324 → "5:24"). */
 function formatPace(secondsPerKm: number): string {
@@ -220,6 +239,7 @@ function LineChart({
   color,
   formatValue,
   reference,
+  references,
   referenceColor,
   overlay,
   /** Red dot markers at specific indices — used for injury dates. */
@@ -230,6 +250,8 @@ function LineChart({
   color: string;
   formatValue: (v: number) => string;
   reference?: { value: number; label: string };
+  /** Extra dashed reference lines (e.g. category bands like "low"/"high"). */
+  references?: { value: number; label: string }[];
   referenceColor?: string;
   overlay?: number[];
   markerIndices?: Set<number>;
@@ -237,14 +259,12 @@ function LineChart({
 }) {
   if (points.length < 2) return null;
   const w = 300;
+  const allRefs = [...(reference ? [reference] : []), ...(references ?? [])];
+  const refVals = allRefs.map((r) => r.value);
   const values = points.map((p) => p.value);
-  let lo = Math.min(...values);
-  let hi = Math.max(...values);
-  if (reference) {
-    lo = Math.min(lo, reference.value);
-    hi = Math.max(hi, reference.value);
-  }
-  const trueMin = Math.min(...values, reference?.value ?? Infinity);
+  let lo = Math.min(...values, ...refVals);
+  let hi = Math.max(...values, ...refVals);
+  const trueMin = Math.min(...values, ...refVals);
   const pad = (hi - lo) * 0.12 || 1;
   lo = trueMin >= 0 ? Math.max(0, lo - pad) : lo - pad;
   hi += pad;
@@ -269,23 +289,23 @@ function LineChart({
           </g>
         );
       })}
-      {reference && (
-        <g>
+      {allRefs.map((r) => (
+        <g key={r.value}>
           <line
             x1={24}
-            y1={py(reference.value)}
+            y1={py(r.value)}
             x2={w}
-            y2={py(reference.value)}
+            y2={py(r.value)}
             stroke={referenceColor ?? color}
             strokeWidth="1"
             strokeDasharray="4 3"
             opacity={0.45}
           />
-          <text x={w} y={py(reference.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8" fill={referenceColor ?? undefined}>
-            {reference.label}
+          <text x={w} y={py(r.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8" fill={referenceColor ?? undefined}>
+            {r.label}
           </text>
         </g>
-      )}
+      ))}
       {overlay && overlay.length === points.length && (
         <polyline
           points={overlay.map((v, i) => `${px(i)},${py(v)}`).join(" ")}
@@ -427,6 +447,7 @@ function HealthTrendChart({ series, injuryDateSet }: { series: HealthSeries; inj
           formatValue={(v) => formatHealthValue(series.metric, v)}
           overlay={ROLLING_AVG_METRICS.has(series.metric) ? rollingAvg(values, 7) : undefined}
           reference={series.metric === "apple_exercise_time" ? { value: 30, label: "goal 30 min" } : undefined}
+          references={HEALTH_REFERENCE_LINES[series.metric]}
           markerIndices={markerIndices.size > 0 ? markerIndices : undefined}
         />
       )}
@@ -454,14 +475,40 @@ export default function StatsTab() {
   const [health, setHealth] = useState<HealthInsightsResponse | null>(null);
   const [activity, setActivity] = useState<DailyActivityPoint[]>([]);
   const [injuries, setInjuries] = useState<InjuryMarkerResponse[]>([]);
+  const [volume, setVolume] = useState<VolumePoint[]>([]);
+  const [volumeExercise, setVolumeExercise] = useState<number | null>(null);
 
   const [chartMode, setChartMode] = useState<"daily" | "weekly">("daily");
   const { locale } = useLocale();
 
+  // Volume: distinct exercises for the selector, weekly total kg buckets, and a
+  // per-session series for the selected exercise.
+  const volumeExercises = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const p of volume) {
+      if (p.exercise_id != null) map.set(p.exercise_id, p.exercise_name);
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [volume]);
+  const selectedVolume = useMemo(
+    () => (volumeExercise == null ? volume : volume.filter((p) => p.exercise_id === volumeExercise)),
+    [volume, volumeExercise],
+  );
+  const dailyVolume = useMemo(
+    () =>
+      [...selectedVolume]
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-30)
+        .map((p) => ({ label: formatWeekLabel(p.date, locale), kg: Math.round(p.total_kg) })),
+    [selectedVolume, locale],
+  );
+
   useEffect(() => {
     (async () => {
       try {
-        const [overview, runList, rideList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity, injuryList] = await Promise.all([
+        const [overview, runList, rideList, sessionList, wEntries, goalProgress, healthInsights, dailyActivity, injuryList, vol] = await Promise.all([
           api.getStatsOverview(),
           api.getRuns().catch(() => [] as RunEntryResponse[]),
           api.getCycling().catch(() => [] as CyclingEntryResponse[]),
@@ -471,6 +518,7 @@ export default function StatsTab() {
           api.getHealthInsights(120).catch(() => null),
           api.getDailyActivity(120).catch(() => null),
           api.getInjuries().catch(() => [] as InjuryMarkerResponse[]),
+          api.getVolume().catch(() => [] as VolumePoint[]),
         ]);
         setStats(overview);
         setRuns(runList);
@@ -481,6 +529,7 @@ export default function StatsTab() {
         setHealth(healthInsights);
         setActivity(dailyActivity?.days ?? []);
         setInjuries(injuryList);
+        setVolume(vol);
       } catch (e) {
         logger.error("Failed to load stats data", e);
         setError(true);
@@ -545,6 +594,70 @@ export default function StatsTab() {
           sub="last 4 weeks, by time"
         >
           <ActivityMixBar weeks={mixWeeks} />
+        </ChartCard>
+      )}
+
+      {/* Volume — total kg lifted */}
+      {volume.length > 0 && (
+        <ChartCard
+          icon={<TrendUp size={16} className="text-accent" />}
+          title="Volume (total kg)"
+          sub={volumeExercise == null ? "all exercises" : undefined}
+        >
+          <select
+            value={volumeExercise ?? ""}
+            onChange={(e) => setVolumeExercise(e.target.value ? Number(e.target.value) : null)}
+            className="w-full bg-surface border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg mb-3 outline-none focus:border-accent/50"
+            aria-label="Volume exercise"
+          >
+            <option value="">All exercises</option>
+            {volumeExercises.map((ex) => (
+              <option key={ex.id} value={ex.id}>
+                {ex.name}
+              </option>
+            ))}
+          </select>
+
+          {dailyVolume.length > 0 ? (
+            (() => {
+              const barW = 12;
+              const gutter = 28;
+              const svgH = 80;
+              const svgW = Math.max(300, gutter + barW * dailyVolume.length);
+              const slot = (svgW - gutter) / dailyVolume.length;
+              const maxKg = Math.max(1, ...dailyVolume.map((d) => d.kg));
+              return (
+                <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
+                  {[maxKg, maxKg / 2].map((t) => {
+                    const y = svgH - (t / maxKg) * svgH;
+                    return (
+                      <g key={t}>
+                        <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
+                        <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                          {t >= 1000 ? `${(t / 1000).toFixed(1)}k` : String(Math.round(t))}
+                        </text>
+                      </g>
+                    );
+                  })}
+                  <line x1={gutter} y1={svgH} x2={svgW} y2={svgH} className="stroke-fg/10" strokeWidth="0.5" />
+                  {dailyVolume.map((d, i) => {
+                    const x = gutter + i * slot + 2;
+                    const h = Math.max((d.kg / maxKg) * svgH, 1);
+                    return (
+                      <g key={i}>
+                        <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill="var(--accent)" opacity={0.7} />
+                        <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                          {d.label}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              );
+            })()
+          ) : (
+            <p className="text-xs text-fg/40">No volume logged in this window.</p>
+          )}
         </ChartCard>
       )}
 

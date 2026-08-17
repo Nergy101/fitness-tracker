@@ -130,7 +130,13 @@ describe("HistoryTab", () => {
       boxing_entry_id: null,
       run_entry_id: null,
       cycling_entry_id: null,
-      exercises: [],
+      exercises: [
+        {
+          id: 101, session_id: 1, exercise_id: 5, exercise_name: "Push-ups",
+          duration_seconds: 120, kcal_burned: 25, order_index: 0, completed: true,
+          image_url: null, logs: [],
+        },
+      ],
     },
     {
       id: 2,
@@ -158,13 +164,13 @@ describe("HistoryTab", () => {
   // ── Smoke tests ──────────────────────────────────────────
 
   it("shows loading skeleton initially", () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     expect(screen.getByTestId("history-skeleton")).toBeInTheDocument();
   });
 
   it("renders the range view after sessions load", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("date-range-filter")).toBeInTheDocument();
@@ -177,7 +183,7 @@ describe("HistoryTab", () => {
   });
 
   it("renders session names in the list after load", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("session-1")).toBeInTheDocument();
@@ -188,7 +194,7 @@ describe("HistoryTab", () => {
   });
 
   it("shows 'View all' button in range view", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("View all")).toBeInTheDocument();
@@ -198,7 +204,7 @@ describe("HistoryTab", () => {
   // ── Key interactions ─────────────────────────────────────
 
   it("switches to all-time view when 'View all' is clicked", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("View all")).toBeInTheDocument();
@@ -215,7 +221,7 @@ describe("HistoryTab", () => {
   });
 
   it("returns to range view when 'Back' is clicked from all-time view", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("View all")).toBeInTheDocument();
@@ -236,7 +242,7 @@ describe("HistoryTab", () => {
   });
 
   it("toggles calendar view when calendar button is clicked", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("toggle-calendar")).toBeInTheDocument();
@@ -250,7 +256,7 @@ describe("HistoryTab", () => {
   });
 
   it("opens session detail when a session is selected", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("session-1")).toBeInTheDocument();
@@ -266,7 +272,7 @@ describe("HistoryTab", () => {
   });
 
   it("closes session detail when close is clicked", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("session-1")).toBeInTheDocument();
@@ -292,7 +298,7 @@ describe("HistoryTab", () => {
       throw new Error("Network error");
     };
 
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("Failed to load sessions")).toBeInTheDocument();
@@ -302,7 +308,7 @@ describe("HistoryTab", () => {
   it("shows empty state when no sessions", async () => {
     mockGetAllSessionsImpl = async () => [];
 
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByText("No sessions yet")).toBeInTheDocument();
@@ -312,7 +318,7 @@ describe("HistoryTab", () => {
   // ── Range changes ────────────────────────────────────────
 
   it("switches to 30d range and shows heatmap", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("range-30d")).toBeInTheDocument();
@@ -326,7 +332,7 @@ describe("HistoryTab", () => {
   });
 
   it("switches to 'This week' range", async () => {
-    render(<HistoryTab refreshKey={0} />);
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
 
     await waitFor(() => {
       expect(screen.getByTestId("range-week")).toBeInTheDocument();
@@ -336,6 +342,49 @@ describe("HistoryTab", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("day-bars")).toBeInTheDocument();
+    });
+  });
+
+  it("filters sessions by exercise name search and clears", async () => {
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("session-2")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Search sessions by exercise"), {
+      target: { value: "push" },
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId("session-2")).toBeNull();
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/1 session with/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Clear search"));
+    await waitFor(() => {
+      expect(screen.getByTestId("session-2")).toBeInTheDocument();
+    });
+  });
+
+  it("groups sessions by template and expands a group", async () => {
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("session-1")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText("Group by template"));
+    // Both template names appear as group headers; toggle label flips.
+    expect(screen.getByText("Morning Routine")).toBeInTheDocument();
+    expect(screen.getByText("Run: 5.0km")).toBeInTheDocument();
+    expect(screen.getByText("Show flat list")).toBeInTheDocument();
+    // Expand the Morning Routine group → its session renders inside.
+    fireEvent.click(screen.getByText("Morning Routine"));
+    expect(screen.getAllByText("Morning Routine").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/1 session ·/).length).toBeGreaterThanOrEqual(1);
+    // Toggle back to flat list restores both session buttons.
+    fireEvent.click(screen.getByText("Show flat list"));
+    await waitFor(() => {
+      expect(screen.getByTestId("session-2")).toBeInTheDocument();
     });
   });
 });
