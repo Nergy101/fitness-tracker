@@ -1,6 +1,6 @@
 fastapi>=0.141.1
 uvicorn[standard]>=0.52.1
 sqlalchemy>=2.0.51
-alembic>=1.19.0
+alembic>=1.19.1
 pydantic>=2.13.4
 pywebpush>=2.4.0
