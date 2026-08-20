@@ -181,11 +181,110 @@ def check_no_destructive_op_execute() -> list[str]:
     return errors
 
 
+# ─── Single-head check (NER-320) ─────────────────────────────
+
+def _module_assignments(tree: ast.AST) -> dict[str, str]:
+    """Return module-level `revision` / `down_revision` string assignments.
+
+    Alembic migration headers look like::
+
+        revision: str = 'abc123'
+        down_revision: Union[str, None] = 'def456'
+
+    We extract the string literal on the right of any top-level assignment
+    whose target is ``revision`` or ``down_revision`` (handles the annotated
+    ``revision: str = '...'`` form and the plain ``revision = '...'`` form).
+    """
+    result: dict[str, str] = {}
+    for node in tree.body:
+        value = None
+        targets: list[ast.expr] = []
+        if isinstance(node, ast.Assign):
+            value = node.value
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign):
+            # Annotated form (`revision: str = '...'`) is what Alembic actually
+            # emits — an AnnAssign node, not a plain Assign.
+            value = node.value
+            if isinstance(node.target, ast.Name):
+                targets = [node.target]
+        if value is None:
+            continue
+        if not (isinstance(value, ast.Constant) and isinstance(value.value, str)):
+            continue
+        for target in targets:
+            if isinstance(target, ast.Name) and target.id in ("revision", "down_revision"):
+                result[target.id] = value.value
+    return result
+
+
+def check_single_head() -> list[str]:
+    """Flag forked Alembic chains (multiple heads / duplicate revisions).
+
+    A healthy migration tree has exactly one sink — a ``revision`` that no
+    other migration references as its ``down_revision``. If two migrations
+    share the same ``down_revision`` (a fork), ``alembic upgrade head`` picks
+    an arbitrary head and schema changes are silently applied out of order or
+    skipped. Also flag any duplicated ``revision`` value.
+    """
+    errors: list[str] = []
+    revisions: dict[str, str] = {}   # revision -> filename
+    down_revisions: list[str] = []   # all down_revision values (with a parent)
+
+    migration_files = sorted(MIGRATIONS_DIR.glob("*.py"))
+    for mf in migration_files:
+        if mf.name == "__init__.py":
+            continue
+        try:
+            tree = ast.parse(mf.read_text())
+        except (SyntaxError, OSError):
+            continue
+        assigns = _module_assignments(tree)
+        rev = assigns.get("revision")
+        if rev is None:
+            errors.append(f"{mf.name}: missing `revision` identifier")
+            continue
+        if rev in revisions:
+            errors.append(
+                f"{mf.name}: revision '{rev}' is duplicated (also declared by "
+                f"{revisions[rev]})"
+            )
+        revisions[rev] = mf.name
+        down = assigns.get("down_revision")
+        if down is not None:
+            down_revisions.append(down)
+
+    # Any revision referenced as a parent must exist.
+    referenced = set(down_revisions)
+    for parent in referenced:
+        if parent not in revisions:
+            errors.append(
+                f"revision '{parent}' is referenced as a down_revision but not "
+                f"declared by any migration file"
+            )
+
+    # Sinks: revisions that are NOT used as any other file's down_revision.
+    sink_revisions = [
+        rev for rev in revisions if rev not in referenced
+    ]
+    if len(sink_revisions) > 1:
+        names = ", ".join(f"'{r}' ({revisions[r]})" for r in sorted(sink_revisions))
+        errors.append(
+            f"multiple Alembic heads detected ({len(sink_revisions)}): {names} — "
+            f"forked down_revision chain; pick one head and rebase the others"
+        )
+    elif not sink_revisions and revisions:
+        errors.append("no Alembic head found — the migration chain is circular or empty")
+
+    return errors
+
+
 def main() -> int:
     errors = []
     errors.extend(check_migration_reversibility())
     errors.extend(check_no_destructive_patterns())
     errors.extend(check_no_destructive_op_execute())
+    errors.extend(check_single_head())
 
     if errors:
         print(f"❌ Migration validation failed ({len(errors)} issue(s)):")

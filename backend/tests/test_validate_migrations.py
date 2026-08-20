@@ -184,3 +184,67 @@ def test_mention_in_docstring_comment_is_not_flagged(tmp_path):
         "    pass\n"
     ))
     assert vm.check_no_destructive_op_execute() == []
+
+
+# --- check_single_head() (NER-320) ---
+
+def _write_revision_migration(tmp_path, name, revision, down_revision=None):
+    content = f"revision: str = '{revision}'\n"
+    if down_revision is not None:
+        content += f"down_revision: Union[str, None] = '{down_revision}'\n"
+    content += "\ndef upgrade() -> None:\n    pass\n\n\ndef downgrade() -> None:\n    pass\n"
+    _write_migration(tmp_path, name, content)
+
+
+def test_single_head_chain_passes(tmp_path):
+    """A linear chain (one head, no fork) must not be flagged."""
+    _write_revision_migration(tmp_path, "a_initial.py", "aaaa", None)
+    _write_revision_migration(tmp_path, "b_next.py", "bbbb", "aaaa")
+    _write_revision_migration(tmp_path, "c_head.py", "cccc", "bbbb")
+    assert vm.check_single_head() == []
+
+
+def test_forked_down_revision_is_a_violation(tmp_path):
+    """Two migrations sharing the same down_revision fork the chain → flagged."""
+    _write_revision_migration(tmp_path, "a_initial.py", "aaaa", None)
+    _write_revision_migration(tmp_path, "b_left.py", "bbbb", "aaaa")
+    _write_revision_migration(tmp_path, "c_right.py", "cccc", "aaaa")
+    errors = vm.check_single_head()
+    assert len(errors) == 1
+    assert "multiple Alembic heads" in errors[0]
+    assert "bbbb" in errors[0] and "cccc" in errors[0]
+
+
+def test_duplicate_revision_is_a_violation(tmp_path):
+    """A duplicated revision id must be flagged."""
+    _write_revision_migration(tmp_path, "a_one.py", "aaaa", None)
+    _write_revision_migration(tmp_path, "b_two.py", "aaaa", "ffff")
+    errors = vm.check_single_head()
+    assert any("duplicated" in e and "aaaa" in e for e in errors)
+
+
+def test_dangling_down_revision_is_a_violation(tmp_path):
+    """A down_revision pointing at an undeclared revision must be flagged."""
+    _write_revision_migration(tmp_path, "a_initial.py", "aaaa", None)
+    _write_revision_migration(tmp_path, "b_orphan.py", "bbbb", "zzzz")
+    errors = vm.check_single_head()
+    assert any("not declared" in e and "zzzz" in e for e in errors)
+
+
+def test_initial_migration_no_down_revision_is_ok(tmp_path):
+    """A lone initial migration (no down_revision) is a valid single head."""
+    _write_revision_migration(tmp_path, "a_initial.py", "aaaa", None)
+    assert vm.check_single_head() == []
+
+
+def test_annotated_assignment_form_is_parsed(tmp_path):
+    """The `revision: str = '...'` annotated form (as Alembic emits) parses."""
+    versions = tmp_path / "alembic" / "versions"
+    (versions / "a_initial.py").write_text(
+        "from typing import Sequence, Union\n\n"
+        "revision: str = 'aaaa'\n"
+        "down_revision: Union[str, None] = None\n"
+        "branch_labels: Union[str, Sequence[str], None] = None\n"
+        "\n\ndef upgrade() -> None:\n    pass\n\n\ndef downgrade() -> None:\n    pass\n"
+    )
+    assert vm.check_single_head() == []
