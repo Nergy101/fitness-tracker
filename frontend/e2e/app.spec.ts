@@ -306,13 +306,20 @@ test.describe("authenticated", () => {
     // Wait for cooldown to finish and session to save
     await expect(page.getByText("Workout Complete!")).toBeVisible({ timeout: 15000 });
 
-    // Verify session saved with correct total (including warmup + cooldown)
-    const sessions = await (
-      await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })
-    ).json();
-    const mine = sessions.find(
-      (s: { template_name: string }) => s.template_name === "E2E Warmup Cooldown",
-    );
+    // Verify session saved with correct total (including warmup + cooldown).
+    // The runner auto-saves asynchronously on finish, so poll until the POST
+    // has flushed rather than querying once (which races the async save).
+    let mine: { template_name: string; total_duration_seconds: number } | undefined;
+    for (let i = 0; i < 40; i++) {
+      const sessions = await (
+        await request.get(`${API_URL}/api/v1/sessions`, { headers: _authHeaders })
+      ).json();
+      mine = sessions.find(
+        (s: { template_name: string }) => s.template_name === "E2E Warmup Cooldown",
+      );
+      if (mine) break;
+      await page.waitForTimeout(250);
+    }
     expect(mine).toBeTruthy();
     // The runner uses its own totalDuration which includes warmup/cooldown
     // 1 exercise x 2s = 2s work, no rest between rounds = 0, warmup 2s, cooldown 2s = 6s
