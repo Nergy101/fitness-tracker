@@ -917,6 +917,27 @@ export const api = {
     fetchJSON<ExerciseLog[]>(
       `/api/v1/exercises/${exerciseId}/logs?limit=${limit}`,
     ),
+  downloadExport: async (entity: string): Promise<void> => {
+    const token = getStoredAuth();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}/api/v1/export/${entity}`, { headers });
+    if (!res.ok) {
+      throw new Error(`Export failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = /filename="?([^";]+)/.exec(disposition);
+    const filename = match ? match[1] : `${entity}.csv`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 
   // Workouts
   getWorkouts: () => fetchJSON<WorkoutTemplate[]>("/api/v1/workouts"),

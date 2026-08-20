@@ -156,6 +156,26 @@ describe("api methods", () => {
   it("togglePin", async () => { mock({}); await api.togglePin(1, true); expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/v1/workouts/1/pin"), expect.any(Object)); });
   it("duplicateWorkout", async () => { mock({ id: 2 }); await api.duplicateWorkout(1); expectPost("/api/v1/workouts/1/duplicate"); });
 
+  it("downloadExport", async () => {
+    const blob = new Blob(["date,weight_kg\n"], { type: "text/csv" });
+    const headers = new Headers({ "content-disposition": 'attachment; filename="weights.csv"' });
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(blob), headers } as Response);
+    vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fake");
+    vi.spyOn(URL, "revokeObjectURL").mockReturnValue();
+    const clickSpy = vi.fn();
+    const realCreate = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      const el = realCreate(tag);
+      el.click = clickSpy;
+      return el;
+    });
+
+    await api.downloadExport("weights");
+
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/v1/export/weights"), expect.any(Object));
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
   // ── Profile ──
   it("getProfile", async () => { mock({}); await api.getProfile(); expectGet("/api/v1/health/profile"); });
   it("getBmi", async () => { mock({}); await api.getBmi(); expectGet("/api/v1/health/bmi"); });

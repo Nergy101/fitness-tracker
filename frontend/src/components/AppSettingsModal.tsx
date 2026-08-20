@@ -14,6 +14,7 @@ import { useLocale } from "../useLocale";
 import type { DateLocale } from "../locale";
 import HealthSettingsSection from "./health/HealthSettingsSection";
 import BackupSection from "./BackupSection";
+import ExportSection from "./ExportSection";
 import CreditsSection from "./CreditsSection";
 import ViewportDiagnostics from "./ViewportDiagnostics";
 import { useOnboarding } from "../useOnboarding";
@@ -219,6 +220,12 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
               {/* Backups */}
               <div className="border-t border-fg/10 pt-3.5">
                 <BackupSection />
+              </div>
+
+              {/* Export data (NER-190) */}
+              <div className="border-t border-fg/10 pt-3.5">
+                <p className="text-xs text-fg/50 mb-2">Export data</p>
+                <ExportSection />
               </div>
 
               {/* Viewport diagnostics — the installed PWA has no devtools, so
