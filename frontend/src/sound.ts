@@ -25,6 +25,34 @@ export function setMuted(value: boolean): void {
   }
 }
 
+// NER-199: per-feature voice-cue toggle. Opt-in (defaults OFF) so users who
+// don't want spoken cues are unaffected; independent of the global mute.
+const VOICE_KEY = "voice-cues";
+
+let voiceCuesOn =
+  typeof localStorage !== "undefined" &&
+  localStorage.getItem(VOICE_KEY) === "1";
+
+export function voiceCuesEnabled(): boolean {
+  return voiceCuesOn;
+}
+
+export function setVoiceCuesEnabled(value: boolean): void {
+  voiceCuesOn = value;
+  try {
+    localStorage.setItem(VOICE_KEY, value ? "1" : "0");
+  } catch {
+    // ignore storage failures
+  }
+  if (!value) {
+    try {
+      window.speechSynthesis?.cancel();
+    } catch {
+      // ignore
+    }
+  }
+}
+
 // One shared AudioContext — creating a new one per cue exhausts the browser's
 // context cap (~6) and silently kills audio mid-workout.
 let audioCtx: AudioContext | null = null;
@@ -146,4 +174,11 @@ export function speak(text: string): void {
   } catch {
     // speechSynthesis missing or blocked; ignore.
   }
+}
+
+// NER-199: speak a voice cue ONLY when the opt-in voice-cue toggle is on.
+// Falls back silently when the Web Speech API is unavailable.
+export function speakCue(text: string): void {
+  if (muted || !voiceCuesEnabled || !text) return;
+  speak(text);
 }

@@ -151,6 +151,15 @@ describe("AppSettingsModal", () => {
     expect(checkbox).toBeChecked(); // muted=false, so checked=true
   });
 
+  it("renders the voice cues toggle (NER-199), off by default", () => {
+    render(<AppSettingsModal onClose={vi.fn()} onHealthSaved={vi.fn()} />);
+
+    const toggle = screen.getByLabelText("Voice cues");
+    expect(toggle).toBeInTheDocument();
+    // Defaults OFF (opt-in).
+    expect(toggle).not.toBeChecked();
+  });
+
   it("has the dialog role", () => {
     render(<AppSettingsModal onClose={vi.fn()} onHealthSaved={vi.fn()} />);
 

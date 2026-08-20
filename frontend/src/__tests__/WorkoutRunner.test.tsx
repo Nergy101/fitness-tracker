@@ -26,6 +26,7 @@ vi.mock("../sound", () => ({
   soundRest: vi.fn(),
   soundFinish: vi.fn(),
   speak: vi.fn(),
+  speakCue: vi.fn(),
 }));
 
 vi.mock("../components/TopControls", () => ({ default: () => null }));
@@ -215,7 +216,29 @@ describe("WorkoutRunner", () => {
     // Only the round-1 set survives; the skipped round-2 prefill was dropped
     expect(mockCreateExerciseLogs).toHaveBeenCalledWith(
       1, 5,
-      [{ weight_kg: 80, reps: 10, set_number: 1 }],
+      [{ weight_kg: 80, reps: 10, set_number: 1, rpe: null, notes: "" }],
+    );
+  });
+
+  it("captures RPE and per-set notes with the logged set (NER-241/228)", async () => {
+    renderRunner();
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    // Round 1: log 80x10, set RPE 8, add a note.
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    fireEvent.change(weightInput(), { target: { value: "80" } });
+    fireEvent.change(repsInput(), { target: { value: "10" } });
+    fireEvent.click(screen.getByRole("button", { name: "RPE 8" }));
+    fireEvent.click(screen.getByRole("button", { name: "Toggle set notes" }));
+    fireEvent.change(screen.getByLabelText("Set notes"), { target: { value: "felt heavy" } });
+    // Finish the workout (round 2 auto-prefill -> skip -> cooldown 0 -> finished)
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(mockCreateExerciseLogs).toHaveBeenCalledWith(
+      1, 5,
+      [{ weight_kg: 80, reps: 10, set_number: 1, rpe: 8, notes: "felt heavy" }],
     );
   });
 

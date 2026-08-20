@@ -400,14 +400,28 @@ export default function SessionDetail({
                         </p>
                         <p className="text-xs text-fg/40">{ex.duration_seconds}s</p>
                         {ex.logs && ex.logs.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {ex.logs.map((log, li) => (
-                              <span key={li} className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded">
-                                {log.weight_kg != null ? `${log.weight_kg}kg` : ""}
-                                {log.weight_kg != null && log.reps != null ? " × " : ""}
-                                {log.reps != null ? `${log.reps}r` : ""}
-                              </span>
-                            ))}
+                          <div className="mt-1">
+                            <div className="flex flex-wrap gap-1.5">
+                              {ex.logs.map((log, li) => (
+                                <span key={li} className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded">
+                                  {log.weight_kg != null ? `${log.weight_kg}kg` : ""}
+                                  {log.weight_kg != null && log.reps != null ? " × " : ""}
+                                  {log.reps != null ? `${log.reps}r` : ""}
+                                  {log.rpe ? ` @RPE ${log.rpe}` : ""}
+                                </span>
+                              ))}
+                            </div>
+                            {ex.logs.some((l) => l.notes) && (
+                              <div className="flex flex-col gap-0.5 mt-1">
+                                {ex.logs.map((log, li) =>
+                                  log.notes ? (
+                                    <p key={li} className="text-[11px] text-fg/50 italic">
+                                      {log.notes}
+                                    </p>
+                                  ) : null,
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
