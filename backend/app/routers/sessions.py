@@ -45,6 +45,8 @@ def _build_session_response(session: WorkoutSession) -> WorkoutSessionResponse:
                     weight_kg=log.weight_kg,
                     reps=log.reps,
                     set_number=log.set_number,
+                    rpe=log.rpe,
+                    notes=log.notes or "",
                     created_at=log.created_at,
                 )
                 for log in (se.logs or [])
@@ -243,6 +245,8 @@ def create_exercise_logs(
             weight_kg=log_data.weight_kg,
             reps=log_data.reps,
             set_number=log_data.set_number,
+            rpe=log_data.rpe,
+            notes=log_data.notes or "",
         )
         db.add(el)
         created.append(el)
@@ -257,6 +261,8 @@ def create_exercise_logs(
             weight_kg=el.weight_kg,
             reps=el.reps,
             set_number=el.set_number,
+            rpe=el.rpe,
+            notes=el.notes or "",
             created_at=el.created_at,
         )
         for el in created
