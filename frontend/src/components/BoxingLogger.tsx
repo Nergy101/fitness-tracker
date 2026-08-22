@@ -146,7 +146,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
 
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+          className="order-1 bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
           style={{ borderColor: ACTIVITY_COLORS.boxing }}
         >
           <HandFist size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.boxing }} />
@@ -154,7 +154,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
         </button>
 
         {entries.length > 0 && (
-          <div className="col-span-4 bg-surface rounded-xl p-3 border border-fg/10">
+          <div className="col-span-4 order-2 bg-surface rounded-xl p-3 border border-fg/10">
             <p className="text-xs font-semibold text-fg/50 mb-2">Recent Boxing Sessions</p>
             {entries.slice(0, 5).map((entry) => (
               <div key={entry.id} className="flex items-center justify-between py-1.5 border-b border-fg/5 last:border-b-0">
@@ -234,7 +234,7 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
       {/* Collapsed button (always visible in grid) */}
       <button
         onClick={() => { resetForm(); setShowForm(true); }}
-        className="bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+        className="order-1 bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
         style={{ borderColor: ACTIVITY_COLORS.boxing }}
       >
         <HandFist size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.boxing }} />
