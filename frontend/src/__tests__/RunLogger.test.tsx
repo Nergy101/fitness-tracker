@@ -209,7 +209,7 @@ describe("RunLogger", () => {
     fireEvent.click(screen.getByText("Save Run"));
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to log run/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to save run/)).toBeInTheDocument();
     });
   });
 
