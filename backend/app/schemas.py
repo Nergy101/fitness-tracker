@@ -27,6 +27,8 @@ class ExerciseBase(BaseModel):
     default_kcal_per_min: float = 5.0
     default_duration_seconds: int = 30
     image_url: Optional[str] = None
+    equipment: str = ""
+    muscle_group: str = ""
 
 
 class ExerciseCreate(ExerciseBase):
@@ -40,6 +42,8 @@ class ExerciseUpdate(BaseModel):
     default_kcal_per_min: Optional[float] = None
     default_duration_seconds: Optional[int] = None
     image_url: Optional[str] = None
+    equipment: Optional[str] = None
+    muscle_group: Optional[str] = None
 
 
 class ExerciseResponse(ExerciseBase):
@@ -130,6 +134,8 @@ class ExerciseLogCreate(BaseModel):
     weight_kg: Optional[float] = None
     reps: Optional[int] = None
     set_number: int = 1
+    rpe: Optional[int] = None
+    notes: str = ""
 
 
 class ExerciseLogResponse(BaseModel):
@@ -138,6 +144,8 @@ class ExerciseLogResponse(BaseModel):
     weight_kg: Optional[float] = None
     reps: Optional[int] = None
     set_number: int
+    rpe: Optional[int] = None
+    notes: str = ""
     created_at: datetime
 
     model_config = {"from_attributes": True}

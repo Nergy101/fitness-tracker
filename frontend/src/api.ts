@@ -24,6 +24,8 @@ export interface Exercise {
   default_kcal_per_min: number;
   default_duration_seconds: number;
   image_url: string | null;
+  equipment?: string;
+  muscle_group?: string;
   created_at: string;
 }
 
@@ -34,6 +36,8 @@ export interface ExerciseInput {
   default_kcal_per_min: number;
   default_duration_seconds: number;
   image_url?: string | null;
+  equipment?: string;
+  muscle_group?: string;
 }
 
 export interface TemplateExercise {
@@ -105,6 +109,8 @@ export interface ExerciseLog {
   weight_kg: number | null;
   reps: number | null;
   set_number: number;
+  rpe?: number | null;
+  notes?: string;
   created_at: string;
 }
 
@@ -112,6 +118,8 @@ export interface ExerciseLogInput {
   weight_kg: number | null;
   reps: number | null;
   set_number: number;
+  rpe?: number | null;
+  notes?: string;
 }
 
 export interface WorkoutSession {
@@ -871,10 +879,13 @@ function fetchExercisesFresh(): Promise<Exercise[]> {
 
 export const api = {
   // Exercises
-  getExercises: (search?: string) => {
-    if (search) {
-      const params = `?search=${encodeURIComponent(search)}`;
-      return fetchJSON<Exercise[]>(`/api/v1/exercises${params}`);
+  getExercises: (search?: string, filters?: { equipment?: string; muscle_group?: string }) => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (filters?.equipment) params.set("equipment", filters.equipment);
+    if (filters?.muscle_group) params.set("muscle_group", filters.muscle_group);
+    if (params.size) {
+      return fetchJSON<Exercise[]>(`/api/v1/exercises?${params.toString()}`);
     }
     const cached = readExerciseCache();
     if (cached) {
@@ -906,6 +917,27 @@ export const api = {
     fetchJSON<ExerciseLog[]>(
       `/api/v1/exercises/${exerciseId}/logs?limit=${limit}`,
     ),
+  downloadExport: async (entity: string): Promise<void> => {
+    const token = getStoredAuth();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}/api/v1/export/${entity}`, { headers });
+    if (!res.ok) {
+      throw new Error(`Export failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") ?? "";
+    const match = /filename="?([^";]+)/.exec(disposition);
+    const filename = match ? match[1] : `${entity}.csv`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 
   // Workouts
   getWorkouts: () => fetchJSON<WorkoutTemplate[]>("/api/v1/workouts"),

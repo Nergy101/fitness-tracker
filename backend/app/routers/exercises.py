@@ -13,6 +13,8 @@ router = APIRouter(prefix="/api/v1/exercises", tags=["exercises"])
 @router.get("", response_model=list[ExerciseResponse])
 def list_exercises(
     search: Optional[str] = Query(None),
+    equipment: Optional[str] = Query(None),
+    muscle_group: Optional[str] = Query(None),
     limit: Optional[int] = Query(None, ge=1, le=500),
     offset: int = Query(0, ge=0),
     response: Response = None,
@@ -21,6 +23,10 @@ def list_exercises(
     query = db.query(Exercise)
     if search:
         query = query.filter(Exercise.name.ilike(f"%{search}%"))
+    if equipment:
+        query = query.filter(Exercise.equipment == equipment)
+    if muscle_group:
+        query = query.filter(Exercise.muscle_group == muscle_group)
     query = query.order_by(Exercise.name)
     query = apply_pagination(query, limit, offset, response)
     return query.all()
@@ -101,6 +107,8 @@ def get_exercise_logs(exercise_id: int, limit: int = 10, db: Session = Depends(g
             weight_kg=log.weight_kg,
             reps=log.reps,
             set_number=log.set_number,
+            rpe=log.rpe,
+            notes=log.notes or "",
             created_at=log.created_at,
         )
         for log in logs

@@ -17,6 +17,8 @@ class Exercise(Base):
     default_kcal_per_min = Column(Float, default=5.0)
     default_duration_seconds = Column(Integer, default=30)
     image_url = Column(String(512), nullable=True)
+    equipment = Column(String(50), default="")  # bodyweight, dumbbell, barbell, band, machine, other
+    muscle_group = Column(String(50), default="")  # primary target (chest, back, legs, arms, shoulders, core, glutes)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -107,6 +109,8 @@ class ExerciseLog(Base):
     weight_kg = Column(Float, nullable=True)
     reps = Column(Integer, nullable=True)
     set_number = Column(Integer, nullable=False, default=1)
+    rpe = Column(Integer, nullable=True)       # rate of perceived exertion 1-10 (NER-241)
+    notes = Column(Text, default="")           # per-set note (NER-228)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     session_exercise = relationship("SessionExercise", back_populates="logs")

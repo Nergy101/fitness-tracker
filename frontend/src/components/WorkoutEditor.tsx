@@ -88,16 +88,25 @@ export default function WorkoutEditor({
   );
   const [showPicker, setShowPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState("");
+  const [pickerMuscle, setPickerMuscle] = useState("all");
   const [saving, setSaving] = useState(false);
+
+  const muscleOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of exercises) if (e.muscle_group) set.add(e.muscle_group);
+    return Array.from(set).sort();
+  }, [exercises]);
 
   const filteredExercises = useMemo(() => {
     const existing = new Set(rows.map((r) => r.exercise_id));
     const q = pickerSearch.toLowerCase();
     return exercises.filter(
       (e) =>
-        !existing.has(e.id) && (!q || e.name.toLowerCase().includes(q)),
+        !existing.has(e.id) &&
+        (pickerMuscle === "all" || e.muscle_group === pickerMuscle) &&
+        (!q || e.name.toLowerCase().includes(q)),
     );
-  }, [exercises, rows, pickerSearch]);
+  }, [exercises, rows, pickerSearch, pickerMuscle]);
 
   const totalDuration = rows.reduce(
     (sum, r) => sum + (r.duration_seconds || 30),
@@ -118,6 +127,7 @@ export default function WorkoutEditor({
     ]);
     setShowPicker(false);
     setPickerSearch("");
+    setPickerMuscle("all");
   }
 
   function move(i: number, delta: number) {
@@ -451,7 +461,7 @@ export default function WorkoutEditor({
         </button>
 
         {showPicker && (
-          <div className="bg-surface rounded-xl border border-fg/10 p-2 mb-3 max-h-40 overflow-y-auto">
+          <div className="bg-surface rounded-xl border border-fg/10 p-2 mb-3 max-h-48 overflow-y-auto">
             <input
               value={pickerSearch}
               onChange={(e) => setPickerSearch(e.target.value)}
@@ -459,6 +469,25 @@ export default function WorkoutEditor({
               placeholder="Search..."
               className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none mb-2"
             />
+            {muscleOptions.length > 0 && (
+              <div className="flex gap-1.5 overflow-x-auto pb-2">
+                {["all", ...muscleOptions].map((mg) => (
+                  <button
+                    key={mg}
+                    type="button"
+                    onClick={() => setPickerMuscle(mg)}
+                    aria-label={`Filter by muscle group ${mg}`}
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium capitalize whitespace-nowrap transition-colors ${
+                      pickerMuscle === mg
+                        ? "bg-accent text-on-accent"
+                        : "bg-bg text-fg/60 border border-fg/10 hover:text-fg"
+                    }`}
+                  >
+                    {mg === "all" ? "All" : mg}
+                  </button>
+                ))}
+              </div>
+            )}
             {filteredExercises.map((ex) => (
               <div
                 key={ex.id}

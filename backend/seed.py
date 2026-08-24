@@ -233,6 +233,64 @@ SEED_EXERCISES = [
     {"name": "Frog Stretch", "category": "flexibility", "default_kcal_per_min": 2.0, "description": "On all fours, knees wide, sink hips back — groin/hips"},
 ]
 
+
+def _equipment_for(name: str, category: str) -> str:
+    """Derive the equipment field from the exercise name/category.
+
+    Deterministic keyword rules so seeding (and backfilling existing rows) is
+    consistent. Defaults to "bodyweight" for everything not matched — the seed
+    is overwhelmingly bodyweight/dumbbell exercise vocabulary.
+    """
+    n = name.lower()
+    if any(k in n for k in ("dumbbell", "dumbbells", "goblet squat", "hammer curl", "arnold press", "farmers walk", "renegade", "zottman", "concentration curl", "wrist curl")):
+        return "dumbbell"
+    if any(k in n for k in ("pull-up", "pullup", "chin-up", "chinup", "muscle-up", "toes-to-bar", "false grip", "hanging", "inverted row", "australian", "bar", "dip", "skin the cat")):
+        return "bar"
+    if any(k in n for k in ("couch stretch", "wall sit", "pike")):
+        return "wall"
+    return "bodyweight"
+
+
+def _muscle_group_for(name: str, category: str) -> str:
+    """Derive the primary muscle group from the exercise name/category."""
+    n = name.lower()
+    if category == "cardio":
+        return "full-body"
+    if category == "flexibility":
+        if any(k in n for k in ("hamstring", "toe touch", "forward fold", "world's greatest")):
+            return "hamstrings"
+        if any(k in n for k in ("quad", "couch", "low lunge", "hip flexor", "saddle", "lizard")):
+            return "quads"
+        if any(k in n for k in ("shoulder", "arm circle", "eagle arm", "triceps")):
+            return "shoulders"
+        if any(k in n for k in ("hip", "pigeon", "butterfly", "frog", "figure four", "90/90", "reclining", "inner thigh")):
+            return "hips"
+        if any(k in n for k in ("chest", "bridge", "cobra", "upward dog")):
+            return "chest"
+        if any(k in n for k in ("wrist", "ankle", "neck", "calf")):
+            return "full-body"
+        return "full-body"
+    # strength
+    if any(k in n for k in ("curl", "bicep", "hammer")):
+        return "biceps"
+    if any(k in n for k in ("tricep", "kickback", "dip", "narrow push", "diamond", "overhead tricep")):
+        return "triceps"
+    if any(k in n for k in ("squat", "lunge", "leg", "thigh", "glute", "hip thrust", "quad", "calf", "pistol", "good morning", "deadlift", "clamshell", "fire hydrant", "donkey kick")):
+        return "legs"
+    if any(k in n for k in ("push-up", "pushup", "bench", "chest", "fly", "floor press", "pullover")):
+        return "chest"
+    if any(k in n for k in ("row", "pull-up", "pullup", "chin-up", "chinup", "back", "deadlift", "inverted", "australian", "lat")):
+        return "back"
+    if any(k in n for k in ("press", "shoulder", "deltoid", "lateral raise", "front raise", "pike", "arnold", "snatch", "thruster", "push press")):
+        return "shoulders"
+    if any(k in n for k in ("plank", "crunch", "sit-up", "situp", "ab", "core", "hollow", "leg raise", "tuck", "dead bug", "flutter", "twist", "windshield", "scissor", "v-up", "vup", "heel tap", "oblique", "side bend", "swimmer", "bird dog", "superman", "arch", "burpee", "mountain climber")):
+        return "core"
+    if any(k in n for k in ("shrug", "trap", "forearm", "wrist")):
+        return "forearms"
+    if any(k in n for k in ("farmer", "walk")):
+        return "forearms"
+    return "full-body"
+
 # Each workout is a list of (exercise_name, duration_seconds). Names must exist
 # in SEED_EXERCISES above.
 SEED_WORKOUTS = [
@@ -410,16 +468,25 @@ def seed():
         existing = {e.name: e for e in db.query(Exercise).all()}
         added_ex = 0
         for ex in SEED_EXERCISES:
-            if ex["name"] not in existing:
+            row = existing.get(ex["name"])
+            if row is None:
                 db.add(Exercise(
                     **ex,
+                    equipment=_equipment_for(ex["name"], ex["category"]),
+                    muscle_group=_muscle_group_for(ex["name"], ex["category"]),
                     default_duration_seconds=30,
                     image_url=image_by_name.get(ex["name"]),
                 ))
                 added_ex += 1
-            elif existing[ex["name"]].image_url is None and ex["name"] in image_by_name:
-                # Backfill image on rows seeded before images existed.
-                existing[ex["name"]].image_url = image_by_name[ex["name"]]
+            else:
+                # Backfill derived metadata on rows seeded before these fields
+                # existed (and images on rows seeded before images existed).
+                if not row.equipment:
+                    row.equipment = _equipment_for(ex["name"], ex["category"])
+                if not row.muscle_group:
+                    row.muscle_group = _muscle_group_for(ex["name"], ex["category"])
+                if row.image_url is None and ex["name"] in image_by_name:
+                    row.image_url = image_by_name[ex["name"]]
         db.commit()
 
         by_name = {e.name: e for e in db.query(Exercise).all()}

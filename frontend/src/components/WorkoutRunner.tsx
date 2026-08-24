@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Exercise, type ExerciseLog, type WorkoutTemplate } from "../api";
-import { soundStart, soundRest, soundFinish, speak } from "../sound";
+import { soundStart, soundRest, soundFinish, speak, speakCue } from "../sound";
 import {
   ArrowsLeftRightIcon as ArrowsLeftRight,
   ArrowCounterClockwiseIcon as ArrowCounterClockwise,
@@ -81,6 +81,8 @@ export default function WorkoutRunner({
   const roundRef = useRef(0);
   const indexRef = useRef(0);
   const phaseRef = useRef<Phase>("rest");
+  const halfwayCueRef = useRef(false);
+  const tenSecCueRef = useRef(false);
   const amrapRoundRef = useRef(1);
   const pauseOffsetRef = useRef(0);
   const pauseStartRef = useRef(0);
@@ -102,6 +104,7 @@ export default function WorkoutRunner({
 
   const [weightError, setWeightError] = useState<string | null>(null);
   const [repsError, setRepsError] = useState<string | null>(null);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   // Weight/reps validation
   function validateWeight(value: string): string | null {
@@ -124,11 +127,15 @@ export default function WorkoutRunner({
   const [weightConfirm, setWeightConfirm] = useState(false);
   const [repsConfirm, setRepsConfirm] = useState(false);
 
-  // Exercise logs: key = `${round}-${index}`, value = {weightKg, reps}
-  const [exerciseLogs, setExerciseLogs] = useState<Record<string, { weightKg: string; reps: string }>>({});
+  // Exercise logs: key = `${round}-${index}`, value = {weightKg, reps, rpe, notes}
+  const [exerciseLogs, setExerciseLogs] = useState<
+    Record<string, { weightKg: string; reps: string; rpe: number | null; notes: string }>
+  >({});
   // NER-210: last weight/reps entered per exercise this session, so the next
   // set of the same exercise (and new exercises, from history) pre-fills.
-  const [lastSetByExercise, setLastSetByExercise] = useState<Record<number, { weightKg: string; reps: string }>>({});
+  const [lastSetByExercise, setLastSetByExercise] = useState<
+    Record<number, { weightKg: string; reps: string; rpe: number | null; notes: string }>
+  >({});
   const [pastLogs, setPastLogs] = useState<Record<number, ExerciseLog[]>>({});
   const [sessionDate, setSessionDate] = useState(() => {
     const now = new Date();
@@ -136,6 +143,75 @@ export default function WorkoutRunner({
   });
   const [sessionNotes, setSessionNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // NER-244: post-set rest countdown overlay. Shown after an exercise with a
+  // logged set finishes, purely additive to the timer engine. Skipping clears
+  // it; it never blocks progression.
+  const REST_PRESETS = [30, 60, 90, 120];
+  const [postRest, setPostRest] = useState<{ remaining: number; total: number } | null>(null);
+  const prevPhaseRef = useRef<Phase>("rest");
+  const prevRoundIndexRef = useRef(`${currentRound}-${currentIndex}`);
+  const postRestIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+
+  useEffect(() => {
+    // Clear the interval on unmount.
+    return () => {
+      if (postRestIntervalRef.current) clearInterval(postRestIntervalRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    // When we leave the "exercise" phase for a rest phase AND the exercise
+    // that just finished had a logged set (weight or reps), show the post-set
+    // rest countdown.
+    const leftExercise = prevPhaseRef.current === "exercise" && phase === "rest";
+    const key = `${currentRound}-${currentIndex}`;
+    const finishedDifferentExercise = key !== prevRoundIndexRef.current;
+    const hadSet = Object.values(exerciseLogs).some((v) => v.weightKg || v.reps);
+    if (leftExercise && finishedDifferentExercise && hadSet) {
+      const total = REST_PRESETS[1]; // default 60s
+      setPostRest({ remaining: total, total });
+      if (postRestIntervalRef.current) clearInterval(postRestIntervalRef.current);
+      postRestIntervalRef.current = setInterval(() => {
+        setPostRest((prev) => {
+          if (!prev) return prev;
+          if (prev.remaining <= 1) {
+            if (postRestIntervalRef.current) clearInterval(postRestIntervalRef.current);
+            // Beep + haptic at 0.
+            try { soundStart(); } catch { /* noop */ }
+            try { navigator.vibrate?.(200); } catch { /* noop */ }
+            return null;
+          }
+          return { ...prev, remaining: prev.remaining - 1 };
+        });
+      }, 1000);
+    }
+    prevPhaseRef.current = phase;
+    prevRoundIndexRef.current = key;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, currentRound, currentIndex, exerciseLogs]);
+
+  function skipPostRest() {
+    if (postRestIntervalRef.current) clearInterval(postRestIntervalRef.current);
+    setPostRest(null);
+  }
+
+  function setPostRestDuration(sec: number) {
+    if (postRestIntervalRef.current) clearInterval(postRestIntervalRef.current);
+    setPostRest({ remaining: sec, total: sec });
+    postRestIntervalRef.current = setInterval(() => {
+      setPostRest((prev) => {
+        if (!prev) return prev;
+        if (prev.remaining <= 1) {
+          if (postRestIntervalRef.current) clearInterval(postRestIntervalRef.current);
+          try { soundStart(); } catch { /* noop */ }
+          try { navigator.vibrate?.(200); } catch { /* noop */ }
+          return null;
+        }
+        return { ...prev, remaining: prev.remaining - 1 };
+      });
+    }, 1000);
+  }
 
   const notePrompt = useMemo(() => randomNotePrompt(), []);
   const savedRef = useRef(false);
@@ -373,6 +449,7 @@ export default function WorkoutRunner({
       setRestProgress(0);
       halfVibrateRef.current = false;
       setLongRest(restSec > 60);
+      speakCue(`Rest, ${restSec} seconds`);
       const restStart = Date.now();
       clear();
       advanceRef.current = () => {
@@ -437,6 +514,7 @@ export default function WorkoutRunner({
       setCurrentRound(nextRound);
       setCurrentIndex(0);
       speak(`Next up: ${exercises[0]?.exercise?.name ?? "exercise"}`);
+      speakCue(`Rest between rounds, ${restBetween} seconds`);
       setRestCountdown(restBetween);
       setRestProgress(0);
       const restStart = Date.now();
@@ -468,13 +546,28 @@ export default function WorkoutRunner({
       const dur = exercises[i]?.duration_seconds || 30;
       setTimer(dur);
       setTimerProgress(0);
+      // NER-199: spoken countdown + one-shot halfway / 10s warnings (opt-in).
+      speakCue("3, 2, 1, Go!");
+      halfwayCueRef.current = false;
+      tenSecCueRef.current = false;
       const start = Date.now();
       clear();
       advanceRef.current = () => advanceFrom(round, i);
       intervalId = setInterval(() => {
         const elapsed = calcElapsed(start);
-        setTimer(Math.max(0, dur - elapsed));
+        const remaining = dur - elapsed;
+        setTimer(Math.max(0, remaining));
         setTimerProgress(Math.min(1, elapsed / dur));
+        // Halfway cue at 50% of work duration.
+        if (!halfwayCueRef.current && elapsed >= dur / 2) {
+          halfwayCueRef.current = true;
+          speakCue("Halfway");
+        }
+        // 10-second warning before the exercise ends.
+        if (!tenSecCueRef.current && remaining <= 10 && remaining > 0) {
+          tenSecCueRef.current = true;
+          speakCue("10 seconds");
+        }
         if (elapsed >= dur) advanceFrom(round, i);
       }, 50);
     }
@@ -579,7 +672,8 @@ export default function WorkoutRunner({
   // this session, falling back to the most recent historical log so the first
   // set of a new exercise starts from where you left off last time.
   const prefillForCurrent = useMemo(() => {
-    if (!currentExerciseId) return { weightKg: "", reps: "" };
+    if (!currentExerciseId)
+      return { weightKg: "", reps: "", rpe: null as number | null, notes: "" };
     const session = lastSetByExercise[currentExerciseId];
     if (session) return session;
     const logs = pastLogs[currentExerciseId];
@@ -588,9 +682,11 @@ export default function WorkoutRunner({
       return {
         weightKg: last.weight_kg != null ? String(last.weight_kg) : "",
         reps: last.reps != null ? String(last.reps) : "",
+        rpe: last.rpe ?? null,
+        notes: last.notes ?? "",
       };
     }
-    return { weightKg: "", reps: "" };
+    return { weightKg: "", reps: "", rpe: null as number | null, notes: "" };
   }, [currentExerciseId, lastSetByExercise, pastLogs]);
 
   // NER-210: when a round of an exercise already logged this session starts,
@@ -610,10 +706,18 @@ export default function WorkoutRunner({
   // NER-210: update the current set's weight/reps, seeding from the prefill so
   // editing one field keeps the other, and remember per-exercise for next sets.
   const touchedLogKeysRef = useRef<Set<string>>(new Set());
-  function updateLogEntry(field: "weightKg" | "reps", value: string) {
+  function updateLogEntry(
+    field: "weightKg" | "reps" | "rpe" | "notes",
+    value: string | number | null,
+  ) {
     touchedLogKeysRef.current.add(logKey);
     const base = exerciseLogs[logKey] ?? prefillForCurrent;
-    const next = { ...base, [field]: value };
+    const next = { ...base, [field]: value } as {
+      weightKg: string;
+      reps: string;
+      rpe: number | null;
+      notes: string;
+    };
     setExerciseLogs((prev) => ({ ...prev, [logKey]: next }));
     if (currentExerciseId != null) {
       setLastSetByExercise((prev) => ({ ...prev, [currentExerciseId]: next }));
@@ -753,7 +857,12 @@ export default function WorkoutRunner({
       // Attach weight/reps logs, matching by order_index so repeated
       // exercises don't collapse onto the first occurrence.
       const logPromises = session.exercises.map((se) => {
-        const logEntries: { weightKg: string; reps: string }[] = [];
+        const logEntries: {
+          weightKg: string;
+          reps: string;
+          rpe: number | null;
+          notes: string;
+        }[] = [];
         Object.entries(exerciseLogs).forEach(([key, val]) => {
           const idx = parseInt(key.split("-")[1], 10);
           if (idx === se.order_index && (val.weightKg || val.reps)) {
@@ -768,6 +877,8 @@ export default function WorkoutRunner({
               weight_kg: l.weightKg ? parseFloat(l.weightKg) : null,
               reps: l.reps ? parseInt(l.reps, 10) : null,
               set_number: i + 1,
+              rpe: l.rpe ?? null,
+              notes: l.notes ?? "",
             })),
           ).catch(() => {});
         }
@@ -810,6 +921,52 @@ export default function WorkoutRunner({
 
   return (
     <div className="workout-runner bg-bg h-full flex flex-col no-select">
+      {postRest && phase !== "finished" && (
+        <div className="fixed inset-0 z-40 bg-black/60 flex items-center justify-center p-6 pointer-events-none">
+          <div className="w-full max-w-xs bg-surface rounded-2xl border border-fg/10 p-6 text-center pointer-events-auto">
+            <p className="text-xs text-fg/40 uppercase tracking-wide mb-1">Rest between sets</p>
+            <div className="relative w-32 h-32 mx-auto my-4">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
+                <circle
+                  cx="50" cy="50" r="42" fill="none"
+                  stroke="var(--accent)" strokeWidth="6"
+                  strokeDasharray={RING}
+                  strokeDashoffset={(1 - postRest.remaining / postRest.total) * RING}
+                  strokeLinecap="round"
+                  className="transition-all duration-300 ease-linear"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-4xl font-bold text-fg">{postRest.remaining}</span>
+              </div>
+            </div>
+            <div className="flex justify-center gap-1.5 mb-4">
+              {REST_PRESETS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setPostRestDuration(s)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    postRest.total === s
+                      ? "bg-accent text-on-accent"
+                      : "bg-bg text-fg/50 border border-fg/10 hover:text-fg"
+                  }`}
+                >
+                  {s}s
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={skipPostRest}
+              aria-label="Skip rest timer"
+              className="w-full bg-accent text-on-accent rounded-xl py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors"
+            >
+              Skip rest timer
+            </button>
+          </div>
+        </div>
+      )}
+
       {showSwapPicker && (
         <div
           className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
@@ -1160,6 +1317,54 @@ export default function WorkoutRunner({
             {(repsError && !repsConfirm) && (
               <p className="text-xs text-red-400">{repsError}</p>
             )}
+
+            {/* NER-241: RPE selector — optional, 1-10 chips */}
+            <div className="flex items-center gap-1 mt-1 flex-wrap justify-center">
+              <span className="text-[10px] text-fg/30 mr-1 uppercase tracking-wide">RPE</span>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
+                const current = exerciseLogs[logKey]?.rpe ?? prefillForCurrent.rpe;
+                const active = current === n;
+                return (
+                  <button
+                    key={n}
+                    onClick={() => updateLogEntry("rpe", active ? null : n)}
+                    disabled={paused}
+                    aria-label={`RPE ${n}`}
+                    className={`w-6 h-6 rounded-full text-[11px] font-medium transition-colors disabled:opacity-40 ${
+                      active
+                        ? "bg-accent text-on-accent"
+                        : "bg-surface border border-fg/10 text-fg/50 hover:text-fg"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* NER-228: per-set notes — collapsed by default */}
+            <div className="w-full mt-1">
+              <button
+                type="button"
+                onClick={() => setNotesOpen((v) => !v)}
+                disabled={paused}
+                className="text-[11px] text-fg/40 hover:text-fg/70 disabled:opacity-40"
+                aria-label="Toggle set notes"
+              >
+                {notesOpen ? "▲ Hide set note" : "▼ Add set note"}
+              </button>
+              {notesOpen && (
+                <input
+                  type="text"
+                  value={exerciseLogs[logKey]?.notes ?? prefillForCurrent.notes ?? ""}
+                  onChange={(e) => updateLogEntry("notes", e.target.value)}
+                  disabled={paused}
+                  placeholder="felt heavy, used straps..."
+                  aria-label="Set notes"
+                  className="w-full mt-1.5 bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40"
+                />
+              )}
+            </div>
           </div>
           <div className="relative w-48 h-48 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">

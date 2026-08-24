@@ -4,10 +4,16 @@ import BoxingLogger from "../components/BoxingLogger";
 import { todayKey } from "../dateKey";
 
 const mockCreateBoxing = vi.fn().mockResolvedValue({ id: 1 });
+const mockGetBoxing = vi.fn().mockResolvedValue([]);
+const mockUpdateBoxing = vi.fn().mockResolvedValue({ id: 1 });
+const mockDeleteBoxing = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../api", () => ({
   api: {
     createBoxing: (...args: unknown[]) => mockCreateBoxing(...args),
+    getBoxing: (...args: unknown[]) => mockGetBoxing(...args),
+    updateBoxing: (...args: unknown[]) => mockUpdateBoxing(...args),
+    deleteBoxing: (...args: unknown[]) => mockDeleteBoxing(...args),
   },
   OfflineError: class OfflineError extends Error {
     readonly offline = true;
@@ -173,7 +179,7 @@ describe("BoxingLogger", () => {
 
     await vi.waitFor(() => {
       expect(
-        screen.getByText("Failed to log boxing workout"),
+        screen.getByText("Failed to save boxing workout"),
       ).toBeInTheDocument();
     });
   });
@@ -210,6 +216,76 @@ describe("BoxingLogger", () => {
       expect(mockCreateBoxing).toHaveBeenCalledWith(
         expect.objectContaining({ duration_seconds: 1200 }),
       );
+    });
+  });
+
+  // ── Recent entries ──
+
+  it("renders recent sessions when entries exist", async () => {
+    mockGetBoxing.mockResolvedValue([
+      { id: 3, duration_seconds: 2700, kcal_per_min: 10, rounds: 10, date: "2026-08-01", notes: "" },
+    ]);
+    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
+    await vi.waitFor(() => {
+      expect(screen.getByText("Recent Boxing Sessions")).toBeInTheDocument();
+    });
+    expect(screen.getByText("10 rounds")).toBeInTheDocument();
+    expect(screen.getByLabelText("Edit boxing")).toBeInTheDocument();
+    expect(screen.getByLabelText("Delete boxing")).toBeInTheDocument();
+  });
+
+  it("does not render recent sessions when there are none", async () => {
+    mockGetBoxing.mockResolvedValue([]);
+    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
+    expect(screen.queryByText("Recent Boxing Sessions")).not.toBeInTheDocument();
+  });
+
+  // ── Edit ──
+
+  it("opens edit form populated from entry and calls update on submit", async () => {
+    mockGetBoxing.mockResolvedValue([
+      { id: 3, duration_seconds: 2700, kcal_per_min: 12, rounds: 12, date: "2026-08-01", notes: "hard" },
+    ]);
+    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
+    await vi.waitFor(() => {
+      expect(screen.getByLabelText("Edit boxing")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Edit boxing"));
+
+    expect(screen.getByText("Edit Boxing Session")).toBeInTheDocument();
+    // rounds populated
+    expect(screen.getByPlaceholderText("e.g. 10")).toHaveValue(12);
+
+    fireEvent.change(screen.getByPlaceholderText("e.g. 10"), { target: { value: "15" } });
+    fireEvent.click(screen.getByText("Update Boxing Session"));
+
+    await vi.waitFor(() => {
+      expect(mockUpdateBoxing).toHaveBeenCalledWith(3, {
+        duration_seconds: 2700,
+        kcal_per_min: 12,
+        rounds: 15,
+        date: "2026-08-01",
+        notes: "hard",
+      });
+    });
+  });
+
+  // ── Delete ──
+
+  it("confirms and deletes an entry", async () => {
+    mockGetBoxing.mockResolvedValue([
+      { id: 3, duration_seconds: 2700, kcal_per_min: 10, rounds: 10, date: "2026-08-01", notes: "" },
+    ]);
+    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
+    await vi.waitFor(() => {
+      expect(screen.getByLabelText("Delete boxing")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete boxing"));
+    expect(screen.getByText("Delete boxing session?")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Delete"));
+
+    await vi.waitFor(() => {
+      expect(mockDeleteBoxing).toHaveBeenCalledWith(3);
     });
   });
 });

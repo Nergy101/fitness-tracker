@@ -11,7 +11,8 @@ from app.config import CORS_ORIGINS, DATABASE_URL
 from app.database import run_migrations
 from app.health_check import run_health_checks
 from app.logging_config import configure_logging
-from app.routers import exercises, workouts, sessions, health, runs, auth, stats, notifications, backup, health_import, boxing, cycling
+from app.routers import exercises, workouts, sessions, health, runs, auth, stats, notifications, backup, health_import, boxing, cycling, export
+import app.reminders as reminders
 
 # Configure logging as early as possible at startup.
 configure_logging()
@@ -24,16 +25,21 @@ run_migrations()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Automatic scheduled backups only for a real file-based DB (never the
-    # in-memory DB used by tests, where a background loop would be pointless).
-    task = None
+    # Automatic scheduled backups + workout reminders only for a real file-based
+    # DB (never the in-memory DB used by tests, where a background loop would be
+    # pointless).
+    backup_task = None
+    reminder_task = None
     if not (DATABASE_URL.endswith(":memory:") or DATABASE_URL == "sqlite://"):
-        task = asyncio.create_task(backup.scheduler_loop())
+        backup_task = asyncio.create_task(backup.scheduler_loop())
+        reminder_task = asyncio.create_task(reminders.reminder_loop())
     try:
         yield
     finally:
-        if task is not None:
-            task.cancel()
+        if backup_task is not None:
+            backup_task.cancel()
+        if reminder_task is not None:
+            reminder_task.cancel()
 
 
 app = FastAPI(title="FitnessTracker API", version="1.2.0", lifespan=lifespan)
@@ -80,6 +86,7 @@ app.include_router(backup.router)
 app.include_router(health_import.router)
 app.include_router(boxing.router)
 app.include_router(cycling.router)
+app.include_router(export.router)
 
 
 @app.get("/api/health")

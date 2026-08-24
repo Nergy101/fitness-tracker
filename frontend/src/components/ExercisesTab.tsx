@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { SmileySadIcon as SmileySad } from "@phosphor-icons/react";
+import { SmileySadIcon as SmileySad, PencilSimpleIcon as Pencil } from "@phosphor-icons/react";
 import {
   api,
   OfflineError,
   type Category,
   type Exercise,
   type ExerciseInput,
+  type ExerciseLog,
 } from "../api";
 import ExerciseImage from "./ExerciseImage";
 import ExercisesSkeleton from "./skeletons/ExercisesSkeleton";
@@ -16,6 +17,19 @@ const CATEGORY_BADGE: Record<Category, string> = {
   strength: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
   flexibility: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
   other: "bg-gray-200 text-gray-700 dark:bg-gray-800/40 dark:text-gray-300",
+};
+
+const EQUIPMENT_LABEL: Record<string, string> = {
+  bodyweight: "Bodyweight",
+  dumbbell: "Dumbbell",
+  barbell: "Barbell",
+  bar: "Bar",
+  wall: "Wall",
+  band: "Band",
+  machine: "Machine",
+  kettlebell: "Kettlebell",
+  cable: "Cable",
+  other: "Other",
 };
 
 const EMPTY_FORM: ExerciseInput = {
@@ -30,11 +44,14 @@ export default function ExercisesTab() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
+  const [equipmentFilter, setEquipmentFilter] = useState<string>("all");
+  const [muscleFilter, setMuscleFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const [form, setForm] = useState<ExerciseInput>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -58,14 +75,33 @@ export default function ExercisesTab() {
     void loadExercises();
   }, []);
 
+  const equipmentOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of exercises) if (e.equipment) set.add(e.equipment);
+    return Array.from(set).sort();
+  }, [exercises]);
+
+  const muscleOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of exercises) if (e.muscle_group) set.add(e.muscle_group);
+    return Array.from(set).sort();
+  }, [exercises]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return exercises.filter(
       (e) =>
         (categoryFilter === "all" || e.category === categoryFilter) &&
+        (equipmentFilter === "all" || e.equipment === equipmentFilter) &&
+        (muscleFilter === "all" || e.muscle_group === muscleFilter) &&
         (!q || e.name.toLowerCase().includes(q)),
     );
-  }, [exercises, search, categoryFilter]);
+  }, [exercises, search, categoryFilter, equipmentFilter, muscleFilter]);
+
+  const detailExercise = useMemo(
+    () => exercises.find((e) => e.id === detailId) ?? null,
+    [exercises, detailId],
+  );
 
   function openCreate() {
     setEditingId(null);
@@ -74,7 +110,12 @@ export default function ExercisesTab() {
     setShowForm(true);
   }
 
+  function openDetail(ex: Exercise) {
+    setDetailId(ex.id);
+  }
+
   function openEdit(ex: Exercise) {
+    setDetailId(null);
     setEditingId(ex.id);
     setForm({
       name: ex.name,
@@ -82,6 +123,8 @@ export default function ExercisesTab() {
       category: ex.category,
       default_duration_seconds: ex.default_duration_seconds,
       default_kcal_per_min: ex.default_kcal_per_min,
+      equipment: ex.equipment || "",
+      muscle_group: ex.muscle_group || "",
     });
     setFormError(null);
     setShowForm(true);
@@ -109,6 +152,13 @@ export default function ExercisesTab() {
     }
   }
 
+  function resetFilters() {
+    setCategoryFilter("all");
+    setEquipmentFilter("all");
+    setMuscleFilter("all");
+    setSearch("");
+  }
+
   return (
     <div className="exercises-tab">
       {!loading && (
@@ -129,21 +179,61 @@ export default function ExercisesTab() {
             </button>
           </div>
 
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
-            {(["all", "cardio", "strength", "flexibility", "other"] as const).map(
-              (cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
-                    categoryFilter === cat
-                      ? "bg-accent text-on-accent"
-                      : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
-                  }`}
-                >
-                  {cat === "all" ? "All" : cat}
-                </button>
-              ),
+          <div className="space-y-2 mb-4">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {(["all", "cardio", "strength", "flexibility", "other"] as const).map(
+                (cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
+                      categoryFilter === cat
+                        ? "bg-accent text-on-accent"
+                        : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+                    }`}
+                  >
+                    {cat === "all" ? "All" : cat}
+                  </button>
+                ),
+              )}
+            </div>
+
+            {equipmentOptions.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {["all", ...equipmentOptions].map((eq) => (
+                  <button
+                    key={eq}
+                    onClick={() => setEquipmentFilter(eq)}
+                    aria-label={`Filter by equipment ${eq}`}
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
+                      equipmentFilter === eq
+                        ? "bg-accent text-on-accent"
+                        : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+                    }`}
+                  >
+                    {eq === "all" ? "All equipment" : EQUIPMENT_LABEL[eq] ?? eq}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {muscleOptions.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {["all", ...muscleOptions].map((mg) => (
+                  <button
+                    key={mg}
+                    onClick={() => setMuscleFilter(mg)}
+                    aria-label={`Filter by muscle group ${mg}`}
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
+                      muscleFilter === mg
+                        ? "bg-accent text-on-accent"
+                        : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+                    }`}
+                  >
+                    {mg === "all" ? "All muscles" : mg}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </>
@@ -160,7 +250,13 @@ export default function ExercisesTab() {
         <div className="text-center py-12 text-fg/30">
           <p className="text-lg mb-1">No exercises found</p>
           <p className="text-sm text-fg/20">
-            Try a different search or add one!
+            Try a different search or{" "}
+            <button
+              onClick={resetFilters}
+              className="text-accent underline underline-offset-2"
+            >
+              clear filters
+            </button>
           </p>
         </div>
       ) : (
@@ -169,7 +265,7 @@ export default function ExercisesTab() {
             <div
               key={ex.id}
               className="bg-surface rounded-xl p-3 border border-fg/5 cursor-pointer hover:border-accent/30 transition-colors"
-              onClick={() => openEdit(ex)}
+              onClick={() => openDetail(ex)}
             >
               <div className="flex items-center gap-3">
                 <ExerciseImage
@@ -190,12 +286,23 @@ export default function ExercisesTab() {
                   <div className="flex gap-3 mt-1.5 text-xs text-fg/40">
                     <span>{ex.default_duration_seconds}s</span>
                     <span>{ex.default_kcal_per_min} kcal/min</span>
+                    {ex.equipment && (
+                      <span className="capitalize">{EQUIPMENT_LABEL[ex.equipment] ?? ex.equipment}</span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {detailExercise && (
+        <ExerciseDetail
+          exercise={detailExercise}
+          onClose={() => setDetailId(null)}
+          onEdit={() => openEdit(detailExercise)}
+        />
       )}
 
       {showForm && (
@@ -260,6 +367,46 @@ export default function ExercisesTab() {
 
               <div>
                 <label className="text-sm text-fg/60 block mb-1">
+                  Equipment
+                </label>
+                <select
+                  value={form.equipment ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, equipment: e.target.value })
+                  }
+                  className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50"
+                >
+                  <option value="">None</option>
+                  {Object.entries(EQUIPMENT_LABEL).map(([val, label]) => (
+                    <option key={val} value={val}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm text-fg/60 block mb-1">
+                  Muscle group
+                </label>
+                <select
+                  value={form.muscle_group ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, muscle_group: e.target.value })
+                  }
+                  className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50"
+                >
+                  <option value="">None</option>
+                  {muscleOptions.map((mg) => (
+                    <option key={mg} value={mg}>
+                      {mg}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm text-fg/60 block mb-1">
                   Default Duration (seconds)
                 </label>
                 <Stepper
@@ -314,6 +461,167 @@ export default function ExercisesTab() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ExerciseDetail({
+  exercise,
+  onClose,
+  onEdit,
+}: {
+  exercise: Exercise;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const [logs, setLogs] = useState<ExerciseLog[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLogs(null);
+    api
+      .getExerciseLogs(exercise.id, 10)
+      .then((l) => {
+        if (!cancelled) setLogs(l);
+      })
+      .catch(() => {
+        if (!cancelled) setLogs([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [exercise.id]);
+
+  // Best set: highest estimated 1RM (Epley: weight × (1 + reps/30)).
+  const best = useMemo(() => {
+    if (!logs || logs.length === 0) return null;
+    let top: ExerciseLog | null = null;
+    let top1rm = -1;
+    for (const log of logs) {
+      if (log.weight_kg == null || log.reps == null) continue;
+      const est = log.weight_kg * (1 + log.reps / 30);
+      if (est > top1rm) {
+        top1rm = est;
+        top = log;
+      }
+    }
+    return top;
+  }, [logs]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[85vh] overflow-y-auto">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <ExerciseImage
+              src={exercise.image_url}
+              alt={exercise.name}
+              className="w-16 h-16 rounded-xl shrink-0 border border-fg/5"
+              category={exercise.category}
+            />
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold truncate">{exercise.name}</h2>
+              <div className="flex flex-wrap gap-2 mt-1">
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full ${CATEGORY_BADGE[exercise.category]}`}
+                >
+                  {exercise.category}
+                </span>
+                {exercise.equipment && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface border border-fg/10 capitalize">
+                    {EQUIPMENT_LABEL[exercise.equipment] ?? exercise.equipment}
+                  </span>
+                )}
+                {exercise.muscle_group && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface border border-fg/10 capitalize">
+                    {exercise.muscle_group}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close exercise detail"
+            className="text-fg/50 hover:text-fg text-xl leading-none p-1"
+          >
+            ✕
+          </button>
+        </div>
+
+        {exercise.description && (
+          <p className="text-sm text-fg/60 mb-4">{exercise.description}</p>
+        )}
+
+        <div className="text-xs text-fg/40 mb-3">
+          {exercise.default_duration_seconds}s default ·{" "}
+          {exercise.default_kcal_per_min} kcal/min
+        </div>
+
+        <div className="border-t border-fg/10 pt-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold">History</h3>
+            <span className="text-xs text-fg/40">recent sets</span>
+          </div>
+
+          {logs === null ? (
+            <p className="text-xs text-fg/30 py-3">Loading…</p>
+          ) : logs.length === 0 ? (
+            <p className="text-sm text-fg/30 py-3">
+              No logged sets yet for this exercise.
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {logs.map((log) => (
+                <div
+                  key={log.id}
+                  className="flex items-center justify-between text-sm bg-surface rounded-lg px-3 py-2 border border-fg/5"
+                >
+                  <span>
+                    {log.weight_kg != null ? `${log.weight_kg} kg` : "—"} ×{" "}
+                    {log.reps != null ? log.reps : "—"}
+                    {log.rpe ? ` @RPE ${log.rpe}` : ""}
+                  </span>
+                  <span className="text-xs text-fg/40">
+                    {new Date(log.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {best && (
+            <div className="mt-3 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2 text-sm">
+              <span className="text-accent font-semibold">Best set: </span>
+              {best.weight_kg != null && best.reps != null
+                ? `${best.weight_kg} kg × ${best.reps} (est. 1RM ${Math.round(
+                    best.weight_kg * (1 + best.reps / 30),
+                  )} kg)`
+                : "—"}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={onEdit}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-accent text-on-accent rounded-xl py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors"
+          >
+            <Pencil size={16} weight="bold" /> Edit
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-fg/10 rounded-xl py-2.5 text-sm font-medium hover:bg-fg/20 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -9,10 +9,12 @@ import {
 import { useRef, useState } from "react";
 import { useTheme, type ThemeMode } from "../useTheme";
 import { useAudio } from "../useAudio";
+import { voiceCuesEnabled, setVoiceCuesEnabled } from "../sound";
 import { useLocale } from "../useLocale";
 import type { DateLocale } from "../locale";
 import HealthSettingsSection from "./health/HealthSettingsSection";
 import BackupSection from "./BackupSection";
+import ExportSection from "./ExportSection";
 import CreditsSection from "./CreditsSection";
 import ViewportDiagnostics from "./ViewportDiagnostics";
 import { useOnboarding } from "../useOnboarding";
@@ -53,6 +55,7 @@ interface AppSettingsModalProps {
 export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettingsModalProps) {
   const { theme, mode, setMode } = useTheme();
   const { muted, toggleMuted } = useAudio();
+  const [voiceCues, setVoiceCues] = useState(voiceCuesEnabled());
   const { locale, setLocale } = useLocale();
   const { state: installState, install } = useInstallPrompt();
   const { reset: resetOnboarding } = useOnboarding();
@@ -172,6 +175,24 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
                 />
               </label>
 
+              {/* Voice cues (NER-199) — opt-in, defaults off */}
+              <label className="flex items-center justify-between gap-2 text-sm py-1 cursor-pointer">
+                <span className="flex items-center gap-2 text-fg/80">
+                  <SpeakerHigh size={18} className="text-accent" weight="fill" />
+                  Voice cues
+                </span>
+                <input
+                  type="checkbox"
+                  checked={voiceCues}
+                  onChange={(e) => {
+                    setVoiceCuesEnabled(e.target.checked);
+                    setVoiceCues(e.target.checked);
+                  }}
+                  aria-label="Voice cues"
+                  className="accent-accent"
+                />
+              </label>
+
               {/* Install app */}
               {installState.installable && (
                 <div className="border-t border-fg/10 pt-3.5 flex items-center justify-between gap-2">
@@ -199,6 +220,12 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
               {/* Backups */}
               <div className="border-t border-fg/10 pt-3.5">
                 <BackupSection />
+              </div>
+
+              {/* Export data (NER-190) */}
+              <div className="border-t border-fg/10 pt-3.5">
+                <p className="text-xs text-fg/50 mb-2">Export data</p>
+                <ExportSection />
               </div>
 
               {/* Viewport diagnostics — the installed PWA has no devtools, so
