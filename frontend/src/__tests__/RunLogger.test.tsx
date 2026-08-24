@@ -4,6 +4,8 @@ import RunLogger from "../components/RunLogger";
 import { todayKey } from "../dateKey";
 
 const mockCreateRun = vi.fn();
+const mockGetRuns = vi.fn().mockResolvedValue([]);
+const mockDeleteRun = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../api", () => {
   class OfflineError extends Error {
@@ -15,9 +17,9 @@ vi.mock("../api", () => {
   return {
     api: {
       createRun: (...args: unknown[]) => mockCreateRun(...args),
-      getRuns: vi.fn().mockResolvedValue([]),
+      getRuns: (...args: unknown[]) => mockGetRuns(...args),
       updateRun: vi.fn().mockResolvedValue({ id: 1 }),
-      deleteRun: vi.fn().mockResolvedValue(undefined),
+      deleteRun: (...args: unknown[]) => mockDeleteRun(...args),
     },
     OfflineError,
   };
@@ -26,6 +28,8 @@ vi.mock("../api", () => {
 describe("RunLogger", () => {
   beforeEach(() => {
     mockCreateRun.mockClear();
+    mockGetRuns.mockReset();
+    mockGetRuns.mockResolvedValue([]);
   });
 
   it("renders the collapsed Run button initially", () => {
@@ -238,5 +242,25 @@ describe("RunLogger", () => {
 
     // 45 min = 2700 sec, pace = 2700/10 = 270 = 4:30/km
     expect(screen.getByText("4:30 /km")).toBeInTheDocument();
+  });
+
+  it("queues delete for sync on OfflineError", async () => {
+    const { OfflineError } = await import("../api");
+    mockGetRuns.mockResolvedValue([
+      { id: 3, duration_seconds: 1800, distance_km: 3, run_type: "run", date: "2026-08-01", notes: "" },
+    ]);
+    mockDeleteRun.mockRejectedValue(new OfflineError());
+
+    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
+    await waitFor(() => {
+      expect(screen.getByLabelText("Delete run")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete run"));
+    fireEvent.click(screen.getByText("Delete"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/delete queued for sync/)).toBeInTheDocument();
+    });
+    expect(mockDeleteRun).toHaveBeenCalledWith(3);
   });
 });

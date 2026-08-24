@@ -125,9 +125,13 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
       setShowConfirmDelete(null);
       setEntries((prev) => prev.filter((e) => e.id !== id));
       setToast("Boxing workout deleted");
-    } catch {
+    } catch (e) {
       setShowConfirmDelete(null);
-      setToast("Failed to delete boxing workout");
+      if (e instanceof OfflineError) {
+        setToast("Boxing workout delete queued for sync");
+      } else {
+        setToast("Failed to delete boxing workout");
+      }
     }
   }
 

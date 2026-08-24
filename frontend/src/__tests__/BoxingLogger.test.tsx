@@ -288,4 +288,23 @@ describe("BoxingLogger", () => {
       expect(mockDeleteBoxing).toHaveBeenCalledWith(3);
     });
   });
+
+  it("queues delete for sync on OfflineError", async () => {
+    const { OfflineError } = await import("../api");
+    mockGetBoxing.mockResolvedValue([
+      { id: 3, duration_seconds: 2700, kcal_per_min: 10, rounds: 10, date: "2026-08-01", notes: "" },
+    ]);
+    mockDeleteBoxing.mockRejectedValue(new OfflineError());
+    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
+    await vi.waitFor(() => {
+      expect(screen.getByLabelText("Delete boxing")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete boxing"));
+    fireEvent.click(screen.getByText("Delete"));
+
+    await vi.waitFor(() => {
+      expect(screen.getByText(/delete queued for sync/)).toBeInTheDocument();
+    });
+    expect(mockDeleteBoxing).toHaveBeenCalledWith(3);
+  });
 });

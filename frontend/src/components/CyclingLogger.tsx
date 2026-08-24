@@ -114,9 +114,13 @@ export default function CyclingLogger({ onWorkoutLogged }: CyclingLoggerProps) {
       setShowConfirmDelete(null);
       setEntries((prev) => prev.filter((e) => e.id !== id));
       setToast("Cycling ride deleted");
-    } catch {
+    } catch (e) {
       setShowConfirmDelete(null);
-      setToast("Failed to delete cycling ride");
+      if (e instanceof OfflineError) {
+        setToast("Cycling ride delete queued for sync");
+      } else {
+        setToast("Failed to delete cycling ride");
+      }
     }
   }
 

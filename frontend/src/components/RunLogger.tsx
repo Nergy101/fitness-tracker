@@ -139,9 +139,13 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
       setShowConfirmDelete(null);
       setEntries((prev) => prev.filter((e) => e.id !== id));
       setToast(`${label} deleted`);
-    } catch {
+    } catch (e) {
       setShowConfirmDelete(null);
-      setToast(`Failed to delete ${label.toLowerCase()}`);
+      if (e instanceof OfflineError) {
+        setToast(`${label} delete queued for sync`);
+      } else {
+        setToast(`Failed to delete ${label.toLowerCase()}`);
+      }
     }
   }
 

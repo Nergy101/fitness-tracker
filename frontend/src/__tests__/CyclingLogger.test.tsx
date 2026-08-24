@@ -292,4 +292,23 @@ describe("CyclingLogger", () => {
       expect(mockDeleteCycling).toHaveBeenCalledWith(5);
     });
   });
+
+  it("queues delete for sync on OfflineError", async () => {
+    const { OfflineError } = await import("../api");
+    mockGetCycling.mockResolvedValue([
+      { id: 5, duration_seconds: 2700, distance_km: 24, date: "2026-08-01", notes: "" },
+    ]);
+    mockDeleteCycling.mockRejectedValue(new OfflineError());
+    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
+    await vi.waitFor(() => {
+      expect(screen.getByLabelText("Delete cycling")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByLabelText("Delete cycling"));
+    fireEvent.click(screen.getByText("Delete"));
+
+    await vi.waitFor(() => {
+      expect(screen.getByText(/delete queued for sync/)).toBeInTheDocument();
+    });
+    expect(mockDeleteCycling).toHaveBeenCalledWith(5);
+  });
 });
