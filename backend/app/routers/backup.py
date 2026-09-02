@@ -39,6 +39,13 @@ BACKUP_MODELS = [
     WorkoutSession, SessionExercise, ExerciseLog,
     HealthMetric, HealthWorkout,
 ]
+# Ephemeral tables deliberately kept OUT of backups. Session tokens
+# (auth_tokens) are short-lived credentials, not user data — restoring stale
+# tokens from an old dump would be pointless (they expire) and mildly unsafe,
+# so they are excluded on purpose. Listed explicitly so the coverage guard in
+# tests can tell "intentionally skipped" apart from "forgotten".
+NON_BACKUP_TABLES = {"auth_tokens"}
+
 RESTORE_INSERT_ORDER = [m.__tablename__ for m in BACKUP_MODELS]
 RESTORE_DELETE_ORDER = list(reversed(RESTORE_INSERT_ORDER))
 # table name -> allowed column names (guards restore against injected columns).

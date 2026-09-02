@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.database import Base
 from app.models.models import HealthMetric, UserProfile
-from app.routers.backup import RESTORE_DELETE_ORDER, RESTORE_INSERT_ORDER
+from app.routers.backup import NON_BACKUP_TABLES, RESTORE_DELETE_ORDER, RESTORE_INSERT_ORDER
 
 BACKUP_URL = "/api/v1/backup"
 BACKUPS_URL = "/api/v1/backups"
@@ -90,11 +90,14 @@ class TestCreateBackup:
         assert resp.status_code == 200
 
         mapped = {mapper.class_.__tablename__ for mapper in Base.registry.mappers}
-        assert mapped == set(RESTORE_INSERT_ORDER), (
+        # Ephemeral tables (e.g. auth_tokens) are intentionally excluded from
+        # backups; every other model must be covered.
+        expected = mapped - NON_BACKUP_TABLES
+        assert expected == set(RESTORE_INSERT_ORDER), (
             "add missing models to BACKUP_MODELS: "
-            f"{sorted(mapped - set(RESTORE_INSERT_ORDER))}"
+            f"{sorted(expected - set(RESTORE_INSERT_ORDER))}"
         )
-        assert set(resp.json()["table_counts"]) == mapped
+        assert set(resp.json()["table_counts"]) == expected
 
     def test_restore_order_covers_the_same_tables_both_ways(self):
         """Deletes must be the exact reverse of inserts, or a restore either

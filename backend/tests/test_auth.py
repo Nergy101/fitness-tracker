@@ -1,10 +1,19 @@
 """Tests for Auth endpoint and middleware."""
 
 import base64
+import time
+
 from fastapi.testclient import TestClient
 
 from .conftest import TEST_PASSWORD
-from app.routers.auth import MAX_FAILED_ATTEMPTS
+from app.routers.auth import (
+    MAX_FAILED_ATTEMPTS,
+    TOKEN_TTL_SECONDS,
+    issue_token,
+    revoke_token,
+    validate_token,
+)
+from app.models.models import AuthToken
 
 
 class TestLogin:
@@ -129,3 +138,56 @@ class TestRateLimit:
         for _ in range(MAX_FAILED_ATTEMPTS):
             assert client.get(self.PROTECTED_URL, headers=headers).status_code == 401
         assert client.get(self.PROTECTED_URL, headers=headers).status_code == 429
+
+
+class TestTokenPersistence:
+    """Session tokens are stored in the DB (AuthToken) so they survive a
+    backend restart instead of living only in process memory."""
+
+    PROTECTED_URL = "/api/v1/exercises"
+
+    def test_issued_token_is_persisted_in_db(self, client: TestClient, db):
+        token = issue_token()
+        row = db.get(AuthToken, token)
+        assert row is not None
+        # Sliding-window TTL is stored as float epoch seconds.
+        assert row.expires_at > time.time()
+        assert row.expires_at <= time.time() + TOKEN_TTL_SECONDS + 1
+
+    def test_login_token_row_authorizes_request(self, client: TestClient, db):
+        resp = client.post("/api/auth/login", json={"password": TEST_PASSWORD})
+        token = resp.json()["token"]
+        assert db.get(AuthToken, token) is not None
+        ok = client.get(
+            self.PROTECTED_URL, headers={"Authorization": f"Bearer {token}"}
+        )
+        assert ok.status_code == 200
+
+    def test_validate_refreshes_sliding_ttl(self, client: TestClient, db):
+        token = issue_token()
+        # Backdate the stored expiry so a successful validate must push it out.
+        row = db.get(AuthToken, token)
+        row.expires_at = time.time() + 5
+        db.commit()
+
+        assert validate_token(token) is True
+        db.expire_all()
+        refreshed = db.get(AuthToken, token)
+        assert refreshed.expires_at > time.time() + TOKEN_TTL_SECONDS - 5
+
+    def test_expired_token_is_rejected_and_removed(self, client: TestClient, db):
+        db.add(AuthToken(token="stale-token", expires_at=time.time() - 1))
+        db.commit()
+
+        assert validate_token("stale-token") is False
+        db.expire_all()
+        assert db.get(AuthToken, "stale-token") is None
+
+    def test_revoke_removes_token_from_db(self, client: TestClient, db):
+        token = issue_token()
+        assert db.get(AuthToken, token) is not None
+
+        revoke_token(token)
+        db.expire_all()
+        assert db.get(AuthToken, token) is None
+        assert validate_token(token) is False

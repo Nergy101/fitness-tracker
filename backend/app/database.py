@@ -1,10 +1,26 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.pool import StaticPool
 
 from app.config import DATABASE_URL
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+_is_memory_db = DATABASE_URL.endswith(":memory:") or DATABASE_URL == "sqlite://"
+
+if _is_memory_db:
+    # Plain in-memory SQLite gives each new connection its own private
+    # database (see run_migrations below), which would make session tokens
+    # written by one connection invisible to another. StaticPool keeps a
+    # single connection alive for the whole engine so every short-lived
+    # SessionLocal() (e.g. from app.routers.auth) shares the same database,
+    # even across the threads FastAPI's TestClient uses per request.
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+else:
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

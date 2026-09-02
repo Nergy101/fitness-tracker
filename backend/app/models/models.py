@@ -264,6 +264,17 @@ class InjuryMarker(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class AuthToken(Base):
+    """A persisted session token issued by the auth router. `expires_at` is a
+    float epoch-seconds timestamp (matches the sliding-TTL logic in
+    app.routers.auth) so a backend restart doesn't force every client to
+    re-login."""
+    __tablename__ = "auth_tokens"
+
+    token = Column(String(64), primary_key=True)
+    expires_at = Column(Float, nullable=False, index=True)
+
+
 class HealthWorkout(Base):
     """A workout imported from Apple Health. Keyed on the export's own UUID
     (`external_id`) so re-imports upsert. Scalar summary in columns; the full

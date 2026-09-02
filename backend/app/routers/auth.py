@@ -6,10 +6,11 @@ a stolen token cannot be reversed back into the password and can be expired /
 revoked independently. The password itself still works as a Basic-Auth fallback
 for hand-configured automation.
 
-Tokens are kept in process memory: this is a single-user, single-process
-deployment, so a restart simply forces a re-login. A small in-memory,
-per-client-IP sliding-window rate limiter (NER-182) locks a client out after
-too many failed attempts.
+Tokens are persisted in the database (see AuthToken in app.models.models), so
+a backend restart no longer forces every client to re-login. A small
+in-memory, per-client-IP sliding-window rate limiter (NER-182) locks a client
+out after too many failed attempts — that part is still process-local, since
+lockouts are meant to reset on restart.
 """
 
 import base64
@@ -24,6 +25,8 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from app.database import SessionLocal
+from app.models.models import AuthToken
 from app.settings import settings
 
 router = APIRouter(tags=["auth"])
@@ -111,16 +114,20 @@ def reset_rate_limit() -> None:
 
 TOKEN_TTL_SECONDS = 30 * 24 * 3600  # 30-day sliding window
 
-_tokens_lock = threading.Lock()
-# token -> expiry timestamp (sliding: refreshed on use)
-_tokens: dict[str, float] = {}
+
+def _prune_expired(db, now: float) -> None:
+    """Best-effort cleanup of expired rows so the table doesn't grow forever."""
+    db.query(AuthToken).filter(AuthToken.expires_at < now).delete()
 
 
 def issue_token() -> str:
-    """Mint a fresh opaque session token and remember it with a TTL."""
+    """Mint a fresh opaque session token and persist it with a TTL."""
     token = secrets.token_urlsafe(32)
-    with _tokens_lock:
-        _tokens[token] = time.time() + TOKEN_TTL_SECONDS
+    now = time.time()
+    with SessionLocal() as db:
+        _prune_expired(db, now)
+        db.add(AuthToken(token=token, expires_at=now + TOKEN_TTL_SECONDS))
+        db.commit()
     return token
 
 
@@ -129,27 +136,31 @@ def validate_token(token: str) -> bool:
     if not token:
         return False
     now = time.time()
-    with _tokens_lock:
-        expiry = _tokens.get(token)
-        if expiry is None:
+    with SessionLocal() as db:
+        row = db.get(AuthToken, token)
+        if row is None:
             return False
-        if expiry < now:
-            _tokens.pop(token, None)
+        if row.expires_at < now:
+            db.delete(row)
+            db.commit()
             return False
-        _tokens[token] = now + TOKEN_TTL_SECONDS
+        row.expires_at = now + TOKEN_TTL_SECONDS
+        db.commit()
         return True
 
 
 def revoke_token(token: str) -> None:
     """Forget a token (logout)."""
-    with _tokens_lock:
-        _tokens.pop(token, None)
+    with SessionLocal() as db:
+        db.query(AuthToken).filter(AuthToken.token == token).delete()
+        db.commit()
 
 
 def reset_tokens() -> None:
-    """Clear all issued tokens. Used by tests to isolate cases."""
-    with _tokens_lock:
-        _tokens.clear()
+    """Clear all persisted tokens. Used by tests to isolate cases."""
+    with SessionLocal() as db:
+        db.query(AuthToken).delete()
+        db.commit()
 
 
 class LoginRequest(BaseModel):
