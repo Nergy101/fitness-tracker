@@ -180,3 +180,88 @@ describe("api methods", () => {
   it("getProfile", async () => { mock({}); await api.getProfile(); expectGet("/api/v1/health/profile"); });
   it("getBmi", async () => { mock({}); await api.getBmi(); expectGet("/api/v1/health/bmi"); });
 });
+
+// Expanded coverage for the per-domain api modules (api/ split, NER-322-era).
+// Covers the methods the earlier suite missed after api.ts was refactored.
+describe("api module method coverage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function mock(result: unknown = { data: "ok" }) {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(MOCK_RESPONSE(result));
+  }
+
+  function expectGet(path: string) {
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining(path), expect.any(Object));
+  }
+  function expectPost(path: string) {
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining(path), expect.objectContaining({ method: "POST" }));
+  }
+  function expectPut(path: string) {
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining(path), expect.objectContaining({ method: "PUT" }));
+  }
+  function expectDelete(path: string) {
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining(path), expect.objectContaining({ method: "DELETE" }));
+  }
+
+  // ── Cycling ──
+  it("getCycling", async () => { mock([]); await api.getCycling(); expectGet("/api/v1/cycling"); });
+  it("createCycling", async () => { mock({ id: 1 }); await api.createCycling({ duration_seconds: 1800, distance_km: 15 }); expectPost("/api/v1/cycling"); });
+  it("updateCycling", async () => { mock({ id: 1 }); await api.updateCycling(1, { duration_seconds: 900, distance_km: 10 }); expectPut("/api/v1/cycling/1"); });
+  it("deleteCycling", async () => { mock(undefined); await api.deleteCycling(1); expectDelete("/api/v1/cycling/1"); });
+  it("getCyclingStats", async () => { mock({}); await api.getCyclingStats(); expectGet("/api/v1/cycling/stats"); });
+  it("getCyclingTrends", async () => { mock({ days: [] }); await api.getCyclingTrends(60); expectGet("/api/v1/cycling/stats/trends?days=60"); });
+
+  // ── Backup ──
+  it("getBackupConfig", async () => { mock({}); await api.getBackupConfig(); expectGet("/api/v1/settings/backup"); });
+  it("updateBackupConfig", async () => { mock({}); await api.updateBackupConfig({ interval: "daily" }); expectPut("/api/v1/settings/backup"); });
+  it("createBackup", async () => { mock({ filename: "a.json" }); await api.createBackup(); expectPost("/api/v1/backup"); });
+  it("listBackups", async () => { mock([]); await api.listBackups(); expectGet("/api/v1/backups"); });
+  it("restoreBackup", async () => { mock({ status: "ok" }); await api.restoreBackup("b.json"); expectPost("/api/v1/backup/restore"); });
+  it("deleteBackup", async () => { mock(undefined); await api.deleteBackup("my backup.json"); expectDelete("/api/v1/backups/my%20backup.json"); });
+
+  // ── Notifications ──
+  it("subscribePush", async () => { mock({ status: "ok" }); await api.subscribePush({ endpoint: "https://e", keys: { p256dh: "k", auth: "a" } }); expectPost("/api/v1/notifications/subscribe"); });
+  it("unsubscribePush", async () => { mock({ status: "ok" }); await api.unsubscribePush("https://e/abc"); expectDelete("/api/v1/notifications/subscribe?endpoint=https%3A%2F%2Fe%2Fabc"); });
+  it("sendTestNotification", async () => { mock({ status: "ok", sent: 1 }); await api.sendTestNotification(); expectPost("/api/v1/notifications/send"); });
+
+  // ── Exercises ──
+  it("createExercise", async () => { mock({ id: 1 }); await api.createExercise({ name: "Squat", description: "", category: "strength", default_kcal_per_min: 5, default_duration_seconds: 60 }); expectPost("/api/v1/exercises"); });
+  it("updateExercise", async () => { mock({ id: 1 }); await api.updateExercise(1, { description: "new" }); expectPut("/api/v1/exercises/1"); });
+  it("deleteExercise", async () => { mock(undefined); await api.deleteExercise(1); expectDelete("/api/v1/exercises/1"); });
+
+  // ── Workouts ──
+  it("updateWorkout", async () => { mock({ id: 1 }); await api.updateWorkout(1, { name: "New" }); expectPut("/api/v1/workouts/1"); });
+  it("deleteWorkout", async () => { mock(undefined); await api.deleteWorkout(1); expectDelete("/api/v1/workouts/1"); });
+
+  // ── Sessions ──
+  it("createSession", async () => { mock({ id: 1 }); await api.createSession({ template_id: 1, template_name: "T", total_duration_seconds: 600, total_kcal_estimated: 80, exercises: [] }); expectPost("/api/v1/sessions"); });
+  it("createExerciseLogs", async () => { mock([]); await api.createExerciseLogs(1, 2, [{ weight_kg: 50, reps: 8, set_number: 1 }]); expectPost("/api/v1/sessions/1/exercises/2/logs"); });
+  it("getSessionsPage", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve([{ id: 1 }]), text: () => Promise.resolve(""), headers: new Headers({ "X-Total-Count": "1" }) } as Response);
+    const page = await api.getSessionsPage(100, 0);
+    expect(page.items).toHaveLength(1);
+    expect(page.total).toBe(1);
+    expect(page.hasMore).toBe(false);
+    expectGet("/api/v1/sessions?limit=100&offset=0");
+  });
+  it("getAllSessions", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve([]), text: () => Promise.resolve(""), headers: new Headers({ "X-Total-Count": "0" }) } as Response);
+    const all = await api.getAllSessions();
+    expect(all).toEqual([]);
+    expectGet("/api/v1/sessions?limit=100&offset=0");
+  });
+
+  // ── Injuries ──
+  it("getActiveInjuries", async () => { mock([]); await api.getActiveInjuries(); expectGet("/api/v1/health/injuries/active"); });
+  it("getInjury", async () => { mock({}); await api.getInjury(3); expectGet("/api/v1/health/injuries/3"); });
+
+  // ── Stats / Health ──
+  it("getVolume", async () => { mock([]); await api.getVolume(2, 30); expectGet("/api/v1/stats/volume?days=30&exercise_id=2"); });
+  it("updateWeightEntry", async () => { mock({ id: 1 }); await api.updateWeightEntry(1, { date: "2026-08-01", weight_kg: 81 }); expectPut("/api/v1/health/weight/1"); });
+});
