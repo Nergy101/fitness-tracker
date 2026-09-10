@@ -9,6 +9,13 @@ let mockDeleteSessionImpl = vi.fn();
 
 // Mock the api module — data must be inlined since vi.mock factories are hoisted
 vi.mock("../api", () => ({
+  OfflineError: class OfflineError extends Error {
+    readonly offline = true;
+    constructor(message = "offline") {
+      super(message);
+      this.name = "OfflineError";
+    }
+  },
   api: {
     getAllSessions: vi.fn().mockImplementation(() => mockGetAllSessionsImpl()),
     deleteSession: vi.fn().mockImplementation((...args: unknown[]) => mockDeleteSessionImpl(...args)),
@@ -86,12 +93,13 @@ vi.mock("../components/history/SessionList", () => ({
   default: ({
     sessions,
     onSelect,
+    onDelete,
     emptyLabel,
   }: {
     sessions: WorkoutSession[];
     onSelect: (s: WorkoutSession) => void;
     onEditDate: () => void;
-    onDelete: () => void;
+    onDelete: (s: WorkoutSession) => void;
     emptyLabel: string;
   }) => (
     <div data-testid="session-list">
@@ -99,9 +107,14 @@ vi.mock("../components/history/SessionList", () => ({
         <span>{emptyLabel}</span>
       ) : (
         sessions.map((s) => (
-          <button key={s.id} data-testid={`session-${s.id}`} onClick={() => onSelect(s)}>
-            {s.template_name}
-          </button>
+          <div key={s.id}>
+            <button data-testid={`session-${s.id}`} onClick={() => onSelect(s)}>
+              {s.template_name}
+            </button>
+            <button data-testid={`delete-${s.id}`} onClick={() => onDelete(s)}>
+              Delete
+            </button>
+          </div>
         ))
       )}
     </div>
@@ -302,6 +315,59 @@ describe("HistoryTab", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Failed to load sessions")).toBeInTheDocument();
+    });
+  });
+
+  // ── Delete ───────────────────────────────────────────────
+
+  it("removes the session from the list on a successful delete", async () => {
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("delete-1")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("delete-1"));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("session-1")).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId("session-2")).toBeInTheDocument();
+  });
+
+  it("shows a queued-for-sync toast (not an error) when the delete is enqueued offline", async () => {
+    const { OfflineError } = await import("../api");
+    mockDeleteSessionImpl = vi.fn().mockRejectedValue(new OfflineError());
+
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("delete-1")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("delete-1"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Session delete queued for sync")).toBeInTheDocument();
+    });
+    // The queued delete replays later, so the row stays and no error screen shows.
+    expect(screen.queryByText("Failed to delete session")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-1")).toBeInTheDocument();
+  });
+
+  it("shows the error state when a delete genuinely fails", async () => {
+    mockDeleteSessionImpl = vi.fn().mockRejectedValue(new Error("API error 500"));
+
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("delete-1")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("delete-1"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to delete session")).toBeInTheDocument();
     });
   });
 

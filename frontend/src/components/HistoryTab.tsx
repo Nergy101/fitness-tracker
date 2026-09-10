@@ -4,9 +4,11 @@ import {
   ClockCounterClockwiseIcon as ClockCounterClockwise,
   SmileySadIcon as SmileySad,
   XIcon as X,
+  CloudArrowUpIcon as CloudArrowUp,
 } from "@phosphor-icons/react";
-import { api, type WorkoutSession, type WorkoutTemplate } from "../api";
+import { api, OfflineError, type WorkoutSession, type WorkoutTemplate } from "../api";
 import { formatDuration } from "../format";
+import Toast from "./Toast";
 import CalendarView from "./CalendarView";
 import HistorySkeleton from "./skeletons/HistorySkeleton";
 import DateRangeFilter from "./history/DateRangeFilter";
@@ -41,6 +43,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
     return (stored as "range" | "all") ?? "range";
   });
   const [calendar, setCalendar] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -108,8 +111,15 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
     try {
       await api.deleteSession(session.id);
       setSessions((prev) => prev.filter((s) => s.id !== session.id));
-    } catch {
-      setError("Failed to delete session");
+    } catch (e) {
+      // DELETE is a queueable write: offline, fetchJSON enqueues it and throws
+      // OfflineError. The delete WILL replay, so keep the row and tell the user
+      // it's queued instead of showing the full-screen failure state.
+      if (e instanceof OfflineError) {
+        setToast("Session delete queued for sync");
+      } else {
+        setError("Failed to delete session");
+      }
     }
   }
 
@@ -151,6 +161,12 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
   if (view === "all") {
     return (
       <div className="history-tab">
+        {toast && (
+          <Toast onDismiss={() => setToast(null)}>
+            <CloudArrowUp size={18} weight="fill" />
+            {toast}
+          </Toast>
+        )}
         <button
           onClick={() => setView("range")}
           className="flex items-center gap-1.5 text-sm text-fg/60 hover:text-fg mb-4 transition-colors"
@@ -180,6 +196,12 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
   // ── Range view ─────────────────────────────────────────
   return (
     <div className="history-tab">
+      {toast && (
+        <Toast onDismiss={() => setToast(null)}>
+          <CloudArrowUp size={18} weight="fill" />
+          {toast}
+        </Toast>
+      )}
       <DateRangeFilter
         range={range}
         calendar={calendar}
