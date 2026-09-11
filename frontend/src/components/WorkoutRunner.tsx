@@ -1,38 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Exercise, type ExerciseLog, type WorkoutTemplate } from "../api";
 import { soundStart, soundRest, soundFinish, speak, speakCue } from "../sound";
-import {
-  ArrowsLeftRightIcon as ArrowsLeftRight,
-  ArrowCounterClockwiseIcon as ArrowCounterClockwise,
-  PauseCircleIcon as PauseCircle,
-  PlayCircleIcon as PlayCircle,
-  SkipForwardIcon as SkipForward,
-  TrophyIcon as Trophy,
-  XIcon as X,
-} from "@phosphor-icons/react";
-import ExerciseImage from "./ExerciseImage";
+import { XIcon as X } from "@phosphor-icons/react";
 import TopControls from "./TopControls";
-import { formatDuration, localISO } from "../format";
+import { localISO } from "../format";
 import { useFocusTrap } from "../useFocusTrap";
 import { useWakeLock } from "../useWakeLock";
 import { randomNotePrompt } from "../notePrompts";
+import WarmupScreen from "./workout-runner/WarmupScreen";
+import RestScreen from "./workout-runner/RestScreen";
+import RoundRestScreen from "./workout-runner/RoundRestScreen";
+import ExerciseScreen from "./workout-runner/ExerciseScreen";
+import CooldownScreen from "./workout-runner/CooldownScreen";
+import FinishedScreen from "./workout-runner/FinishedScreen";
+import StopConfirmDialog from "./workout-runner/StopConfirmDialog";
+import SwapExercisePicker from "./workout-runner/SwapExercisePicker";
+import { DEFAULT_REST, DEFAULT_KCAL_PER_MIN, RING, kcalFor, parseLogKey, validateReps, validateWeight } from "./workout-runner/utils";
 
 import { logger } from "../logger";
 type Phase = "warmup" | "cooldown" | "rest" | "exercise" | "roundrest" | "finished";
 
-const DEFAULT_REST = 5;
-const DEFAULT_KCAL_PER_MIN = 5;
-const RING = 264;
 
-function kcalFor(durationSeconds: number, kcalPerMin: number): number {
-  return (durationSeconds / 60) * kcalPerMin;
-}
-
-// exerciseLogs keys are `${round}-${index}`; split into the position they map to.
-function parseLogKey(key: string): { round: number; index: number } {
-  const [round, index] = key.split("-").map(Number);
-  return { round, index };
-}
 
 interface WorkoutRunnerProps {
   workout: WorkoutTemplate;
@@ -47,6 +35,7 @@ export default function WorkoutRunner({
 }: WorkoutRunnerProps) {
   const [exercises, setExercises] = useState(workout.exercises);
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showSwapPicker, setShowSwapPicker] = useState(false);
   const [swapSearch, setSwapSearch] = useState("");
   const swapRef = useRef<HTMLDivElement>(null);
@@ -106,24 +95,6 @@ export default function WorkoutRunner({
   const [repsError, setRepsError] = useState<string | null>(null);
   const [notesOpen, setNotesOpen] = useState(false);
 
-  // Weight/reps validation
-  function validateWeight(value: string): string | null {
-    if (value === "" || value === "0") return null; // allow empty or bodyweight
-    const n = parseFloat(value);
-    if (isNaN(n)) return "Enter a number";
-    if (n < 0) return "Weight can't be negative";
-    if (n > 1000) return "That's a lot! Tap again to confirm";
-    return null;
-  }
-  function validateReps(value: string): string | null {
-    if (value === "") return null;
-    const n = parseInt(value, 10);
-    if (isNaN(n)) return "Enter a number";
-    if (n < 0) return "Reps can't be negative";
-    if (n === 0) return "Reps must be at least 1";
-    if (n > 200) return "That's a lot! Tap again to confirm";
-    return null;
-  }
   const [weightConfirm, setWeightConfirm] = useState(false);
   const [repsConfirm, setRepsConfirm] = useState(false);
 
@@ -232,14 +203,14 @@ export default function WorkoutRunner({
             if (prev[exId]) return prev;
             return { ...prev, [exId]: logs };
           });
-        }).catch(() => {});
+        }).catch(() => setLoadError("Could not load previous exercise data."));
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    api.getExercises().then(setAllExercises).catch(() => {});
+    api.getExercises().then(setAllExercises).catch(() => setLoadError("Could not load exercises for swapping."));
   }, []);
 
   // Preload all exercise images so they're available offline once the workout starts
@@ -967,541 +938,40 @@ export default function WorkoutRunner({
         </div>
       )}
 
-      {showSwapPicker && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center"
-          onClick={closeSwap}
-        >
-          <div
-            ref={swapRef}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Swap exercise"
-            className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[70vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">Swap Exercise</h3>
-              <button
-                onClick={closeSwap}
-                className="text-fg/40 hover:text-fg text-xl"
-              >
-                &times;
-              </button>
-            </div>
-            <input
-              type="text"
-              placeholder="Search exercises..."
-              value={swapSearch}
-              onChange={(e) => setSwapSearch(e.target.value)}
-              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none mb-3 focus:border-accent/50"
-            />
-            <div className="flex-1 overflow-y-auto space-y-1">
-              {filteredSwapExercises.map((ex) => (
-              <button
-                key={ex.id}
-                onClick={() => doSwap(ex)}
-                className="w-full text-left bg-bg rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-fg/5 transition-colors"
-              >
-                <div className="w-10 h-10 shrink-0">
-                  <ExerciseImage
-                    src={ex.image_url}
-                    alt={ex.name}
-                    className="w-10 h-10 rounded-lg bg-fg/5"
-                    category={ex.category}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-fg truncate">{ex.name}</p>
-                  <p className="text-[10px] text-fg/40 capitalize">{ex.category}</p>
-                </div>
-              </button>
-            ))}
-              {filteredSwapExercises.length === 0 && allExercises.length > 0 && (
-                <div className="text-xs text-fg/30 text-center py-4">
-                  No exercises match
-                </div>
-              )}
-            </div>
-          </div>
+      {loadError && (
+        <div role="status" className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-surface border border-red-400/30 text-red-300 rounded-xl px-4 py-2 text-sm shadow-lg">
+          {loadError}
+          <button className="ml-3 underline" onClick={() => setLoadError(null)}>Dismiss</button>
         </div>
+      )}
+      {showSwapPicker && (
+        <SwapExercisePicker swapRef={swapRef} closeSwap={closeSwap} swapSearch={swapSearch} setSwapSearch={setSwapSearch} filteredSwapExercises={filteredSwapExercises} allExercises={allExercises} doSwap={doSwap} />
       )}
 
       {phase === "warmup" && (
-        <div
-          className="flex flex-col items-center justify-center h-full px-6 text-center"
-          style={{ "--timer": "#22c55e", background: "linear-gradient(180deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.02) 60%, transparent 100%)" } as React.CSSProperties}
-        >
-          <p className="text-emerald-400/70 text-sm mb-2 font-medium">Warmup</p>
-          <h2 className="text-2xl font-bold text-emerald-400 mb-6">
-            Get ready to move
-          </h2>
-          <p className="text-fg/40 text-sm max-w-xs mb-4 leading-relaxed">
-            Jumping jacks, arm circles, leg swings, light jogging — loosen up and get the blood flowing.
-          </p>
-          <div className="relative w-48 h-48 mb-6">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
-              <circle
-                cx="50" cy="50" r="42" fill="none"
-                stroke="#22c55e"
-                strokeWidth="6"
-                strokeDasharray={RING}
-                strokeDashoffset={(1 - timerProgress) * RING}
-                strokeLinecap="round"
-                className="transition-all duration-300 ease-linear"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-5xl font-bold text-emerald-400">{displayTime}</span>
-            </div>
-          </div>
-          <p className="text-fg/30 text-sm mb-4">Warming up...</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => advanceRef.current()}
-              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-            >
-              <SkipForward size={16} weight="fill" /> Skip warmup
-            </button>
-            <button
-              onClick={() => (paused ? doResume() : doPause())}
-              className="inline-flex items-center gap-2 text-sm text-emerald-400/60 hover:text-emerald-400 border border-emerald-400/20 hover:border-emerald-400/40 rounded-xl px-5 py-2 transition-colors"
-            >
-              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
-              {paused ? "Resume" : "Pause"}
-            </button>
-          </div>
-        </div>
+        <WarmupScreen
+          timerProgress={timerProgress}
+          displayTime={displayTime}
+          paused={paused}
+          onSkip={() => advanceRef.current()}
+          onTogglePause={() => (paused ? doResume() : doPause())}
+        />
       )}
-
       {phase === "rest" && (
-        <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-          <p className="text-fg/50 text-sm mb-2">Next up</p>
-          <h2 className="text-2xl font-bold text-fg mb-6">{currentName}</h2>
-          <ExerciseImage
-            src={currentImage}
-            alt={currentName}
-            className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
-            category={exercises[currentIndex]?.exercise?.category}
-          />
-          {currentDescription && (
-            <p className="text-fg/50 text-sm max-w-xs mb-3">{currentDescription}</p>
-          )}
-          {currentPastHint && (
-            <p className="text-accent/70 text-xs mb-4 font-medium">{currentPastHint}</p>
-          )}
-          <div className="relative w-48 h-48 mb-6">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
-              <circle
-                cx="50" cy="50" r="42" fill="none"
-                stroke={restTimerColor} strokeWidth="6"
-                strokeDasharray={RING}
-                strokeDashoffset={restProgress * RING}
-                strokeLinecap="round"
-                className="transition-all duration-300 ease-linear"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-5xl font-bold" style={{ color: restTimerColor }}>{restCountdown}</span>
-            </div>
-          </div>
-          <p className="text-fg/30 text-sm mb-4">Get ready...</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => advanceRef.current()}
-              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-            >
-              <SkipForward size={16} weight="fill" /> Skip rest
-            </button>
-            <button
-              onClick={() => (paused ? doResume() : doPause())}
-              className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
-            >
-              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
-              {paused ? "Resume" : "Pause"}
-            </button>
-          </div>
-        </div>
+        <RestScreen currentName={currentName} currentImage={currentImage} currentCategory={exercises[currentIndex]?.exercise?.category} currentDescription={currentDescription} currentPastHint={currentPastHint} restTimerColor={restTimerColor} restProgress={restProgress} restCountdown={restCountdown} paused={paused} onSkip={() => advanceRef.current()} onTogglePause={() => (paused ? doResume() : doPause())} />
       )}
-
       {phase === "cooldown" && (
-        <div
-          className="flex flex-col items-center justify-center h-full px-6 text-center"
-          style={{ "--timer": "#3b82f6", background: "linear-gradient(180deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.02) 60%, transparent 100%)" } as React.CSSProperties}
-        >
-          <p className="text-blue-400/70 text-sm mb-2 font-medium">Cooldown</p>
-          <h2 className="text-2xl font-bold text-blue-400 mb-6">
-            Breathe and recover
-          </h2>
-          <div className="relative w-48 h-48 mb-4">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
-              <circle
-                cx="50" cy="50" r="42" fill="none"
-                stroke="#3b82f6"
-                strokeWidth="6"
-                strokeDasharray={RING}
-                strokeDashoffset={(1 - timerProgress) * RING}
-                strokeLinecap="round"
-                className="transition-all duration-300 ease-linear"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-bold text-blue-400">{displayTime}</span>
-            </div>
-          </div>
-          {/* Breathing cue */}
-          <div className="mb-4">
-            <p
-              className={`text-3xl font-bold transition-all duration-300 ${
-                breathPhase === "inhale" ? "text-blue-300 scale-110" : "text-blue-400/60 scale-100"
-              }`}
-            >
-              {breathPhase === "inhale" ? "Inhale" : "Exhale"}
-            </p>
-            <div className="w-32 h-1.5 bg-fg/10 rounded-full mt-2 mx-auto overflow-hidden">
-              <div
-                className="h-full bg-blue-400/50 rounded-full transition-all duration-300"
-                style={{ width: `${breathProgress * 100}%` }}
-              />
-            </div>
-          </div>
-          <p className="text-fg/30 text-sm mb-4">Cooling down...</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => advanceRef.current()}
-              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-            >
-              <SkipForward size={16} weight="fill" /> Skip cooldown
-            </button>
-            <button
-              onClick={() => (paused ? doResume() : doPause())}
-              className="inline-flex items-center gap-2 text-sm text-blue-400/60 hover:text-blue-400 border border-blue-400/20 hover:border-blue-400/40 rounded-xl px-5 py-2 transition-colors"
-            >
-              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
-              {paused ? "Resume" : "Pause"}
-            </button>
-          </div>
-        </div>
+        <CooldownScreen timerProgress={timerProgress} displayTime={displayTime} breathPhase={breathPhase} breathProgress={breathProgress} paused={paused} onSkip={() => advanceRef.current()} onTogglePause={() => (paused ? doResume() : doPause())} />
       )}
-
       {phase === "roundrest" && (
-        <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-          <p className="text-fg/50 text-sm mb-2">Round rest</p>
-          <h2 className="text-2xl font-bold text-fg mb-6">
-            Round {currentRound + 1}/{isAmrap ? "∞" : rounds} next
-          </h2>
-          <div className="relative w-48 h-48 mb-6">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
-              <circle
-                cx="50" cy="50" r="42" fill="none"
-                stroke="var(--accent)" strokeWidth="6"
-                strokeDasharray={RING}
-                strokeDashoffset={restProgress * RING}
-                strokeLinecap="round"
-                className="transition-all duration-300 ease-linear"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-4xl font-bold text-accent">{restClock}</span>
-            </div>
-          </div>
-          <p className="text-fg/30 text-sm mb-4">Catch your breath</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => advanceRef.current()}
-              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-            >
-              <SkipForward size={16} weight="fill" /> Skip rest
-            </button>
-            <button
-              onClick={() => (paused ? doResume() : doPause())}
-              className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
-            >
-              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
-              {paused ? "Resume" : "Pause"}
-            </button>
-          </div>
-        </div>
+        <RoundRestScreen currentRound={currentRound} isAmrap={isAmrap} rounds={rounds} restProgress={restProgress} restClock={restClock} paused={paused} onSkip={() => advanceRef.current()} onTogglePause={() => (paused ? doResume() : doPause())} />
       )}
-
       {phase === "exercise" && (
-        <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-          <p className="text-fg/50 text-sm mb-2">
-            {isAmrap ? `Round ${amrapRounds}` : isEmom ? `Exercise ${currentIndex + 1} of ${totalExercises}` : `Exercise ${currentIndex + 1} of ${totalExercises}`}
-            {currentSupersetGroup && (
-              <span className="text-accent/70 ml-1.5 font-semibold text-xs">SS</span>
-            )}
-            {!isAmrap && !isEmom && rounds > 1 && (
-              <span className="text-accent"> &middot; Round {currentRound + 1}/{rounds}</span>
-            )}
-            {isAmrap && (
-              <span className="text-accent"> &middot; AMRAP</span>
-            )}
-          </p>
-          <h2 className="text-2xl font-bold text-fg mb-6">
-            {currentName}
-            <button
-              onClick={() => setShowSwapPicker(true)}
-              className="ml-2 inline-flex items-center text-fg/30 hover:text-accent transition-colors align-middle"
-              title="Swap exercise"
-            >
-              <ArrowsLeftRight size={20} weight="bold" />
-            </button>
-          </h2>
-          <ExerciseImage
-            src={currentImage}
-            alt={currentName}
-            className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
-            category={exercises[currentIndex]?.exercise?.category}
-          />
-          {currentDescription && (
-            <p className="text-fg/50 text-sm max-w-xs mb-3">{currentDescription}</p>
-          )}
-          {currentPastHint && (
-            <p className="text-accent/70 text-xs mb-3 font-medium">{currentPastHint}</p>
-          )}
-          {/* Weight / reps logging */}
-          <div className="flex flex-col items-center gap-1 mb-4">
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="kg"
-                value={exerciseLogs[logKey]?.weightKg ?? prefillForCurrent.weightKg}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  const err = validateWeight(v);
-                  setWeightError(err && err.includes("Tap again") ? null : err);
-                  setWeightConfirm(err != null && err.includes("Tap again"));
-                  updateLogEntry("weightKg", v);
-                }}
-                disabled={paused}
-                className={`w-20 bg-surface border rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
-                  weightError ? "border-red-400" : "border-fg/10"
-                }`}
-                aria-label="Weight in kg"
-              />
-              <span className="text-fg/20 text-sm">×</span>
-              <input
-                type="number"
-                inputMode="numeric"
-                placeholder="reps"
-                value={exerciseLogs[logKey]?.reps ?? prefillForCurrent.reps}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  const err = validateReps(v);
-                  setRepsError(err && err.includes("Tap again") ? null : err);
-                  setRepsConfirm(err != null && err.includes("Tap again"));
-                  updateLogEntry("reps", v);
-                }}
-                disabled={paused}
-                className={`w-20 bg-surface border rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
-                  repsError ? "border-red-400" : "border-fg/10"
-                }`}
-                aria-label="Reps"
-              />
-            </div>
-            {(weightConfirm || repsConfirm) && (
-              <div className="flex items-center gap-1.5 text-xs text-amber-400/80">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 22h20L12 2z"/></svg>
-                <span>Are you sure? The value will be saved anyway.</span>
-              </div>
-            )}
-            {(weightError && !weightConfirm) && (
-              <p className="text-xs text-red-400">{weightError}</p>
-            )}
-            {(repsError && !repsConfirm) && (
-              <p className="text-xs text-red-400">{repsError}</p>
-            )}
-
-            {/* NER-241: RPE selector — optional, 1-10 chips */}
-            <div className="flex items-center gap-1 mt-1 flex-wrap justify-center">
-              <span className="text-[10px] text-fg/30 mr-1 uppercase tracking-wide">RPE</span>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
-                const current = exerciseLogs[logKey]?.rpe ?? prefillForCurrent.rpe;
-                const active = current === n;
-                return (
-                  <button
-                    key={n}
-                    onClick={() => updateLogEntry("rpe", active ? null : n)}
-                    disabled={paused}
-                    aria-label={`RPE ${n}`}
-                    className={`w-6 h-6 rounded-full text-[11px] font-medium transition-colors disabled:opacity-40 ${
-                      active
-                        ? "bg-accent text-on-accent"
-                        : "bg-surface border border-fg/10 text-fg/50 hover:text-fg"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* NER-228: per-set notes — collapsed by default */}
-            <div className="w-full mt-1">
-              <button
-                type="button"
-                onClick={() => setNotesOpen((v) => !v)}
-                disabled={paused}
-                className="text-[11px] text-fg/40 hover:text-fg/70 disabled:opacity-40"
-                aria-label="Toggle set notes"
-              >
-                {notesOpen ? "▲ Hide set note" : "▼ Add set note"}
-              </button>
-              {notesOpen && (
-                <input
-                  type="text"
-                  value={exerciseLogs[logKey]?.notes ?? prefillForCurrent.notes ?? ""}
-                  onChange={(e) => updateLogEntry("notes", e.target.value)}
-                  disabled={paused}
-                  placeholder="felt heavy, used straps..."
-                  aria-label="Set notes"
-                  className="w-full mt-1.5 bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40"
-                />
-              )}
-            </div>
-          </div>
-          <div className="relative w-48 h-48 mb-6">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
-              <circle
-                cx="50" cy="50" r="42" fill="none"
-                stroke={isAmrap ? "#f97316" : "var(--timer)"}
-                strokeWidth="6"
-                strokeDasharray={RING}
-                strokeDashoffset={(1 - timerProgress) * RING}
-                strokeLinecap="round"
-                className="transition-all duration-300 ease-linear"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-5xl font-bold text-fg">{displayTime}</span>
-            </div>
-          </div>
-          {isAmrap && (
-            <p className="text-fg/30 text-xs mb-1">Rounds completed: {amrapRounds}</p>
-          )}
-          <p className="text-fg/30 text-sm">{isAmrap ? "Go!" : isEmom ? "Go!" : "Go!"}</p>
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              onClick={() => skipExercise()}
-              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-            >
-              <SkipForward size={16} weight="fill" /> Skip
-            </button>
-            {loggedSetKeys.length > 0 && (
-              <button
-                onClick={undoLastSet}
-                className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
-                aria-label="Undo last set"
-                title="Undo last set"
-              >
-                <ArrowCounterClockwise size={16} weight="fill" /> Undo last set
-              </button>
-            )}
-            <button
-              onClick={() => (paused ? doResume() : doPause())}
-              className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
-            >
-              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
-              {paused ? "Resume" : "Pause"}
-            </button>
-          </div>
-        </div>
+        <ExerciseScreen isAmrap={isAmrap} isEmom={isEmom} amrapRounds={amrapRounds} currentIndex={currentIndex} totalExercises={totalExercises} currentSupersetGroup={currentSupersetGroup} rounds={rounds} currentRound={currentRound} currentName={currentName} currentImage={currentImage} currentCategory={exercises[currentIndex]?.exercise?.category} currentDescription={currentDescription} currentPastHint={currentPastHint} weightValue={exerciseLogs[logKey]?.weightKg ?? prefillForCurrent.weightKg} repsValue={exerciseLogs[logKey]?.reps ?? prefillForCurrent.reps} onWeightChange={(v) => { const err = validateWeight(v); setWeightError(err && err.includes("Tap again") ? null : err); setWeightConfirm(err != null && err.includes("Tap again")); updateLogEntry("weightKg", v); }} onRepsChange={(v) => { const err = validateReps(v); setRepsError(err && err.includes("Tap again") ? null : err); setRepsConfirm(err != null && err.includes("Tap again")); updateLogEntry("reps", v); }} paused={paused} weightError={weightError} repsError={repsError} weightConfirm={weightConfirm} repsConfirm={repsConfirm} timerProgress={timerProgress} displayTime={displayTime} hasLoggedSets={loggedSetKeys.length > 0} onOpenSwap={() => setShowSwapPicker(true)} onSkip={skipExercise} onUndoLastSet={undoLastSet} onTogglePause={() => (paused ? doResume() : doPause())} rpeValue={exerciseLogs[logKey]?.rpe ?? prefillForCurrent.rpe} onRpeChange={(v) => updateLogEntry("rpe", v)} notesOpen={notesOpen} onToggleNotes={() => setNotesOpen((v) => !v)} notesValue={exerciseLogs[logKey]?.notes ?? prefillForCurrent.notes} onNotesChange={(v) => updateLogEntry("notes", v)} />
       )}
-
       {phase === "finished" && (
-        <div className="flex flex-col items-center justify-center h-full px-6 text-center celebrate-in">
-          <style>{`@keyframes celebrate-in { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } } .celebrate-in { animation: celebrate-in 350ms cubic-bezier(0.34,1.56,0.64,1); }`}</style>
-          <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mb-6">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5">
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-fg mb-2">
-            {isAmrap ? "Time!" : "Workout Complete!"}
-          </h2>
-          <p className="text-fg/50 text-sm mb-4">{workout.name || "Workout"}</p>
-
-          {hasPr && (
-            <div className="flex items-center gap-1.5 text-yellow-400 text-sm font-semibold mb-4">
-              <Trophy size={16} weight="fill" />
-              New personal best!
-            </div>
-          )}
-
-          <div className="grid grid-cols-4 gap-3 mb-8 w-full max-w-md">
-            <div className="bg-surface rounded-xl p-3">
-              <p className="text-xl font-bold text-fg">
-                {isAmrap ? formatDuration(timeCap) : `${Math.floor(totalDuration / 60)}m`}
-              </p>
-              <p className="text-xs text-fg/40">Duration</p>
-            </div>
-            <div className="bg-surface rounded-xl p-3">
-              <p className="text-xl font-bold text-fg">
-                {isAmrap ? amrapRounds : totalExercises}
-              </p>
-              <p className="text-xs text-fg/40">{isAmrap ? "Rounds" : "Exercises"}</p>
-            </div>
-            <div className="bg-surface rounded-xl p-3">
-              <p className="text-xl font-bold text-fg">{setCount}</p>
-              <p className="text-xs text-fg/40">Sets</p>
-            </div>
-            <div className="bg-surface rounded-xl p-3">
-              <p className="text-xl font-bold text-accent">{Math.round(totalKcal)}</p>
-              <p className="text-xs text-fg/40">Kcal</p>
-            </div>
-          </div>
-
-          {isAmrap && (
-            <p className="text-fg/40 text-sm mb-4">
-              {amrapRounds} round{amrapRounds !== 1 ? "s" : ""} in {formatDuration(timeCap)}
-            </p>
-          )}
-
-          <div className="mb-5 w-full max-w-xs">
-            <label className="text-xs text-fg/40 block mb-1.5">When was this workout?</label>
-            <input
-              type="datetime-local"
-              value={sessionDate}
-              onChange={(e) => setSessionDate(e.target.value)}
-              className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm text-fg outline-none focus:border-accent/50"
-            />
-          </div>
-
-          <div className="mb-5 w-full max-w-xs">
-            <label className="text-xs text-fg/40 block mb-1.5">{notePrompt} (optional)</label>
-            <textarea
-              value={sessionNotes}
-              onChange={(e) => setSessionNotes(e.target.value)}
-              placeholder="Any notes about this workout..."
-              rows={3}
-              className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm text-fg outline-none focus:border-accent/50 resize-none placeholder:text-fg/20"
-              aria-label="Session notes"
-            />
-          </div>
-
-          <button
-            onClick={() => void handleDone()}
-            disabled={saving}
-            className="bg-accent text-on-accent rounded-xl px-8 py-3 font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
-          >
-            {saving ? (
-              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            ) : null}
-            {saving ? "Saving..." : "Done"}
-          </button>
-        </div>
+        <FinishedScreen isAmrap={isAmrap} timeCap={timeCap} totalDuration={totalDuration} totalExercises={totalExercises} amrapRounds={amrapRounds} setCount={setCount} totalKcal={totalKcal} hasPr={hasPr} workoutName={workout.name} sessionDate={sessionDate} setSessionDate={setSessionDate} notePrompt={notePrompt} sessionNotes={sessionNotes} setSessionNotes={setSessionNotes} saving={saving} onDone={() => void handleDone()} />
       )}
-
       {phase !== "finished" && (
         <div className="absolute top-6 left-4">
           <button
@@ -1518,26 +988,7 @@ export default function WorkoutRunner({
       </div>
 
       {confirmStop && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-          <div className="w-full max-w-xs bg-surface rounded-2xl border border-fg/10 p-6 text-center">
-            <h3 className="text-base font-semibold text-fg mb-2">Stop workout?</h3>
-            <p className="text-sm text-fg/50 mb-5">Progress on this session will be discarded.</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setConfirmStop(false)}
-                className="flex-1 text-sm text-fg/60 hover:text-fg border border-fg/15 rounded-xl py-2.5 transition-colors"
-              >
-                Keep going
-              </button>
-              <button
-                onClick={onCancel}
-                className="flex-1 text-sm text-red-300 hover:text-red-200 border border-red-400/30 hover:border-red-400/50 rounded-xl py-2.5 transition-colors"
-              >
-                Stop
-              </button>
-            </div>
-          </div>
-        </div>
+        <StopConfirmDialog onKeepGoing={() => setConfirmStop(false)} onStop={onCancel} />
       )}
     </div>
   );

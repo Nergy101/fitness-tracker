@@ -8,6 +8,7 @@
  */
 
 import { logger } from "./logger";
+import { api } from "./api";
 
 // ─── Types ──────────────────────────────────────────────
 
@@ -97,7 +98,6 @@ export async function registerPushSubscription(): Promise<PushSubscriptionInfo |
 
   // POST to backend
   try {
-    const { api } = await import("./api");
     await api.subscribePush(json);
   } catch (err) {
     logger.error("Failed to register push subscription with backend", err);
@@ -119,7 +119,6 @@ export async function unsubscribePush(): Promise<void> {
   await subscription.unsubscribe();
 
   try {
-    const { api } = await import("./api");
     await api.unsubscribePush(endpoint);
   } catch (err) {
     logger.error("Failed to unregister push subscription from backend", err);

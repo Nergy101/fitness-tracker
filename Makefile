@@ -1,4 +1,4 @@
-.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed seed-fake-history remove-fake-history build lint lint-backend lint-frontend e2e clean self-host help
+.PHONY: setup setup-backend setup-frontend run run-backend run-frontend seed seed-fake-history remove-fake-history build lint lint-backend lint-frontend test test-backend test-frontend e2e clean self-host help
 
 # ─── Config ──────────────────────────────────────────────
 
@@ -110,6 +110,14 @@ e2e: $(STAMP) frontend/node_modules ## Run the Playwright end-to-end suite
 	cd frontend && npm run test:e2e
 
 lint: lint-backend lint-frontend ## Lint backend (ruff) and frontend (eslint)
+
+test: test-backend test-frontend ## Run backend and frontend unit tests
+
+test-backend: $(STAMP)
+	cd backend && env -u PYTHONPATH $(VENV_PY) -m pytest tests/
+
+test-frontend: frontend/node_modules
+	cd frontend && npm run test
 
 lint-backend: $(STAMP)
 	cd backend && $(VENV_PY) -m ruff check .
