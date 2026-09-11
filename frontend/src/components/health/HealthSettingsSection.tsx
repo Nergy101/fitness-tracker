@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CheckIcon as Check } from "@phosphor-icons/react";
 import { api, type UserProfileResponse, type UserProfileUpdate } from "../../api";
 import {
@@ -6,6 +6,7 @@ import {
   registerPushSubscription,
   unsubscribePush,
   getNotificationStatus,
+  getPushSubscription,
   type NotificationStatus,
 } from "../../notifications";
 import { logger } from "../../logger";
@@ -19,11 +20,37 @@ interface HealthSettingsSectionProps {
  *  it can live in the app-level settings modal. */
 export default function HealthSettingsSection({ onSaved }: HealthSettingsSectionProps) {
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
-    api.getProfile().then(setProfile).catch(() => {});
+  const loadProfile = useCallback(() => {
+    setLoadError(false);
+    api
+      .getProfile()
+      .then(setProfile)
+      .catch((e) => {
+        logger.error("Health profile load failed", e);
+        setLoadError(true);
+      });
   }, []);
 
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  if (loadError) {
+    return (
+      <div className="text-center py-6 space-y-3">
+        <p className="text-xs text-red-400">Could not load health settings.</p>
+        <button
+          onClick={loadProfile}
+          aria-label="Retry loading health settings"
+          className="bg-accent/20 text-accent rounded-lg py-1.5 px-4 text-xs font-medium hover:bg-accent/30 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
   if (!profile) {
     return <p className="text-xs text-fg/40">Loading health settings...</p>;
   }
@@ -51,8 +78,30 @@ function HealthSettingsForm({
   // ─── Push Notification State ──────────────────────
   const [pushStatus, setPushStatus] = useState<NotificationStatus>(getNotificationStatus());
   const [pushSubscribed, setPushSubscribed] = useState(false);
+  // The browser keeps its push subscription across reloads, so the permission
+  // alone doesn't tell us whether push is active — check for a live
+  // subscription before deciding which control to show.
+  const [pushChecking, setPushChecking] = useState(getNotificationStatus() === "granted");
   const [pushLoading, setPushLoading] = useState(false);
   const [testSent, setTestSent] = useState(false);
+
+  useEffect(() => {
+    if (getNotificationStatus() !== "granted") return;
+    let cancelled = false;
+    getPushSubscription()
+      .then((sub) => {
+        if (!cancelled) setPushSubscribed(sub !== null);
+      })
+      .catch((e) => {
+        logger.error("Push subscription check failed", e);
+      })
+      .finally(() => {
+        if (!cancelled) setPushChecking(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleEnablePush = async () => {
     setPushLoading(true);
@@ -154,6 +203,8 @@ function HealthSettingsForm({
         <p className="text-xs text-fg/40 mb-2.5">Push Notifications</p>
         {pushStatus === "unsupported" ? (
           <p className="text-xs text-fg/40">Not supported in this browser.</p>
+        ) : pushChecking ? (
+          <div className="skeleton-shimmer rounded-lg h-9 w-full" />
         ) : pushStatus === "denied" ? (
           <p className="text-xs text-orange-400">
             Notifications are blocked. Enable them in your browser settings.

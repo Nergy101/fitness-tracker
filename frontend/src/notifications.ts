@@ -48,6 +48,18 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return Notification.requestPermission();
 }
 
+export async function getPushSubscription(): Promise<PushSubscriptionInfo | null> {
+  const registration = await getSWRegistration();
+  if (!registration) return null;
+  try {
+    const existing = await registration.pushManager.getSubscription();
+    return existing ? (existing.toJSON() as unknown as PushSubscriptionInfo) : null;
+  } catch (err) {
+    logger.error("Failed to read existing push subscription", err);
+    return null;
+  }
+}
+
 export async function registerPushSubscription(): Promise<PushSubscriptionInfo | null> {
   const registration = await getSWRegistration();
   if (!registration) {
