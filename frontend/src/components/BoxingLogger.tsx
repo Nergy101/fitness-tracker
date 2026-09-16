@@ -46,13 +46,6 @@ export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled
 
   const [notePrompt, setNotePrompt] = useState(() => randomNotePrompt());
 
-  useEffect(() => {
-    if (!editEntry) return;
-    startEdit(editEntry);
-    onEditHandled?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editEntry]);
-
   function resetForm() {
     setDuration(1800);
     setCustomDuration("");
@@ -80,6 +73,15 @@ export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled
     setNotes(entry.notes);
     setShowForm(true);
   }
+
+  // A Recent-workouts tag asked for this entry: open its form. Declared after
+  // startEdit so the hook reads it as an already-initialised binding.
+  useEffect(() => {
+    if (!editEntry) return;
+    startEdit(editEntry);
+    onEditHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editEntry]);
 
   async function handleSubmit() {
     const dur = duration;

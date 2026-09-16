@@ -39,13 +39,6 @@ export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandle
 
   const [notePrompt, setNotePrompt] = useState(() => randomNotePrompt());
 
-  useEffect(() => {
-    if (!editEntry) return;
-    startEdit(editEntry);
-    onEditHandled?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editEntry]);
-
   function resetForm() {
     setDuration(1800);
     setCustomDuration("");
@@ -74,6 +67,15 @@ export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandle
     setNotes(entry.notes);
     setShowForm(true);
   }
+
+  // A Recent-workouts tag asked for this entry: open its form. Declared after
+  // startEdit so the hook reads it as an already-initialised binding.
+  useEffect(() => {
+    if (!editEntry) return;
+    startEdit(editEntry);
+    onEditHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editEntry]);
 
   async function handleSubmit() {
     const dist = parseFloat(distanceKm);

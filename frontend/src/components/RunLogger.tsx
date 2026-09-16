@@ -55,13 +55,6 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
   const logLabel = `Log a ${label}`;
   const saveLabel = `Save ${label}`;
 
-  useEffect(() => {
-    if (!editEntry) return;
-    startEdit(editEntry);
-    onEditHandled?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editEntry]);
-
   function resetForm() {
     setRunDuration(1800);
     setRunCustomDuration("");
@@ -90,6 +83,15 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
     setRunNotes(entry.notes);
     setShowForm(true);
   }
+
+  // A Recent-workouts tag asked for this entry: open its form. Declared after
+  // startEdit so the hook reads it as an already-initialised binding.
+  useEffect(() => {
+    if (!editEntry) return;
+    startEdit(editEntry);
+    onEditHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editEntry]);
 
   async function handleSubmit() {
     const dist = parseFloat(runDistance);
