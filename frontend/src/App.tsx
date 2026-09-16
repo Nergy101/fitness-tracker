@@ -50,6 +50,10 @@ const TABS: Tab[] = [
 
 const TAB_IDS: readonly TabId[] = TABS.map((t) => t.id);
 
+/** Opening the app lands on the middle tab — the nav item under the thumb —
+ *  instead of the first one. */
+const DEFAULT_TAB: TabId = TABS[Math.floor(TABS.length / 2)].id;
+
 export default function App() {
   // Nothing else mounts theme handling on the main screen (controls live in
   // the settings modal), so apply the persisted theme from the app root.
@@ -64,7 +68,7 @@ export default function App() {
       return false;
     }
   });
-  const [currentTab, setCurrentTab] = useHashRoute<TabId>(TAB_IDS, "workout");
+  const [currentTab, setCurrentTab] = useHashRoute<TabId>(TAB_IDS, DEFAULT_TAB);
   const [runningWorkout, setRunningWorkout] = useState<WorkoutTemplate | null>(
     null,
   );

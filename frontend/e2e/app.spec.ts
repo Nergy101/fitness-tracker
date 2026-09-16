@@ -98,7 +98,7 @@ test.describe("authenticated", () => {
   });
 
   test("seeded workouts show rounds and multiplied duration", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#workout");
     // Basic: 6 exercises x (40+30+40+30+40+45=225s) x 3 rounds = 675s = 11m 15s.
     const basic = page.locator("div", { hasText: "Basic" }).first();
     await expect(page.getByText("Basic", { exact: true })).toBeVisible();
@@ -114,7 +114,7 @@ test.describe("authenticated", () => {
   });
 
   test("saving a workout shows a success toast", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#workout");
     await page.getByRole("button", { name: "+ Add" }).click();
     await page.getByPlaceholder("Workout name...").fill("Toast Test");
 
@@ -135,7 +135,7 @@ test.describe("authenticated", () => {
     await createFastWorkout(request, "E2E Clone Src", 2, 2, 30, _authHeaders);
 
     // 2. Navigate to Workouts tab and confirm the source card is visible.
-    await page.goto("/");
+    await page.goto("/#workout");
     await expect(page.getByRole("heading", { name: "E2E Clone Src", exact: true }).first()).toBeVisible();
 
     // 3. Scope the Duplicate button to that card (use .first() since clone is prepended
@@ -224,7 +224,7 @@ test.describe("authenticated", () => {
     // total = 1 exercise x 2s x 2 rounds = 4s.
     expect(workout.total_duration_seconds).toBe(4);
 
-    await page.goto("/");
+    await page.goto("/#workout");
     await page.getByText("E2E Rounds", { exact: true }).click();
 
     // Poll the runner text; capture that it reaches Round 2/2 (proves looping),
@@ -255,7 +255,7 @@ test.describe("authenticated", () => {
     // 2 exercises x 60s: without Skip this can't finish inside the test window.
     await createFastWorkout(request, "E2E Skip", 1, 2, 60, _authHeaders);
 
-    await page.goto("/");
+    await page.goto("/#workout");
     await page.getByText("E2E Skip", { exact: true }).click();
 
     // Skip appears only during the exercise phase; wait past the initial rest.
@@ -292,7 +292,7 @@ test.describe("authenticated", () => {
     // total = 1 exercise x 2s + 2s warmup + 2s cooldown = 6s
     expect(workout.total_duration_seconds).toBe(6);
 
-    await page.goto("/");
+    await page.goto("/#workout");
     await page.getByText("E2E Warmup Cooldown", { exact: true }).click();
 
     // Warmup phase should show
@@ -679,8 +679,8 @@ test.describe("authenticated", () => {
 
   // --- Runs ---
 
-  test("log a run via UI shows in recent runs and history", async ({ page, request }) => {
-    await page.goto("/");
+  test("log a run via UI shows in history", async ({ page, request }) => {
+    await page.goto("/#workout");
 
     // Open the run logger
     await page.getByText("Run").click();
@@ -754,7 +754,7 @@ test.describe("authenticated", () => {
     const workout = await createFastWorkout(request, "E2E Log Test", 2, 2, 10, _authHeaders);
     expect(workout.id).toBeTruthy();
 
-    await page.goto("/");
+    await page.goto("/#workout");
 
     // Wait for workouts to load
     await expect(page.getByText("E2E Log Test", { exact: true }).first()).toBeVisible();
@@ -785,7 +785,7 @@ test.describe("authenticated", () => {
 
   test("run notes update persists in SessionDetail after closing and reopening", async ({ page }) => {
     // Log a run via UI with notes
-    await page.goto("/");
+    await page.goto("/#workout");
     await page.getByText("Run").click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.2");
     await page.getByRole("button", { name: "1h" }).click();
@@ -819,7 +819,7 @@ test.describe("authenticated", () => {
 
   test("boxing mirror session reflects notes on create and duration on update", async ({ page, request }) => {
     // Log a boxing session via UI
-    await page.goto("/");
+    await page.goto("/#workout");
     await page.getByText("Boxing").click();
     await page.getByRole("button", { name: "30m" }).click();
     await page.getByText("Notes (optional)").locator("..").locator("input").fill("boxing-e2e-notes");
@@ -850,7 +850,7 @@ test.describe("authenticated", () => {
   });
 
   test("cycling ride logged via UI creates mirror session in history", async ({ page, request }) => {
-    await page.goto("/");
+    await page.goto("/#workout");
 
     // Open the cycling logger and log a 30m ride over 15 km
     await page.getByText("Cycling").click();
@@ -917,7 +917,7 @@ test.describe("authenticated", () => {
 
   test("run session is editable from the History tab", async ({ page, request }) => {
     // Log a 30m / 5.0km run via UI
-    await page.goto("/");
+    await page.goto("/#workout");
     await page.getByText("Run").click();
     await page.getByRole("button", { name: "30m" }).click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.0");
@@ -948,7 +948,7 @@ test.describe("authenticated", () => {
     const workout = await createFastWorkout(request, "E2E Notes Test", 1, 2, 10, _authHeaders);
     expect(workout.id).toBeTruthy();
 
-    await page.goto("/");
+    await page.goto("/#workout");
     await expect(page.getByText("E2E Notes Test", { exact: true }).first()).toBeVisible();
 
     // Log the workout
