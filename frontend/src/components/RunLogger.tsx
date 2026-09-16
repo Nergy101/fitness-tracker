@@ -3,8 +3,6 @@ import {
   PersonSimpleRunIcon as PersonSimpleRun,
   MapTrifoldIcon as MapTrifold,
   XIcon as X,
-  PencilSimpleIcon as Pencil,
-  TrashIcon as Trash,
 } from "@phosphor-icons/react";
 import { Boot } from "@phosphor-icons/react/dist/csr/Boot";
 import Toast from "./Toast";
@@ -17,6 +15,10 @@ import { todayKey } from "../dateKey";
 interface RunLoggerProps {
   onRunLogged: () => void;
   runType: "run" | "walk";
+  /** Set by the Recent-workouts tag row to open this entry in the edit form. */
+  editEntry?: RunEntryResponse | null;
+  /** Called once `editEntry` has been consumed, so the parent can clear it. */
+  onEditHandled?: () => void;
 }
 
 const DURATION_OPTIONS = [
@@ -34,11 +36,9 @@ function formatPace(secondsPerKm: number | null): string {
   return `${min}:${sec.toString().padStart(2, "0")} /km`;
 }
 
-export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
+export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandled }: RunLoggerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [entries, setEntries] = useState<RunEntryResponse[]>([]);
-  const [showConfirmDelete, setShowConfirmDelete] = useState<number | null>(null);
   const [runDuration, setRunDuration] = useState(1800);
   const [runCustomDuration, setRunCustomDuration] = useState("");
   const [isCustomDuration, setIsCustomDuration] = useState(false);
@@ -54,22 +54,13 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
   const label = isRun ? "Run" : "Walk";
   const logLabel = `Log a ${label}`;
   const saveLabel = `Save ${label}`;
-  const plural = isRun ? "Runs" : "Walks";
-
-  const myEntries = entries.filter((e) => e.run_type === runType);
-
-  async function loadEntries() {
-    try {
-      const data = await api.getRuns();
-      setEntries(data);
-    } catch {
-      /* silent — entries are cosmetic */
-    }
-  }
 
   useEffect(() => {
-    loadEntries();
-  }, []);
+    if (!editEntry) return;
+    startEdit(editEntry);
+    onEditHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editEntry]);
 
   function resetForm() {
     setRunDuration(1800);
@@ -122,29 +113,12 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
       }
       resetForm();
       setShowForm(false);
-      await loadEntries();
       onRunLogged();
     } catch (e) {
       if (e instanceof OfflineError) {
         setToast(`${label} queued for sync`);
       } else {
         setToast(`Failed to save ${label.toLowerCase()}`);
-      }
-    }
-  }
-
-  async function handleDelete(id: number) {
-    try {
-      await api.deleteRun(id);
-      setShowConfirmDelete(null);
-      setEntries((prev) => prev.filter((e) => e.id !== id));
-      setToast(`${label} deleted`);
-    } catch (e) {
-      setShowConfirmDelete(null);
-      if (e instanceof OfflineError) {
-        setToast(`${label} delete queued for sync`);
-      } else {
-        setToast(`Failed to delete ${label.toLowerCase()}`);
       }
     }
   }
@@ -176,69 +150,6 @@ export default function RunLogger({ onRunLogged, runType }: RunLoggerProps) {
           <Icon size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS[runType] }} />
           <p className="text-xs font-semibold text-fg">{label}</p>
         </button>
-
-        {myEntries.length > 0 && (
-          <div className="col-span-4 order-2 bg-surface rounded-xl p-3 border border-fg/10">
-            <p className="text-xs font-semibold text-fg/50 mb-2">Recent {plural}</p>
-            {myEntries.slice(0, 5).map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between py-1.5 border-b border-fg/5 last:border-b-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Icon size={14} className="text-accent shrink-0" />
-                  <div className="truncate">
-                    <span className="text-sm text-fg font-medium">{entry.distance_km.toFixed(1)} km</span>
-                    <span className="text-xs text-fg/30 ml-2">{formatDuration(entry.duration_seconds)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 ml-2">
-                  <button
-                    onClick={() => startEdit(entry)}
-                    aria-label={`Edit ${label.toLowerCase()}`}
-                    className="p-1.5 text-fg/40 hover:text-fg rounded-lg hover:bg-bg transition-colors"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => setShowConfirmDelete(entry.id)}
-                    aria-label={`Delete ${label.toLowerCase()}`}
-                    className="p-1.5 text-fg/40 hover:text-red-400 rounded-lg hover:bg-bg transition-colors"
-                  >
-                    <Trash size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {showConfirmDelete !== null && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-            style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
-            onClick={() => setShowConfirmDelete(null)}
-          >
-            <div
-              className="bg-surface rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl border border-fg/10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-sm font-semibold text-fg mb-2">Delete {label.toLowerCase()}?</p>
-              <p className="text-xs text-fg/50 mb-4">This will also remove it from your history. This action cannot be undone.</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowConfirmDelete(null)}
-                  className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-bg text-fg/60 hover:text-fg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDelete(showConfirmDelete)}
-                  className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-red-500/90 text-white hover:bg-red-500 transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </>
     );
   }

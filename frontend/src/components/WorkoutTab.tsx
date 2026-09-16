@@ -4,13 +4,17 @@ import Toast from "./Toast";
 import {
   api,
   OfflineError,
+  type BoxingEntryResponse,
+  type CyclingEntryResponse,
   type Exercise,
+  type RunEntryResponse,
   type WorkoutTemplate,
 } from "../api";
 import WorkoutEditor from "./WorkoutEditor";
 import RunLogger from "./RunLogger";
 import BoxingLogger from "./BoxingLogger";
 import CyclingLogger from "./CyclingLogger";
+import RecentWorkouts, { type EditRequest } from "./RecentWorkouts";
 import WorkoutCard from "./WorkoutCard";
 import WorkoutSkeleton from "./skeletons/WorkoutSkeleton";
 import { useFocusTrap } from "../useFocusTrap";
@@ -39,6 +43,12 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [toast, setToast] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: number; name: string } | null>(null);
   const [highlightId, setHighlightId] = useState<number | null>(null);
+  // Recent-workouts tags hand an entry back to the logger that owns its form.
+  const [editRun, setEditRun] = useState<RunEntryResponse | null>(null);
+  const [editWalk, setEditWalk] = useState<RunEntryResponse | null>(null);
+  const [editCycling, setEditCycling] = useState<CyclingEntryResponse | null>(null);
+  const [editBoxing, setEditBoxing] = useState<BoxingEntryResponse | null>(null);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const deleteModalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(deleteModalRef, () => setPendingDelete(null));
 
@@ -60,6 +70,30 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   function openEditor(tpl: WorkoutTemplate | null) {
     setEditing(tpl);
     setShowEditor(true);
+  }
+
+  /** An activity was logged or deleted: refetch the tags and refresh the app. */
+  function handleActivityChanged() {
+    setActivityRefreshKey((k) => k + 1);
+    onLogWorkout?.();
+  }
+
+  /** A Recent-workouts tag asked to edit its entry — open the owning logger. */
+  function handleEditRequest(req: EditRequest) {
+    switch (req.kind) {
+      case "run":
+        setEditRun(req.entry);
+        break;
+      case "walk":
+        setEditWalk(req.entry);
+        break;
+      case "cycling":
+        setEditCycling(req.entry);
+        break;
+      case "boxing":
+        setEditBoxing(req.entry);
+        break;
+    }
   }
 
   async function onSave() {
@@ -265,11 +299,38 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         </div>
       ) : (
         <div className="grid grid-cols-4 gap-3 mb-4">
-          <RunLogger onRunLogged={() => onLogWorkout?.()} runType="run" />
-          <RunLogger onRunLogged={() => onLogWorkout?.()} runType="walk" />
-          <CyclingLogger onWorkoutLogged={() => onLogWorkout?.()} />
-          <BoxingLogger onWorkoutLogged={() => onLogWorkout?.()} />
+          <RunLogger
+            onRunLogged={handleActivityChanged}
+            runType="run"
+            editEntry={editRun}
+            onEditHandled={() => setEditRun(null)}
+          />
+          <RunLogger
+            onRunLogged={handleActivityChanged}
+            runType="walk"
+            editEntry={editWalk}
+            onEditHandled={() => setEditWalk(null)}
+          />
+          <CyclingLogger
+            onWorkoutLogged={handleActivityChanged}
+            editEntry={editCycling}
+            onEditHandled={() => setEditCycling(null)}
+          />
+          <BoxingLogger
+            onWorkoutLogged={handleActivityChanged}
+            editEntry={editBoxing}
+            onEditHandled={() => setEditBoxing(null)}
+          />
         </div>
+      )}
+
+      {/* One combined tag row instead of four stacked per-type lists */}
+      {!loading && (
+        <RecentWorkouts
+          onEdit={handleEditRequest}
+          refreshKey={activityRefreshKey}
+          onChanged={handleActivityChanged}
+        />
       )}
 
       {/* Workout Templates */}

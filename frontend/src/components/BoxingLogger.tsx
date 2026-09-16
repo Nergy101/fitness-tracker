@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import {
   HandFistIcon as HandFist,
   XIcon as X,
-  PencilSimpleIcon as Pencil,
-  TrashIcon as Trash,
 } from "@phosphor-icons/react";
 import Toast from "./Toast";
 import { api, OfflineError, type BoxingEntryResponse } from "../api";
@@ -14,6 +12,10 @@ import { todayKey } from "../dateKey";
 
 interface BoxingLoggerProps {
   onWorkoutLogged: () => void;
+  /** Set by the Recent-workouts tag row to open this entry in the edit form. */
+  editEntry?: BoxingEntryResponse | null;
+  /** Called once `editEntry` has been consumed, so the parent can clear it. */
+  onEditHandled?: () => void;
 }
 
 const DURATION_OPTIONS = [
@@ -31,11 +33,9 @@ function calcKcal(durationSeconds: number, kcalPerMin: number): number {
   return Math.round((durationSeconds / 60) * kcalPerMin);
 }
 
-export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
+export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled }: BoxingLoggerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [entries, setEntries] = useState<BoxingEntryResponse[]>([]);
-  const [showConfirmDelete, setShowConfirmDelete] = useState<number | null>(null);
   const [duration, setDuration] = useState(1800);
   const [customDuration, setCustomDuration] = useState("");
   const [kcalPerMin, setKcalPerMin] = useState(DEFAULT_KCAL_PER_MIN);
@@ -46,18 +46,12 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
 
   const [notePrompt, setNotePrompt] = useState(() => randomNotePrompt());
 
-  async function loadEntries() {
-    try {
-      const data = await api.getBoxing();
-      setEntries(data);
-    } catch {
-      /* silent — entries are cosmetic */
-    }
-  }
-
   useEffect(() => {
-    loadEntries();
-  }, []);
+    if (!editEntry) return;
+    startEdit(editEntry);
+    onEditHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editEntry]);
 
   function resetForm() {
     setDuration(1800);
@@ -108,29 +102,12 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
       }
       resetForm();
       setShowForm(false);
-      await loadEntries();
       onWorkoutLogged();
     } catch (e) {
       if (e instanceof OfflineError) {
         setToast("Boxing workout queued for sync");
       } else {
         setToast("Failed to save boxing workout");
-      }
-    }
-  }
-
-  async function handleDelete(id: number) {
-    try {
-      await api.deleteBoxing(id);
-      setShowConfirmDelete(null);
-      setEntries((prev) => prev.filter((e) => e.id !== id));
-      setToast("Boxing workout deleted");
-    } catch (e) {
-      setShowConfirmDelete(null);
-      if (e instanceof OfflineError) {
-        setToast("Boxing workout delete queued for sync");
-      } else {
-        setToast("Failed to delete boxing workout");
       }
     }
   }
@@ -156,71 +133,6 @@ export default function BoxingLogger({ onWorkoutLogged }: BoxingLoggerProps) {
           <HandFist size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.boxing }} />
           <p className="text-xs font-semibold text-fg">Boxing</p>
         </button>
-
-        {entries.length > 0 && (
-          <div className="col-span-4 order-2 bg-surface rounded-xl p-3 border border-fg/10">
-            <p className="text-xs font-semibold text-fg/50 mb-2">Recent Boxing Sessions</p>
-            {entries.slice(0, 5).map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between py-1.5 border-b border-fg/5 last:border-b-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <HandFist size={14} className="text-accent shrink-0" />
-                  <div className="truncate">
-                    <span className="text-sm text-fg font-medium">{formatDuration(entry.duration_seconds)}</span>
-                    <span className="text-xs text-fg/30 ml-2">
-                      {entry.rounds ? `${entry.rounds} rounds` : `${entry.kcal_per_min} kcal/min`}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0 ml-2">
-                  <button
-                    onClick={() => startEdit(entry)}
-                    aria-label="Edit boxing"
-                    className="p-1.5 text-fg/40 hover:text-fg rounded-lg hover:bg-bg transition-colors"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => setShowConfirmDelete(entry.id)}
-                    aria-label="Delete boxing"
-                    className="p-1.5 text-fg/40 hover:text-red-400 rounded-lg hover:bg-bg transition-colors"
-                  >
-                    <Trash size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {showConfirmDelete !== null && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-            style={{ paddingTop: "max(env(safe-area-inset-top), 68px)" }}
-            onClick={() => setShowConfirmDelete(null)}
-          >
-            <div
-              className="bg-surface rounded-xl p-5 mx-4 max-w-sm w-full shadow-xl border border-fg/10"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-sm font-semibold text-fg mb-2">Delete boxing session?</p>
-              <p className="text-xs text-fg/50 mb-4">This will also remove it from your history. This action cannot be undone.</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowConfirmDelete(null)}
-                  className="flex-1 px-3 py-2 text-xs font-medium rounded-lg bg-bg text-fg/60 hover:text-fg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDelete(showConfirmDelete)}
-                  className="flex-1 px-3 py-2 text-xs font-semibold rounded-lg bg-red-500/90 text-white hover:bg-red-500 transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </>
     );
   }

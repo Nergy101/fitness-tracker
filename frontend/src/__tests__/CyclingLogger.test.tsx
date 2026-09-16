@@ -4,16 +4,12 @@ import CyclingLogger from "../components/CyclingLogger";
 import { todayKey } from "../dateKey";
 
 const mockCreateCycling = vi.fn().mockResolvedValue({ id: 1 });
-const mockGetCycling = vi.fn().mockResolvedValue([]);
 const mockUpdateCycling = vi.fn().mockResolvedValue({ id: 1 });
-const mockDeleteCycling = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../api", () => ({
   api: {
     createCycling: (...args: unknown[]) => mockCreateCycling(...args),
-    getCycling: (...args: unknown[]) => mockGetCycling(...args),
     updateCycling: (...args: unknown[]) => mockUpdateCycling(...args),
-    deleteCycling: (...args: unknown[]) => mockDeleteCycling(...args),
   },
   OfflineError: class OfflineError extends Error {
     readonly offline = true;
@@ -224,42 +220,29 @@ describe("CyclingLogger", () => {
     expect(mockCreateCycling).not.toHaveBeenCalled();
   });
 
-  // ── Recent entries ──
+  // ── Edit hand-off from the Recent-workouts tags ──
 
-  it("renders recent rides when entries exist", async () => {
-    mockGetCycling.mockResolvedValue([
-      { id: 5, duration_seconds: 2700, distance_km: 24, date: "2026-08-01", notes: "" },
-    ]);
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    await vi.waitFor(() => {
-      expect(screen.getByText("Recent Cycling Rides")).toBeInTheDocument();
-    });
-    expect(screen.getByText("24.0 km")).toBeInTheDocument();
-    expect(screen.getByLabelText("Edit cycling")).toBeInTheDocument();
-    expect(screen.getByLabelText("Delete cycling")).toBeInTheDocument();
-  });
+  it("opens the edit form from an editEntry prop and calls update on submit", async () => {
+    const entry = {
+      id: 5,
+      duration_seconds: 2700,
+      distance_km: 24,
+      date: "2026-08-01",
+      notes: "fast",
+      created_at: "2026-08-01T10:00:00",
+    };
+    const onEditHandled = vi.fn();
+    render(
+      <CyclingLogger
+        onWorkoutLogged={onWorkoutLogged}
+        editEntry={entry}
+        onEditHandled={onEditHandled}
+      />,
+    );
 
-  it("does not render recent rides when there are none", async () => {
-    mockGetCycling.mockResolvedValue([]);
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    expect(screen.queryByText("Recent Cycling Rides")).not.toBeInTheDocument();
-  });
-
-  // ── Edit ──
-
-  it("opens edit form populated from entry and calls update on submit", async () => {
-    mockGetCycling.mockResolvedValue([
-      { id: 5, duration_seconds: 2700, distance_km: 24, date: "2026-08-01", notes: "fast" },
-    ]);
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    await vi.waitFor(() => {
-      expect(screen.getByLabelText("Edit cycling")).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByLabelText("Edit cycling"));
-
-    // Form populated from the entry
     expect(screen.getByText("Edit Cycling Ride")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("e.g. 24.0")).toHaveValue(24);
+    expect(onEditHandled).toHaveBeenCalled();
 
     fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "30" } });
     fireEvent.click(screen.getByText("Update Cycling Ride"));
@@ -272,43 +255,5 @@ describe("CyclingLogger", () => {
         notes: "fast",
       });
     });
-  });
-
-  // ── Delete ──
-
-  it("confirms and deletes an entry", async () => {
-    mockGetCycling.mockResolvedValue([
-      { id: 5, duration_seconds: 2700, distance_km: 24, date: "2026-08-01", notes: "" },
-    ]);
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    await vi.waitFor(() => {
-      expect(screen.getByLabelText("Delete cycling")).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByLabelText("Delete cycling"));
-    expect(screen.getByText("Delete cycling ride?")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Delete"));
-
-    await vi.waitFor(() => {
-      expect(mockDeleteCycling).toHaveBeenCalledWith(5);
-    });
-  });
-
-  it("queues delete for sync on OfflineError", async () => {
-    const { OfflineError } = await import("../api");
-    mockGetCycling.mockResolvedValue([
-      { id: 5, duration_seconds: 2700, distance_km: 24, date: "2026-08-01", notes: "" },
-    ]);
-    mockDeleteCycling.mockRejectedValue(new OfflineError());
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    await vi.waitFor(() => {
-      expect(screen.getByLabelText("Delete cycling")).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByLabelText("Delete cycling"));
-    fireEvent.click(screen.getByText("Delete"));
-
-    await vi.waitFor(() => {
-      expect(screen.getByText(/delete queued for sync/)).toBeInTheDocument();
-    });
-    expect(mockDeleteCycling).toHaveBeenCalledWith(5);
   });
 });
