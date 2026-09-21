@@ -36,15 +36,54 @@ vi.mock("../api", () => ({
 
 // Mock heavy/child components so tests focus on WorkoutTab logic.
 vi.mock("../components/RunLogger", () => ({
-  default: ({ runType }: { runType: string }) => <div data-testid={`run-logger-${runType}`} />,
+  default: ({
+    runType,
+    editEntry,
+  }: {
+    runType: string;
+    editEntry?: { id: number } | null;
+  }) => (
+    <div data-testid={`run-logger-${runType}`}>
+      {editEntry ? <span data-testid={`editing-run-${runType}-${editEntry.id}`} /> : null}
+    </div>
+  ),
 }));
 
 vi.mock("../components/CyclingLogger", () => ({
-  default: () => <div data-testid="cycling-logger" />,
+  default: ({ editEntry }: { editEntry?: { id: number } | null }) => (
+    <div data-testid="cycling-logger">
+      {editEntry ? <span data-testid={`editing-cycling-${editEntry.id}`} /> : null}
+    </div>
+  ),
 }));
 
 vi.mock("../components/BoxingLogger", () => ({
-  default: () => <div data-testid="boxing-logger" />,
+  default: ({ editEntry }: { editEntry?: { id: number } | null }) => (
+    <div data-testid="boxing-logger">
+      {editEntry ? <span data-testid={`editing-boxing-${editEntry.id}`} /> : null}
+    </div>
+  ),
+}));
+
+// The combined Recent-workouts tag row: render a tag per kind so the edit
+// hand-off wiring can be exercised without its own fetching.
+vi.mock("../components/RecentWorkouts", () => ({
+  default: ({ onEdit }: { onEdit: (req: unknown) => void }) => (
+    <div data-testid="recent-workouts">
+      <button
+        aria-label="tag-cycling"
+        onClick={() => onEdit({ kind: "cycling", entry: { id: 42 } })}
+      >
+        24.0 km
+      </button>
+      <button
+        aria-label="tag-run"
+        onClick={() => onEdit({ kind: "run", entry: { id: 43 } })}
+      >
+        5.0 km
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("../components/WorkoutEditor", () => ({
@@ -243,5 +282,25 @@ describe("WorkoutTab", () => {
     await screen.findByText("Full Body");
     fireEvent.click(screen.getByLabelText("start-1"));
     expect(onStartWorkout).toHaveBeenCalledWith(mockTemplate);
+  });
+
+  it("renders the combined Recent-workouts tag row", async () => {
+    renderTab();
+    await screen.findByText("Full Body");
+    expect(screen.getByTestId("recent-workouts")).toBeInTheDocument();
+  });
+
+  it("hands a tapped tag to the logger that owns that activity type", async () => {
+    renderTab();
+    await screen.findByText("Full Body");
+
+    fireEvent.click(screen.getByLabelText("tag-cycling"));
+    expect(screen.getByTestId("editing-cycling-42")).toBeInTheDocument();
+    // Only the matching logger opens — the others stay collapsed.
+    expect(screen.queryByTestId("editing-run-run-43")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("tag-run"));
+    expect(screen.getByTestId("editing-run-run-43")).toBeInTheDocument();
+    expect(screen.queryByTestId("editing-run-walk-43")).not.toBeInTheDocument();
   });
 });

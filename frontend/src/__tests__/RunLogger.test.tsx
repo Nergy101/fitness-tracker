@@ -4,8 +4,7 @@ import RunLogger from "../components/RunLogger";
 import { todayKey } from "../dateKey";
 
 const mockCreateRun = vi.fn();
-const mockGetRuns = vi.fn().mockResolvedValue([]);
-const mockDeleteRun = vi.fn().mockResolvedValue(undefined);
+const mockUpdateRun = vi.fn().mockResolvedValue({ id: 1 });
 
 vi.mock("../api", () => {
   class OfflineError extends Error {
@@ -17,9 +16,7 @@ vi.mock("../api", () => {
   return {
     api: {
       createRun: (...args: unknown[]) => mockCreateRun(...args),
-      getRuns: (...args: unknown[]) => mockGetRuns(...args),
-      updateRun: vi.fn().mockResolvedValue({ id: 1 }),
-      deleteRun: (...args: unknown[]) => mockDeleteRun(...args),
+      updateRun: (...args: unknown[]) => mockUpdateRun(...args),
     },
     OfflineError,
   };
@@ -28,8 +25,6 @@ vi.mock("../api", () => {
 describe("RunLogger", () => {
   beforeEach(() => {
     mockCreateRun.mockClear();
-    mockGetRuns.mockReset();
-    mockGetRuns.mockResolvedValue([]);
   });
 
   it("renders the collapsed Run button initially", () => {
@@ -244,23 +239,70 @@ describe("RunLogger", () => {
     expect(screen.getByText("4:30 /km")).toBeInTheDocument();
   });
 
-  it("queues delete for sync on OfflineError", async () => {
-    const { OfflineError } = await import("../api");
-    mockGetRuns.mockResolvedValue([
-      { id: 3, duration_seconds: 1800, distance_km: 3, run_type: "run", date: "2026-08-01", notes: "" },
-    ]);
-    mockDeleteRun.mockRejectedValue(new OfflineError());
+  // ── Edit hand-off from the Recent-workouts tags ──
 
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    await waitFor(() => {
-      expect(screen.getByLabelText("Delete run")).toBeInTheDocument();
-    });
-    fireEvent.click(screen.getByLabelText("Delete run"));
-    fireEvent.click(screen.getByText("Delete"));
+  it("opens the edit form from an editEntry prop and calls update on submit", async () => {
+    const entry = {
+      id: 3,
+      duration_seconds: 1800,
+      distance_km: 3,
+      pace_per_km: 600,
+      run_type: "run",
+      date: "2026-08-01",
+      notes: "quick",
+      created_at: "2026-08-01T10:00:00",
+    };
+    const onEditHandled = vi.fn();
+
+    render(
+      <RunLogger
+        onRunLogged={vi.fn()}
+        runType="run"
+        editEntry={entry}
+        onEditHandled={onEditHandled}
+      />,
+    );
+
+    expect(screen.getByText("Edit Run")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("e.g. 5.0")).toHaveValue(3);
+    expect(onEditHandled).toHaveBeenCalled();
+
+    fireEvent.change(screen.getByPlaceholderText("e.g. 5.0"), { target: { value: "4" } });
+    fireEvent.click(screen.getByText("Update Run"));
 
     await waitFor(() => {
-      expect(screen.getByText(/delete queued for sync/)).toBeInTheDocument();
+      expect(mockUpdateRun).toHaveBeenCalledWith(3, {
+        duration_seconds: 1800,
+        distance_km: 4,
+        run_type: "run",
+        date: "2026-08-01",
+        notes: "quick",
+      });
     });
-    expect(mockDeleteRun).toHaveBeenCalledWith(3);
+  });
+
+  it("keeps run_type=walk when a walk entry is edited", async () => {
+    const entry = {
+      id: 7,
+      duration_seconds: 3600,
+      distance_km: 2,
+      pace_per_km: 1800,
+      run_type: "walk",
+      date: "2026-08-02",
+      notes: "",
+      created_at: "2026-08-02T09:00:00",
+    };
+
+    render(<RunLogger onRunLogged={vi.fn()} runType="walk" editEntry={entry} />);
+
+    expect(screen.getByText("Edit Walk")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Update Walk"));
+
+    await waitFor(() => {
+      expect(mockUpdateRun).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ run_type: "walk", distance_km: 2 }),
+      );
+    });
   });
 });
