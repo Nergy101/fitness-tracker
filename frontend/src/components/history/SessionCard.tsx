@@ -23,6 +23,7 @@ export default function SessionCard({
 
   return (
     <div
+      data-testid="session-card"
       className="bg-surface rounded-2xl p-4 border border-l-[3px] border-fg/[0.06] shadow-[var(--shadow-sm)] cursor-pointer hover:border-accent/30 transition-colors"
       style={{ borderLeftColor: ACTIVITY_COLORS[kind] }}
       onClick={() => onSelect(session)}

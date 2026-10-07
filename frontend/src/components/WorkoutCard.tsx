@@ -36,6 +36,7 @@ export default function WorkoutCard({
   return (
     <div
       ref={cardRef}
+      data-testid="workout-card"
       className={`bg-surface rounded-2xl p-4 border shadow-[var(--shadow-sm)] transition-all duration-500 ${
         isHighlighted
           ? "border-accent shadow-[0_0_12px_rgba(var(--color-accent-rgb,99,102,241),0.3)]"

@@ -140,7 +140,7 @@ test.describe("authenticated", () => {
 
     // 3. Scope the Duplicate button to that card (use .first() since clone is prepended
     //    after creation, creating two cards with that heading).
-    const srcCard = page.locator("div.rounded-xl.p-4").filter({
+    const srcCard = page.locator('[data-testid="workout-card"]').filter({
       has: page.getByRole("heading", { name: "E2E Clone Src", exact: true }),
     }).first();
     await srcCard.getByRole("button", { name: "Duplicate workout" }).click();
@@ -149,7 +149,7 @@ test.describe("authenticated", () => {
     await expect(page.getByRole("status")).toContainText('Duplicated as "E2E Clone Src (Copy)"');
 
     // 5. Clone is prepended at top, highlighted with accent border glow.
-    const cloneCard = page.locator("div.rounded-xl.p-4").filter({
+    const cloneCard = page.locator('[data-testid="workout-card"]').filter({
       has: page.getByRole("heading", { name: "E2E Clone Src (Copy)", exact: true }),
     }).first();
     await expect(cloneCard).toBeVisible();
@@ -796,7 +796,7 @@ test.describe("authenticated", () => {
     // Navigate to History and open the session detail
     await page.getByRole("button", { name: "History" }).click();
     await expect(page.getByText("Run: 5.2km").first()).toBeVisible();
-    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "Run: 5.2km" }).first().click();
+    await page.locator('[data-testid="session-card"]').filter({ hasText: "Run: 5.2km" }).first().click();
 
     // Edit notes
     const notesArea = page.locator('textarea[aria-label="Session notes"]');
@@ -813,7 +813,7 @@ test.describe("authenticated", () => {
     await expect(page.locator('textarea[aria-label="Session notes"]')).toHaveCount(0);
 
     // Reopen and verify notes persisted
-    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "Run: 5.2km" }).first().click();
+    await page.locator('[data-testid="session-card"]').filter({ hasText: "Run: 5.2km" }).first().click();
     await expect(page.locator('textarea[aria-label="Session notes"]')).toHaveValue("updated-run-notes");
   });
 
@@ -926,7 +926,7 @@ test.describe("authenticated", () => {
 
     // Open the run session detail from History
     await page.getByRole("button", { name: "History" }).click();
-    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "Run: 5.0km" }).first().click();
+    await page.locator('[data-testid="session-card"]').filter({ hasText: "Run: 5.0km" }).first().click();
 
     // Edit the distance to 7.0km and save
     await page.getByLabel("Run distance km").fill("7.0");
@@ -966,7 +966,7 @@ test.describe("authenticated", () => {
     await expect(page.getByText("E2E Notes Test").first()).toBeVisible();
 
     // Open the session detail modal
-    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "E2E Notes Test" }).first().click();
+    await page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Notes Test" }).first().click();
 
     // Type notes into the textarea
     const notesArea = page.locator('textarea[aria-label="Session notes"]');
@@ -993,7 +993,7 @@ test.describe("authenticated", () => {
     await expect(page.locator('textarea[aria-label="Session notes"]')).toHaveCount(0);
 
     // Reopen the session detail
-    await page.locator(".bg-surface.rounded-xl.cursor-pointer").filter({ hasText: "E2E Notes Test" }).first().click();
+    await page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Notes Test" }).first().click();
 
     // Verify notes persisted
     await expect(page.locator('textarea[aria-label="Session notes"]')).toHaveValue("E2E test notes — persistence check");
