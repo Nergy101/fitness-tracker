@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bento Stack — Workouts home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.fg}}; font-family: 'Manrope', system-ui, sans-serif; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 12px">
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px">
+<div style="display: flex; flex-direction: column; gap: 0">
+<h1 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1">Today</h1>
+<div style="font-size: 14px; color: {{t.muted}}; font-weight: 500">Tuesday, 7 October</div>
+</div>
+<button aria-label="Settings" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: {{t.surface}}; color: {{t.fg}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"></path><circle cx="16" cy="7" r="2"></circle><circle cx="8" cy="17" r="2"></circle></svg></button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; background: {{t.surface}}; border-radius: 24px; padding: 8px">
+<div style="height: 60px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px"><span style="font-size: 11px; color: {{t.muted}}; font-weight: 600">W</span><span style="font-size: 16px; font-weight: 700">1</span><span style="width: 6px; height: 6px; border-radius: 3px; background: #fb923c"></span></div>
+<div style="height: 60px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px"><span style="font-size: 11px; color: {{t.muted}}; font-weight: 600">T</span><span style="font-size: 16px; font-weight: 700">2</span><span style="display: flex; gap: 2px"><span style="width: 6px; height: 6px; border-radius: 3px; background: #38bdf8"></span><span style="width: 6px; height: 6px; border-radius: 3px; background: #fb923c"></span></span></div>
+<div style="height: 60px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px"><span style="font-size: 11px; color: {{t.muted}}; font-weight: 600">F</span><span style="font-size: 16px; font-weight: 700; color: {{t.muted}}">3</span><span style="width: 6px; height: 6px"></span></div>
+<div style="height: 60px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px"><span style="font-size: 11px; color: {{t.muted}}; font-weight: 600">S</span><span style="font-size: 16px; font-weight: 700">4</span><span style="width: 6px; height: 6px; border-radius: 3px; background: #a78bfa"></span></div>
+<div style="height: 60px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px"><span style="font-size: 11px; color: {{t.muted}}; font-weight: 600">S</span><span style="font-size: 16px; font-weight: 700">5</span><span style="width: 6px; height: 6px; border-radius: 3px; background: #fb923c"></span></div>
+<div style="height: 60px; border-radius: 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px"><span style="font-size: 11px; color: {{t.muted}}; font-weight: 600">M</span><span style="font-size: 16px; font-weight: 700">6</span><span style="width: 6px; height: 6px; border-radius: 3px; background: #4ade80"></span></div>
+<div style="height: 60px; border-radius: 18px; background: {{t.fg}}; color: {{t.bg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px"><span style="font-size: 11px; font-weight: 600">T</span><span style="font-size: 16px; font-weight: 800">7</span><span style="width: 6px; height: 6px; border-radius: 3px; border: 1.5px solid {{t.bg}}; box-sizing: border-box"></span></div>
+</div>
+
+<div style="background: {{accent}}; color: #1b1b24; border-radius: 30px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="padding: 6px 12px; border-radius: 999px; background: #1b1b2418; font-size: 12px; font-weight: 700">Up next</span>
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"></path></svg>
+</div>
+<div style="font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1">Full body A</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div style="display: flex; flex-direction: column"><span style="font-size: 20px; font-weight: 800">32</span><span style="font-size: 12px; font-weight: 600">minutes</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 20px; font-weight: 800">8</span><span style="font-size: 12px; font-weight: 600">exercises</span></div>
+<div style="display: flex; flex-direction: column"><span style="font-size: 20px; font-weight: 800">~240</span><span style="font-size: 12px; font-weight: 600">kcal</span></div>
+</div>
+<button style="height: 52px; border-radius: 26px; border: none; background: #1b1b24; color: #ffffff; font-family: inherit; font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"></path></svg>Start workout</button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+<div style="height: 104px; box-sizing: border-box; background: {{t.orange.bg}}; color: {{t.orange.fg}}; border-radius: 26px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 13px; font-weight: 700">Streak</span><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{t.orange.icon}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4 0 7-3 7-7 0-4-3-6-4-10-2 2-3 4-3 6-1-1-2-2-2-4-2 2-5 5-5 8 0 4 3 7 7 7z"></path></svg></div>
+<div style="display: flex; align-items: baseline; gap: 4px"><span style="font-size: 36px; font-weight: 800; letter-spacing: -0.03em; line-height: 1">12</span><span style="font-size: 14px; font-weight: 700">days</span></div>
+</div>
+<div style="height: 104px; box-sizing: border-box; background: {{t.blue.bg}}; color: {{t.blue.fg}}; border-radius: 26px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-size: 13px; font-weight: 700">Consistency</span>
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 36px; font-weight: 800; letter-spacing: -0.03em; line-height: 1">87%</span><div style="height: 6px; border-radius: 3px; background: {{t.blue.track}}"><div style="width: 87%; height: 6px; border-radius: 3px; background: {{t.blue.bar}}"></div></div></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 700; color: {{t.muted}}; padding: 0 4px">Log an activity</div>
+<div style="display: flex; gap: 8px">
+<button style="flex-grow: 1; height: 48px; border-radius: 24px; border: none; background: {{t.sky.bg}}; color: {{t.sky.fg}}; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"></circle><path d="M8 21l3-6 3 2v5M6 12l3-4 4 1 3 3 3 1"></path></svg>Run</button>
+<button style="flex-grow: 1; height: 48px; border-radius: 24px; border: none; background: {{t.green.bg}}; color: {{t.green.fg}}; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"></circle><path d="M10 21l2-6 2 2v4M9 13l1-4 3 1 2 3"></path></svg>Walk</button>
+<button style="flex-grow: 1; height: 48px; border-radius: 24px; border: none; background: {{t.purple.bg}}; color: {{t.purple.fg}}; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="3.5"></circle><circle cx="18.5" cy="17" r="3.5"></circle><path d="M5.5 17l4-8h6l3 8M9.5 9L12 17h-3"></path></svg>Ride</button>
+<button style="flex-grow: 1; height: 48px; border-radius: 24px; border: none; background: {{t.red.bg}}; color: {{t.red.fg}}; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="13" height="10" rx="4"></rect><path d="M7 14v4a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-4M10 4v5"></path></svg>Box</button>
+</div>
+</div>
+
+<nav aria-label="Main" style="position: absolute; left: 16px; right: 16px; bottom: 26px; height: 64px; border-radius: 32px; background: {{t.nav.bg}}; padding: 8px; box-sizing: border-box; display: flex; gap: 4px; align-items: center">
+<button style="flex-grow: 1; height: 48px; border-radius: 24px; border: none; background: {{t.nav.active}}; color: {{t.nav.activeFg}}; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"></path></svg>Workouts</button>
+<button aria-label="Exercises" style="width: 52px; height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"></circle><path d="M8 21l3-6 3 2v5M6 12l3-4 4 1 3 3 3 1"></path></svg></button>
+<button aria-label="Health" style="width: 52px; height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-4 3 8 2-4h7"></path></svg></button>
+<button aria-label="History" style="width: 52px; height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></button>
+<button aria-label="Stats" style="width: 52px; height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg></button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"color","default":"#ff9b73","options":["#ff9b73","#ffd23f","#7ee0a8","#9fc5ff"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+var dark = this.props.dark ?? false;
+var light = {
+bg: '#f1f2f6', surface: '#ffffff', fg: '#1b1b24', muted: '#5a5b6b',
+nav: { bg: '#ffffff', icon: '#5a5b6b', active: '#1b1b24', activeFg: '#ffffff' },
+orange: { bg: '#ffd9bf', fg: '#5a2106', icon: '#c2410c' },
+blue: { bg: '#d6e8ff', fg: '#0b2a52', bar: '#2563c9', track: '#ffffff' },
+purple: { bg: '#e7e0ff', fg: '#33206e' },
+sky: { bg: '#d4f0ff', fg: '#0b3a52' },
+green: { bg: '#d6f5e0', fg: '#0e4425' },
+red: { bg: '#ffdede', fg: '#6b1616' }
+};
+var darkT = {
+bg: '#111118', surface: '#1c1c26', fg: '#f1f1f6', muted: '#a3a4b5',
+nav: { bg: '#1c1c26', icon: '#a3a4b5', active: '#f1f1f6', activeFg: '#111118' },
+orange: { bg: '#3a1f10', fg: '#ffd9bf', icon: '#fb923c' },
+blue: { bg: '#13263f', fg: '#d6e8ff', bar: '#60a5fa', track: '#22395a' },
+purple: { bg: '#251c44', fg: '#e7e0ff' },
+sky: { bg: '#0f2a36', fg: '#bfe8fb' },
+green: { bg: '#10291a', fg: '#c4f5d4' },
+red: { bg: '#2e1414', fg: '#ffd0d0' }
+};
+return { t: dark ? darkT : light, accent: this.props.accent ?? '#ff9b73' };
+}
+}
+</script>
+</body>
+</html>

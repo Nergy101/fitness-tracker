@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Log boxing sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 860px; height: 844px; display: flex; gap: 80px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div style="width: 390px; height: 844px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.fg}}; font-family: 'Bricolage Grotesque', system-ui, sans-serif">
+
+<div style="position: absolute; inset: 0; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="height: 64px"></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 150px; border-radius: 26px; background: {{t.sky.bg}}"></div>
+<div style="height: 150px; border-radius: 26px; background: {{t.green.bg}}"></div>
+</div>
+</div>
+<div style="position: absolute; inset: 0; background: {{t.scrim}}"></div>
+
+<div role="dialog" aria-label="Log boxing" style="position: absolute; left: 0; right: 0; bottom: 0; top: 56px; background: {{t.surface}}; border-radius: 32px 32px 0 0; padding: 10px 20px 30px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="width: 40px; height: 5px; border-radius: 3px; background: {{t.track}}; align-self: center"></div>
+
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 44px; height: 44px; border-radius: 22px; background: {{t.red.bg}}; color: {{t.red.fg}}; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="13" height="10" rx="4"></rect><path d="M7 14v4a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-4M10 4v5"></path></svg></span>
+<h2 style="margin: 0; flex-grow: 1; font-size: 24px; font-weight: 800; letter-spacing: -0.02em">Log boxing</h2>
+<button aria-label="Close" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: {{t.track}}; color: {{t.fg}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Duration</span>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 72px; border-radius: 24px; background: {{t.field}}; padding: 0 12px">
+<button aria-label="Decrease duration" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">−</button>
+<label style="display: flex; align-items: baseline; gap: 6px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Duration in minutes</span><input type="text" inputmode="numeric" value="30" style="width: 64px; border: none; background: transparent; text-align: right; font-family: inherit; font-size: 48px; font-weight: 800; letter-spacing: -0.04em; color: {{t.fg}}; outline: none; padding: 0"><span style="font-size: 18px; font-weight: 700; color: {{t.muted}}">min</span></label>
+<button aria-label="Increase duration" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">+</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid {{t.track}}; background: transparent; color: {{t.fg}}; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">15 min</button>
+<button style="height: 40px; border-radius: 20px; border: none; background: {{t.red.bg}}; color: {{t.red.fg}}; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer; box-shadow: inset 0 0 0 2px {{t.red.fg}}">30 min</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid {{t.track}}; background: transparent; color: {{t.fg}}; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">45 min</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid {{t.track}}; background: transparent; color: {{t.fg}}; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">1 h</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="border-radius: 22px; background: {{t.field}}; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Rounds <span style="font-weight: 500">(optional)</span></span>
+<div style="display: flex; align-items: center; justify-content: space-between">
+<button aria-label="Fewer rounds" style="width: 40px; height: 40px; border-radius: 20px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 20px; font-weight: 800; cursor: pointer">−</button>
+<span style="font-size: 32px; font-weight: 800">6</span>
+<button aria-label="More rounds" style="width: 40px; height: 40px; border-radius: 20px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 20px; font-weight: 800; cursor: pointer">+</button>
+</div>
+</div>
+<div style="border-radius: 22px; background: {{t.field}}; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Kcal per minute</span>
+<div style="display: flex; align-items: center; justify-content: space-between">
+<button aria-label="Lower intensity" style="width: 40px; height: 40px; border-radius: 20px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 20px; font-weight: 800; cursor: pointer">−</button>
+<span style="font-size: 32px; font-weight: 800">9</span>
+<button aria-label="Higher intensity" style="width: 40px; height: 40px; border-radius: 20px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 20px; font-weight: 800; cursor: pointer">+</button>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Intensity</span>
+<div role="group" aria-label="Intensity preset" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 22px; background: {{t.field}}">
+<button style="height: 40px; border-radius: 18px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Technique</button>
+<button style="height: 40px; border-radius: 18px; border: none; background: {{t.red.bg}}; color: {{t.red.fg}}; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer">Bag work</button>
+<button style="height: 40px; border-radius: 18px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Sparring</button>
+</div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; background: {{t.red.bg}}; color: {{t.red.fg}}; border-radius: 20px; padding: 14px 16px">
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; font-weight: 600">Active energy</span><span style="font-size: 22px; font-weight: 800">~270 kcal</span></span>
+<span style="font-size: 13px; font-weight: 700">30 min × 9</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: {{t.muted}}; width: 44px">Date</span>
+<button style="height: 40px; padding: 0 14px; border-radius: 20px; border: none; background: {{t.inv.bg}}; color: {{t.inv.fg}}; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Today</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 20px; border: none; background: {{t.field}}; color: {{t.fg}}; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Yesterday</button>
+<button aria-label="Pick a date" style="width: 40px; height: 40px; border-radius: 20px; border: none; background: {{t.field}}; color: {{t.fg}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></button>
+</div>
+
+<label style="display: flex; align-items: center; height: 52px; box-sizing: border-box; border-radius: 18px; background: {{t.field}}; padding: 0 16px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Notes</span><input type="text" placeholder="Notes (optional)" style="flex-grow: 1; border: none; background: transparent; font-family: inherit; font-size: 16px; color: {{t.fg}}; outline: none"></label>
+
+<div style="flex-grow: 1"></div>
+<button style="height: 56px; border-radius: 28px; border: none; background: {{accent}}; color: #1b1b24; font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer">Save boxing</button>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ffd23f","options":["#ffd23f","#7ee0a8","#ff9d6b","#9fc5ff"]},"$preview":{"width":860,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+var L = { bg: '#f1f2f6', surface: '#ffffff', fg: '#1b1b24', muted: '#5a5b6b', track: '#e9eaef', field: '#f1f2f6', scrim: 'rgba(20,20,32,0.5)',
+inv: { bg: '#1b1b24', fg: '#ffffff', muted: '#b8b9c8' }, nav: { bg: '#1b1b24', icon: '#b8b9c8' },
+orange: { bg: '#ffd9bf', fg: '#5a2106', icon: '#c2410c', chip: '#ffffff' }, blue: { bg: '#d6e8ff', fg: '#0b2a52', bar: '#2563c9', track: '#ffffff' },
+purple: { bg: '#e7e0ff', fg: '#33206e', chip: '#ffffff' }, sky: { bg: '#d4f0ff', fg: '#0b3a52', chip: '#ffffff' },
+green: { bg: '#d6f5e0', fg: '#0e4425', chip: '#ffffff' }, red: { bg: '#ffdede', fg: '#6b1616', chip: '#ffffff' } };
+var D = { bg: '#111118', surface: '#1c1c26', fg: '#f1f1f6', muted: '#a3a4b5', track: '#2c2c3a', field: '#262633', scrim: 'rgba(0,0,0,0.62)',
+inv: { bg: '#f1f1f6', fg: '#111118', muted: '#5a5b6b' }, nav: { bg: '#26263a', icon: '#a3a4b5' },
+orange: { bg: '#3a1f10', fg: '#ffd9bf', icon: '#fb923c', chip: '#4d2a15' }, blue: { bg: '#13263f', fg: '#d6e8ff', bar: '#60a5fa', track: '#22395a' },
+purple: { bg: '#251c44', fg: '#e7e0ff', chip: '#33285a' }, sky: { bg: '#0f2a36', fg: '#bfe8fb', chip: '#17394a' },
+green: { bg: '#10291a', fg: '#c4f5d4', chip: '#173a25' }, red: { bg: '#2e1414', fg: '#ffd0d0', chip: '#451e1e' } };
+return { themes: [L, D], accent: this.props.accent ?? '#ffd23f' };
+}
+}
+</script>
+</body>
+</html>

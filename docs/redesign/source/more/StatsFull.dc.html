@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stats — full page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 860px; height: 2840px; display: flex; gap: 80px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div style="width: 390px; height: 2840px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.fg}}; font-family: 'Bricolage Grotesque', system-ui, sans-serif; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 10px">
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px">
+<h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em">Stats</h1>
+<div role="group" aria-label="Chart date range" style="display: flex; gap: 2px; padding: 4px; border-radius: 22px; background: {{t.surface}}">
+<button style="height: 36px; padding: 0 10px; border-radius: 18px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">7D</button>
+<button style="height: 36px; padding: 0 10px; border-radius: 18px; border: none; background: {{t.inv.bg}}; color: {{t.inv.fg}}; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">8W</button>
+<button style="height: 36px; padding: 0 10px; border-radius: 18px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">6M</button>
+<button style="height: 36px; padding: 0 10px; border-radius: 18px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">1Y</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="height: 84px; box-sizing: border-box; background: {{t.orange.bg}}; color: {{t.orange.fg}}; border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; font-weight: 600">Sessions</span><span style="font-size: 26px; font-weight: 800">26</span></div>
+<div style="height: 84px; box-sizing: border-box; background: {{t.sky.bg}}; color: {{t.sky.fg}}; border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; font-weight: 600">Active time</span><span style="font-size: 26px; font-weight: 800">26.1 h</span></div>
+<div style="height: 84px; box-sizing: border-box; background: {{t.purple.bg}}; color: {{t.purple.fg}}; border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; font-weight: 600">Active energy</span><span style="font-size: 26px; font-weight: 800">9,840 kcal</span></div>
+<div style="height: 84px; box-sizing: border-box; background: {{t.green.bg}}; color: {{t.green.fg}}; border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between"><span style="font-size: 12px; font-weight: 600">Distance</span><span style="font-size: 26px; font-weight: 800">112 km</span></div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 4px 0 4px">
+<span style="font-size: 18px; font-weight: 800">Activity</span>
+<div role="group" aria-label="Bucket" style="display: flex; gap: 2px; padding: 3px; border-radius: 18px; background: {{t.surface}}">
+<button style="height: 30px; padding: 0 10px; border-radius: 15px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer">Daily</button>
+<button style="height: 30px; padding: 0 10px; border-radius: 15px; border: none; background: {{t.field}}; color: {{t.fg}}; font-family: inherit; font-size: 12px; font-weight: 800; cursor: pointer">Weekly</button>
+</div>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">Weekly activity (min)</span><span style="font-size: 12px; color: {{t.muted}}">avg 196</span></div>
+<svg width="326" height="100" viewBox="0 0 326 100"><path d="M0 0.5H326M0 50H326M0 99.5H326" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.act.s0}}" fill="#fb923c"></path><path d="{{c.act.s1}}" fill="#38bdf8"></path><path d="{{c.act.s2}}" fill="#a78bfa"></path><path d="{{c.act.s3}}" fill="#4ade80"></path><path d="{{c.act.s4}}" fill="#f87171"></path></svg>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); font-size: 10px; color: {{t.muted}}; text-align: center"><span>W34</span><span>W35</span><span>W36</span><span>W37</span><span>W38</span><span>W39</span><span>W40</span><span style="color: {{t.fg}}; font-weight: 800">W41</span></div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: {{t.muted}}">
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #fb923c"></span>Workouts</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #38bdf8"></span>Runs</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #a78bfa"></span>Rides</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #4ade80"></span>Walks</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #f87171"></span>Boxing</span>
+</div>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">Weekly energy burn (kcal)</span><span style="font-size: 12px; color: {{t.muted}}">avg 1,230</span></div>
+<svg width="326" height="100" viewBox="0 0 326 100"><path d="M0 0.5H326M0 50H326M0 99.5H326" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.kcal.s0}}" fill="#fb923c"></path><path d="{{c.kcal.s1}}" fill="#38bdf8"></path><path d="{{c.kcal.s2}}" fill="#a78bfa"></path><path d="{{c.kcal.s3}}" fill="#4ade80"></path><path d="{{c.kcal.s4}}" fill="#f87171"></path></svg>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); font-size: 10px; color: {{t.muted}}; text-align: center"><span>W34</span><span>W35</span><span>W36</span><span>W37</span><span>W38</span><span>W39</span><span>W40</span><span style="color: {{t.fg}}; font-weight: 800">W41</span></div>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">Weekly distance (km)</span><span style="font-size: 12px; color: {{t.muted}}">runs · walks · rides</span></div>
+<svg width="326" height="100" viewBox="0 0 326 100"><path d="M0 0.5H326M0 50H326M0 99.5H326" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.km.s0}}" fill="#38bdf8"></path><path d="{{c.km.s1}}" fill="#4ade80"></path><path d="{{c.km.s2}}" fill="#a78bfa"></path></svg>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); font-size: 10px; color: {{t.muted}}; text-align: center"><span>W34</span><span>W35</span><span>W36</span><span>W37</span><span>W38</span><span>W39</span><span>W40</span><span style="color: {{t.fg}}; font-weight: 800">W41</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 150px; box-sizing: border-box; background: {{t.surface}}; border-radius: 26px; padding: 14px; display: flex; align-items: center; gap: 12px">
+<div style="position: relative; width: 96px; height: 96px; flex-shrink: 0">
+<svg width="96" height="96" viewBox="0 0 96 96"><g transform="rotate(-90 48 48)" fill="none" stroke-width="14">
+<circle cx="48" cy="48" r="38" stroke="#fb923c" stroke-dasharray="98.3 238.8" stroke-dashoffset="0"></circle>
+<circle cx="48" cy="48" r="38" stroke="#38bdf8" stroke-dasharray="60.1 238.8" stroke-dashoffset="-100.3"></circle>
+<circle cx="48" cy="48" r="38" stroke="#a78bfa" stroke-dasharray="41 238.8" stroke-dashoffset="-162.4"></circle>
+<circle cx="48" cy="48" r="38" stroke="#4ade80" stroke-dasharray="21.9 238.8" stroke-dashoffset="-205.4"></circle>
+<circle cx="48" cy="48" r="38" stroke="#f87171" stroke-dasharray="7.6 238.8" stroke-dashoffset="-229.3"></circle>
+</g></svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center"><span style="font-size: 18px; font-weight: 800; line-height: 1">26</span><span style="font-size: 10px; color: {{t.muted}}">sessions</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; font-size: 12px">
+<span style="font-size: 13px; font-weight: 800; margin-bottom: 2px">Training mix</span>
+<span style="display: flex; justify-content: space-between"><span>Workouts</span><span style="font-weight: 800">42%</span></span>
+<span style="display: flex; justify-content: space-between"><span>Runs</span><span style="font-weight: 800">26%</span></span>
+<span style="display: flex; justify-content: space-between"><span>Rides</span><span style="font-weight: 800">18%</span></span>
+<span style="display: flex; justify-content: space-between"><span>Walks</span><span style="font-weight: 800">10%</span></span>
+<span style="display: flex; justify-content: space-between"><span>Boxing</span><span style="font-weight: 800">4%</span></span>
+</div>
+</div>
+<div style="height: 150px; box-sizing: border-box; background: {{t.blue.bg}}; color: {{t.blue.fg}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-size: 13px; font-weight: 600">Consistency</span>
+<span style="font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1">87%</span>
+<span style="font-size: 12px">100% for 4 days</span>
+</div>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 15px; font-weight: 800">Volume (total kg)</span>
+<label style="display: flex; align-items: center"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Volume exercise</span><select style="height: 34px; border-radius: 17px; border: none; background: {{t.field}}; color: {{t.fg}}; padding: 0 12px; font-family: inherit; font-size: 13px; font-weight: 700"><option>All exercises</option><option>Bent-over rows</option><option>Squats</option></select></label></div>
+<svg width="326" height="100" viewBox="0 0 326 100"><path d="M0 0.5H326M0 50H326M0 99.5H326" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.vol}}" fill="#fb923c"></path></svg>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); font-size: 10px; color: {{t.muted}}; text-align: center"><span>W34</span><span>W35</span><span>W36</span><span>W37</span><span>W38</span><span>W39</span><span>W40</span><span style="color: {{t.fg}}; font-weight: 800">W41</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: {{t.sky.bg}}; color: {{t.sky.fg}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; font-weight: 700">Run pace trend</span>
+<svg width="141" height="60" viewBox="0 0 141 60"><path d="{{c.pace}}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="font-size: 20px; font-weight: 800">5:23 <span style="font-size: 12px; font-weight: 600">/km · ↓22 s</span></span>
+</div>
+<div style="background: {{t.purple.bg}}; color: {{t.purple.fg}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; font-weight: 700">Weight journey</span>
+<svg width="141" height="60" viewBox="0 0 141 60"><path d="{{c.weight}}" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="font-size: 20px; font-weight: 800">82.3 <span style="font-size: 12px; font-weight: 600">kg · −2.1</span></span>
+</div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 4px 0 4px">
+<span style="font-size: 18px; font-weight: 800">Apple Health</span>
+<span style="font-size: 12px; color: {{t.muted}}">Synced today 06:10</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{c.metrics}}" as="m" hint-placeholder-count="6">
+<div style="background: {{t.surface}}; border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: {{t.muted}}"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{m.color}}"></span>{{m.label}}</span>
+<span style="font-size: 20px; font-weight: 800">{{m.value}} <span style="font-size: 12px; font-weight: 600; color: {{t.muted}}">{{m.unit}}</span></span>
+<svg width="141" height="26" viewBox="0 0 141 26"><path d="{{m.d}}" fill="none" stroke="{{m.color}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</div>
+</sc-for>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">Sleep</span><span style="font-size: 12px; color: {{t.muted}}">avg 7.3 h · goal 8 h</span></div>
+<svg width="326" height="100" viewBox="0 0 326 100"><path d="M0 99.5H326" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.sleep}}" fill="#818cf8"></path><path d="M0 {{c.sleepGoal}}H326" stroke="{{t.fg}}" stroke-width="1.5" stroke-dasharray="4 4"></path></svg>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">Heart rate range</span><span style="font-size: 12px; color: {{t.muted}}">bpm · 14 days</span></div>
+<svg width="326" height="100" viewBox="0 0 326 100"><path d="M0 0.5H326M0 50H326M0 99.5H326" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.hr}}" fill="#f87171"></path></svg>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">Workout intensity</span><span style="font-size: 12px; color: {{t.muted}}">avg HR per session</span></div>
+<svg width="326" height="100" viewBox="0 0 326 100"><path d="M0 0.5H326M0 50H326M0 99.5H326" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.int.s0}}" fill="#fb923c"></path><path d="{{c.int.s1}}" fill="#38bdf8"></path><path d="{{c.int.s2}}" fill="#a78bfa"></path><path d="{{c.int.s3}}" fill="#f87171"></path></svg>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">Recovery vs training load</span></div>
+<svg width="326" height="100" viewBox="0 0 326 100"><path d="M0 99.5H326" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.load}}" fill="{{t.orange.bg}}"></path><path d="{{c.rhr}}" fill="none" stroke="#2dd4bf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<div style="display: flex; gap: 12px; font-size: 11px; color: {{t.muted}}"><span style="display: flex; align-items: center; gap: 4px"><span style="width: 12px; height: 3px; border-radius: 2px; background: #2dd4bf"></span>Resting HR</span><span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{t.orange.bg}}"></span>Training load (kcal)</span></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; font-weight: 800">Sleep vs mood</span>
+<svg width="141" height="100" viewBox="0 0 141 100"><path d="M0 99.5H141M0.5 0V100" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.scatter}}" fill="#a78bfa"></path></svg>
+<span style="font-size: 11px; color: {{t.muted}}">More sleep, better mood</span>
+</div>
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; font-weight: 800">Active energy vs weight</span>
+<svg width="141" height="100" viewBox="0 0 141 100"><path d="M0 99.5H141" stroke="{{t.track}}" stroke-width="1"></path><path d="{{c.ae}}" fill="#f59e0b"></path><path d="{{c.aw}}" fill="none" stroke="{{t.purple.fg}}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span style="font-size: 11px; color: {{t.muted}}">Bars kcal · line kg</span>
+</div>
+</div>
+
+<nav aria-label="Main" style="position: absolute; left: 24px; right: 24px; bottom: 26px; height: 64px; border-radius: 32px; background: {{t.nav.bg}}; padding: 8px; box-sizing: border-box; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; align-items: center">
+<button aria-label="Today" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+<button aria-label="Exercises" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"></path></svg></button>
+<button aria-label="Health" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-4 3 8 2-4h7"></path></svg></button>
+<button aria-label="History" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></button>
+<button aria-label="Stats" style="height: 48px; border-radius: 24px; border: none; background: {{accent}}; color: #1b1b24; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg></button>
+</nav>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ffd23f","options":["#ffd23f","#7ee0a8","#ff9d6b","#9fc5ff"]},"$preview":{"width":860,"height":2840}}'>
+class Component extends DCLogic {
+renderVals() {
+var L = { bg: '#f1f2f6', surface: '#ffffff', fg: '#1b1b24', muted: '#5a5b6b', track: '#e9eaef', field: '#f1f2f6', scrim: 'rgba(20,20,32,0.5)',
+inv: { bg: '#1b1b24', fg: '#ffffff', muted: '#b8b9c8' }, nav: { bg: '#1b1b24', icon: '#b8b9c8' },
+orange: { bg: '#ffd9bf', fg: '#5a2106', icon: '#c2410c', chip: '#ffffff' }, blue: { bg: '#d6e8ff', fg: '#0b2a52', bar: '#2563c9', track: '#ffffff' },
+purple: { bg: '#e7e0ff', fg: '#33206e', chip: '#ffffff' }, sky: { bg: '#d4f0ff', fg: '#0b3a52', chip: '#ffffff' },
+green: { bg: '#d6f5e0', fg: '#0e4425', chip: '#ffffff' }, red: { bg: '#ffdede', fg: '#6b1616', chip: '#ffffff' } };
+var D = { bg: '#111118', surface: '#1c1c26', fg: '#f1f1f6', muted: '#a3a4b5', track: '#2c2c3a', field: '#262633', scrim: 'rgba(0,0,0,0.62)',
+inv: { bg: '#f1f1f6', fg: '#111118', muted: '#5a5b6b' }, nav: { bg: '#26263a', icon: '#a3a4b5' },
+orange: { bg: '#3a1f10', fg: '#ffd9bf', icon: '#fb923c', chip: '#4d2a15' }, blue: { bg: '#13263f', fg: '#d6e8ff', bar: '#60a5fa', track: '#22395a' },
+purple: { bg: '#251c44', fg: '#e7e0ff', chip: '#33285a' }, sky: { bg: '#0f2a36', fg: '#bfe8fb', chip: '#17394a' },
+green: { bg: '#10291a', fg: '#c4f5d4', chip: '#173a25' }, red: { bg: '#2e1414', fg: '#ffd0d0', chip: '#451e1e' } };
+
+function f(n) { return n.toFixed(1); }
+function bars(series, max, W, H, fill) {
+var n = series[0].length, step = W / n, bw = step * (fill || 0.62), base = [], out = [], i, s;
+for (i = 0; i < n; i++) base.push(H);
+for (s = 0; s < series.length; s++) {
+var d = '';
+for (i = 0; i < n; i++) {
+var h = series[s][i] / max * H;
+if (h <= 0) continue;
+var x = i * step + (step - bw) / 2, y = base[i] - h;
+d += 'M' + f(x) + ' ' + f(y) + 'h' + f(bw) + 'v' + f(h) + 'h' + f(-bw) + 'Z';
+base[i] = y - 1.5;
+}
+out.push(d || 'M0 0');
+}
+return out;
+}
+function line(vals, min, max, W, H, pad) {
+var p = pad || 3, step = (W - 2 * p) / (vals.length - 1);
+return vals.map(function (v, i) { return (i ? 'L' : 'M') + f(p + i * step) + ' ' + f(p + (H - 2 * p) * (1 - (v - min) / (max - min))); }).join(' ');
+}
+function ranges(lo, hi, min, max, W, H) {
+var n = lo.length, step = W / n, bw = step * 0.4, d = '';
+for (var i = 0; i < n; i++) {
+var y1 = H * (1 - (hi[i] - min) / (max - min)), y2 = H * (1 - (lo[i] - min) / (max - min));
+d += 'M' + f(i * step + (step - bw) / 2) + ' ' + f(y1) + 'h' + f(bw) + 'v' + f(y2 - y1) + 'h' + f(-bw) + 'Z';
+}
+return d;
+}
+function dots(xs, ys, xmin, xmax, ymin, ymax, W, H) {
+var d = '';
+for (var i = 0; i < xs.length; i++) {
+var x = 6 + (W - 12) * (xs[i] - xmin) / (xmax - xmin), y = 6 + (H - 12) * (1 - (ys[i] - ymin) / (ymax - ymin));
+d += 'M' + f(x - 4) + ' ' + f(y) + 'a4 4 0 1 0 8 0a4 4 0 1 0 -8 0';
+}
+return d;
+}
+
+var wk = [60, 56, 48, 68, 72, 52, 80, 36], rn = [44, 36, 40, 0, 56, 44, 60, 32], rd = [0, 52, 0, 60, 0, 48, 0, 0], wl = [28, 0, 0, 32, 0, 24, 0, 24], bx = [0, 0, 0, 20, 0, 0, 20, 0];
+var mul = function (a, k) { return a.map(function (v) { return v * k; }); };
+var sleep = [7.2, 6.8, 7.5, 8.1, 6.4, 7.0, 7.8, 7.3, 6.9, 7.6, 8.0, 6.7, 7.1, 7.4];
+var lo = [54, 56, 53, 55, 57, 52, 54, 53, 55, 56, 54, 52, 53, 55], hi = [148, 132, 161, 120, 155, 140, 165, 128, 150, 138, 158, 124, 146, 152];
+var intens = [138, 152, 129, 145, 160, 134, 148, 141], kinds = [0, 1, 2, 0, 3, 0, 1, 2];
+var intSeries = [0, 1, 2, 3].map(function (k) { return intens.map(function (v, i) { return kinds[i] === k ? v - 100 : 0; }); });
+var rhr = [58, 59, 57, 60, 61, 58, 57, 56, 58, 59, 57, 56, 55, 56], load = [320, 0, 480, 410, 0, 520, 300, 0, 450, 380, 0, 560, 420, 200];
+var sx = [6.4, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.8, 8.0, 8.1], sy = [2, 3, 2, 3, 3, 4, 3, 4, 4, 4, 5, 4, 5, 5];
+var ae = [520, 380, 690, 610, 300, 720, 540, 410, 650, 580, 350, 760, 620, 480], aw = [82.9, 82.9, 82.8, 82.8, 82.7, 82.7, 82.6, 82.6, 82.5, 82.5, 82.4, 82.4, 82.3, 82.3];
+var spark = function (v) { var mn = Math.min.apply(null, v), mx = Math.max.apply(null, v); return line(v, mn - 0.001, mx + 0.001, 141, 26, 2); };
+
+var keyed = function (arr) { var o = {}; arr.forEach(function (d, i) { o['s' + i] = d; }); return o; };
+var c = {
+act: keyed(bars([wk, rn, rd, wl, bx], 190, 326, 100)),
+kcal: keyed(bars([mul(wk, 7.5), mul(rn, 11), mul(rd, 8.5), mul(wl, 4), mul(bx, 9)], 1500, 326, 100)),
+km: keyed(bars([mul(rn, 1 / 5.4), mul(wl, 1 / 12), mul(rd, 0.4)], 30, 326, 100)),
+vol: bars([[4200, 4650, 3900, 5100, 5400, 4800, 5900, 3100]], 6500, 326, 100)[0],
+pace: line([5.75, 5.68, 5.62, 5.6, 5.52, 5.48, 5.42, 5.38], 5.3, 5.8, 141, 60),
+weight: line([84.4, 84.1, 84.0, 83.6, 83.5, 83.1, 83.0, 82.8, 82.9, 82.6, 82.4, 82.3], 82, 84.6, 141, 60),
+sleep: bars([sleep], 9, 326, 100, 0.55)[0],
+sleepGoal: f(100 * (1 - 8 / 9)),
+hr: ranges(lo, hi, 40, 180, 326, 100),
+int: keyed(bars(intSeries, 70, 326, 100)),
+load: bars([load], 600, 326, 100, 0.5)[0],
+rhr: line(rhr, 52, 64, 326, 100),
+scatter: dots(sx, sy, 6.2, 8.3, 1, 5, 141, 100),
+ae: bars([ae], 900, 141, 100, 0.55)[0],
+aw: line(aw, 82.1, 83.0, 141, 100),
+metrics: [
+{ label: 'Resting HR', value: '56', unit: 'bpm · −2', color: '#f87171', d: spark(rhr) },
+{ label: 'VO₂ max', value: '44.1', unit: '+0.6', color: '#2dd4bf', d: spark([43.2, 43.3, 43.3, 43.5, 43.6, 43.6, 43.8, 43.9, 44.0, 44.1]) },
+{ label: 'Steps', value: '8.2k', unit: 'avg / day', color: '#60a5fa', d: spark([7.1, 9.4, 6.2, 8.8, 10.2, 5.9, 8.4, 7.7, 9.1, 8.6, 6.8, 9.9, 8.0, 8.3]) },
+{ label: 'Sleep', value: '7.3', unit: 'h avg', color: '#818cf8', d: spark(sleep) },
+{ label: 'Active energy', value: '560', unit: 'kcal avg', color: '#f59e0b', d: spark(ae) },
+{ label: 'Exercise time', value: '46', unit: 'min avg', color: '#34d399', d: spark([40, 22, 61, 55, 18, 64, 47, 30, 58, 50, 20, 70, 52, 41]) }
+]
+};
+return { themes: [L, D], c: c, accent: this.props.accent ?? '#ffd23f' };
+}
+}
+</script>
+</body>
+</html>

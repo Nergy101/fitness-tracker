@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Workout editor</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" data-helmet="59:&lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot;&gt;"><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet" data-helmet="151:&lt;link href=&quot;https://fonts.googleapis.com/css2?family=Bricola"><style data-helmet="31:&lt;style&gt;
+body{margin:0}
+&lt;/style&gt;">
+body{margin:0}
+</style></head>
+<body>
+<div id="dc-root">
+
+<div style="width: 860px; height: 844px; display: flex; gap: 80px">
+
+<div style="width: 390px; height: 844px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: #f1f2f6; color: #1b1b24; font-family: 'Bricolage Grotesque', system-ui, sans-serif; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 12px">
+
+<div style="display: flex; justify-content: space-between; align-items: center">
+<button style="height: 44px; padding: 0 14px; border-radius: 22px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer">Cancel</button>
+<span style="font-size: 15px; font-weight: 800">Edit workout</span>
+<button style="height: 44px; padding: 0 18px; border-radius: 22px; border: none; background: #ffd23f; color: #1b1b24; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">Save</button>
+</div>
+
+<div style="background: #ffffff; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+<label style="display: flex; flex-direction: column"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Workout name</span><input type="text" value="Full body A" placeholder="Workout name..." style="border: none; background: transparent; font-family: inherit; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: rgb(27, 27, 36); outline: none; padding: 0px;"></label>
+<label style="display: flex; flex-direction: column"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Description</span><input type="text" placeholder="Description (optional)..." style="border: none; background: transparent; font-family: inherit; font-size: 15px; color: rgb(27, 27, 36); outline: none; padding: 0px;"></label>
+<div style="display: flex; gap: 6px; padding-top: 6px">
+<span style="padding: 6px 10px; border-radius: 999px; background: #ffd9bf; color: #5a2106; font-size: 12px; font-weight: 800">32 min total</span>
+<span style="padding: 6px 10px; border-radius: 999px; background: #f1f2f6; font-size: 12px; font-weight: 700">8 exercises</span>
+<span style="padding: 6px 10px; border-radius: 999px; background: #f1f2f6; font-size: 12px; font-weight: 700">~240 kcal</span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: #5a5b6b; padding: 0 4px">Timer mode</span>
+<div role="group" aria-label="Timer mode" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<button style="height: 44px; border-radius: 16px; border: none; background: #1b1b24; color: #ffffff; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">Circuit</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">Tabata</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">EMOM</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">AMRAP</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">Custom</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: #d6f5e0; color: #0e4425; border-radius: 22px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center">
+<span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 800">Warmup</span><span style="font-size: 12px">5 min</span></span>
+<button role="switch" aria-checked="true" aria-label="Include warmup" style="width: 48px; height: 28px; border-radius: 14px; border: none; background: #0e4425; padding: 3px; display: flex; justify-content: flex-end; cursor: pointer"><span style="width: 22px; height: 22px; border-radius: 11px; background: #d6f5e0"></span></button>
+</div>
+<div style="background: #ffffff; border-radius: 22px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center">
+<span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 800">Cooldown</span><span style="font-size: 12px; color: #5a5b6b">Off</span></span>
+<button role="switch" aria-checked="false" aria-label="Include cooldown" style="width: 48px; height: 28px; border-radius: 14px; border: none; background: #e9eaef; padding: 3px; display: flex; justify-content: flex-start; cursor: pointer"><span style="width: 22px; height: 22px; border-radius: 11px; background: #ffffff"></span></button>
+</div>
+</div>
+
+<div style="background: #ffffff; border-radius: 26px; padding: 6px 12px; display: flex; flex-direction: column">
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #e9eaef">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#5a5b6b"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #5a5b6b">1</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Squats</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #f1f2f6; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">45s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #5a5b6b; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #e9eaef">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#5a5b6b"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #5a5b6b">2</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Push-ups</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #f1f2f6; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">40s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #5a5b6b; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #e9eaef">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#5a5b6b"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #5a5b6b">3</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Bent-over rows</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #f1f2f6; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">45s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #5a5b6b; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #e9eaef">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#5a5b6b"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #5a5b6b">4</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Lunges</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #f1f2f6; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">45s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #5a5b6b; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #e9eaef">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#5a5b6b"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #5a5b6b">5</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Plank</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #f1f2f6; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">60s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #5a5b6b; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #e9eaef">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#5a5b6b"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #5a5b6b">6</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Kettlebell swing</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #f1f2f6; color: #1b1b24; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">40s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #5a5b6b; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<button style="height: 52px; border: none; background: transparent; color: #1b1b24; font-family: inherit; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Add exercise</button>
+</div>
+</div>
+
+<div style="width: 390px; height: 844px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: #111118; color: #f1f1f6; font-family: 'Bricolage Grotesque', system-ui, sans-serif; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 12px">
+
+<div style="display: flex; justify-content: space-between; align-items: center">
+<button style="height: 44px; padding: 0 14px; border-radius: 22px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer">Cancel</button>
+<span style="font-size: 15px; font-weight: 800">Edit workout</span>
+<button style="height: 44px; padding: 0 18px; border-radius: 22px; border: none; background: #ffd23f; color: #1b1b24; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">Save</button>
+</div>
+
+<div style="background: #1c1c26; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+<label style="display: flex; flex-direction: column"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Workout name</span><input type="text" value="Full body A" placeholder="Workout name..." style="border: none; background: transparent; font-family: inherit; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: rgb(241, 241, 246); outline: none; padding: 0px;"></label>
+<label style="display: flex; flex-direction: column"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Description</span><input type="text" placeholder="Description (optional)..." style="border: none; background: transparent; font-family: inherit; font-size: 15px; color: rgb(241, 241, 246); outline: none; padding: 0px;"></label>
+<div style="display: flex; gap: 6px; padding-top: 6px">
+<span style="padding: 6px 10px; border-radius: 999px; background: #3a1f10; color: #ffd9bf; font-size: 12px; font-weight: 800">32 min total</span>
+<span style="padding: 6px 10px; border-radius: 999px; background: #262633; font-size: 12px; font-weight: 700">8 exercises</span>
+<span style="padding: 6px 10px; border-radius: 999px; background: #262633; font-size: 12px; font-weight: 700">~240 kcal</span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: #a3a4b5; padding: 0 4px">Timer mode</span>
+<div role="group" aria-label="Timer mode" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<button style="height: 44px; border-radius: 16px; border: none; background: #f1f1f6; color: #111118; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">Circuit</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">Tabata</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">EMOM</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">AMRAP</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">Custom</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: #10291a; color: #c4f5d4; border-radius: 22px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center">
+<span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 800">Warmup</span><span style="font-size: 12px">5 min</span></span>
+<button role="switch" aria-checked="true" aria-label="Include warmup" style="width: 48px; height: 28px; border-radius: 14px; border: none; background: #c4f5d4; padding: 3px; display: flex; justify-content: flex-end; cursor: pointer"><span style="width: 22px; height: 22px; border-radius: 11px; background: #10291a"></span></button>
+</div>
+<div style="background: #1c1c26; border-radius: 22px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center">
+<span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 800">Cooldown</span><span style="font-size: 12px; color: #a3a4b5">Off</span></span>
+<button role="switch" aria-checked="false" aria-label="Include cooldown" style="width: 48px; height: 28px; border-radius: 14px; border: none; background: #2c2c3a; padding: 3px; display: flex; justify-content: flex-start; cursor: pointer"><span style="width: 22px; height: 22px; border-radius: 11px; background: #1c1c26"></span></button>
+</div>
+</div>
+
+<div style="background: #1c1c26; border-radius: 26px; padding: 6px 12px; display: flex; flex-direction: column">
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #2c2c3a">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#a3a4b5"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #a3a4b5">1</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Squats</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #262633; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">45s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #a3a4b5; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #2c2c3a">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#a3a4b5"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #a3a4b5">2</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Push-ups</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #262633; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">40s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #a3a4b5; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #2c2c3a">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#a3a4b5"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #a3a4b5">3</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Bent-over rows</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #262633; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">45s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #a3a4b5; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #2c2c3a">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#a3a4b5"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #a3a4b5">4</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Lunges</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #262633; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">45s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #a3a4b5; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #2c2c3a">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#a3a4b5"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #a3a4b5">5</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Plank</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #262633; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">60s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #a3a4b5; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid #2c2c3a">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="#a3a4b5"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: #a3a4b5">6</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">Kettlebell swing</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: #262633; color: #f1f1f6; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">40s</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: #a3a4b5; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<button style="height: 52px; border: none; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Add exercise</button>
+</div>
+</div>
+
+</div>
+</div>
+
+
+
+</body></html>

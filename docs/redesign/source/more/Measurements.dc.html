@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Body measurements sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 860px; height: 844px; display: flex; gap: 80px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div style="width: 390px; height: 844px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.fg}}; font-family: 'Bricolage Grotesque', system-ui, sans-serif">
+
+<div style="position: absolute; inset: 0; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="height: 44px"></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 150px; border-radius: 26px; background: {{t.purple.bg}}"></div>
+<div style="height: 150px; border-radius: 26px; background: {{t.blue.bg}}"></div>
+</div>
+</div>
+<div style="position: absolute; inset: 0; background: {{t.scrim}}"></div>
+
+<div role="dialog" aria-label="Body measurements" style="position: absolute; left: 0; right: 0; bottom: 0; top: 96px; background: {{t.surface}}; border-radius: 32px 32px 0 0; padding: 10px 20px 30px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="width: 40px; height: 5px; border-radius: 3px; background: {{t.track}}; align-self: center"></div>
+
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 44px; height: 44px; border-radius: 22px; background: {{t.blue.bg}}; color: {{t.blue.fg}}; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="8" width="20" height="8" rx="2"></rect><path d="M6 8v3M10 8v4M14 8v3M18 8v4"></path></svg></span>
+<div style="display: flex; flex-direction: column; flex-grow: 1"><h2 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em">Measurements</h2><span style="font-size: 12px; color: {{t.muted}}">In cm · last entry 14 Sep</span></div>
+<button aria-label="Close" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: {{t.track}}; color: {{t.fg}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{fields}}" as="f" hint-placeholder-count="8">
+<label style="height: 84px; box-sizing: border-box; border-radius: 20px; background: {{t.field}}; padding: 10px 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: {{t.muted}}"><span>{{f.label}}</span><span>{{f.delta}}</span></span>
+<span style="display: flex; align-items: baseline; gap: 4px"><input type="text" inputmode="decimal" value="{{f.value}}" placeholder="{{f.last}}" style="width: 80px; border: none; background: transparent; font-family: inherit; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: {{t.fg}}; outline: none; padding: 0"><span style="font-size: 13px; font-weight: 600; color: {{t.muted}}">cm</span></span>
+</label>
+</sc-for>
+</div>
+
+<div style="flex-grow: 1"></div>
+<div style="display: flex; gap: 10px">
+<button style="height: 56px; padding: 0 20px; border-radius: 28px; border: none; background: {{t.field}}; color: {{t.fg}}; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Copy last</button>
+<button style="flex-grow: 1; height: 56px; border-radius: 28px; border: none; background: {{accent}}; color: #1b1b24; font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer">Save 5 of 8</button>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ffd23f","options":["#ffd23f","#7ee0a8","#ff9d6b","#9fc5ff"]},"$preview":{"width":860,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+var L = { bg: '#f1f2f6', surface: '#ffffff', fg: '#1b1b24', muted: '#5a5b6b', track: '#e9eaef', field: '#f1f2f6', scrim: 'rgba(20,20,32,0.5)',
+inv: { bg: '#1b1b24', fg: '#ffffff', muted: '#b8b9c8' }, nav: { bg: '#1b1b24', icon: '#b8b9c8' },
+orange: { bg: '#ffd9bf', fg: '#5a2106', icon: '#c2410c', chip: '#ffffff' }, blue: { bg: '#d6e8ff', fg: '#0b2a52', bar: '#2563c9', track: '#ffffff' },
+purple: { bg: '#e7e0ff', fg: '#33206e', chip: '#ffffff' }, sky: { bg: '#d4f0ff', fg: '#0b3a52', chip: '#ffffff' },
+green: { bg: '#d6f5e0', fg: '#0e4425', chip: '#ffffff' }, red: { bg: '#ffdede', fg: '#6b1616', chip: '#ffffff' } };
+var D = { bg: '#111118', surface: '#1c1c26', fg: '#f1f1f6', muted: '#a3a4b5', track: '#2c2c3a', field: '#262633', scrim: 'rgba(0,0,0,0.62)',
+inv: { bg: '#f1f1f6', fg: '#111118', muted: '#5a5b6b' }, nav: { bg: '#26263a', icon: '#a3a4b5' },
+orange: { bg: '#3a1f10', fg: '#ffd9bf', icon: '#fb923c', chip: '#4d2a15' }, blue: { bg: '#13263f', fg: '#d6e8ff', bar: '#60a5fa', track: '#22395a' },
+purple: { bg: '#251c44', fg: '#e7e0ff', chip: '#33285a' }, sky: { bg: '#0f2a36', fg: '#bfe8fb', chip: '#17394a' },
+green: { bg: '#10291a', fg: '#c4f5d4', chip: '#173a25' }, red: { bg: '#2e1414', fg: '#ffd0d0', chip: '#451e1e' } };
+var fields = [
+{ label: 'Waist', value: '86.5', last: '87.0', delta: '−0.5' },
+{ label: 'Hips', value: '98.0', last: '98.0', delta: '±0' },
+{ label: 'Chest', value: '104.0', last: '103.5', delta: '+0.5' },
+{ label: 'Neck', value: '39.0', last: '39.0', delta: '±0' },
+{ label: 'Left arm', value: '34.5', last: '34.0', delta: '+0.5' },
+{ label: 'Right arm', value: '', last: '34.5', delta: 'last 34.5' },
+{ label: 'Left thigh', value: '', last: '58.0', delta: 'last 58.0' },
+{ label: 'Right thigh', value: '', last: '58.5', delta: 'last 58.5' }
+];
+return { themes: [L, D], fields: fields, accent: this.props.accent ?? '#ffd23f' };
+}
+}
+</script>
+</body>
+</html>

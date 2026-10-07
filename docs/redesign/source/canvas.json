@@ -1,0 +1,388 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Bento.dc.html": {
+      "h": 844,
+      "title": "C · Bento — soft, playful tiles",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "BentoMono.dc.html": {
+      "h": 844,
+      "title": "C3 · Bento Mono — light",
+      "w": 390,
+      "x": 1880,
+      "y": 1184
+    },
+    "BentoMonoDark.dc.html": {
+      "h": 844,
+      "title": "C3 · Bento Mono — dark",
+      "w": 390,
+      "x": 2350,
+      "y": 1184
+    },
+    "BentoMosaic.dc.html": {
+      "h": 844,
+      "title": "C1 · Bento Mosaic — light",
+      "w": 390,
+      "x": 0,
+      "y": 1184
+    },
+    "BentoMosaicDark.dc.html": {
+      "h": 844,
+      "title": "C1 · Bento Mosaic — dark",
+      "w": 390,
+      "x": 470,
+      "y": 1184
+    },
+    "BentoPulse.dc.html": {
+      "h": 844,
+      "title": "D · Bento Pulse — tiles × energy",
+      "w": 390,
+      "x": 1410,
+      "y": 0
+    },
+    "BentoStack.dc.html": {
+      "h": 844,
+      "title": "C2 · Bento Stack — light",
+      "w": 390,
+      "x": 940,
+      "y": 1184
+    },
+    "BentoStackDark.dc.html": {
+      "h": 844,
+      "title": "C2 · Bento Stack — dark",
+      "w": 390,
+      "x": 1410,
+      "y": 1184
+    },
+    "Ledger.dc.html": {
+      "h": 844,
+      "title": "B · Ledger — Swiss, data-first",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 844,
+      "title": "A · Pulse — dark, high-energy",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "app/Exercises.dc.html": {
+      "h": 844,
+      "title": "2 · Exercises — light",
+      "w": 390,
+      "x": 470,
+      "y": 2368
+    },
+    "app/ExercisesDark.dc.html": {
+      "h": 844,
+      "title": "2 · Exercises — dark",
+      "w": 390,
+      "x": 470,
+      "y": 3332
+    },
+    "app/Health.dc.html": {
+      "h": 844,
+      "title": "3 · Health — light",
+      "w": 390,
+      "x": 940,
+      "y": 2368
+    },
+    "app/HealthDark.dc.html": {
+      "h": 844,
+      "title": "3 · Health — dark",
+      "w": 390,
+      "x": 940,
+      "y": 3332
+    },
+    "app/History.dc.html": {
+      "h": 844,
+      "title": "4 · History — light",
+      "w": 390,
+      "x": 1410,
+      "y": 2368
+    },
+    "app/HistoryDark.dc.html": {
+      "h": 844,
+      "title": "4 · History — dark",
+      "w": 390,
+      "x": 1410,
+      "y": 3332
+    },
+    "app/Stats.dc.html": {
+      "h": 844,
+      "title": "5 · Stats — light",
+      "w": 390,
+      "x": 1880,
+      "y": 2368
+    },
+    "app/StatsDark.dc.html": {
+      "h": 844,
+      "title": "5 · Stats — dark",
+      "w": 390,
+      "x": 1880,
+      "y": 3332
+    },
+    "app/Today.dc.html": {
+      "h": 844,
+      "title": "1 · Today (log-first) — light",
+      "w": 390,
+      "x": 0,
+      "y": 2368
+    },
+    "app/TodayDark.dc.html": {
+      "h": 844,
+      "title": "1 · Today (log-first) — dark",
+      "w": 390,
+      "x": 0,
+      "y": 3332
+    },
+    "more/Editor.dc.html": {
+      "h": 844,
+      "title": "Workout editor",
+      "w": 860,
+      "x": 0,
+      "y": 5700
+    },
+    "more/ExerciseDetail.dc.html": {
+      "h": 844,
+      "title": "Exercise detail sheet",
+      "w": 860,
+      "x": 940,
+      "y": 6884
+    },
+    "more/HealthFull.dc.html": {
+      "h": 2200,
+      "title": "Health — full scroll",
+      "w": 860,
+      "x": 940,
+      "y": 8068
+    },
+    "more/LogBoxing.dc.html": {
+      "h": 844,
+      "title": "Log boxing sheet",
+      "w": 860,
+      "x": 1880,
+      "y": 4516
+    },
+    "more/LogInjury.dc.html": {
+      "h": 844,
+      "title": "Log injury sheet",
+      "w": 860,
+      "x": 3760,
+      "y": 4516
+    },
+    "more/LogRide.dc.html": {
+      "h": 844,
+      "title": "Log ride sheet",
+      "w": 860,
+      "x": 940,
+      "y": 4516
+    },
+    "more/LogRun.dc.html": {
+      "h": 844,
+      "title": "Log run / walk sheet",
+      "w": 860,
+      "x": 0,
+      "y": 4516
+    },
+    "more/LogWeight.dc.html": {
+      "h": 844,
+      "title": "Log weight + check-in sheet",
+      "w": 860,
+      "x": 2820,
+      "y": 4516
+    },
+    "more/Login.dc.html": {
+      "h": 844,
+      "title": "Login",
+      "w": 860,
+      "x": 2820,
+      "y": 6884
+    },
+    "more/Measurements.dc.html": {
+      "h": 844,
+      "title": "Body measurements sheet",
+      "w": 860,
+      "x": 4700,
+      "y": 4516
+    },
+    "more/Onboarding.dc.html": {
+      "h": 844,
+      "title": "Onboarding — quick setup",
+      "w": 860,
+      "x": 3760,
+      "y": 6884
+    },
+    "more/RunnerDialogs.dc.html": {
+      "h": 844,
+      "title": "Runner — stop confirm & swap",
+      "w": 1800,
+      "x": 3760,
+      "y": 5700
+    },
+    "more/RunnerExercise.dc.html": {
+      "h": 844,
+      "title": "Runner — exercise",
+      "w": 860,
+      "x": 940,
+      "y": 5700
+    },
+    "more/RunnerFinished.dc.html": {
+      "h": 844,
+      "title": "Runner — finished",
+      "w": 860,
+      "x": 2820,
+      "y": 5700
+    },
+    "more/RunnerRest.dc.html": {
+      "h": 844,
+      "title": "Runner — rest / warmup",
+      "w": 860,
+      "x": 1880,
+      "y": 5700
+    },
+    "more/SessionDetail.dc.html": {
+      "h": 844,
+      "title": "Session detail sheet",
+      "w": 860,
+      "x": 0,
+      "y": 6884
+    },
+    "more/Settings.dc.html": {
+      "h": 844,
+      "title": "Settings",
+      "w": 860,
+      "x": 1880,
+      "y": 6884
+    },
+    "more/States.dc.html": {
+      "h": 844,
+      "title": "Toasts, banners, confirm & empty",
+      "w": 860,
+      "x": 4700,
+      "y": 6884
+    },
+    "more/StatsFull.dc.html": {
+      "h": 2840,
+      "title": "Stats — full scroll",
+      "w": 860,
+      "x": 0,
+      "y": 8068
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-07T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "appRow": {
+      "kind": "title1",
+      "maxW": 2270,
+      "text": "Bento Mosaic — log-first, all 5 tabs",
+      "w": 240,
+      "x": 0,
+      "y": 2108
+    },
+    "bentoRow": {
+      "kind": "title1",
+      "maxW": 2740,
+      "text": "Bento variations — light & dark",
+      "w": 240,
+      "x": 0,
+      "y": 924
+    },
+    "rowFull": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "Full pages — every stat & section",
+      "w": 240,
+      "x": 0,
+      "y": 7808
+    },
+    "rowSheets": {
+      "kind": "title1",
+      "maxW": 5560,
+      "text": "Logging sheets — light | dark",
+      "w": 240,
+      "x": 0,
+      "y": 4256
+    },
+    "rowSystem": {
+      "kind": "title1",
+      "maxW": 5560,
+      "text": "Details, settings & system states",
+      "w": 240,
+      "x": 0,
+      "y": 6624
+    },
+    "rowWorkout": {
+      "kind": "title1",
+      "maxW": 4620,
+      "text": "Workout flow — editor & runner",
+      "w": 240,
+      "x": 0,
+      "y": 5440
+    },
+    "title": {
+      "kind": "title1",
+      "maxW": 1800,
+      "text": "FitnessTracker — four directions",
+      "w": 240,
+      "x": 0,
+      "y": -260
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Ledger.dc.html",
+    "Bento.dc.html",
+    "BentoPulse.dc.html",
+    "BentoMosaic.dc.html",
+    "BentoMosaicDark.dc.html",
+    "BentoStack.dc.html",
+    "BentoStackDark.dc.html",
+    "BentoMono.dc.html",
+    "BentoMonoDark.dc.html",
+    "app/Today.dc.html",
+    "app/Exercises.dc.html",
+    "app/Health.dc.html",
+    "app/History.dc.html",
+    "app/Stats.dc.html",
+    "app/TodayDark.dc.html",
+    "app/ExercisesDark.dc.html",
+    "app/HealthDark.dc.html",
+    "app/HistoryDark.dc.html",
+    "app/StatsDark.dc.html",
+    "more/LogRun.dc.html",
+    "more/LogRide.dc.html",
+    "more/LogBoxing.dc.html",
+    "more/LogWeight.dc.html",
+    "more/LogInjury.dc.html",
+    "more/Measurements.dc.html",
+    "more/Editor.dc.html",
+    "more/RunnerExercise.dc.html",
+    "more/RunnerRest.dc.html",
+    "more/RunnerFinished.dc.html",
+    "more/RunnerDialogs.dc.html",
+    "more/SessionDetail.dc.html",
+    "more/ExerciseDetail.dc.html",
+    "more/Settings.dc.html",
+    "more/Login.dc.html",
+    "more/Onboarding.dc.html",
+    "more/States.dc.html",
+    "more/StatsFull.dc.html",
+    "more/HealthFull.dc.html"
+  ],
+  "pages": [],
+  "title": "FitnessTracker Redesign Directions"
+}

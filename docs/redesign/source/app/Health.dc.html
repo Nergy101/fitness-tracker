@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Health</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.fg}}; font-family: 'Bricolage Grotesque', system-ui, sans-serif; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 10px">
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px">
+<h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05">Health</h1>
+<span style="font-size: 14px; color: {{t.muted}}">Tue, 7 Oct</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 150px; box-sizing: border-box; background: {{t.purple.bg}}; color: {{t.purple.fg}}; border-radius: 26px; padding: 14px 14px 12px 16px; display: flex; flex-direction: column; justify-content: space-between">
+<div style="display: flex; justify-content: space-between; align-items: flex-start">
+<div style="display: flex; flex-direction: column"><span style="font-size: 13px; font-weight: 600">Weight</span><span style="display: flex; align-items: baseline; gap: 4px"><span style="font-size: 36px; font-weight: 800; letter-spacing: -0.03em; line-height: 1">82.4</span><span style="font-size: 14px; font-weight: 700">kg</span></span></div>
+<button aria-label="Log weight" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: {{t.purple.fg}}; color: {{t.purple.bg}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+</div>
+<svg width="100%" height="34" viewBox="0 0 200 34" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8 L30 12 L58 9 L86 16 L114 14 L142 21 L170 22 L198 26"></path><path d="M2 30 L198 30" stroke-dasharray="3 5" stroke-width="1.5" opacity="0.6"></path></svg>
+<span style="font-size: 12px; font-weight: 600">−0.4 kg in 30 days · goal 78 kg</span>
+</div>
+<div style="height: 150px; box-sizing: border-box; background: {{t.blue.bg}}; color: {{t.blue.fg}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-size: 13px; font-weight: 600">BMI</span>
+<span style="font-size: 32px; font-weight: 800; letter-spacing: -0.03em; line-height: 1">24.1</span>
+<div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 6px; border-radius: 3px; background: {{t.blue.track}}"><div style="width: 58%; height: 6px; border-radius: 3px; background: {{t.blue.bar}}"></div></div><span style="font-size: 12px; font-weight: 600">Normal</span></div>
+</div>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 17px; font-weight: 800">Daily check-in</span><span style="font-size: 12px; color: {{t.muted}}">Tap to log</span></div>
+<div style="display: grid; grid-template-columns: 64px repeat(5, minmax(0, 1fr)); gap: 6px; align-items: center">
+<span style="font-size: 13px; font-weight: 600; color: {{t.muted}}">Mood</span>
+<button aria-label="Mood 1" style="height: 40px; border-radius: 14px; border: none; background: {{t.track}}; cursor: pointer"></button>
+<button aria-label="Mood 2" style="height: 40px; border-radius: 14px; border: none; background: {{t.track}}; cursor: pointer"></button>
+<button aria-label="Mood 3" style="height: 40px; border-radius: 14px; border: none; background: {{t.track}}; cursor: pointer"></button>
+<button aria-label="Mood 4" style="height: 40px; border-radius: 14px; border: none; background: {{t.green.bg}}; color: {{t.green.fg}}; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer">4</button>
+<button aria-label="Mood 5" style="height: 40px; border-radius: 14px; border: none; background: {{t.track}}; cursor: pointer"></button>
+<span style="font-size: 13px; font-weight: 600; color: {{t.muted}}">Energy</span>
+<button aria-label="Energy 1" style="height: 40px; border-radius: 14px; border: none; background: {{t.track}}; cursor: pointer"></button>
+<button aria-label="Energy 2" style="height: 40px; border-radius: 14px; border: none; background: {{t.track}}; cursor: pointer"></button>
+<button aria-label="Energy 3" style="height: 40px; border-radius: 14px; border: none; background: {{t.orange.bg}}; color: {{t.orange.fg}}; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer">3</button>
+<button aria-label="Energy 4" style="height: 40px; border-radius: 14px; border: none; background: {{t.track}}; cursor: pointer"></button>
+<button aria-label="Energy 5" style="height: 40px; border-radius: 14px; border: none; background: {{t.track}}; cursor: pointer"></button>
+<span style="font-size: 13px; font-weight: 600; color: {{t.muted}}">Sleep</span>
+<div style="grid-column: span 5; display: flex; align-items: center; justify-content: space-between; height: 40px; border-radius: 14px; background: {{t.track}}; padding: 0 4px">
+<button aria-label="Less sleep" style="width: 36px; height: 32px; border-radius: 10px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 18px; font-weight: 800; cursor: pointer">−</button>
+<span style="font-size: 16px; font-weight: 800">7.5 h</span>
+<button aria-label="More sleep" style="width: 36px; height: 32px; border-radius: 10px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 18px; font-weight: 800; cursor: pointer">+</button>
+</div>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 112px; box-sizing: border-box; background: {{t.orange.bg}}; color: {{t.orange.fg}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-size: 13px; font-weight: 600">Personal records</span>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="display: flex; justify-content: space-between; font-size: 14px"><span>Longest run</span><span style="font-weight: 800">12.4 km</span></span>
+<span style="display: flex; justify-content: space-between; font-size: 14px"><span>Fastest 5 km</span><span style="font-weight: 800">26:10</span></span>
+<span style="display: flex; justify-content: space-between; font-size: 14px"><span>Longest ride</span><span style="font-weight: 800">48 km</span></span>
+</div>
+</div>
+<div style="height: 112px; box-sizing: border-box; background: {{t.red.bg}}; color: {{t.red.fg}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-size: 13px; font-weight: 600">Injuries</span>
+<span style="font-size: 16px; font-weight: 800; line-height: 1.1">None active</span>
+<button style="height: 32px; border-radius: 12px; border: none; background: {{t.red.chip}}; color: {{t.red.fg}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">+ Log</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="height: 80px; box-sizing: border-box; background: {{t.surface}}; border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: {{t.muted}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"></path></svg>Resting HR</span>
+<span style="font-size: 20px; font-weight: 800">58 <span style="font-size: 12px; font-weight: 600">bpm</span></span>
+</div>
+<div style="height: 80px; box-sizing: border-box; background: {{t.surface}}; border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: {{t.muted}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20c-2 0-3-2-3-4s1-4 3-4 3 2 3 4-1 4-3 4zM16 12c-2 0-3-2-3-4s1-4 3-4 3 2 3 4-1 4-3 4z"></path></svg>Steps</span>
+<span style="font-size: 20px; font-weight: 800">8.2k</span>
+</div>
+<div style="height: 80px; box-sizing: border-box; background: {{t.surface}}; border-radius: 22px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: {{t.muted}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14A8 8 0 0 1 10 4a8 8 0 1 0 10 10z"></path></svg>Sleep</span>
+<span style="font-size: 20px; font-weight: 800">7.1 <span style="font-size: 12px; font-weight: 600">h avg</span></span>
+</div>
+</div>
+
+<nav aria-label="Main" style="position: absolute; left: 24px; right: 24px; bottom: 26px; height: 64px; border-radius: 32px; background: {{t.nav.bg}}; padding: 8px; box-sizing: border-box; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; align-items: center">
+<button aria-label="Today" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+<button aria-label="Exercises" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"></path></svg></button>
+<button aria-label="Health" style="height: 48px; border-radius: 24px; border: none; background: {{accent}}; color: #1b1b24; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-4 3 8 2-4h7"></path></svg></button>
+<button aria-label="History" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></button>
+<button aria-label="Stats" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg></button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"color","default":"#ffd23f","options":["#ffd23f","#7ee0a8","#ff9d6b","#9fc5ff"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+var dark = this.props.dark ?? false;
+var light = {
+bg: '#f1f2f6', surface: '#ffffff', fg: '#1b1b24', muted: '#5a5b6b', track: '#e9eaef',
+inv: { bg: '#1b1b24', fg: '#ffffff', muted: '#b8b9c8' },
+nav: { bg: '#1b1b24', icon: '#b8b9c8' },
+orange: { bg: '#ffd9bf', fg: '#5a2106', icon: '#c2410c', chip: '#ffffff' },
+blue: { bg: '#d6e8ff', fg: '#0b2a52', bar: '#2563c9', track: '#ffffff' },
+purple: { bg: '#e7e0ff', fg: '#33206e', chip: '#ffffff' },
+sky: { bg: '#d4f0ff', fg: '#0b3a52', chip: '#ffffff' },
+green: { bg: '#d6f5e0', fg: '#0e4425', chip: '#ffffff' },
+red: { bg: '#ffdede', fg: '#6b1616', chip: '#ffffff' }
+};
+var darkT = {
+bg: '#111118', surface: '#1c1c26', fg: '#f1f1f6', muted: '#a3a4b5', track: '#2c2c3a',
+inv: { bg: '#2a2a3a', fg: '#ffffff', muted: '#b8b9c8' },
+nav: { bg: '#26263a', icon: '#a3a4b5' },
+orange: { bg: '#3a1f10', fg: '#ffd9bf', icon: '#fb923c', chip: '#4d2a15' },
+blue: { bg: '#13263f', fg: '#d6e8ff', bar: '#60a5fa', track: '#22395a' },
+purple: { bg: '#251c44', fg: '#e7e0ff', chip: '#33285a' },
+sky: { bg: '#0f2a36', fg: '#bfe8fb', chip: '#17394a' },
+green: { bg: '#10291a', fg: '#c4f5d4', chip: '#173a25' },
+red: { bg: '#2e1414', fg: '#ffd0d0', chip: '#451e1e' }
+};
+return { t: dark ? darkT : light, accent: this.props.accent ?? '#ffd23f' };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>Log run sheet</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" data-helmet="59:&lt;link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot;&gt;"><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet" data-helmet="151:&lt;link href=&quot;https://fonts.googleapis.com/css2?family=Bricola"><style data-helmet="31:&lt;style&gt;
+body{margin:0}
+&lt;/style&gt;">
+body{margin:0}
+</style></head>
+<body>
+<div id="dc-root">
+
+<div style="width: 860px; height: 844px; display: flex; gap: 80px">
+
+<div style="width: 390px; height: 844px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: #f1f2f6; color: #1b1b24; font-family: 'Bricolage Grotesque', system-ui, sans-serif">
+
+<div style="position: absolute; inset: 0; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="height: 64px"></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 150px; border-radius: 26px; background: #d4f0ff"></div>
+<div style="height: 150px; border-radius: 26px; background: #d6f5e0"></div>
+</div>
+</div>
+<div style="position: absolute; inset: 0; background: rgba(20,20,32,0.5)"></div>
+
+<div role="dialog" aria-label="Log a run" style="position: absolute; left: 0; right: 0; bottom: 0; top: 56px; background: #ffffff; border-radius: 32px 32px 0 0; padding: 10px 20px 30px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="width: 40px; height: 5px; border-radius: 3px; background: #e9eaef; align-self: center"></div>
+
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 44px; height: 44px; border-radius: 22px; background: #d4f0ff; color: #0b3a52; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"></circle><path d="M8 21l3-6 3 2v5M6 12l3-4 4 1 3 3 3 1"></path></svg></span>
+<h2 style="margin: 0; flex-grow: 1; font-size: 24px; font-weight: 800; letter-spacing: -0.02em">Log a run</h2>
+<button aria-label="Close" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: #e9eaef; color: #1b1b24; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div role="group" aria-label="Activity type" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 24px; background: #f1f2f6">
+<button style="height: 40px; border-radius: 20px; border: none; background: #d4f0ff; color: #0b3a52; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">Run</button>
+<button style="height: 40px; border-radius: 20px; border: none; background: transparent; color: #5a5b6b; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer">Walk</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: #5a5b6b">Distance</span>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 72px; border-radius: 24px; background: #f1f2f6; padding: 0 12px">
+<button aria-label="Decrease distance" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">−</button>
+<label style="display: flex; align-items: baseline; gap: 6px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Distance in km</span><input type="text" inputmode="decimal" value="5.2" style="width: 92px; border: none; background: transparent; text-align: right; font-family: inherit; font-size: 48px; font-weight: 800; letter-spacing: -0.04em; color: rgb(27, 27, 36); outline: none; padding: 0px;"><span style="font-size: 18px; font-weight: 700; color: #5a5b6b">km</span></label>
+<button aria-label="Increase distance" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">+</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #e9eaef; background: transparent; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">3 km</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #e9eaef; background: transparent; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">5 km</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #e9eaef; background: transparent; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">10 km</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #e9eaef; background: transparent; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">21.1</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: #5a5b6b">Duration</span>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 72px; border-radius: 24px; background: #f1f2f6; padding: 0 12px">
+<button aria-label="Decrease duration" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">−</button>
+<label style="display: flex; align-items: baseline; gap: 6px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Duration in minutes</span><input type="text" inputmode="numeric" value="28" style="width: 64px; border: none; background: transparent; text-align: right; font-family: inherit; font-size: 48px; font-weight: 800; letter-spacing: -0.04em; color: rgb(27, 27, 36); outline: none; padding: 0px;"><span style="font-size: 18px; font-weight: 700; color: #5a5b6b">min</span></label>
+<button aria-label="Increase duration" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: #ffffff; color: #1b1b24; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">+</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #e9eaef; background: transparent; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">15 min</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #e9eaef; background: transparent; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">30 min</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #e9eaef; background: transparent; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">45 min</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #e9eaef; background: transparent; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">1 h</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; background: #d4f0ff; color: #0b3a52; border-radius: 20px; padding: 12px 14px">
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; font-weight: 600">Pace</span><span style="font-size: 18px; font-weight: 800">5:23 /km</span></span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; font-weight: 600">Speed</span><span style="font-size: 18px; font-weight: 800">11.1 km/h</span></span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; font-weight: 600">Active energy</span><span style="font-size: 18px; font-weight: 800">~410 kcal</span></span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: #5a5b6b; width: 44px">Date</span>
+<button style="height: 40px; padding: 0 14px; border-radius: 20px; border: none; background: #1b1b24; color: #ffffff; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Today</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 20px; border: none; background: #f1f2f6; color: #1b1b24; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Yesterday</button>
+<button aria-label="Pick a date" style="width: 40px; height: 40px; border-radius: 20px; border: none; background: #f1f2f6; color: #1b1b24; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></button>
+</div>
+
+<label style="display: flex; align-items: center; height: 52px; box-sizing: border-box; border-radius: 18px; background: #f1f2f6; padding: 0 16px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Notes</span><input type="text" placeholder="Notes (optional)" style="flex-grow: 1; border: none; background: transparent; font-family: inherit; font-size: 16px; color: rgb(27, 27, 36); outline: none;"></label>
+
+<button style="height: 56px; border-radius: 28px; border: none; background: #ffd23f; color: #1b1b24; font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer">Save run</button>
+</div>
+</div>
+
+<div style="width: 390px; height: 844px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: #111118; color: #f1f1f6; font-family: 'Bricolage Grotesque', system-ui, sans-serif">
+
+<div style="position: absolute; inset: 0; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="height: 64px"></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 150px; border-radius: 26px; background: #0f2a36"></div>
+<div style="height: 150px; border-radius: 26px; background: #10291a"></div>
+</div>
+</div>
+<div style="position: absolute; inset: 0; background: rgba(0,0,0,0.62)"></div>
+
+<div role="dialog" aria-label="Log a run" style="position: absolute; left: 0; right: 0; bottom: 0; top: 56px; background: #1c1c26; border-radius: 32px 32px 0 0; padding: 10px 20px 30px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="width: 40px; height: 5px; border-radius: 3px; background: #2c2c3a; align-self: center"></div>
+
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 44px; height: 44px; border-radius: 22px; background: #0f2a36; color: #bfe8fb; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"></circle><path d="M8 21l3-6 3 2v5M6 12l3-4 4 1 3 3 3 1"></path></svg></span>
+<h2 style="margin: 0; flex-grow: 1; font-size: 24px; font-weight: 800; letter-spacing: -0.02em">Log a run</h2>
+<button aria-label="Close" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: #2c2c3a; color: #f1f1f6; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<div role="group" aria-label="Activity type" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 24px; background: #262633">
+<button style="height: 40px; border-radius: 20px; border: none; background: #0f2a36; color: #bfe8fb; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">Run</button>
+<button style="height: 40px; border-radius: 20px; border: none; background: transparent; color: #a3a4b5; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer">Walk</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: #a3a4b5">Distance</span>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 72px; border-radius: 24px; background: #262633; padding: 0 12px">
+<button aria-label="Decrease distance" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">−</button>
+<label style="display: flex; align-items: baseline; gap: 6px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Distance in km</span><input type="text" inputmode="decimal" value="5.2" style="width: 92px; border: none; background: transparent; text-align: right; font-family: inherit; font-size: 48px; font-weight: 800; letter-spacing: -0.04em; color: rgb(241, 241, 246); outline: none; padding: 0px;"><span style="font-size: 18px; font-weight: 700; color: #a3a4b5">km</span></label>
+<button aria-label="Increase distance" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">+</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #2c2c3a; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">3 km</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #2c2c3a; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">5 km</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #2c2c3a; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">10 km</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #2c2c3a; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">21.1</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: #a3a4b5">Duration</span>
+<div style="display: flex; align-items: center; justify-content: space-between; height: 72px; border-radius: 24px; background: #262633; padding: 0 12px">
+<button aria-label="Decrease duration" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">−</button>
+<label style="display: flex; align-items: baseline; gap: 6px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Duration in minutes</span><input type="text" inputmode="numeric" value="28" style="width: 64px; border: none; background: transparent; text-align: right; font-family: inherit; font-size: 48px; font-weight: 800; letter-spacing: -0.04em; color: rgb(241, 241, 246); outline: none; padding: 0px;"><span style="font-size: 18px; font-weight: 700; color: #a3a4b5">min</span></label>
+<button aria-label="Increase duration" style="width: 48px; height: 48px; border-radius: 24px; border: none; background: #1c1c26; color: #f1f1f6; font-family: inherit; font-size: 24px; font-weight: 800; cursor: pointer">+</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #2c2c3a; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">15 min</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #2c2c3a; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">30 min</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #2c2c3a; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">45 min</button>
+<button style="height: 40px; border-radius: 20px; border: 1.5px solid #2c2c3a; background: transparent; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">1 h</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; background: #0f2a36; color: #bfe8fb; border-radius: 20px; padding: 12px 14px">
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; font-weight: 600">Pace</span><span style="font-size: 18px; font-weight: 800">5:23 /km</span></span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; font-weight: 600">Speed</span><span style="font-size: 18px; font-weight: 800">11.1 km/h</span></span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 11px; font-weight: 600">Active energy</span><span style="font-size: 18px; font-weight: 800">~410 kcal</span></span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: #a3a4b5; width: 44px">Date</span>
+<button style="height: 40px; padding: 0 14px; border-radius: 20px; border: none; background: #f1f1f6; color: #111118; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Today</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 20px; border: none; background: #262633; color: #f1f1f6; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Yesterday</button>
+<button aria-label="Pick a date" style="width: 40px; height: 40px; border-radius: 20px; border: none; background: #262633; color: #f1f1f6; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></button>
+</div>
+
+<label style="display: flex; align-items: center; height: 52px; box-sizing: border-box; border-radius: 18px; background: #262633; padding: 0 16px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Notes</span><input type="text" placeholder="Notes (optional)" style="flex-grow: 1; border: none; background: transparent; font-family: inherit; font-size: 16px; color: rgb(241, 241, 246); outline: none;"></label>
+
+<button style="height: 56px; border-radius: 28px; border: none; background: #ffd23f; color: #1b1b24; font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer">Save run</button>
+</div>
+</div>
+
+</div>
+</div>
+
+
+
+</body></html>

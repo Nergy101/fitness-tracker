@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bento Mosaic redesign</title>
+<style>
+:root { --bg: #f1f2f6; --fg: #1b1b24; --muted: #5a5b6b; --card: #ffffff; }
+@media (prefers-color-scheme: dark) { :root { --bg: #111118; --fg: #f1f1f6; --muted: #a3a4b5; --card: #1c1c26; } }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1400px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 32px; margin: 0 0 4px; }
+p.lede { color: var(--muted); margin: 0 0 32px; }
+h2 { font-size: 20px; margin: 40px 0 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.grid.wide { grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); }
+figure { margin: 0; background: var(--card); border-radius: 18px; padding: 10px; }
+figure img { width: 100%; height: auto; display: block; border-radius: 10px; }
+figcaption { font-size: 13px; padding: 8px 4px 2px; display: flex; justify-content: space-between; gap: 8px; }
+figcaption a { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+<h1>Bento Mosaic redesign</h1>
+<p class="lede">FitnessTracker, light &amp; dark. Sample data only. Implementation notes are in README.md.</p>
+<div id="groups"></div>
+</main>
+<script>
+const groups = [
+  { title: 'Main tabs — light', wide: false, items: [['app/Today', 'Today (log-first)'], ['app/Exercises', 'Exercises'], ['app/Health', 'Health'], ['app/History', 'History'], ['app/Stats', 'Stats']] },
+  { title: 'Main tabs — dark', wide: false, items: [['app/TodayDark', 'Today'], ['app/ExercisesDark', 'Exercises'], ['app/HealthDark', 'Health'], ['app/HistoryDark', 'History'], ['app/StatsDark', 'Stats']] },
+  { title: 'Logging sheets (light | dark)', wide: true, items: [['more/LogRun', 'Run / walk'], ['more/LogRide', 'Ride'], ['more/LogBoxing', 'Boxing'], ['more/LogWeight', 'Weigh-in + check-in'], ['more/LogInjury', 'Injury'], ['more/Measurements', 'Body measurements']] },
+  { title: 'Workout flow (light | dark)', wide: true, items: [['more/Editor', 'Workout editor'], ['more/RunnerExercise', 'Runner — exercise'], ['more/RunnerRest', 'Runner — rest'], ['more/RunnerFinished', 'Runner — finished'], ['more/RunnerDialogs', 'Stop confirm & swap (4 screens)']] },
+  { title: 'Details, settings & states (light | dark)', wide: true, items: [['more/SessionDetail', 'Session detail'], ['more/ExerciseDetail', 'Exercise detail'], ['more/Settings', 'Settings'], ['more/Login', 'Login'], ['more/Onboarding', 'Onboarding'], ['more/States', 'Toasts, banners, confirm, empty']] },
+  { title: 'Full pages (light | dark)', wide: true, items: [['more/StatsFull', 'Stats — every chart'], ['more/HealthFull', 'Health — every section']] },
+  { title: 'Earlier explorations (context only)', wide: false, items: [['Bento', 'Bento'], ['BentoPulse', 'Bento Pulse'], ['BentoMosaic', 'Mosaic light'], ['BentoMosaicDark', 'Mosaic dark'], ['BentoStack', 'Stack light'], ['BentoStackDark', 'Stack dark'], ['BentoMono', 'Mono light'], ['BentoMonoDark', 'Mono dark']] }
+];
+const root = document.getElementById('groups');
+for (const g of groups) {
+  const h = document.createElement('h2');
+  h.textContent = g.title;
+  const grid = document.createElement('div');
+  grid.className = 'grid' + (g.wide ? ' wide' : '');
+  for (const [path, label] of g.items) {
+    const fig = document.createElement('figure');
+    fig.innerHTML = '<a href="png/' + path + '.png"><img loading="lazy" src="png/' + path + '.png" alt=""></a>' +
+      '<figcaption><span></span><a href="html/' + path + '.html">HTML</a></figcaption>';
+    fig.querySelector('img').alt = label;
+    fig.querySelector('figcaption span').textContent = label;
+    grid.appendChild(fig);
+  }
+  root.append(h, grid);
+}
+</script>
+</body>
+</html>

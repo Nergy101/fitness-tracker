@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stats</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.fg}}; font-family: 'Bricolage Grotesque', system-ui, sans-serif; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 10px">
+
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px">
+<h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05">Stats</h1>
+<div role="group" aria-label="Chart date range" style="display: flex; gap: 2px; padding: 4px; border-radius: 22px; background: {{t.surface}}">
+<button style="height: 36px; padding: 0 10px; border-radius: 18px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">7D</button>
+<button style="height: 36px; padding: 0 10px; border-radius: 18px; border: none; background: {{t.inv.bg}}; color: {{t.inv.fg}}; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">8W</button>
+<button style="height: 36px; padding: 0 10px; border-radius: 18px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">6M</button>
+<button style="height: 36px; padding: 0 10px; border-radius: 18px; border: none; background: transparent; color: {{t.muted}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">1Y</button>
+</div>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 800">Weekly activity</span><span style="font-size: 13px; color: {{t.muted}}">avg 196 min / wk</span></div>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; height: 112px; align-items: end">
+<div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%"><div style="height: 14px; border-radius: 4px; background: #4ade80"></div><div style="height: 22px; border-radius: 4px; background: #38bdf8"></div><div style="height: 30px; border-radius: 4px; background: #fb923c"></div></div>
+<div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%"><div style="height: 26px; border-radius: 4px; background: #a78bfa"></div><div style="height: 18px; border-radius: 4px; background: #38bdf8"></div><div style="height: 28px; border-radius: 4px; background: #fb923c"></div></div>
+<div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%"><div style="height: 20px; border-radius: 4px; background: #38bdf8"></div><div style="height: 24px; border-radius: 4px; background: #fb923c"></div></div>
+<div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%"><div style="height: 10px; border-radius: 4px; background: #f87171"></div><div style="height: 16px; border-radius: 4px; background: #4ade80"></div><div style="height: 30px; border-radius: 4px; background: #a78bfa"></div><div style="height: 34px; border-radius: 4px; background: #fb923c"></div></div>
+<div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%"><div style="height: 28px; border-radius: 4px; background: #38bdf8"></div><div style="height: 36px; border-radius: 4px; background: #fb923c"></div></div>
+<div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%"><div style="height: 12px; border-radius: 4px; background: #4ade80"></div><div style="height: 24px; border-radius: 4px; background: #a78bfa"></div><div style="height: 22px; border-radius: 4px; background: #38bdf8"></div><div style="height: 26px; border-radius: 4px; background: #fb923c"></div></div>
+<div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%"><div style="height: 10px; border-radius: 4px; background: #f87171"></div><div style="height: 30px; border-radius: 4px; background: #38bdf8"></div><div style="height: 40px; border-radius: 4px; background: #fb923c"></div></div>
+<div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; height: 100%; opacity: 0.55"><div style="height: 12px; border-radius: 4px; background: #4ade80"></div><div style="height: 16px; border-radius: 4px; background: #38bdf8"></div><div style="height: 18px; border-radius: 4px; background: #fb923c"></div></div>
+</div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: {{t.muted}}">
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #fb923c"></span>Workouts</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #38bdf8"></span>Runs</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #a78bfa"></span>Rides</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #4ade80"></span>Walks</span>
+<span style="display: flex; align-items: center; gap: 4px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #f87171"></span>Boxing</span>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 150px; box-sizing: border-box; background: {{t.surface}}; border-radius: 26px; padding: 14px; display: flex; align-items: center; gap: 12px">
+<div style="position: relative; width: 96px; height: 96px; flex-shrink: 0">
+<svg width="96" height="96" viewBox="0 0 96 96">
+<g transform="rotate(-90 48 48)" fill="none" stroke-width="14">
+<circle cx="48" cy="48" r="38" stroke="#fb923c" stroke-dasharray="98.3 238.8" stroke-dashoffset="0"></circle>
+<circle cx="48" cy="48" r="38" stroke="#38bdf8" stroke-dasharray="60.1 238.8" stroke-dashoffset="-100.3"></circle>
+<circle cx="48" cy="48" r="38" stroke="#a78bfa" stroke-dasharray="41 238.8" stroke-dashoffset="-162.4"></circle>
+<circle cx="48" cy="48" r="38" stroke="#4ade80" stroke-dasharray="21.9 238.8" stroke-dashoffset="-205.4"></circle>
+<circle cx="48" cy="48" r="38" stroke="#f87171" stroke-dasharray="7.6 238.8" stroke-dashoffset="-229.3"></circle>
+</g>
+</svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center"><span style="font-size: 18px; font-weight: 800; line-height: 1">26</span><span style="font-size: 10px; color: {{t.muted}}">sessions</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; font-size: 12px">
+<span style="font-size: 13px; font-weight: 800; margin-bottom: 2px">Training mix</span>
+<span style="display: flex; justify-content: space-between"><span>Workouts</span><span style="font-weight: 800">42%</span></span>
+<span style="display: flex; justify-content: space-between"><span>Runs</span><span style="font-weight: 800">26%</span></span>
+<span style="display: flex; justify-content: space-between"><span>Rides</span><span style="font-weight: 800">18%</span></span>
+<span style="display: flex; justify-content: space-between"><span>Walks</span><span style="font-weight: 800">10%</span></span>
+<span style="display: flex; justify-content: space-between"><span>Boxing</span><span style="font-weight: 800">4%</span></span>
+</div>
+</div>
+<div style="height: 150px; box-sizing: border-box; background: {{t.blue.bg}}; color: {{t.blue.fg}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-size: 13px; font-weight: 600">Consistency</span>
+<span style="font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1">87%</span>
+<div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 6px; border-radius: 3px; background: {{t.blue.track}}"><div style="width: 87%; height: 6px; border-radius: 3px; background: {{t.blue.bar}}"></div></div><span style="font-size: 12px">Never 3 days off</span></div>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 124px; box-sizing: border-box; background: {{t.sky.bg}}; color: {{t.sky.fg}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: space-between">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 13px; font-weight: 600">Run pace</span><span style="font-size: 12px; font-weight: 700">↓ 12 s/km</span></div>
+<svg width="100%" height="38" viewBox="0 0 200 38" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8 L28 12 L54 10 L80 18 L106 16 L132 22 L158 26 L198 30"></path></svg>
+<span style="font-size: 22px; font-weight: 800; line-height: 1">5:23 <span style="font-size: 13px; font-weight: 600">/km avg</span></span>
+</div>
+<div style="height: 124px; box-sizing: border-box; background: {{t.purple.bg}}; color: {{t.purple.fg}}; border-radius: 26px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="font-size: 13px; font-weight: 600">Weight</span>
+<svg width="100%" height="30" viewBox="0 0 90 30" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6 L20 9 L38 8 L56 15 L74 19 L88 24"></path></svg>
+<span style="font-size: 20px; font-weight: 800; line-height: 1">−2.1 <span style="font-size: 12px; font-weight: 600">kg</span></span>
+</div>
+</div>
+
+<nav aria-label="Main" style="position: absolute; left: 24px; right: 24px; bottom: 26px; height: 64px; border-radius: 32px; background: {{t.nav.bg}}; padding: 8px; box-sizing: border-box; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; align-items: center">
+<button aria-label="Today" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+<button aria-label="Exercises" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"></path></svg></button>
+<button aria-label="Health" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-4 3 8 2-4h7"></path></svg></button>
+<button aria-label="History" style="height: 48px; border-radius: 24px; border: none; background: transparent; color: {{t.nav.icon}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></button>
+<button aria-label="Stats" style="height: 48px; border-radius: 24px; border: none; background: {{accent}}; color: #1b1b24; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"></path></svg></button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"accent":{"editor":"color","default":"#ffd23f","options":["#ffd23f","#7ee0a8","#ff9d6b","#9fc5ff"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+var dark = this.props.dark ?? false;
+var light = {
+bg: '#f1f2f6', surface: '#ffffff', fg: '#1b1b24', muted: '#5a5b6b', track: '#e9eaef',
+inv: { bg: '#1b1b24', fg: '#ffffff', muted: '#b8b9c8' },
+nav: { bg: '#1b1b24', icon: '#b8b9c8' },
+orange: { bg: '#ffd9bf', fg: '#5a2106', icon: '#c2410c', chip: '#ffffff' },
+blue: { bg: '#d6e8ff', fg: '#0b2a52', bar: '#2563c9', track: '#ffffff' },
+purple: { bg: '#e7e0ff', fg: '#33206e', chip: '#ffffff' },
+sky: { bg: '#d4f0ff', fg: '#0b3a52', chip: '#ffffff' },
+green: { bg: '#d6f5e0', fg: '#0e4425', chip: '#ffffff' },
+red: { bg: '#ffdede', fg: '#6b1616', chip: '#ffffff' }
+};
+var darkT = {
+bg: '#111118', surface: '#1c1c26', fg: '#f1f1f6', muted: '#a3a4b5', track: '#2c2c3a',
+inv: { bg: '#f1f1f6', fg: '#111118', muted: '#5a5b6b' },
+nav: { bg: '#26263a', icon: '#a3a4b5' },
+orange: { bg: '#3a1f10', fg: '#ffd9bf', icon: '#fb923c', chip: '#4d2a15' },
+blue: { bg: '#13263f', fg: '#d6e8ff', bar: '#60a5fa', track: '#22395a' },
+purple: { bg: '#251c44', fg: '#e7e0ff', chip: '#33285a' },
+sky: { bg: '#0f2a36', fg: '#bfe8fb', chip: '#17394a' },
+green: { bg: '#10291a', fg: '#c4f5d4', chip: '#173a25' },
+red: { bg: '#2e1414', fg: '#ffd0d0', chip: '#451e1e' }
+};
+return { t: dark ? darkT : light, accent: this.props.accent ?? '#ffd23f' };
+}
+}
+</script>
+</body>
+</html>

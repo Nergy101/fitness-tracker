@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workout editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 860px; height: 844px; display: flex; gap: 80px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div style="width: 390px; height: 844px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.fg}}; font-family: 'Bricolage Grotesque', system-ui, sans-serif; padding: 60px 16px 0 16px; display: flex; flex-direction: column; gap: 12px">
+
+<div style="display: flex; justify-content: space-between; align-items: center">
+<button style="height: 44px; padding: 0 14px; border-radius: 22px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer">Cancel</button>
+<span style="font-size: 15px; font-weight: 800">Edit workout</span>
+<button style="height: 44px; padding: 0 18px; border-radius: 22px; border: none; background: {{accent}}; color: #1b1b24; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">Save</button>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+<label style="display: flex; flex-direction: column"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Workout name</span><input type="text" value="Full body A" placeholder="Workout name..." style="border: none; background: transparent; font-family: inherit; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: {{t.fg}}; outline: none; padding: 0"></label>
+<label style="display: flex; flex-direction: column"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Description</span><input type="text" placeholder="Description (optional)..." style="border: none; background: transparent; font-family: inherit; font-size: 15px; color: {{t.fg}}; outline: none; padding: 0"></label>
+<div style="display: flex; gap: 6px; padding-top: 6px">
+<span style="padding: 6px 10px; border-radius: 999px; background: {{t.orange.bg}}; color: {{t.orange.fg}}; font-size: 12px; font-weight: 800">32 min total</span>
+<span style="padding: 6px 10px; border-radius: 999px; background: {{t.field}}; font-size: 12px; font-weight: 700">8 exercises</span>
+<span style="padding: 6px 10px; border-radius: 999px; background: {{t.field}}; font-size: 12px; font-weight: 700">~240 kcal</span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 13px; font-weight: 700; color: {{t.muted}}; padding: 0 4px">Timer mode</span>
+<div role="group" aria-label="Timer mode" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+<button style="height: 44px; border-radius: 16px; border: none; background: {{t.inv.bg}}; color: {{t.inv.fg}}; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">Circuit</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">Tabata</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">EMOM</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">AMRAP</button>
+<button style="height: 44px; border-radius: 16px; border: none; background: {{t.surface}}; color: {{t.fg}}; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer">Custom</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: {{t.green.bg}}; color: {{t.green.fg}}; border-radius: 22px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center">
+<span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 800">Warmup</span><span style="font-size: 12px">5 min</span></span>
+<button role="switch" aria-checked="true" aria-label="Include warmup" style="width: 48px; height: 28px; border-radius: 14px; border: none; background: {{t.green.fg}}; padding: 3px; display: flex; justify-content: flex-end; cursor: pointer"><span style="width: 22px; height: 22px; border-radius: 11px; background: {{t.green.bg}}"></span></button>
+</div>
+<div style="background: {{t.surface}}; border-radius: 22px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center">
+<span style="display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 800">Cooldown</span><span style="font-size: 12px; color: {{t.muted}}">Off</span></span>
+<button role="switch" aria-checked="false" aria-label="Include cooldown" style="width: 48px; height: 28px; border-radius: 14px; border: none; background: {{t.track}}; padding: 3px; display: flex; justify-content: flex-start; cursor: pointer"><span style="width: 22px; height: 22px; border-radius: 11px; background: {{t.surface}}"></span></button>
+</div>
+</div>
+
+<div style="background: {{t.surface}}; border-radius: 26px; padding: 6px 12px; display: flex; flex-direction: column">
+<sc-for list="{{exercises}}" as="e" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid {{t.track}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="{{t.muted}}"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+<span style="width: 22px; font-size: 12px; font-weight: 700; color: {{t.muted}}">{{e.n}}</span>
+<span style="flex-grow: 1; font-size: 15px; font-weight: 700">{{e.name}}</span>
+<button style="height: 32px; padding: 0 10px; border-radius: 16px; border: none; background: {{t.field}}; color: {{t.fg}}; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer">{{e.dur}}</button>
+<button aria-label="Remove exercise" style="width: 32px; height: 32px; border-radius: 16px; border: none; background: transparent; color: {{t.muted}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+</sc-for>
+<button style="height: 52px; border: none; background: transparent; color: {{t.fg}}; font-family: inherit; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>Add exercise</button>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ffd23f","options":["#ffd23f","#7ee0a8","#ff9d6b","#9fc5ff"]},"$preview":{"width":860,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+var L = { bg: '#f1f2f6', surface: '#ffffff', fg: '#1b1b24', muted: '#5a5b6b', track: '#e9eaef', field: '#f1f2f6', scrim: 'rgba(20,20,32,0.5)',
+inv: { bg: '#1b1b24', fg: '#ffffff', muted: '#b8b9c8' }, nav: { bg: '#1b1b24', icon: '#b8b9c8' },
+orange: { bg: '#ffd9bf', fg: '#5a2106', icon: '#c2410c', chip: '#ffffff' }, blue: { bg: '#d6e8ff', fg: '#0b2a52', bar: '#2563c9', track: '#ffffff' },
+purple: { bg: '#e7e0ff', fg: '#33206e', chip: '#ffffff' }, sky: { bg: '#d4f0ff', fg: '#0b3a52', chip: '#ffffff' },
+green: { bg: '#d6f5e0', fg: '#0e4425', chip: '#ffffff' }, red: { bg: '#ffdede', fg: '#6b1616', chip: '#ffffff' } };
+var D = { bg: '#111118', surface: '#1c1c26', fg: '#f1f1f6', muted: '#a3a4b5', track: '#2c2c3a', field: '#262633', scrim: 'rgba(0,0,0,0.62)',
+inv: { bg: '#f1f1f6', fg: '#111118', muted: '#5a5b6b' }, nav: { bg: '#26263a', icon: '#a3a4b5' },
+orange: { bg: '#3a1f10', fg: '#ffd9bf', icon: '#fb923c', chip: '#4d2a15' }, blue: { bg: '#13263f', fg: '#d6e8ff', bar: '#60a5fa', track: '#22395a' },
+purple: { bg: '#251c44', fg: '#e7e0ff', chip: '#33285a' }, sky: { bg: '#0f2a36', fg: '#bfe8fb', chip: '#17394a' },
+green: { bg: '#10291a', fg: '#c4f5d4', chip: '#173a25' }, red: { bg: '#2e1414', fg: '#ffd0d0', chip: '#451e1e' } };
+var exercises = [
+{ n: '1', name: 'Squats', dur: '45s' },
+{ n: '2', name: 'Push-ups', dur: '40s' },
+{ n: '3', name: 'Bent-over rows', dur: '45s' },
+{ n: '4', name: 'Lunges', dur: '45s' },
+{ n: '5', name: 'Plank', dur: '60s' },
+{ n: '6', name: 'Kettlebell swing', dur: '40s' }
+];
+return { themes: [L, D], exercises: exercises, accent: this.props.accent ?? '#ffd23f' };
+}
+}
+</script>
+</body>
+</html>

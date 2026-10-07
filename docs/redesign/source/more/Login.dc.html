@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Login</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 860px; height: 844px; display: flex; gap: 80px">
+<sc-for list="{{themes}}" as="t" hint-placeholder-count="2">
+<div style="width: 390px; height: 844px; flex-shrink: 0; box-sizing: border-box; position: relative; overflow: hidden; background: {{t.bg}}; color: {{t.fg}}; font-family: 'Bricolage Grotesque', system-ui, sans-serif; padding: 80px 20px 40px 20px; display: flex; flex-direction: column; gap: 14px">
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="grid-column: span 2; height: 120px; border-radius: 28px; background: {{t.sky.bg}}; color: {{t.sky.fg}}; display: flex; align-items: flex-end; padding: 16px; box-sizing: border-box"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4" r="2"></circle><path d="M8 21l3-6 3 2v5M6 12l3-4 4 1 3 3 3 1"></path></svg></div>
+<div style="height: 120px; border-radius: 28px; background: {{t.orange.bg}}; color: {{t.orange.fg}}; display: flex; align-items: flex-end; padding: 16px; box-sizing: border-box"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"></path></svg></div>
+<div style="height: 120px; border-radius: 28px; background: {{t.purple.bg}}; color: {{t.purple.fg}}; display: flex; align-items: flex-end; padding: 16px; box-sizing: border-box"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17" r="3.5"></circle><circle cx="18.5" cy="17" r="3.5"></circle><path d="M5.5 17l4-8h6l3 8M9.5 9L12 17h-3"></path></svg></div>
+<div style="height: 120px; border-radius: 28px; background: {{t.red.bg}}; color: {{t.red.fg}}; display: flex; align-items: flex-end; padding: 16px; box-sizing: border-box"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="13" height="10" rx="4"></rect><path d="M7 14v4a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-4M10 4v5"></path></svg></div>
+<div style="height: 120px; border-radius: 28px; background: {{t.green.bg}}; color: {{t.green.fg}}; display: flex; align-items: flex-end; padding: 16px; box-sizing: border-box"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4" r="2"></circle><path d="M10 21l2-6 2 2v4M9 13l1-4 3 1 2 3"></path></svg></div>
+</div>
+
+<div style="flex-grow: 1"></div>
+<h1 style="margin: 0; font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1">FitnessTracker</h1>
+<p style="margin: 0; font-size: 16px; color: {{t.muted}}">Enter your password to unlock</p>
+<label style="height: 56px; box-sizing: border-box; border-radius: 28px; background: {{t.surface}}; padding: 0 8px 0 20px; display: flex; align-items: center; gap: 8px">
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Password</span>
+<input type="password" placeholder="Password" value="supersecret" style="flex-grow: 1; border: none; background: transparent; font-family: inherit; font-size: 18px; color: {{t.fg}}; outline: none">
+<button aria-label="Show password" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: transparent; color: {{t.muted}}; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+</label>
+<button style="height: 56px; border-radius: 28px; border: none; background: {{accent}}; color: #1b1b24; font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer">Unlock</button>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#ffd23f","options":["#ffd23f","#7ee0a8","#ff9d6b","#9fc5ff"]},"$preview":{"width":860,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+var L = { bg: '#f1f2f6', surface: '#ffffff', fg: '#1b1b24', muted: '#5a5b6b', track: '#e9eaef', field: '#f1f2f6', scrim: 'rgba(20,20,32,0.5)',
+inv: { bg: '#1b1b24', fg: '#ffffff', muted: '#b8b9c8' }, nav: { bg: '#1b1b24', icon: '#b8b9c8' },
+orange: { bg: '#ffd9bf', fg: '#5a2106', icon: '#c2410c', chip: '#ffffff' }, blue: { bg: '#d6e8ff', fg: '#0b2a52', bar: '#2563c9', track: '#ffffff' },
+purple: { bg: '#e7e0ff', fg: '#33206e', chip: '#ffffff' }, sky: { bg: '#d4f0ff', fg: '#0b3a52', chip: '#ffffff' },
+green: { bg: '#d6f5e0', fg: '#0e4425', chip: '#ffffff' }, red: { bg: '#ffdede', fg: '#6b1616', chip: '#ffffff' } };
+var D = { bg: '#111118', surface: '#1c1c26', fg: '#f1f1f6', muted: '#a3a4b5', track: '#2c2c3a', field: '#262633', scrim: 'rgba(0,0,0,0.62)',
+inv: { bg: '#f1f1f6', fg: '#111118', muted: '#5a5b6b' }, nav: { bg: '#26263a', icon: '#a3a4b5' },
+orange: { bg: '#3a1f10', fg: '#ffd9bf', icon: '#fb923c', chip: '#4d2a15' }, blue: { bg: '#13263f', fg: '#d6e8ff', bar: '#60a5fa', track: '#22395a' },
+purple: { bg: '#251c44', fg: '#e7e0ff', chip: '#33285a' }, sky: { bg: '#0f2a36', fg: '#bfe8fb', chip: '#17394a' },
+green: { bg: '#10291a', fg: '#c4f5d4', chip: '#173a25' }, red: { bg: '#2e1414', fg: '#ffd0d0', chip: '#451e1e' } };
+return { themes: [L, D], accent: this.props.accent ?? '#ffd23f' };
+}
+}
+</script>
+</body>
+</html>
