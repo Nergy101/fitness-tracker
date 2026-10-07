@@ -24,12 +24,12 @@ export default function WeekdayBarChart({ sessions }: { sessions: WorkoutSession
           return (
             <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
               <span
-                className={`text-[10px] font-semibold ${total > 0 ? "text-fg/60" : "text-transparent"}`}
+                className={`text-[10px] font-semibold tabular-nums ${total > 0 ? "text-fg/60" : "text-transparent"}`}
               >
                 {total}
               </span>
               <div
-                className="w-full rounded-t-sm overflow-hidden flex flex-col justify-end transition-all"
+                className="w-full rounded-t-lg overflow-hidden flex flex-col justify-end transition-all"
                 style={{
                   height: `${total > 0 ? 12 + (total / max) * 100 : 6}px`,
                   background: total > 0 ? undefined : "var(--track)",

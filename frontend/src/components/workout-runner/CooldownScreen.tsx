@@ -29,17 +29,17 @@ export default function CooldownScreen({
       className="flex flex-col items-center justify-center h-full px-6 text-center"
       style={{ "--timer": "#3b82f6", background: "linear-gradient(180deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.02) 60%, transparent 100%)" } as React.CSSProperties}
     >
-      <p className="text-blue-400/70 text-sm mb-2 font-medium">Cooldown</p>
-      <h2 className="text-2xl font-bold text-blue-400 mb-6">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-blue-400/70 mb-2">Cooldown</p>
+      <h2 className="text-3xl font-extrabold tracking-tight text-blue-400 mb-6">
         Breathe and recover
       </h2>
-      <div className="relative w-48 h-48 mb-4">
+      <div className="relative w-56 h-56 mb-5">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
+          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="8" />
           <circle
             cx="50" cy="50" r="42" fill="none"
             stroke="#3b82f6"
-            strokeWidth="6"
+            strokeWidth="8"
             strokeDasharray={RING}
             strokeDashoffset={(1 - timerProgress) * RING}
             strokeLinecap="round"
@@ -47,11 +47,11 @@ export default function CooldownScreen({
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-4xl font-bold text-blue-400">{displayTime}</span>
+          <span className="text-5xl font-extrabold tracking-tight tabular-nums text-blue-400">{displayTime}</span>
         </div>
       </div>
       {/* Breathing cue */}
-      <div className="mb-4">
+      <div className="mb-5">
         <p
           className={`text-3xl font-bold transition-all duration-300 ${
             breathPhase === "inhale" ? "text-blue-300 scale-110" : "text-blue-400/60 scale-100"
@@ -59,26 +59,26 @@ export default function CooldownScreen({
         >
           {breathPhase === "inhale" ? "Inhale" : "Exhale"}
         </p>
-        <div className="w-32 h-1.5 bg-fg/10 rounded-full mt-2 mx-auto overflow-hidden">
+        <div className="w-40 h-2 bg-fg/10 rounded-full mt-2.5 mx-auto overflow-hidden">
           <div
             className="h-full bg-blue-400/50 rounded-full transition-all duration-300"
             style={{ width: `${breathProgress * 100}%` }}
           />
         </div>
       </div>
-      <p className="text-fg/30 text-sm mb-4">Cooling down...</p>
-      <div className="flex items-center gap-3">
+      <p className="text-fg/30 text-sm mb-5">Cooling down...</p>
+      <div className="flex items-center gap-3 w-full max-w-xs">
         <button
           onClick={onSkip}
-          className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+          className="flex-1 min-h-12 inline-flex items-center justify-center gap-2 text-sm font-semibold text-fg/70 border border-fg/10 hover:bg-fg/5 active:bg-fg/10 rounded-xl px-4 transition-colors"
         >
-          <SkipForward size={16} weight="fill" /> Skip cooldown
+          <SkipForward size={18} weight="fill" /> Skip cooldown
         </button>
         <button
           onClick={onTogglePause}
-          className="inline-flex items-center gap-2 text-sm text-blue-400/60 hover:text-blue-400 border border-blue-400/20 hover:border-blue-400/40 rounded-xl px-5 py-2 transition-colors"
+          className="flex-1 min-h-12 inline-flex items-center justify-center gap-2 text-sm font-semibold text-blue-300 bg-blue-400/15 border border-blue-400/30 hover:bg-blue-400/25 active:scale-[0.98] rounded-xl px-4 transition"
         >
-          {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+          {paused ? <PlayCircle size={18} weight="fill" /> : <PauseCircle size={18} weight="fill" />}
           {paused ? "Resume" : "Pause"}
         </button>
       </div>

@@ -15,15 +15,15 @@ export function RecordGroup({
   const KindIcon = ACTIVITY_ICONS[kind];
   return (
     <div className="mb-3 last:mb-0">
-      <p className="flex items-center gap-1.5 text-xs text-fg/40 mb-1.5">
+      <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">
         <KindIcon size={14} className="shrink-0" style={{ color: ACTIVITY_COLORS[kind] }} />
         {ACTIVITY_LABELS[kind]}
       </p>
       <div className="grid grid-cols-2 gap-2 text-xs">
         {filled.map((r) => (
-          <div key={r.label} className="bg-bg rounded-lg p-2">
+          <div key={r.label} className="bg-[var(--surface-2)] rounded-xl p-2.5">
             <p className="text-fg/50">{r.label}</p>
-            <p className="text-sm font-bold text-fg">{r.value}</p>
+            <p className="text-sm font-bold text-fg tabular-nums">{r.value}</p>
           </div>
         ))}
       </div>
@@ -64,25 +64,25 @@ export function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxi
   if (!hasAny) return null;
 
   return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5">
+    <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
       <div className="flex items-center gap-2 mb-3">
         <Trophy size={20} className="text-yellow-400 shrink-0" weight="fill" />
-        <p className="text-sm font-semibold text-fg">Personal Records</p>
+        <p className="text-sm font-bold tracking-tight text-fg">Personal Records</p>
       </div>
       <RecordGroup kind="run" records={runRecords} />
       <RecordGroup kind="walk" records={walkRecords} />
       <RecordGroup kind="workout" records={workoutRecords} />
       {boxingRecords.some((r) => r.value != null) && (
         <div className="mb-3 last:mb-0">
-          <p className="flex items-center gap-1.5 text-xs text-fg/40 mb-1.5">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">
             <HandFist size={14} className="shrink-0 text-red-400" />
             Boxing
           </p>
           <div className="grid grid-cols-2 gap-2 text-xs">
             {boxingRecords.filter((r): r is { label: string; value: string } => r.value != null).map((r) => (
-              <div key={r.label} className="bg-bg rounded-lg p-2">
+              <div key={r.label} className="bg-[var(--surface-2)] rounded-xl p-2.5">
                 <p className="text-fg/50">{r.label}</p>
-                <p className="text-sm font-bold text-fg">{r.value}</p>
+                <p className="text-sm font-bold text-fg tabular-nums">{r.value}</p>
               </div>
             ))}
           </div>
@@ -90,7 +90,7 @@ export function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxi
       )}
       {prs.best_1rm_per_exercise.length > 0 && (
         <div className="mb-3 last:mb-0">
-          <p className="flex items-center gap-1.5 text-xs text-fg/40 mb-1.5">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">
             <Barbell size={14} className="shrink-0 text-violet-400" />
             Strength (est. 1RM)
           </p>
@@ -98,7 +98,7 @@ export function PersonalRecordsCard({ prs, boxingPrs }: { prs: PrsResponse; boxi
             {prs.best_1rm_per_exercise.map((e) => (
               <div
                 key={e.exercise_id ?? e.exercise_name}
-                className="flex items-center justify-between gap-3 bg-bg rounded-lg px-3 py-2"
+                className="flex items-center justify-between gap-3 bg-[var(--surface-2)] rounded-xl px-3 py-2.5"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-fg truncate">{e.exercise_name}</p>

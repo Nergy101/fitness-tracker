@@ -107,21 +107,27 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
     <div>
       {/* Month navigation */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={prevMonth} className="text-fg/40 hover:text-fg transition-colors p-1">
+        <button
+          onClick={prevMonth}
+          className="w-10 h-10 flex items-center justify-center rounded-full text-fg/40 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors"
+        >
           <CaretLeft size={20} weight="bold" />
         </button>
-        <h3 className="text-sm font-semibold">
+        <h3 className="text-sm font-bold tracking-tight">
           {MONTHS[viewDate.getMonth()]} {viewDate.getFullYear()}
         </h3>
         <div className="flex gap-1">
           <button
             onClick={jumpToday}
-            className="text-fg/30 hover:text-fg transition-colors p-1"
+            className="w-10 h-10 flex items-center justify-center rounded-full text-fg/30 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors"
             title="Today"
           >
             <ArrowClockwise size={18} />
           </button>
-          <button onClick={nextMonth} className="text-fg/40 hover:text-fg transition-colors p-1">
+          <button
+            onClick={nextMonth}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-fg/40 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors"
+          >
             <CaretRight size={20} weight="bold" />
           </button>
         </div>
@@ -130,7 +136,7 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
       {/* Day-of-week headers */}
       <div className="grid grid-cols-7 mb-1">
         {DAY_LABELS.map((l) => (
-          <span key={l} className="text-[10px] text-fg/30 text-center py-1">
+          <span key={l} className="text-[10px] font-semibold tracking-wide text-fg/45 text-center py-1">
             {l}
           </span>
         ))}
@@ -149,13 +155,13 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
                   onClick={() => cell.inMonth && hasWorkout && setSelectedDay(cell)}
                   disabled={!cell.inMonth}
                   className={`
-                    relative flex flex-col items-center justify-center rounded-lg p-1.5 min-h-[48px] transition-all text-xs
+                    relative flex flex-col items-center justify-center rounded-xl p-1.5 min-h-[48px] transition-all text-xs
                     ${!cell.inMonth ? "opacity-20" : hasWorkout ? "hover:bg-accent/10 cursor-pointer" : ""}
                     ${isToday ? "ring-1 ring-accent/50" : ""}
-                    ${selectedDay?.key === cell.key ? "bg-accent/15" : ""}
+                    ${selectedDay?.key === cell.key ? "bg-accent/15 shadow-[var(--shadow-sm)]" : ""}
                   `}
                 >
-                  <span className={`text-xs font-medium ${isToday ? "text-accent" : "text-fg/70"}`}>
+                  <span className={`text-xs tabular-nums ${isToday ? "text-accent font-bold" : "text-fg/70 font-medium"}`}>
                     {cell.day}
                   </span>
                   {hasWorkout && (
@@ -163,14 +169,14 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
                       {cell.sessions.slice(0, 3).map((s, i) => (
                         <span
                           key={i}
-                          className="w-1 h-1 rounded-full"
+                          className="w-1.5 h-1.5 rounded-full"
                           style={{ background: ACTIVITY_COLORS[activityKind(s.template_name)] }}
                         />
                       ))}
                     </div>
                   )}
                   {cell.totalMinutes > 0 && (
-                    <span className="text-[9px] text-fg/30 mt-0.5">
+                    <span className="text-[9px] tabular-nums text-fg/30 mt-0.5">
                       {cell.totalMinutes}m
                     </span>
                   )}
@@ -202,9 +208,9 @@ function DayDetail({
   onClose: () => void;
 }) {
   return (
-    <div className="mt-4 bg-surface rounded-xl p-4 border border-fg/5">
+    <div className="mt-4 bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold">
+        <h4 className="text-sm font-bold tracking-tight">
           {day.date.toLocaleDateString(undefined, {
             weekday: "long",
             month: "long",
@@ -213,7 +219,7 @@ function DayDetail({
         </h4>
         <button
           onClick={onClose}
-          className="text-fg/30 hover:text-fg transition-colors"
+          className="p-1.5 -m-1.5 rounded-full text-fg/30 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors"
         >
           <X size={16} />
         </button>
@@ -226,7 +232,7 @@ function DayDetail({
           return (
           <div
             key={session.id}
-            className="bg-bg rounded-lg p-3 border border-fg/5"
+            className="bg-bg rounded-xl p-3 border border-fg/[0.06]"
           >
             <div className="flex items-start justify-between">
               <div>

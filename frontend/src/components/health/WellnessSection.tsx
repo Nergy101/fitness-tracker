@@ -41,7 +41,7 @@ export default function WellnessSection() {
   const latest = entries[0];
 
   return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5 space-y-3">
+    <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-3">
       {latest && (
         <div className="text-xs text-fg/50 mb-1">
           Last: Mood {moodIcon(latest.mood ?? 3)} {latest.mood}/5 ·
@@ -55,8 +55,8 @@ export default function WellnessSection() {
       {trends && trends.weekly_averages.length > 0 && (
         <div className="flex gap-3 text-[10px] text-fg/40">
           {trends.weekly_averages.slice(0, 4).reverse().map((w) => (
-            <div key={w.week_start} className="flex-1 text-center bg-bg rounded-lg py-1.5">
-              <p className="font-medium text-fg">{w.avg_mood ?? "—"}</p>
+            <div key={w.week_start} className="flex-1 text-center bg-[var(--surface-2)] rounded-xl py-1.5">
+              <p className="font-medium text-fg tabular-nums">{w.avg_mood ?? "—"}</p>
               <p>Mood</p>
             </div>
           ))}
@@ -90,7 +90,7 @@ export default function WellnessSection() {
         </div>
         <button onClick={submit}
           aria-label="Log wellness check-in"
-          className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold mt-1">
+          className="w-full bg-accent text-on-accent rounded-xl py-2 text-sm font-semibold mt-1 shadow-[var(--shadow-sm)] active:scale-[0.98] transition">
           Log Check-in
         </button>
       </div>

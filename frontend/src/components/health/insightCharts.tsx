@@ -6,10 +6,17 @@
  *   - left gutter with 2–3 "nice" y ticks, dashed fg/10 gridlines
  *   - three x-axis date labels (first / middle / last) via `xLabels`
  *   - dual-axis charts tint each side's tick labels in its series color
+ *
+ * Visual language: bars are single-series (never stacked) so a top `rx`
+ * rounds cleanly with no notch risk; trend lines (band/dual-axis) render as
+ * smoothed Catmull-Rom paths via `chartPath` with a soft gradient fill under
+ * them. Element *types* (rect vs path, polyline vs path) are pinned by
+ * insightCharts.test.tsx where a test depends on them — see that file.
  */
 
+import { useId, useState } from "react";
 import { fmtTick, niceTicks, ticksByStep } from "./ticks";
-import { useState } from "react";
+import { smoothLinePath } from "./chartPath";
 import ChartPoint from "../ChartPoint";
 
 const W = 300;
@@ -42,13 +49,14 @@ function YGrid({
         if (y < 4 || y > H) return null;
         return (
           <g key={t}>
-            <line x1={GL} y1={y} x2={right} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
+            <line x1={GL} y1={y} x2={right} y2={y} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
             <text
               x={GL - 4}
               y={Math.max(y + 2.5, 7)}
               textAnchor="end"
               fontSize="8"
-              {...(color ? { fill: color, opacity: 0.8 } : { className: "fill-fg/30" })}
+              fontWeight="600"
+              {...(color ? { fill: color, opacity: 0.8 } : { className: "fill-fg/35" })}
             >
               {format(t)}
             </text>
@@ -64,7 +72,7 @@ function XLabels({ labels, xOf, y = H + 14 }: { labels: [string, string, string]
   return (
     <>
       {labels.map((l, j) => (
-        <text key={j} x={xOf(j)} y={y} textAnchor="middle" className="fill-fg/40" fontSize="9">
+        <text key={j} x={xOf(j)} y={y} textAnchor="middle" className="fill-fg/40" fontSize="9" fontWeight="500">
           {l}
         </text>
       ))}
@@ -112,6 +120,7 @@ export function BarChart({
   xLabels,
 }: BarChartProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const gradId = useId();
   const n = points.length;
   if (n < 2) return null;
 
@@ -128,25 +137,39 @@ export function BarChart({
   const bY = (v: number) => H - (v / yMax) * H;
   const bH = (v: number) => Math.max(0, (v / yMax) * H);
   const goalY = goalValue != null ? bY(goalValue) : null;
+  const barRadius = Math.min(3, barW / 2);
 
   const avgPts = overlay?.length
     ? overlay.map((p, i) => `${bCX(i)},${bY(p.y)}`).join(" ")
     : null;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full overflow-visible">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={defaultColor} stopOpacity={0.9} />
+          <stop offset="100%" stopColor={defaultColor} stopOpacity={0.35} />
+        </linearGradient>
+      </defs>
       <YGrid ticks={niceTicks(0, yMax).filter((t) => t > 0)} yOf={bY} format={formatY ?? fmtTick} />
       {points.map((p, i) => (
         <g key={i}>
-          <rect x={bX(i)} y={bY(p.y)} width={barW} height={bH(p.y)} fill={p.color ?? defaultColor} opacity="0.8" />
+          <rect
+            x={bX(i)}
+            y={bY(p.y)}
+            width={barW}
+            height={bH(p.y)}
+            rx={barRadius}
+            fill={p.color ?? `url(#${gradId})`}
+          />
           <ChartPoint x={bCX(i)} y={Math.max(4, bY(p.y))} value={formatY?.(p.y) ?? fmtTick(p.y)} label={String(i + 1)} color={p.color ?? defaultColor} selected={selectedIndex === i} onSelect={() => setSelectedIndex(selectedIndex === i ? null : i)} chartWidth={W} radius={0} />
         </g>
       ))}
       {goalY != null && (
         <>
-          <line x1={GL} y1={goalY} x2={W} y2={goalY} stroke={ACCENT} strokeWidth="1" strokeDasharray="4 3" opacity="0.7" />
+          <line x1={GL} y1={goalY} x2={W} y2={goalY} stroke={ACCENT} strokeWidth="1.25" strokeDasharray="4 3" strokeLinecap="round" opacity="0.7" />
           {goalLabel && (
-            <text x={W - 2} y={goalY - 3} textAnchor="end" className="fill-fg/40" fontSize="8">
+            <text x={W - 2} y={goalY - 3} textAnchor="end" className="fill-fg/40" fontSize="8" fontWeight="600">
               {goalLabel}
             </text>
           )}
@@ -156,7 +179,7 @@ export function BarChart({
         <polyline
           points={avgPts}
           fill="none"
-          stroke="rgba(255,255,255,0.75)"
+          stroke="rgba(255,255,255,0.8)"
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -170,6 +193,10 @@ export function BarChart({
 // ─── DailyStackedBarChart ─────────────────────────────────────────────────────
 // Index-based x like BarChart; each bar is a bottom-up stack of segments.
 // Bar height = sum of segment values (e.g. sleep stages summing to totalSleep).
+// Segments stay plain (non-rounded) rects — rounding only the top one would
+// need a path, and stacks aren't worth the extra element-type complexity here
+// (see StatsTab's StackedBarChart for the path-based top-rounding pattern,
+// used where a stack is the primary chart rather than a secondary one).
 
 export type StackSeg = { value: number; color: string };
 export type StkPt = { x: number; segments: StackSeg[]; label?: string };
@@ -199,14 +226,14 @@ export function DailyStackedBarChart({ points, goalValue, goalLabel, formatY, xL
   const goalY = goalValue != null ? yOf(goalValue) : null;
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full overflow-visible">
       {points.map((p, i) => {
         let y = H;
         const total = p.segments.reduce((sum, segment) => sum + segment.value, 0);
         const rects = p.segments.map((seg, si) => {
           const h = segH(seg.value);
           y -= h;
-          return <rect key={`${i}-${si}`} x={bX(i)} y={y} width={barW} height={h} fill={seg.color} opacity="0.85" />;
+          return <rect key={`${i}-${si}`} x={bX(i)} y={y} width={barW} height={h} fill={seg.color} opacity="0.88" />;
         });
         return (
           <g key={i}>
@@ -217,9 +244,9 @@ export function DailyStackedBarChart({ points, goalValue, goalLabel, formatY, xL
       })}
       {goalY != null && (
         <>
-          <line x1={GL} y1={goalY} x2={W} y2={goalY} stroke={ACCENT} strokeWidth="1" strokeDasharray="4 3" opacity="0.7" />
+          <line x1={GL} y1={goalY} x2={W} y2={goalY} stroke={ACCENT} strokeWidth="1.25" strokeDasharray="4 3" strokeLinecap="round" opacity="0.7" />
           {goalLabel && (
-            <text x={W - 2} y={goalY - 3} textAnchor="end" className="fill-fg/40" fontSize="8">
+            <text x={W - 2} y={goalY - 3} textAnchor="end" className="fill-fg/40" fontSize="8" fontWeight="600">
               {goalLabel}
             </text>
           )}
@@ -264,12 +291,12 @@ export function ScatterChart({ points, color = ACCENT, xLabel, xStep }: ScatterC
     : niceTicks(xLo, xHi);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 26}`} className="w-full">
+    <svg viewBox={`0 0 ${W} ${H + 26}`} className="w-full overflow-visible">
       <YGrid ticks={niceTicks(yLo, yHi)} yOf={ptY} />
       {xTicks.map((t) => (
         <g key={t}>
-          <line x1={ptX(t)} y1={0} x2={ptX(t)} y2={H} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-          <text x={ptX(t)} y={H + 9} textAnchor="middle" className="fill-fg/30" fontSize="8">
+          <line x1={ptX(t)} y1={0} x2={ptX(t)} y2={H} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
+          <text x={ptX(t)} y={H + 9} textAnchor="middle" className="fill-fg/35" fontSize="8" fontWeight="600">
             {fmtTick(t)}
           </text>
         </g>
@@ -278,7 +305,7 @@ export function ScatterChart({ points, color = ACCENT, xLabel, xStep }: ScatterC
         <ChartPoint key={i} x={ptX(p.x)} y={ptY(p.y)} value={`x ${fmtTick(p.x)} · y ${fmtTick(p.y)}`} label={p.label ?? `Point ${i + 1}`} color={p.color ?? color} selected={selectedIndex === i} onSelect={() => setSelectedIndex(selectedIndex === i ? null : i)} chartWidth={W} />
       ))}
       {xLabel && (
-        <text x={GL + (W - GL) / 2} y={H + 22} textAnchor="middle" className="fill-fg/40" fontSize="9">
+        <text x={GL + (W - GL) / 2} y={H + 22} textAnchor="middle" className="fill-fg/40" fontSize="9" fontWeight="500">
           {xLabel}
         </text>
       )}
@@ -287,7 +314,8 @@ export function ScatterChart({ points, color = ACCENT, xLabel, xStep }: ScatterC
 }
 
 // ─── BandChart ────────────────────────────────────────────────────────────────
-// Shaded min–max band + avg centre line.
+// Shaded min–max band + smoothed avg centre line, both rendered as paths so
+// the trend reads as a curve rather than straight segments between samples.
 
 interface BandChartProps {
   points: BandPt[];
@@ -313,16 +341,16 @@ export function BandChart({ points, color = ACCENT, xLabels, references }: BandC
   const xOf = (i: number) => GL + (n === 1 ? (W - GL) / 2 : (i / (n - 1)) * (W - GL));
   const yOf = (v: number) => yN(v, yLo, yHi);
 
-  // Polygon: max edge left→right, min edge right→left
-  const topEdge = points.map((p, i) => `${xOf(i)},${yOf(p.max)}`).join(" ");
-  const botEdge = [...points].reverse().map((p, i) => `${xOf(n - 1 - i)},${yOf(p.min)}`).join(" ");
-
-  const avgLine = points.map((p, i) => `${xOf(i)},${yOf(p.avg)}`).join(" ");
+  const topPts = points.map((p, i) => ({ x: xOf(i), y: yOf(p.max) }));
+  const botPts = [...points].reverse().map((p, i) => ({ x: xOf(n - 1 - i), y: yOf(p.min) }));
+  const bandPath = `${smoothLinePath(topPts)} L ${smoothLinePath(botPts).slice(2)} Z`;
+  const avgPts = points.map((p, i) => ({ x: xOf(i), y: yOf(p.avg) }));
+  const avgPath = smoothLinePath(avgPts);
 
   const lblIdxs = [0, Math.floor(n / 2), n - 1];
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
+    <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full overflow-visible">
       <YGrid ticks={niceTicks(yLo, yHi)} yOf={yOf} />
       {(references ?? []).map((r) => (
         <g key={r.value}>
@@ -332,12 +360,13 @@ export function BandChart({ points, color = ACCENT, xLabels, references }: BandC
           </text>
         </g>
       ))}
-      <polygon points={`${topEdge} ${botEdge}`} fill={color} opacity="0.15" />
-      <polyline
-        points={avgLine}
+      <path data-chart="band-area" d={bandPath} fill={color} opacity="0.16" stroke="none" />
+      <path
+        data-chart="band-line"
+        d={avgPath}
         fill="none"
         stroke={color}
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -352,8 +381,8 @@ export function BandChart({ points, color = ACCENT, xLabels, references }: BandC
 // ─── DualAxisChart ────────────────────────────────────────────────────────────
 // Bars on the RIGHT axis scale + line on the LEFT axis scale; each side's tick
 // labels are tinted in its series color so the two scales read unambiguously.
-// Line gaps (null) break the polyline into separate segments; dots mark every
-// point so sparse series stay visible.
+// Line gaps (null) break the smoothed path into separate segments; dots mark
+// every point so sparse series stay visible.
 
 const GR = 30; // right gutter: bar-scale tick labels
 
@@ -375,6 +404,7 @@ export function DualAxisChart({
   xLabels,
 }: DualAxisChartProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const gradId = useId();
   const n = points.length;
   if (n < 2) return null;
 
@@ -393,15 +423,16 @@ export function DualAxisChart({
   const bY = (v: number) => H - (v / barMax) * H;
   const bH = (v: number) => Math.max(0, (v / barMax) * H);
   const lY = (v: number) => yN(v, lineLo - linePad, lineHi + linePad);
+  const barRadius = Math.min(2.5, barW / 2);
 
-  const segments: string[][] = [];
+  const segments: { x: number; y: number }[][] = [];
   const dots: { x: number; y: number }[] = [];
-  let cur: string[] = [];
+  let cur: { x: number; y: number }[] = [];
   for (let i = 0; i < n; i++) {
     const v = points[i].line;
     if (v != null) {
       dots.push({ x: bCX(i), y: lY(v) });
-      cur.push(`${bCX(i)},${lY(v)}`);
+      cur.push({ x: bCX(i), y: lY(v) });
     } else {
       if (cur.length >= 2) segments.push(cur);
       cur = [];
@@ -416,7 +447,13 @@ export function DualAxisChart({
   );
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 32}`} className="w-full">
+    <svg viewBox={`0 0 ${W} ${H + 32}`} className="w-full overflow-visible">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={barColor} stopOpacity={0.6} />
+          <stop offset="100%" stopColor={barColor} stopOpacity={0.22} />
+        </linearGradient>
+      </defs>
       {/* left axis: line scale (tinted); gridlines come from this scale only */}
       <YGrid ticks={niceTicks(lineLo, lineHi)} yOf={lY} right={right} color={lineColor} />
       {/* right axis: bar scale (tinted labels, no second set of gridlines) */}
@@ -426,21 +463,21 @@ export function DualAxisChart({
           const y = bY(t);
           if (y < 4 || y > H) return null;
           return (
-            <text key={t} x={right + 4} y={Math.max(y + 2.5, 7)} fontSize="8" fill={barColor} opacity="0.8">
+            <text key={t} x={right + 4} y={Math.max(y + 2.5, 7)} fontSize="8" fontWeight="600" fill={barColor} opacity="0.8">
               {fmtTick(t)}
             </text>
           );
         })}
       {points.map((p, i) => (
-        <rect key={i} x={bX(i)} y={bY(p.bar)} width={barW} height={bH(p.bar)} fill={barColor} opacity="0.5" />
+        <rect key={i} x={bX(i)} y={bY(p.bar)} width={barW} height={bH(p.bar)} rx={barRadius} fill={`url(#${gradId})`} />
       ))}
       {segments.map((seg, si) => (
-        <polyline
+        <path
           key={si}
-          points={seg.join(" ")}
+          d={smoothLinePath(seg)}
           fill="none"
           stroke={lineColor}
-          strokeWidth="1.5"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -452,16 +489,16 @@ export function DualAxisChart({
         <g transform={`translate(0,${H + 18})`}>
           {barLabel && (
             <>
-              <rect x={GL} y="0" width="6" height="6" fill={barColor} opacity="0.65" rx="1" />
-              <text x={GL + 9} y="6" className="fill-fg/40" fontSize="8">
+              <rect x={GL} y="0" width="6" height="6" fill={barColor} opacity="0.65" rx="1.5" />
+              <text x={GL + 9} y="6" className="fill-fg/40" fontSize="8" fontWeight="500">
                 {barLabel}
               </text>
             </>
           )}
           {lineLabel && (
             <>
-              <line x1={right - 10} y1="3" x2={right - 2} y2="3" stroke={lineColor} strokeWidth="1.5" />
-              <text x={right - 13} y="6" textAnchor="end" className="fill-fg/40" fontSize="8">
+              <line x1={right - 10} y1="3" x2={right - 2} y2="3" stroke={lineColor} strokeWidth="2" strokeLinecap="round" />
+              <text x={right - 13} y="6" textAnchor="end" className="fill-fg/40" fontSize="8" fontWeight="500">
                 {lineLabel}
               </text>
             </>

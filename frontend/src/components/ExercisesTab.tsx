@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { SmileySadIcon as SmileySad, PencilSimpleIcon as Pencil } from "@phosphor-icons/react";
+import { SmileySadIcon as SmileySad, PencilSimpleIcon as Pencil, MagnifyingGlassIcon as MagnifyingGlass } from "@phosphor-icons/react";
 import {
   api,
   OfflineError,
@@ -13,10 +13,10 @@ import ExercisesSkeleton from "./skeletons/ExercisesSkeleton";
 import Stepper from "./Stepper";
 
 const CATEGORY_BADGE: Record<Category, string> = {
-  cardio: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
-  strength: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  flexibility: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  other: "bg-gray-200 text-gray-700 dark:bg-gray-800/40 dark:text-gray-300",
+  cardio: "bg-green-100 text-green-800 border border-green-600/15 dark:bg-green-900/40 dark:text-green-300 dark:border-green-400/20",
+  strength: "bg-blue-100 text-blue-800 border border-blue-600/15 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-400/20",
+  flexibility: "bg-purple-100 text-purple-800 border border-purple-600/15 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-400/20",
+  other: "bg-gray-200 text-gray-700 border border-gray-500/15 dark:bg-gray-800/40 dark:text-gray-300 dark:border-gray-400/20",
 };
 
 const EQUIPMENT_LABEL: Record<string, string> = {
@@ -173,7 +173,7 @@ export default function ExercisesTab() {
             />
             <button
               onClick={openCreate}
-              className="ml-3 bg-accent text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors whitespace-nowrap"
+              className="ml-3 bg-accent text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold shadow-[var(--shadow-sm)] hover:bg-accent-hover active:scale-[0.98] transition whitespace-nowrap"
             >
               + Add
             </button>
@@ -186,7 +186,7 @@ export default function ExercisesTab() {
                   <button
                     key={cat}
                     onClick={() => setCategoryFilter(cat)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap shadow-[var(--shadow-sm)] transition-colors ${
                       categoryFilter === cat
                         ? "bg-accent text-on-accent"
                         : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
@@ -205,7 +205,7 @@ export default function ExercisesTab() {
                     key={eq}
                     onClick={() => setEquipmentFilter(eq)}
                     aria-label={`Filter by equipment ${eq}`}
-                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap shadow-[var(--shadow-sm)] transition-colors ${
                       equipmentFilter === eq
                         ? "bg-accent text-on-accent"
                         : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
@@ -224,7 +224,7 @@ export default function ExercisesTab() {
                     key={mg}
                     onClick={() => setMuscleFilter(mg)}
                     aria-label={`Filter by muscle group ${mg}`}
-                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap transition-colors ${
+                    className={`px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap shadow-[var(--shadow-sm)] transition-colors ${
                       muscleFilter === mg
                         ? "bg-accent text-on-accent"
                         : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
@@ -247,9 +247,10 @@ export default function ExercisesTab() {
           <p>{error}</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-fg/30">
-          <p className="text-lg mb-1">No exercises found</p>
-          <p className="text-sm text-fg/20">
+        <div className="flex flex-col items-center py-12 text-fg/30">
+          <MagnifyingGlass size={36} weight="regular" className="mb-3 opacity-70" />
+          <p className="text-sm font-semibold text-fg/40 mb-1">No exercises found</p>
+          <p className="text-xs text-fg/30">
             Try a different search or{" "}
             <button
               onClick={resetFilters}
@@ -264,28 +265,28 @@ export default function ExercisesTab() {
           {filtered.map((ex) => (
             <div
               key={ex.id}
-              className="bg-surface rounded-xl p-3 border border-fg/5 cursor-pointer hover:border-accent/30 transition-colors"
+              className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] cursor-pointer hover:border-accent/30 active:scale-[0.99] transition"
               onClick={() => openDetail(ex)}
             >
               <div className="flex items-center gap-3">
                 <ExerciseImage
                   src={ex.image_url}
                   alt={ex.name}
-                  className="w-14 h-14 rounded-lg shrink-0 border border-fg/5"
+                  className="w-14 h-14 rounded-xl shrink-0 border border-fg/[0.06]"
                   category={ex.category}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-medium text-sm truncate">{ex.name}</h3>
+                    <h3 className="font-semibold text-sm truncate">{ex.name}</h3>
                     <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${CATEGORY_BADGE[ex.category]}`}
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${CATEGORY_BADGE[ex.category]}`}
                     >
                       {ex.category}
                     </span>
                   </div>
                   <div className="flex gap-3 mt-1.5 text-xs text-fg/40">
-                    <span>{ex.default_duration_seconds}s</span>
-                    <span>{ex.default_kcal_per_min} kcal/min</span>
+                    <span className="tabular-nums">{ex.default_duration_seconds}s</span>
+                    <span className="tabular-nums">{ex.default_kcal_per_min} kcal/min</span>
                     {ex.equipment && (
                       <span className="capitalize">{EQUIPMENT_LABEL[ex.equipment] ?? ex.equipment}</span>
                     )}
@@ -312,7 +313,7 @@ export default function ExercisesTab() {
             if (e.target === e.currentTarget) setShowForm(false);
           }}
         >
-          <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[85vh] overflow-y-auto">
+          <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 shadow-[var(--shadow-lg)] max-h-[85vh] overflow-y-auto">
             <h2 className="text-lg font-bold mb-4">
               {editingId ? "Edit Exercise" : "New Exercise"}
             </h2>
@@ -445,14 +446,14 @@ export default function ExercisesTab() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowForm(false)}
-                  className="flex-1 bg-fg/10 rounded-xl py-2.5 text-sm font-medium hover:bg-fg/20 transition-colors"
+                  className="flex-1 border border-fg/10 rounded-xl py-2.5 text-sm font-medium text-fg/70 hover:bg-fg/5 active:bg-fg/10 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={saveExercise}
                   disabled={saving}
-                  className="flex-1 bg-accent text-on-accent rounded-xl py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50"
+                  className="flex-1 bg-accent text-on-accent rounded-xl py-2.5 text-sm font-semibold shadow-[var(--shadow-sm)] hover:bg-accent-hover active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100"
                 >
                   {saving ? "Saving..." : editingId ? "Update" : "Create"}
                 </button>
@@ -515,30 +516,30 @@ function ExerciseDetail({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[85vh] overflow-y-auto">
+      <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 shadow-[var(--shadow-lg)] max-h-[85vh] overflow-y-auto">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3 min-w-0">
             <ExerciseImage
               src={exercise.image_url}
               alt={exercise.name}
-              className="w-16 h-16 rounded-xl shrink-0 border border-fg/5"
+              className="w-16 h-16 rounded-xl shrink-0 border border-fg/[0.06]"
               category={exercise.category}
             />
             <div className="min-w-0">
               <h2 className="text-lg font-bold truncate">{exercise.name}</h2>
               <div className="flex flex-wrap gap-2 mt-1">
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full ${CATEGORY_BADGE[exercise.category]}`}
+                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${CATEGORY_BADGE[exercise.category]}`}
                 >
                   {exercise.category}
                 </span>
                 {exercise.equipment && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface border border-fg/10 capitalize">
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface border border-fg/[0.06] shadow-[var(--shadow-sm)] capitalize">
                     {EQUIPMENT_LABEL[exercise.equipment] ?? exercise.equipment}
                   </span>
                 )}
                 {exercise.muscle_group && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface border border-fg/10 capitalize">
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-surface border border-fg/[0.06] shadow-[var(--shadow-sm)] capitalize">
                     {exercise.muscle_group}
                   </span>
                 )}
@@ -548,7 +549,7 @@ function ExerciseDetail({
           <button
             onClick={onClose}
             aria-label="Close exercise detail"
-            className="text-fg/50 hover:text-fg text-xl leading-none p-1"
+            className="w-10 h-10 -mr-2 -mt-1 flex items-center justify-center rounded-full text-fg/50 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors text-xl leading-none shrink-0"
           >
             ✕
           </button>
@@ -565,7 +566,7 @@ function ExerciseDetail({
 
         <div className="border-t border-fg/10 pt-3">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold">History</h3>
+            <h3 className="text-sm font-bold tracking-tight">History</h3>
             <span className="text-xs text-fg/40">recent sets</span>
           </div>
 
@@ -580,7 +581,7 @@ function ExerciseDetail({
               {logs.map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-center justify-between text-sm bg-surface rounded-lg px-3 py-2 border border-fg/5"
+                  className="flex items-center justify-between text-sm bg-surface rounded-xl px-3 py-2 border border-fg/[0.06] shadow-[var(--shadow-sm)]"
                 >
                   <span>
                     {log.weight_kg != null ? `${log.weight_kg} kg` : "—"} ×{" "}
@@ -596,7 +597,7 @@ function ExerciseDetail({
           )}
 
           {best && (
-            <div className="mt-3 bg-accent/10 border border-accent/20 rounded-lg px-3 py-2 text-sm">
+            <div className="mt-3 bg-accent/10 border border-accent/20 rounded-xl px-3 py-2 text-sm shadow-[var(--shadow-sm)]">
               <span className="text-accent font-semibold">Best set: </span>
               {best.weight_kg != null && best.reps != null
                 ? `${best.weight_kg} kg × ${best.reps} (est. 1RM ${Math.round(
@@ -610,13 +611,13 @@ function ExerciseDetail({
         <div className="flex gap-3 pt-4">
           <button
             onClick={onEdit}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-accent text-on-accent rounded-xl py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-accent text-on-accent rounded-xl py-2.5 text-sm font-semibold shadow-[var(--shadow-sm)] hover:bg-accent-hover active:scale-[0.98] transition"
           >
             <Pencil size={16} weight="bold" /> Edit
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-fg/10 rounded-xl py-2.5 text-sm font-medium hover:bg-fg/20 transition-colors"
+            className="flex-1 border border-fg/10 rounded-xl py-2.5 text-sm font-medium text-fg/70 hover:bg-fg/5 active:bg-fg/10 transition-colors"
           >
             Close
           </button>

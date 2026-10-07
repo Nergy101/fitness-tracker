@@ -120,7 +120,7 @@ export default function ImportExport({
       <button
         onClick={() => fileInputRef.current?.click()}
         disabled={importing}
-        className="flex-1 flex items-center justify-center gap-1.5 text-sm text-fg/60 hover:text-fg border border-fg/10 rounded-xl py-3 transition-colors disabled:opacity-50"
+        className="flex-1 flex items-center justify-center gap-1.5 text-sm text-fg/70 hover:bg-fg/5 active:bg-fg/10 border border-fg/10 rounded-xl py-3 transition-colors disabled:opacity-50"
       >
         <UploadSimple size={16} weight="bold" />
         {importing ? "Importing..." : "Import"}
@@ -128,7 +128,7 @@ export default function ImportExport({
       <button
         onClick={exportSessions}
         disabled={sessions.length === 0}
-        className="flex-1 flex items-center justify-center gap-1.5 text-sm text-fg/60 hover:text-fg border border-fg/10 rounded-xl py-3 transition-colors disabled:opacity-50"
+        className="flex-1 flex items-center justify-center gap-1.5 text-sm text-fg/70 hover:bg-fg/5 active:bg-fg/10 border border-fg/10 rounded-xl py-3 transition-colors disabled:opacity-50"
       >
         <DownloadSimple size={16} weight="bold" />
         Export

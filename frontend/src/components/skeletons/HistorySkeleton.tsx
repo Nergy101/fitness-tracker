@@ -13,8 +13,8 @@ export default function HistorySkeleton() {
         <Skeleton width="78px" height="30px" rounded="full" />
       </div>
 
-      {/* Summary card — matches bg-surface rounded-xl p-4 border border-fg/5 mb-4 */}
-      <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
+      {/* Summary card — matches bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-sm mb-4 */}
+      <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
         {/* StatsGrid — grid grid-cols-4 gap-2 mb-3, text-centered */}
         <div className="grid grid-cols-4 gap-2 mb-3">
           {["48px", "56px", "40px", "36px"].map((w, i) => (
@@ -33,7 +33,7 @@ export default function HistorySkeleton() {
         {[...Array(5)].map((_, i) => (
           <div
             key={i}
-            className="bg-surface rounded-xl p-4 border border-fg/5 space-y-2"
+            className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-2"
           >
             {/* Top row: icon + title | kcal + delete */}
             <div className="flex items-center justify-between">

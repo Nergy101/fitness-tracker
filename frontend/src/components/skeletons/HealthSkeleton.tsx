@@ -8,7 +8,7 @@ export default function HealthSkeleton() {
       {/* Quick Stats grid 2×2 */}
       <div className="grid grid-cols-2 gap-2">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-surface rounded-xl p-3 border border-fg/5 space-y-1.5">
+          <div key={i} className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-1.5">
             <div className="flex items-center gap-1.5">
               <Skeleton width="14px" height="14px" rounded="md" />
               <Skeleton width={`${60 + i * 10}px`} height="10px" rounded="md" />
@@ -20,7 +20,7 @@ export default function HealthSkeleton() {
 
       {/* Goal Progress + BMI + Log Weight row */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-3 sm:col-span-1 space-y-2">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-3 sm:col-span-1 space-y-2">
           <div className="flex items-center gap-1.5">
             <Skeleton width="14px" height="14px" rounded="md" />
             <Skeleton width="70px" height="10px" rounded="md" />
@@ -32,7 +32,7 @@ export default function HealthSkeleton() {
             <Skeleton width="50px" height="12px" rounded="md" />
           </div>
         </div>
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 space-y-1.5">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-1.5">
           <div className="flex items-center gap-1.5">
             <Skeleton width="14px" height="14px" rounded="md" />
             <Skeleton width="30px" height="10px" rounded="md" />
@@ -40,7 +40,7 @@ export default function HealthSkeleton() {
           <Skeleton width="40px" height="28px" rounded="md" />
           <Skeleton width="60px" height="12px" rounded="md" />
         </div>
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-2 sm:col-span-1 space-y-2">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-2 sm:col-span-1 space-y-2">
           <div className="flex items-center gap-1.5">
             <Skeleton width="14px" height="14px" rounded="md" />
             <Skeleton width="60px" height="10px" rounded="md" />
@@ -53,14 +53,14 @@ export default function HealthSkeleton() {
       </div>
 
       {/* Personal Records card */}
-      <div className="bg-surface rounded-xl p-4 border border-fg/5 space-y-3">
+      <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-3">
         <div className="flex items-center gap-1.5">
           <Skeleton width="14px" height="14px" rounded="md" />
           <Skeleton width="100px" height="14px" rounded="md" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-bg rounded-lg p-2.5 space-y-1.5">
+            <div key={i} className="bg-[var(--surface-2)] rounded-xl p-2.5 space-y-1.5">
               <Skeleton width="40px" height="10px" rounded="md" />
               <Skeleton width="30px" height="20px" rounded="md" />
             </div>
@@ -71,7 +71,7 @@ export default function HealthSkeleton() {
       {/* Summary cards row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-surface rounded-xl p-3 border border-fg/5 space-y-1.5">
+          <div key={i} className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-1.5">
             <div className="flex items-center gap-1.5">
               <Skeleton width="14px" height="14px" rounded="md" />
               <Skeleton width={`${40 + i * 15}px`} height="10px" rounded="md" />
@@ -82,7 +82,7 @@ export default function HealthSkeleton() {
       </div>
 
       {/* Activity chart placeholder */}
-      <div className="bg-surface rounded-xl p-4 border border-fg/5 space-y-3">
+      <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-3">
         <div className="flex items-center gap-1.5">
           <Skeleton width="16px" height="16px" rounded="md" />
           <Skeleton width="120px" height="12px" rounded="md" />

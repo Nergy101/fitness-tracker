@@ -64,10 +64,10 @@ const LOCALE_OPTIONS: { locale: DateLocale; label: string; ariaLabel: string }[]
 ];
 
 // Same segmented-control styling as AppSettingsModal (not exported there).
-const SEGMENT_ON = "bg-accent/15 border-accent/30 text-accent";
+const SEGMENT_ON = "bg-accent/15 border-accent/30 text-accent shadow-[var(--shadow-sm)]";
 const SEGMENT_OFF = "border-fg/10 text-fg/40 hover:text-fg/70";
 const SEGMENT =
-  "flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-2 py-2 rounded-lg border transition-colors ";
+  "flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-2 py-2 rounded-xl border transition-colors ";
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -133,7 +133,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       >
         {slide.kind === "info" ? (
           <div className="flex flex-col items-center text-center max-w-xs">
-            <div className="w-20 h-20 bg-accent/15 rounded-3xl flex items-center justify-center mb-6">
+            <div className="w-20 h-20 bg-accent/15 rounded-3xl flex items-center justify-center mb-6 shadow-[var(--shadow-sm)]">
               <slide.icon size={40} className="text-accent" weight="fill" />
             </div>
             <h2 className="text-2xl font-bold text-fg mb-3">{slide.title}</h2>
@@ -157,7 +157,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                   value={goalWeight}
                   onChange={(e) => setGoalWeight(e.target.value)}
                   placeholder="e.g. 75.0"
-                  className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50"
+                  className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50 shadow-[var(--shadow-sm)]"
                 />
               </div>
               <div>
@@ -214,14 +214,14 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         {step === last ? (
           <button
             onClick={finish}
-            className="bg-accent text-on-accent rounded-xl py-3 px-6 font-semibold hover:bg-accent-hover transition-colors"
+            className="bg-accent text-on-accent rounded-xl py-3 px-6 font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition hover:bg-accent-hover"
           >
             Get started
           </button>
         ) : (
           <button
             onClick={() => go(1)}
-            className="flex items-center gap-1 bg-accent text-on-accent rounded-xl py-3 px-6 font-semibold hover:bg-accent-hover transition-colors"
+            className="flex items-center gap-1 bg-accent text-on-accent rounded-xl py-3 px-6 font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition hover:bg-accent-hover"
           >
             Next
             <CaretRight size={16} />

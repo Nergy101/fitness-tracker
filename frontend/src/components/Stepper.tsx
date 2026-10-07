@@ -27,7 +27,7 @@ export default function Stepper({
 
   return (
     <div
-      className="inline-flex items-center rounded-xl border border-fg/10 bg-surface overflow-hidden select-none"
+      className="inline-flex items-center rounded-2xl border border-fg/10 bg-surface shadow-[var(--shadow-sm)] overflow-hidden select-none"
       role="group"
       aria-label={ariaLabel}
     >

@@ -265,18 +265,18 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
             <>
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent text-sm font-semibold transition-opacity duration-300">
                 <CalendarBlank size={14} weight="fill" />
-                <span>{consistencyPct}%</span>
+                <span className="tabular-nums">{consistencyPct}%</span>
               </span>
               {streakDays > 0 && (
                 <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-orange-400/15 text-orange-400 text-sm font-semibold transition-opacity duration-300">
                   <Flame size={14} weight="fill" />
-                  <span>{streakDays}</span>
+                  <span className="tabular-nums">{streakDays}</span>
                 </span>
               )}
               {weightChangeKg != null && (
                 <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-400/15 text-purple-400 text-sm font-semibold transition-opacity duration-300">
                   {weightChangeKg > 0 ? <ChartLineUp size={14} weight="fill" /> : <ChartLineDown size={14} weight="fill" />}
-                  <span>{weightChangeKg > 0 ? "+" : ""}{weightChangeKg.toFixed(1)}</span>
+                  <span className="tabular-nums">{weightChangeKg > 0 ? "+" : ""}{weightChangeKg.toFixed(1)}</span>
                 </span>
               )}
             </>
@@ -284,7 +284,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
         </div>
         <button
           onClick={() => openEditor(null)}
-          className="bg-accent text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors"
+          className="h-10 bg-accent text-on-accent rounded-xl px-4 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition hover:bg-accent-hover"
         >
           + Add
         </button>
@@ -294,7 +294,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       {loading ? (
         <div className="grid grid-cols-4 gap-3 mb-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="skeleton-shimmer rounded-xl h-[72px]" />
+            <div key={i} className="skeleton-shimmer rounded-2xl h-[76px]" />
           ))}
         </div>
       ) : (
@@ -386,7 +386,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
             role="dialog"
             aria-modal="true"
             aria-label="Delete workout"
-            className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10"
+            className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 shadow-[var(--shadow-lg)]"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold mb-1">Delete workout?</h2>
@@ -396,13 +396,13 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
             <div className="flex gap-3">
               <button
                 onClick={() => setPendingDelete(null)}
-                className="flex-1 border border-fg/15 text-fg/70 rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-fg/5 transition-colors"
+                className="flex-1 border border-fg/10 text-fg/70 rounded-xl h-11 text-sm font-semibold hover:bg-fg/5 active:bg-fg/10 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => void confirmDelete()}
-                className="flex-1 bg-red-500 text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-red-600 transition-colors"
+                className="flex-1 bg-red-500 text-on-accent rounded-xl h-11 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition hover:bg-red-600"
               >
                 Delete
               </button>

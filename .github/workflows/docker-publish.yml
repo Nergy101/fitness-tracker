@@ -4,6 +4,10 @@ name: CI — test, build & publish Docker images
 on:
   push:
     branches: [main]
+    # A pushed `vX.Y.Z` tag publishes an additional immutable image tag for
+    # that exact commit (milestone releases) without disturbing the regular
+    # branch-push pipeline (which still tags `latest` + the daily version).
+    tags: ["v*.*.*"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -270,9 +274,11 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.name }}
           # Lowercase the owner (GHCR requires lowercase repo names).
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.ref_type != 'tag' }}
             type=raw,value=${{ steps.version.outputs.version }}
             type=sha,format=short
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -295,7 +301,11 @@ jobs:
     # path-filter (e.g. Backend tests on a frontend-only change) does not
     # cascade-skip this deploy — a skipped job is not a failure. Matches the
     # guard on publish; only a genuinely failed test blocks the deploy.
-    if: github.event_name != 'pull_request' && !cancelled() && !failure()
+    # Tag-triggered runs (milestone image publish) never redeploy — the
+    # branch push for the same commit already deployed `latest`, and the
+    # server always pulls `latest` (docker-compose.yml), so there is nothing
+    # new to roll out.
+    if: github.event_name != 'pull_request' && github.ref_type != 'tag' && !cancelled() && !failure()
     runs-on: ubuntu-latest
     environment:
       name: Production

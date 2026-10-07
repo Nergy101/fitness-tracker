@@ -28,26 +28,26 @@ export default function StatsGrid({ sessions }: { sessions: WorkoutSession[] }) 
   return (
     <div className="grid grid-cols-4 gap-2 mb-3">
       <div className="text-center">
-        <p className="text-lg font-bold text-fg">{stats.totalSessions}</p>
-        <p className="text-[10px] text-fg/40">Workouts</p>
+        <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">{stats.totalSessions}</p>
+        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Workouts</p>
       </div>
       <div className="text-center">
-        <p className="text-lg font-bold text-fg">
+        <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">
           {formatHours(stats.totalMinutes)}
         </p>
-        <p className="text-[10px] text-fg/40">Total Time</p>
+        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Total Time</p>
       </div>
       <div className="text-center">
-        <p className="text-lg font-bold text-accent">
+        <p className="text-xl font-extrabold tracking-tight tabular-nums text-accent">
           {Math.round(stats.totalKcal)}
         </p>
-        <p className="text-[10px] text-fg/40">Kcal</p>
+        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Kcal</p>
       </div>
       <div className="text-center">
-        <p className="text-lg font-bold text-fg">
+        <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">
           {formatDuration(stats.avgDuration)}
         </p>
-        <p className="text-[10px] text-fg/40">Avg</p>
+        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Avg</p>
       </div>
     </div>
   );

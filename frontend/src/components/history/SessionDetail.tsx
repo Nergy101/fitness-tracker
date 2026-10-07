@@ -278,12 +278,12 @@ export default function SessionDetail({
         role="dialog"
         aria-modal="true"
         aria-label={session.template_name}
-        className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[85vh] overflow-y-auto">
+        className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 shadow-[var(--shadow-lg)] max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold">{session.template_name}</h2>
+          <h2 className="text-lg font-bold tracking-tight">{session.template_name}</h2>
           <button
             onClick={handleClose}
-            className="text-fg/40 hover:text-fg/70 text-xl leading-none"
+            className="p-2 -m-2 rounded-full text-fg/40 hover:text-fg/70 hover:bg-fg/5 active:bg-fg/10 text-xl leading-none transition-colors"
           >
             &times;
           </button>
@@ -302,23 +302,23 @@ export default function SessionDetail({
         )}
 
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="bg-surface rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-fg">
+          <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
+            <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">
               {formatDuration(session.total_duration_seconds)}
             </p>
-            <p className="text-[10px] text-fg/40">Duration</p>
+            <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Duration</p>
           </div>
-          <div className="bg-surface rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-fg">
+          <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
+            <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">
               {session.exercises.length}
             </p>
-            <p className="text-[10px] text-fg/40">Exercises</p>
+            <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Exercises</p>
           </div>
-          <div className="bg-surface rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-accent">
+          <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
+            <p className="text-xl font-extrabold tracking-tight tabular-nums text-accent">
               {Math.round(session.total_kcal_estimated)}
             </p>
-            <p className="text-[10px] text-fg/40">Kcal</p>
+            <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Kcal</p>
           </div>
         </div>
 
@@ -328,12 +328,12 @@ export default function SessionDetail({
             value={dateValue}
             onChange={(e) => setDateValue(e.target.value)}
             onBlur={() => updateStartedAt(dateValue)}
-            className="w-full bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-xs text-fg outline-none focus:border-accent/50"
+            className="w-full bg-surface border border-fg/10 rounded-xl px-3 py-1.5 text-xs text-fg outline-none focus:border-accent/50"
           />
         </p>
 
         {isRegular && (
-          <div className="bg-surface rounded-lg p-3 mb-3">
+          <div className="bg-surface rounded-xl p-3 mb-3 border border-fg/[0.06]">
             <div className="flex items-center justify-between mb-1">
               <p className="text-[10px] text-fg/40 font-medium">Duration (minutes)</p>
               {durationDirty && (
@@ -353,12 +353,12 @@ export default function SessionDetail({
               onBlur={saveDuration}
               onKeyDown={(e) => { if (e.key === "Enter") saveDuration(); }}
               aria-label="Session duration minutes"
-              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+              className="w-full bg-bg border border-fg/10 rounded-xl px-3 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
             />
           </div>
         )}
 
-        <div className="bg-surface rounded-lg p-3 mb-4">
+        <div className="bg-surface rounded-xl p-3 mb-4 border border-fg/[0.06]">
           <div className="flex items-center justify-between mb-1">
             <p className="text-[10px] text-fg/40 font-medium">Notes</p>
             {notesDirty && (
@@ -385,7 +385,7 @@ export default function SessionDetail({
                   {session.exercises.map((ex, i) => (
                     <div
                       key={ex.id}
-                      className="flex items-center gap-3 bg-surface rounded-lg p-2.5"
+                      className="flex items-center gap-3 bg-surface rounded-xl p-2.5 border border-fg/[0.06]"
                     >
                       <span className="text-xs text-fg/30 w-5 text-right">{i + 1}</span>
                       <ExerciseImage
@@ -436,16 +436,16 @@ export default function SessionDetail({
           <div className="flex gap-2 mb-3">
             <button
               onClick={toggleRunType}
-              className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                isRun ? "bg-accent text-on-accent font-semibold" : "bg-surface border border-fg/10 text-fg/50"
+              className={`flex-1 px-3 py-1.5 text-xs rounded-xl transition-colors ${
+                isRun ? "bg-accent text-on-accent font-semibold shadow-[var(--shadow-sm)]" : "bg-surface border border-fg/10 text-fg/50"
               }`}
             >
               Run
             </button>
             <button
               onClick={toggleRunType}
-              className={`flex-1 px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                !isRun ? "bg-accent text-on-accent font-semibold" : "bg-surface border border-fg/10 text-fg/50"
+              className={`flex-1 px-3 py-1.5 text-xs rounded-xl transition-colors ${
+                !isRun ? "bg-accent text-on-accent font-semibold shadow-[var(--shadow-sm)]" : "bg-surface border border-fg/10 text-fg/50"
               }`}
             >
               Walk
@@ -454,7 +454,7 @@ export default function SessionDetail({
         )}
 
         {isRunOrWalk && runEntry && (
-          <div className="bg-surface rounded-lg p-3 mb-4 space-y-3">
+          <div className="bg-surface rounded-xl p-3 mb-4 space-y-3 border border-fg/[0.06]">
             <p className="text-[10px] text-fg/40 font-medium">Edit {isRun ? "run" : "walk"}</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -466,7 +466,7 @@ export default function SessionDetail({
                   value={runDistanceEdit}
                   onChange={(e) => setRunDistanceEdit(e.target.value)}
                   aria-label="Run distance km"
-                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                  className="w-full bg-bg border border-fg/10 rounded-xl px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
                 />
               </div>
               <div>
@@ -477,7 +477,7 @@ export default function SessionDetail({
                   value={runMinutesEdit}
                   onChange={(e) => setRunMinutesEdit(e.target.value)}
                   aria-label="Run minutes"
-                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                  className="w-full bg-bg border border-fg/10 rounded-xl px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
                 />
               </div>
             </div>
@@ -485,7 +485,7 @@ export default function SessionDetail({
               <button
                 onClick={saveRun}
                 disabled={!(parseFloat(runDistanceEdit) > 0) || (parseInt(runMinutesEdit) || 0) <= 0}
-                className="w-full bg-accent text-on-accent rounded-lg py-1.5 text-xs font-semibold disabled:opacity-50"
+                className="w-full bg-accent text-on-accent rounded-xl py-1.5 text-xs font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50"
               >
                 Save changes
               </button>
@@ -494,7 +494,7 @@ export default function SessionDetail({
         )}
 
         {isBoxing && boxingEntry && (
-          <div className="bg-surface rounded-lg p-3 mb-4 space-y-3">
+          <div className="bg-surface rounded-xl p-3 mb-4 space-y-3 border border-fg/[0.06]">
             <p className="text-[10px] text-fg/40 font-medium">Edit boxing session</p>
             <div className="grid grid-cols-3 gap-2">
               <div>
@@ -505,7 +505,7 @@ export default function SessionDetail({
                   value={boxMinutes}
                   onChange={(e) => setBoxMinutes(e.target.value)}
                   aria-label="Boxing minutes"
-                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                  className="w-full bg-bg border border-fg/10 rounded-xl px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
                 />
               </div>
               <div>
@@ -516,7 +516,7 @@ export default function SessionDetail({
                   value={boxKcalPerMin}
                   onChange={(e) => setBoxKcalPerMin(e.target.value)}
                   aria-label="Boxing kcal per minute"
-                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                  className="w-full bg-bg border border-fg/10 rounded-xl px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
                 />
               </div>
               <div>
@@ -528,7 +528,7 @@ export default function SessionDetail({
                   onChange={(e) => setBoxRounds(e.target.value)}
                   placeholder="—"
                   aria-label="Boxing rounds"
-                  className="w-full bg-bg border border-fg/10 rounded-lg px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
+                  className="w-full bg-bg border border-fg/10 rounded-xl px-2 py-1.5 text-sm text-fg outline-none focus:border-accent/50"
                 />
               </div>
             </div>
@@ -536,7 +536,7 @@ export default function SessionDetail({
               <button
                 onClick={saveBoxing}
                 disabled={(parseInt(boxMinutes) || 0) <= 0}
-                className="w-full bg-accent text-on-accent rounded-lg py-1.5 text-xs font-semibold disabled:opacity-50"
+                className="w-full bg-accent text-on-accent rounded-xl py-1.5 text-xs font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50"
               >
                 Save changes
               </button>

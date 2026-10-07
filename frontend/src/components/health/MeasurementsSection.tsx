@@ -6,6 +6,7 @@ import {
   type MeasurementChangesResponse,
 } from "../../api";
 import { shortDate } from "./utils";
+import { smoothLinePath } from "./chartPath";
 
 /** The measurement fields we track, in display order. */
 type MeasKey =
@@ -60,7 +61,7 @@ export default function MeasurementsSection() {
   const latest = measurements[0];
 
   return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5 space-y-3">
+    <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-3">
       {latest && (
         <div className="grid grid-cols-2 gap-2 text-xs">
           {MEAS_FIELDS.map((f) => {
@@ -69,7 +70,7 @@ export default function MeasurementsSection() {
             return (
               <div key={f.key} className="flex justify-between items-center py-0.5">
                 <span className="text-fg/50">{f.label}</span>
-                <span className="text-fg font-medium">
+                <span className="text-fg font-medium tabular-nums">
                   {val != null ? `${val} cm` : "—"}
                   {delta != null && (
                     <span className={delta >= 0 ? "text-orange-400 ml-1" : "text-green-400 ml-1"}>
@@ -102,7 +103,7 @@ export default function MeasurementsSection() {
                 <button
                   key={r}
                   onClick={() => setMeasRange(r)}
-                  className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  className={`text-[10px] px-2 py-1 rounded-full transition-colors ${
                     measRange === r
                       ? "bg-accent/20 text-accent"
                       : "text-fg/30 hover:text-fg/60"
@@ -141,7 +142,7 @@ export default function MeasurementsSection() {
 
       {!showForm ? (
         <button onClick={() => setShowForm(true)}
-          className="w-full bg-bg rounded-lg py-2 text-sm text-accent font-medium hover:bg-bg/80 transition-colors">
+          className="w-full bg-[var(--surface-2)] border border-fg/10 rounded-xl py-2 text-sm text-accent font-medium hover:bg-fg/5 active:bg-fg/10 transition-colors">
           + Add Measurements
         </button>
       ) : (
@@ -150,11 +151,11 @@ export default function MeasurementsSection() {
             {MEAS_FIELDS.map((f) => (
               <input key={f.key} type="number" step="0.1" placeholder={`${f.label} (cm)`} value={form[f.key] ?? ""}
                 onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
-                className="bg-bg border border-fg/10 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent/50" />
+                className="bg-bg border border-fg/10 rounded-xl px-2.5 py-1.5 text-xs outline-none focus:border-accent/50" />
             ))}
           </div>
           <button onClick={submit}
-            className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold">
+            className="w-full bg-accent text-on-accent rounded-xl py-2 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition">
             Save
           </button>
         </div>
@@ -224,12 +225,12 @@ function MeasurementTrendChart({
 
   return (
     <div>
-      <p className="text-[10px] text-fg/40 mb-2">Trends</p>
+      <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Trends</p>
       <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full">
         {series.map((s) => (
-          <polyline
+          <path
             key={s.key}
-            points={s.points.map((p) => `${p.x},${h - ((p.y - min) / range_val) * h}`).join(" ")}
+            d={smoothLinePath(s.points.map((p) => ({ x: p.x, y: h - ((p.y - min) / range_val) * h })))}
             fill="none"
             stroke={s.color}
             strokeWidth="2"
@@ -253,13 +254,13 @@ function MeasurementTrendChart({
           if (idx < 0) return null;
           const x = (idx / (filtered.length - 1)) * w;
           return (
-            <text key={i} x={x} y={h + 14} textAnchor="middle" className="fill-fg/40" fontSize="9">
+            <text key={i} x={x} y={h + 14} textAnchor="middle" className="fill-fg/35" fontSize="9" fontWeight="600">
               {shortDate(e.date)}
             </text>
           );
         })}
-        <text x="0" y="10" className="fill-fg/30" fontSize="9">{max.toFixed(1)}</text>
-        <text x="0" y={h - 4} className="fill-fg/30" fontSize="9">{min.toFixed(1)}</text>
+        <text x="0" y="10" className="fill-fg/35" fontSize="9" fontWeight="600">{max.toFixed(1)}</text>
+        <text x="0" y={h - 4} className="fill-fg/35" fontSize="9" fontWeight="600">{min.toFixed(1)}</text>
       </svg>
       {/* Legend */}
       <div className="flex flex-wrap gap-3 mt-1">

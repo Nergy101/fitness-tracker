@@ -94,54 +94,56 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
   return (
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-6">
-      {/* Logo */}
-      <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mb-4">
-        <Heartbeat size={32} className="text-accent" weight="fill" />
-      </div>
-
-      <h1 className="text-xl font-bold text-fg mb-1">FitnessTracker</h1>
-      <p className="text-sm text-fg/40 mb-8">Enter your password to unlock</p>
-
-      <form onSubmit={handleSubmit} className={`w-full max-w-xs space-y-4 ${lockoutRemaining > 0 ? "opacity-50 pointer-events-none" : ""}`}>
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            autoFocus
-            disabled={lockoutRemaining > 0}
-            className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-3 pr-10 text-sm text-fg outline-none placeholder:text-fg/30 focus:border-accent/50 transition-colors disabled:opacity-50"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            disabled={lockoutRemaining > 0}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/30 hover:text-fg/60 disabled:opacity-30"
-          >
-            {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
-          </button>
+      <div className="w-full max-w-xs bg-surface rounded-2xl p-6 border border-fg/[0.06] shadow-[var(--shadow-md)] flex flex-col items-center">
+        {/* Logo */}
+        <div className="w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center mb-4 shadow-[var(--shadow-sm)]">
+          <Heartbeat size={32} className="text-accent" weight="fill" />
         </div>
 
-        {lockoutRemaining > 0 && (
-          <p className="text-amber-400 text-sm text-center flex items-center justify-center gap-1.5">
-            <LockKey size={16} weight="fill" />
-            Locked out — {formatLockout(lockoutRemaining)} remaining
-          </p>
-        )}
+        <h1 className="text-xl font-bold text-fg mb-1">FitnessTracker</h1>
+        <p className="text-sm text-fg/40 mb-8">Enter your password to unlock</p>
 
-        {error && !lockoutRemaining && (
-          <p className="text-red-400 text-sm text-center">{error}</p>
-        )}
+        <form onSubmit={handleSubmit} className={`w-full space-y-4 ${lockoutRemaining > 0 ? "opacity-50 pointer-events-none" : ""}`}>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              autoFocus
+              disabled={lockoutRemaining > 0}
+              className="w-full bg-bg border border-fg/10 rounded-xl px-4 py-3 pr-10 text-sm text-fg outline-none placeholder:text-fg/30 focus:border-accent/50 transition-colors disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={lockoutRemaining > 0}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/30 hover:text-fg/60 disabled:opacity-30"
+            >
+              {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading || !password.trim() || lockoutRemaining > 0}
-          className="w-full bg-accent text-on-accent rounded-xl py-3 font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50"
-        >
-          {loading ? "Checking..." : lockoutRemaining > 0 ? "Locked out" : "Unlock"}
-        </button>
-      </form>
+          {lockoutRemaining > 0 && (
+            <p className="text-amber-400 text-sm text-center flex items-center justify-center gap-1.5">
+              <LockKey size={16} weight="fill" />
+              Locked out — {formatLockout(lockoutRemaining)} remaining
+            </p>
+          )}
+
+          {error && !lockoutRemaining && (
+            <p className="text-red-400 text-sm text-center">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !password.trim() || lockoutRemaining > 0}
+            className="w-full bg-accent text-on-accent rounded-xl py-3 font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition hover:bg-accent-hover disabled:opacity-50 disabled:active:scale-100"
+          >
+            {loading ? "Checking..." : lockoutRemaining > 0 ? "Locked out" : "Unlock"}
+          </button>
+        </form>
+      </div>
       <p className="text-[10px] text-fg/15 mt-8">v{APP_VERSION}</p>
     </div>
   );

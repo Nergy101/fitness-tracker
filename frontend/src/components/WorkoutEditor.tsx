@@ -228,14 +228,15 @@ export default function WorkoutEditor({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[90vh] flex flex-col">
+      <div className="bg-bg rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 shadow-[var(--shadow-lg)] max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">
             {isEditing ? workout?.name : "Add"}
           </h2>
           <button
             onClick={onClose}
-            className="text-fg/40 hover:text-fg/70 text-xl leading-none"
+            aria-label="Close"
+            className="-mr-2 w-10 h-10 flex items-center justify-center rounded-full text-fg/40 hover:bg-fg/5 hover:text-fg/70 text-xl leading-none transition-colors"
           >
             &times;
           </button>
@@ -246,7 +247,7 @@ export default function WorkoutEditor({
           onChange={(e) => setName(e.target.value)}
           type="text"
           placeholder="Workout name..."
-          className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50 mb-4"
+          className="w-full bg-surface border border-fg/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-accent/50 mb-3"
         />
 
         <textarea
@@ -259,7 +260,7 @@ export default function WorkoutEditor({
 
         {/* Mode selector */}
         <div className="mb-4">
-          <label className="text-sm text-fg/60 block mb-2">Timer Mode</label>
+          <label className="text-[10px] font-semibold tracking-wide text-fg/45 block mb-2">Timer Mode</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { id: "circuit", label: "Circuit", desc: "Fixed rounds" },
@@ -274,10 +275,10 @@ export default function WorkoutEditor({
                   setMode(opt.id);
                   if (opt.id === "tabata" && rounds < 2) setRounds(8);
                 }}
-                className={`flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-colors border ${
+                className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-medium transition-colors border ${
                   mode === opt.id
-                    ? "bg-accent/20 border-accent text-accent"
-                    : "bg-surface border-fg/10 text-fg/50 hover:text-fg"
+                    ? "bg-accent/15 border-accent text-accent shadow-[var(--shadow-sm)]"
+                    : "bg-surface border-fg/10 text-fg/50 hover:bg-fg/5 hover:text-fg"
                 }`}
               >
                 <div className="font-semibold">{opt.label}</div>
@@ -290,7 +291,7 @@ export default function WorkoutEditor({
         {/* AMRAP time cap */}
         {isAmrap && (
           <div className="mb-4">
-            <label className="text-sm text-fg/60 block mb-2">
+            <label className="text-[10px] font-semibold tracking-wide text-fg/45 block mb-2">
               Time Cap — as many rounds as possible in:
             </label>
             <div className="flex gap-2 flex-wrap">
@@ -302,10 +303,10 @@ export default function WorkoutEditor({
                     setTimeCap(opt.seconds);
                     setTimeCapCustom("");
                   }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-xs font-semibold transition-colors ${
                     timeCap === opt.seconds && !timeCapCustom
-                      ? "bg-accent text-on-accent"
-                      : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+                      ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
+                      : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
                   }`}
                 >
                   {opt.label}
@@ -321,7 +322,7 @@ export default function WorkoutEditor({
                   setTimeCap((parseInt(e.target.value) || 0) * 60);
                 }}
                 placeholder="Minutes"
-                className="mt-2 w-full bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+                className="mt-2 w-full bg-surface border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50"
               />
             )}
           </div>
@@ -350,7 +351,7 @@ export default function WorkoutEditor({
 
         {/* EMOM info */}
         {isEmom && (
-          <p className="text-xs text-fg/40 mb-4 bg-surface rounded-xl px-4 py-3 border border-fg/5">
+          <p className="text-xs text-fg/40 mb-4 bg-surface rounded-2xl px-4 py-3 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
             EMOM — one exercise per minute. Each exercise runs for its set
             duration, with the remaining seconds as rest. {rows.length} exercises
             = {formatDuration(rows.length * 60)} total.
@@ -359,7 +360,7 @@ export default function WorkoutEditor({
 
         {/* Tabata info */}
         {mode === "tabata" && (
-          <p className="text-xs text-fg/40 mb-4 bg-surface rounded-xl px-4 py-3 border border-fg/5">
+          <p className="text-xs text-fg/40 mb-4 bg-surface rounded-2xl px-4 py-3 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
             Tabata — {rounds} round{rounds !== 1 ? "s" : ""} of 20s work / 10s rest
             {rows.length > 0
               ? `, cycling ${rows.length} exercise${rows.length !== 1 ? "s" : ""}`
@@ -370,7 +371,7 @@ export default function WorkoutEditor({
 
         {!isAmrap && mode !== "tabata" && rounds > 1 && (
           <div className="mb-4">
-            <label className="text-sm text-fg/60 block mb-2">
+            <label className="text-[10px] font-semibold tracking-wide text-fg/45 block mb-2">
               Rest between rounds
             </label>
             <div className="flex gap-2">
@@ -384,10 +385,10 @@ export default function WorkoutEditor({
                   key={opt.value}
                   type="button"
                   onClick={() => setRestBetween(opt.value)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-xs font-semibold transition-colors ${
                     restBetween === opt.value
-                      ? "bg-accent text-on-accent"
-                      : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+                      ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
+                      : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
                   }`}
                 >
                   {opt.label}
@@ -399,8 +400,8 @@ export default function WorkoutEditor({
 
         {/* Warmup & Cooldown */}
         {mode !== "tabata" && (
-        <div className="mb-4 space-y-3">
-          <div className="flex items-center gap-3">
+        <div className="mb-4 space-y-2">
+          <div className="flex items-center gap-3 min-h-10">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -419,13 +420,13 @@ export default function WorkoutEditor({
                   step={30}
                   value={Math.round(warmupSeconds / 60)}
                   onChange={(e) => setWarmupSeconds((parseInt(e.target.value) || 3) * 60)}
-                  className="w-14 bg-surface border border-fg/10 rounded-lg px-2 py-1 text-xs text-center text-fg outline-none focus:border-accent/50"
+                  className="w-14 bg-surface border border-fg/10 rounded-lg px-2 py-1.5 text-xs text-center text-fg outline-none focus:border-accent/50"
                 />
                 <span className="text-xs text-fg/40">min</span>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-h-10">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -444,7 +445,7 @@ export default function WorkoutEditor({
                   step={30}
                   value={Math.round(cooldownSeconds / 60)}
                   onChange={(e) => setCooldownSeconds((parseInt(e.target.value) || 2) * 60)}
-                  className="w-14 bg-surface border border-fg/10 rounded-lg px-2 py-1 text-xs text-center text-fg outline-none focus:border-accent/50"
+                  className="w-14 bg-surface border border-fg/10 rounded-lg px-2 py-1.5 text-xs text-center text-fg outline-none focus:border-accent/50"
                 />
                 <span className="text-xs text-fg/40">min</span>
               </div>
@@ -455,19 +456,19 @@ export default function WorkoutEditor({
 
         <button
           onClick={() => setShowPicker((v) => !v)}
-          className="flex items-center gap-2 text-sm text-accent mb-3 hover:text-accent-hover transition-colors"
+          className="inline-flex items-center gap-2 h-10 px-4 mb-3 rounded-xl border border-fg/10 text-sm font-semibold text-accent hover:bg-accent/10 transition-colors"
         >
           <span className="text-lg leading-none">+</span> Add Exercise
         </button>
 
         {showPicker && (
-          <div className="bg-surface rounded-xl border border-fg/10 p-2 mb-3 max-h-48 overflow-y-auto">
+          <div className="bg-surface rounded-2xl border border-fg/10 shadow-[var(--shadow-md)] p-2 mb-3 max-h-48 overflow-y-auto">
             <input
               value={pickerSearch}
               onChange={(e) => setPickerSearch(e.target.value)}
               type="text"
               placeholder="Search..."
-              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none mb-2"
+              className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-2 text-sm outline-none mb-2"
             />
             {muscleOptions.length > 0 && (
               <div className="flex gap-1.5 overflow-x-auto pb-2">
@@ -477,7 +478,7 @@ export default function WorkoutEditor({
                     type="button"
                     onClick={() => setPickerMuscle(mg)}
                     aria-label={`Filter by muscle group ${mg}`}
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium capitalize whitespace-nowrap transition-colors ${
+                    className={`shrink-0 inline-flex items-center justify-center h-9 px-3 rounded-full text-[11px] font-medium capitalize whitespace-nowrap transition-colors ${
                       pickerMuscle === mg
                         ? "bg-accent text-on-accent"
                         : "bg-bg text-fg/60 border border-fg/10 hover:text-fg"
@@ -491,7 +492,7 @@ export default function WorkoutEditor({
             {filteredExercises.map((ex) => (
               <div
                 key={ex.id}
-                className="flex items-center justify-between px-2 py-1.5 hover:bg-fg/5 rounded-lg cursor-pointer text-sm"
+                className="flex items-center justify-between gap-2 px-2 py-2 min-h-10 hover:bg-fg/5 rounded-lg cursor-pointer text-sm"
                 onClick={() => addExercise(ex)}
               >
                 <span className="flex items-center gap-2 min-w-0">
@@ -516,7 +517,7 @@ export default function WorkoutEditor({
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto space-y-1.5 mb-4 min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-2 mb-4 min-h-0">
           {rows.length === 0 && (
             <div className="text-center py-8 text-fg/20 text-sm">
               Add exercises to build your workout
@@ -530,90 +531,87 @@ export default function WorkoutEditor({
             return (
             <div
               key={item.key}
-              className={`bg-surface rounded-xl px-3 py-2 flex items-center gap-2 border ${
-                isGrouped ? "border-accent/30 border-l-2" : "border-fg/5"
+              className={`bg-surface-2 rounded-xl px-3 py-2.5 border ${
+                isGrouped ? "border-accent/30 border-l-2" : "border-fg/[0.06]"
               }`}
             >
-              {isFirstInGroup && (
-                <span className="text-[10px] font-bold text-accent/70 w-4 text-center leading-none -mr-1">
-                  SS
-                </span>
-              )}
-              {isGrouped && !isFirstInGroup && <span className="w-4 -mr-1" />}
-
-              <button
-                onClick={() => move(i, -1)}
-                disabled={i === 0}
-                className="text-fg/20 hover:text-fg/60 disabled:opacity-20 p-0.5"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="m18 15-6-6-6 6" />
-                </svg>
-              </button>
-              <button
-                onClick={() => move(i, 1)}
-                disabled={i === rows.length - 1}
-                className="text-fg/20 hover:text-fg/60 disabled:opacity-20 p-0.5"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </button>
-
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">
+              <div className="flex items-center gap-2">
+                {isFirstInGroup && (
+                  <span className="text-[10px] font-bold text-accent/70 shrink-0 leading-none">
+                    SS
+                  </span>
+                )}
+                <div className="flex-1 min-w-0 text-sm font-medium truncate">
                   {item.exercise_name}
                 </div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Stepper
-                    value={item.duration_seconds}
-                    onChange={(v) => setDuration(item.key, v)}
-                    min={5}
-                    max={600}
-                    step={5}
-                    unit="s"
-                    ariaLabel={`${item.exercise_name} duration`}
-                  />
-                  {!isEmom && !(isGrouped && !isLastInGroup) && (
-                    <Stepper
-                      value={item.rest_after_seconds}
-                      onChange={(v) => setRest(item.key, v)}
-                      min={0}
-                      max={600}
-                      step={5}
-                      unit="s rest"
-                      ariaLabel={`${item.exercise_name} rest after`}
-                    />
-                  )}
-                </div>
+                <button
+                  onClick={() => removeRow(item.key)}
+                  className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-red-400/50 hover:bg-red-400/10 hover:text-red-400 transition-colors"
+                  title="Remove"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                  </svg>
+                </button>
               </div>
 
-              <button
-                onClick={() => togglePair(i)}
-                disabled={i === rows.length - 1}
-                className="text-fg/20 hover:text-accent disabled:opacity-20 p-0.5"
-                title={isGrouped && rows[i + 1]?.superset_group === item.superset_group ? "Ungroup" : "Pair with next"}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M6 3v18M18 3v18M3 6h18M3 18h18" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                <button
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  className="w-10 h-10 flex items-center justify-center rounded-full text-fg/30 hover:bg-fg/5 hover:text-fg/60 disabled:opacity-20 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="m18 15-6-6-6 6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => move(i, 1)}
+                  disabled={i === rows.length - 1}
+                  className="w-10 h-10 flex items-center justify-center rounded-full text-fg/30 hover:bg-fg/5 hover:text-fg/60 disabled:opacity-20 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => togglePair(i)}
+                  disabled={i === rows.length - 1}
+                  className="w-10 h-10 flex items-center justify-center rounded-full text-fg/30 hover:bg-accent/10 hover:text-accent disabled:opacity-20 transition-colors"
+                  title={isGrouped && rows[i + 1]?.superset_group === item.superset_group ? "Ungroup" : "Pair with next"}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M6 3v18M18 3v18M3 6h18M3 18h18" />
+                  </svg>
+                </button>
 
-              <button
-                onClick={() => removeRow(item.key)}
-                className="text-red-400/50 hover:text-red-400 p-0.5"
-                title="Remove"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                </svg>
-              </button>
+                <Stepper
+                  value={item.duration_seconds}
+                  onChange={(v) => setDuration(item.key, v)}
+                  min={5}
+                  max={600}
+                  step={5}
+                  unit="s"
+                  ariaLabel={`${item.exercise_name} duration`}
+                />
+                {!isEmom && !(isGrouped && !isLastInGroup) && (
+                  <Stepper
+                    value={item.rest_after_seconds}
+                    onChange={(v) => setRest(item.key, v)}
+                    min={0}
+                    max={600}
+                    step={5}
+                    unit="s rest"
+                    ariaLabel={`${item.exercise_name} rest after`}
+                  />
+                )}
+              </div>
             </div>
             );
           })}
         </div>
 
-        <div className="border-t border-fg/10 pt-3 flex items-center justify-between">
+        <div className="border-t border-fg/10 pt-3 flex items-center justify-between gap-3">
           <div className="text-sm text-fg/50 flex flex-wrap gap-x-2">
             <span>{rows.length} exercises</span>
             {isAmrap ? (
@@ -641,7 +639,7 @@ export default function WorkoutEditor({
           <button
             onClick={save}
             disabled={saving || !name.trim()}
-            className="bg-accent text-on-accent rounded-xl px-6 py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50"
+            className="shrink-0 bg-accent text-on-accent rounded-xl px-6 h-11 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100"
           >
             {saving ? "Saving..." : "Save Workout"}
           </button>

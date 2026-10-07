@@ -240,8 +240,8 @@ export default function RecentWorkouts({
       )}
 
       {shown.length > 0 && (
-        <div className="mb-4 bg-surface rounded-xl p-3 border border-fg/10">
-          <p className="text-xs font-semibold text-fg/50 mb-2">Recent workouts</p>
+        <div className="mb-4 bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Recent workouts</p>
           <div className="flex flex-wrap gap-1.5">
             {shown.map((item) => {
               const Icon = ACTIVITY_ICONS[item.kind];
@@ -252,7 +252,7 @@ export default function RecentWorkouts({
                   key={item.key}
                   onClick={() => setSelected(item)}
                   aria-label={`${ACTIVITY_LABELS[item.kind]} ${label}: edit or delete`}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-fg/10 bg-bg px-2.5 py-1 text-xs text-fg hover:border-accent/50 transition-colors"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-full border border-fg/10 bg-bg px-3 text-xs text-fg hover:border-accent/50 hover:bg-fg/5 transition-colors"
                 >
                   <Icon size={13} weight="bold" style={{ color }} />
                   <span className="font-semibold">{item.primary}</span>
@@ -311,7 +311,7 @@ function RecentActionSheet({
         role="dialog"
         aria-modal="true"
         aria-label={`${label} actions`}
-        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10"
+        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 shadow-[var(--shadow-lg)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 mb-3">
@@ -328,14 +328,14 @@ function RecentActionSheet({
             <div className="flex gap-3">
               <button
                 onClick={onEdit}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 border border-fg/15 text-fg/80 rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-fg/5 transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 border border-fg/10 text-fg/70 rounded-xl h-11 text-sm font-semibold hover:bg-fg/5 active:bg-fg/10 transition-colors"
               >
                 <Pencil size={14} />
                 Edit
               </button>
               <button
                 onClick={() => setConfirming(true)}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 border border-red-500/40 text-red-400 rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-red-500/10 transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 border border-red-500/40 text-red-400 rounded-xl h-11 text-sm font-semibold hover:bg-red-500/10 transition-colors"
               >
                 <Trash size={14} />
                 Delete
@@ -351,13 +351,13 @@ function RecentActionSheet({
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirming(false)}
-                className="flex-1 border border-fg/15 text-fg/70 rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-fg/5 transition-colors"
+                className="flex-1 border border-fg/10 text-fg/70 rounded-xl h-11 text-sm font-semibold hover:bg-fg/5 active:bg-fg/10 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={onDelete}
-                className="flex-1 bg-red-500 text-on-accent rounded-xl px-4 py-2.5 text-sm font-semibold hover:bg-red-600 transition-colors"
+                className="flex-1 bg-red-500 text-on-accent rounded-xl h-11 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition hover:bg-red-600"
               >
                 Delete
               </button>

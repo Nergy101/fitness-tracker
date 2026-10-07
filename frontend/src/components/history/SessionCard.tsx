@@ -23,7 +23,7 @@ export default function SessionCard({
 
   return (
     <div
-      className="bg-surface rounded-xl p-4 border border-l-[3px] border-fg/5 cursor-pointer hover:border-accent/30 transition-colors"
+      className="bg-surface rounded-2xl p-4 border border-l-[3px] border-fg/[0.06] shadow-[var(--shadow-sm)] cursor-pointer hover:border-accent/30 transition-colors"
       style={{ borderLeftColor: ACTIVITY_COLORS[kind] }}
       onClick={() => onSelect(session)}
     >
@@ -64,7 +64,7 @@ export default function SessionCard({
                   setEditValue(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
                   setEditing(true);
                 }}
-                className="text-fg/20 hover:text-accent mt-0.5"
+                className="p-1 -m-1 rounded-full text-fg/20 hover:text-accent hover:bg-fg/5 active:bg-fg/10 mt-0.5 transition-colors"
                 title="Edit date/time"
               >
                 <PencilSimple size={12} />
@@ -81,7 +81,7 @@ export default function SessionCard({
               e.stopPropagation();
               onDelete(session);
             }}
-            className="text-fg/20 hover:text-red-400 transition-colors"
+            className="p-1.5 -m-1.5 rounded-full text-fg/20 hover:text-red-400 hover:bg-fg/5 active:bg-fg/10 transition-colors"
             title="Delete session"
             aria-label="Delete session"
           >

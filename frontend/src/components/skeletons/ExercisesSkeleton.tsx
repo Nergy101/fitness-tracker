@@ -23,9 +23,9 @@ export default function ExercisesSkeleton() {
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="bg-surface rounded-xl p-3 border border-fg/5 flex items-center gap-3"
+            className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] flex items-center gap-3"
           >
-            <Skeleton width="56px" height="56px" rounded="lg" />
+            <Skeleton width="56px" height="56px" rounded="xl" />
             <div className="flex-1 min-w-0 space-y-1.5">
               <div className="flex items-center justify-between">
                 <Skeleton width={`${100 + i * 15}px`} height="14px" rounded="md" />

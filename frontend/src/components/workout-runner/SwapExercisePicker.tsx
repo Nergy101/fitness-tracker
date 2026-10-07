@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { XIcon as X } from "@phosphor-icons/react";
 import type { Exercise } from "../../api";
 import ExerciseImage from "../ExerciseImage";
 
@@ -31,16 +32,17 @@ export default function SwapExercisePicker({
         role="dialog"
         aria-modal="true"
         aria-label="Swap exercise"
-        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[70vh] flex flex-col"
+        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 shadow-[var(--shadow-lg)] max-h-[70vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold">Swap Exercise</h3>
+          <h3 className="text-xl font-bold tracking-tight">Swap Exercise</h3>
           <button
             onClick={closeSwap}
-            className="text-fg/40 hover:text-fg text-xl"
+            aria-label="Close"
+            className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-fg/40 hover:text-fg hover:bg-fg/10 active:bg-fg/15 transition-colors"
           >
-            &times;
+            <X size={20} weight="bold" />
           </button>
         </div>
         <input
@@ -48,14 +50,14 @@ export default function SwapExercisePicker({
           placeholder="Search exercises..."
           value={swapSearch}
           onChange={(e) => setSwapSearch(e.target.value)}
-          className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none mb-3 focus:border-accent/50"
+          className="w-full bg-bg border border-fg/10 rounded-xl px-3.5 py-2.5 text-sm outline-none mb-4 focus:border-accent/50"
         />
-        <div className="flex-1 overflow-y-auto space-y-1">
+        <div className="flex-1 overflow-y-auto space-y-2">
           {filteredSwapExercises.map((ex) => (
           <button
             key={ex.id}
             onClick={() => doSwap(ex)}
-            className="w-full text-left bg-bg rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-fg/5 transition-colors"
+            className="w-full text-left bg-bg border border-fg/[0.06] rounded-2xl px-4 py-3.5 flex items-center gap-3 hover:bg-fg/5 active:bg-fg/10 transition-colors"
           >
             <div className="w-10 h-10 shrink-0">
               <ExerciseImage

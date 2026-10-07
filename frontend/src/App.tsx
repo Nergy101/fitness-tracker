@@ -141,22 +141,22 @@ export default function App() {
       <div className="app-shell flex flex-col h-full overflow-hidden pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
         {needRefresh && <UpdateBanner onUpdate={handleSWUpdate} />}
-        <header className="flex h-14 shrink-0 items-center border-b border-fg/10 px-4">
+        <header className="flex h-14 shrink-0 items-center bg-bg/95 backdrop-blur border-b border-fg/10 px-4 shadow-[var(--shadow-sm)] z-10">
           <div className="mx-auto w-full max-w-2xl flex items-center justify-between">
-          <h1 className="text-lg font-bold">{tabTitle}</h1>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-fg/40">FitnessTracker</span>
+          <h1 className="text-lg font-bold tracking-tight">{tabTitle}</h1>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-fg/35 mr-2">FitnessTracker</span>
             <button
               onClick={() => setShowSettings(true)}
               aria-label="Settings"
               title="Settings"
-              className="p-1.5 rounded-lg text-fg/50 hover:text-fg transition-colors"
+              className="p-2 rounded-full text-fg/50 hover:text-fg hover:bg-fg/5 transition-colors"
             >
               <Gear size={20} weight="fill" />
             </button>
             <button
               onClick={() => { void api.logout(); clearStoredAuth(); setAuthenticated(false); }}
-              className="text-[10px] text-fg/20 hover:text-red-400 transition-colors"
+              className="text-[10px] text-fg/25 hover:text-red-400 transition-colors px-1"
               title="Logout"
             >
               Logout
@@ -201,23 +201,29 @@ export default function App() {
         {/* Bottom padding is owned by `.bottom-nav` in index.css, not a Tailwind
             utility — it has to differ between browser and installed app. */}
         <nav className="bottom-nav shrink-0 border-t border-fg/10 bg-surface">
-          <div className="mx-auto flex h-12 w-full max-w-2xl items-center justify-around">
+          <div className="mx-auto flex w-full max-w-2xl items-center justify-around pt-1.5">
           {TABS.map((tab) => {
             const idx = TAB_IDS.indexOf(tab.id);
             const curIdx = TAB_IDS.indexOf(currentTab);
             const dir = idx > curIdx ? "left" : idx < curIdx ? "right" : null;
+            const active = currentTab === tab.id;
             return (
             <button
               key={tab.id}
               onClick={() => dir ? navigateTab(dir, tab.id) : setCurrentTab(tab.id)}
               aria-label={tab.label}
-              className={`flex h-10 w-14 items-center justify-center rounded-full transition-colors ${
-                currentTab === tab.id
-                  ? "text-accent bg-accent/15"
-                  : "text-fg/40"
+              className={`flex flex-col items-center gap-0.5 w-16 py-1 rounded-xl transition-colors ${
+                active ? "text-accent" : "text-fg/40 active:text-fg/60"
               }`}
             >
-              <tab.icon size={24} weight={currentTab === tab.id ? "fill" : "regular"} />
+              <span
+                className={`flex h-8 w-11 items-center justify-center rounded-full transition-colors ${
+                  active ? "bg-accent/15" : ""
+                }`}
+              >
+                <tab.icon size={22} weight={active ? "fill" : "regular"} />
+              </span>
+              <span className={`text-[10px] leading-none ${active ? "font-semibold" : "font-medium"}`}>{tab.label}</span>
             </button>
           )})}
           </div>

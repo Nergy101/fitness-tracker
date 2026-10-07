@@ -43,7 +43,7 @@ export default function HeatmapChart({ sessions }: { sessions: WorkoutSession[] 
     <div>
       <div className="grid grid-cols-7 gap-1 mb-1">
         {SINGLE_LETTER.map((l, i) => (
-          <span key={i} className="text-[10px] text-fg/30 text-center">
+          <span key={i} className="text-[10px] font-semibold tracking-wide text-fg/45 text-center">
             {l}
           </span>
         ))}
@@ -55,7 +55,7 @@ export default function HeatmapChart({ sessions }: { sessions: WorkoutSession[] 
               <div
                 key={cell.key}
                 title={`${cell.key}: ${cell.count} workout${cell.count === 1 ? "" : "s"}`}
-                className="aspect-square rounded-sm"
+                className="aspect-square rounded-md"
                 style={{
                   background: cell.inRange ? cellColor(cell.count) : "transparent",
                 }}

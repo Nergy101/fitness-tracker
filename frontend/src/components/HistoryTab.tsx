@@ -174,8 +174,8 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
           <ArrowLeft size={16} weight="bold" /> Back
         </button>
 
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
-          <p className="text-sm font-semibold mb-3">All time</p>
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
+          <p className="text-sm font-bold tracking-tight mb-3">All time</p>
           <StatsGrid sessions={sessions} />
           <WeekdayBarChart sessions={sessions} />
         </div>
@@ -214,11 +214,11 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
 
       {/* Activity + summary — chart depends on the mode. */}
       {calendar ? (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
           <CalendarView sessions={sessions} />
         </div>
       ) : (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 mb-4">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
           <StatsGrid sessions={rangeSessions} />
           {range === "30d" ? (
             <HeatmapChart sessions={rangeSessions} />
@@ -271,7 +271,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
           {groups.map((g) => {
             const open = expandedGroup === g.name;
             return (
-              <div key={g.name} className="bg-surface rounded-xl border border-fg/10 overflow-hidden">
+              <div key={g.name} className="bg-surface rounded-2xl border border-fg/[0.06] shadow-[var(--shadow-sm)] overflow-hidden">
                 <button
                   onClick={() => setExpandedGroup(open ? null : g.name)}
                   className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
@@ -314,7 +314,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
       {/* View all → all-time */}
       <button
         onClick={() => setView("all")}
-        className="w-full mt-4 flex items-center justify-center gap-1.5 text-sm text-fg/60 hover:text-fg border border-fg/10 rounded-xl py-3 transition-colors"
+        className="w-full mt-4 flex items-center justify-center gap-1.5 text-sm text-fg/70 hover:bg-fg/5 active:bg-fg/10 border border-fg/10 rounded-xl py-3 transition-colors"
       >
         View all
         <ClockCounterClockwise size={16} weight="bold" />

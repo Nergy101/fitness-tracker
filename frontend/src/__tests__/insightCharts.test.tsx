@@ -240,16 +240,18 @@ describe("insightCharts", () => {
       expect(container.innerHTML).toBe("");
     });
 
-    it("renders band polygon and avg line", () => {
+    it("renders band area and avg line as smoothed paths", () => {
       const points: BandPt[] = [
         { x: 0, avg: 10, min: 5, max: 15 },
         { x: 1, avg: 12, min: 8, max: 18 },
       ];
       const { container } = render(<BandChart points={points} />);
-      const polygons = container.querySelectorAll("polygon");
-      const polylines = container.querySelectorAll("polyline");
-      expect(polygons.length).toBe(1); // band fill
-      expect(polylines.length).toBe(1); // avg line
+      const area = container.querySelector('[data-chart="band-area"]');
+      const line = container.querySelector('[data-chart="band-line"]');
+      expect(area).toBeInTheDocument();
+      expect(area).not.toHaveAttribute("fill", "none");
+      expect(line).toBeInTheDocument();
+      expect(line).toHaveAttribute("fill", "none");
     });
 
     it("renders xLabels", () => {

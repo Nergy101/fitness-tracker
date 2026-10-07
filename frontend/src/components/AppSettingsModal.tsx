@@ -41,10 +41,10 @@ const LOCALE_OPTIONS: { locale: DateLocale; label: string; ariaLabel: string }[]
   { locale: "mdy", label: "M/D", ariaLabel: "Month/day date format" },
 ];
 
-const SEGMENT_ON = "bg-accent/15 border-accent/30 text-accent";
+const SEGMENT_ON = "bg-accent/15 border-accent/30 text-accent shadow-[var(--shadow-sm)]";
 const SEGMENT_OFF = "border-fg/10 text-fg/40 hover:text-fg/70";
 const SEGMENT =
-  "flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-2 py-2 rounded-lg border transition-colors ";
+  "flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-2 py-2 rounded-xl border transition-colors ";
 
 interface AppSettingsModalProps {
   onClose: () => void;
@@ -73,7 +73,7 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
         role="dialog"
         aria-modal="true"
         aria-label="Settings"
-        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/10 max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-surface rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md px-6 pt-6 pb-[max(env(safe-area-inset-bottom),1.5rem)] border border-fg/[0.06] shadow-[var(--shadow-lg)] max-h-[85vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header + tab bar */}
@@ -82,20 +82,25 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
             <h2 className="text-lg font-bold">Settings</h2>
             <span className="text-[10px] text-fg/30">v{APP_VERSION}</span>
           </div>
-          <button onClick={onClose} className="text-fg/40 hover:text-fg text-xl">&times;</button>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-fg/40 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors text-xl"
+          >
+            &times;
+          </button>
         </div>
 
         {/* Sub‑tab pills */}
-        <div className="flex gap-1.5 mb-4 shrink-0">
+        <div className="flex gap-1 mb-4 shrink-0 bg-bg rounded-full p-1 border border-fg/10">
           {SUB_TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setSubTab(tab.id)}
               className={
-                "px-3 py-1.5 text-xs font-medium rounded-full border transition-colors " +
+                "flex-1 px-3 py-1.5 text-xs font-semibold rounded-full transition-colors " +
                 (subTab === tab.id
-                  ? "bg-accent/10 border-accent/20 text-accent"
-                  : "border-fg/10 text-fg/40 hover:text-fg/70")
+                  ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
+                  : "text-fg/45 hover:text-fg/70")
               }
             >
               {tab.label}
@@ -109,7 +114,7 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
             <div className="space-y-3.5">
               {/* Theme */}
               <div>
-                <p className="text-xs text-fg/50 mb-1.5">Theme</p>
+                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">Theme</p>
                 <div className="flex gap-1.5">
                   {THEME_OPTIONS.map((opt) => (
                     <button
@@ -135,9 +140,8 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
                 )}
               </div>
 
-              {/* Date format */}
               <div>
-                <p className="text-xs text-fg/50 mb-1.5">Date format</p>
+                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">Date format</p>
                 <div className="flex gap-1.5">
                   {LOCALE_OPTIONS.map((opt) => (
                     <button
@@ -202,7 +206,7 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
                   </span>
                   <button
                     onClick={() => void install()}
-                    className="bg-accent text-on-accent text-xs font-medium px-3 py-1.5 rounded-full hover:bg-accent-hover transition-colors"
+                    className="bg-accent text-on-accent text-xs font-semibold px-3 py-1.5 rounded-full shadow-[var(--shadow-sm)] active:scale-[0.98] transition hover:bg-accent-hover"
                   >
                     Install
                   </button>
@@ -224,7 +228,7 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
 
               {/* Export data (NER-190) */}
               <div className="border-t border-fg/10 pt-3.5">
-                <p className="text-xs text-fg/50 mb-2">Export data</p>
+                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Export data</p>
                 <ExportSection />
               </div>
 
@@ -248,7 +252,7 @@ export default function AppSettingsModal({ onClose, onHealthSaved }: AppSettings
 
           {subTab === "health" && (
             <div>
-              <p className="text-xs text-fg/40 mb-2.5">Health Profile</p>
+              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2.5">Health Profile</p>
               <HealthSettingsSection
                 onSaved={() => {
                   onHealthSaved();

@@ -44,7 +44,7 @@ export default function HealthSettingsSection({ onSaved }: HealthSettingsSection
         <button
           onClick={loadProfile}
           aria-label="Retry loading health settings"
-          className="bg-accent/20 text-accent rounded-lg py-1.5 px-4 text-xs font-medium hover:bg-accent/30 transition-colors"
+          className="bg-accent/20 text-accent rounded-xl py-1.5 px-4 text-xs font-medium hover:bg-accent/30 transition-colors active:scale-[0.98]"
         >
           Retry
         </button>
@@ -199,8 +199,8 @@ function HealthSettingsForm({
       </div>
 
       {/* ─── Push Notifications ─────────────────── */}
-      <div className="bg-bg/50 rounded-xl p-3 border border-fg/5">
-        <p className="text-xs text-fg/40 mb-2.5">Push Notifications</p>
+      <div className="bg-[var(--surface-2)] rounded-xl p-3 border border-fg/[0.06]">
+        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2.5">Push Notifications</p>
         {pushStatus === "unsupported" ? (
           <p className="text-xs text-fg/40">Not supported in this browser.</p>
         ) : pushChecking ? (
@@ -220,7 +220,7 @@ function HealthSettingsForm({
                 onClick={handleTestNotification}
                 disabled={pushLoading}
                 aria-label="Send test notification"
-                className="flex-1 bg-accent/20 text-accent rounded-lg py-1.5 text-xs font-medium hover:bg-accent/30 transition-colors disabled:opacity-50"
+                className="flex-1 bg-accent/20 text-accent rounded-lg py-1.5 text-xs font-medium hover:bg-accent/30 transition-colors disabled:opacity-50 active:scale-[0.98]"
               >
                 {testSent ? (
                   <span className="inline-flex items-center justify-center gap-1">
@@ -234,7 +234,7 @@ function HealthSettingsForm({
                 onClick={handleDisablePush}
                 disabled={pushLoading}
                 aria-label="Disable push notifications"
-                className="bg-red-400/10 text-red-400 rounded-lg py-1.5 px-3 text-xs font-medium hover:bg-red-400/20 transition-colors disabled:opacity-50"
+                className="bg-red-400/10 text-red-400 rounded-lg py-1.5 px-3 text-xs font-medium hover:bg-red-400/20 transition-colors disabled:opacity-50 active:scale-[0.98]"
               >
                 Disable
               </button>
@@ -245,7 +245,7 @@ function HealthSettingsForm({
             onClick={handleEnablePush}
             disabled={pushLoading}
             aria-label="Enable push notifications"
-            className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50"
+            className="w-full bg-accent text-on-accent rounded-lg py-2 text-sm font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50 active:scale-[0.98]"
           >
             {pushLoading ? "Setting up..." : "Enable Push Notifications"}
           </button>
@@ -262,7 +262,7 @@ function HealthSettingsForm({
 
       <button onClick={() => save(form)} disabled={saving}
         aria-label="Save settings"
-        className="w-full bg-accent text-bg rounded-xl py-2.5 font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 mt-2">
+        className="w-full bg-accent text-on-accent rounded-xl py-2.5 font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50 mt-2 shadow-[var(--shadow-sm)] active:scale-[0.98]">
         {saving ? "Saving..." : "Save Settings"}
       </button>
     </div>

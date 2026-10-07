@@ -15,7 +15,7 @@ export default function TopControls() {
   const { theme, mode, cycleMode } = useTheme();
   const { muted, toggleMuted } = useAudio();
 
-  const btn = "p-1.5 rounded-lg transition-colors text-fg/60 hover:text-fg hover:bg-fg/10";
+  const btn = "w-10 h-10 flex items-center justify-center rounded-full transition-colors text-fg/60 hover:text-fg hover:bg-fg/10 active:bg-fg/15";
 
   const modeLabel =
     mode === "system"
@@ -25,7 +25,7 @@ export default function TopControls() {
         : "Switch to dark mode";
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       <button
         onClick={toggleMuted}
         aria-label={muted ? "Unmute sounds" : "Mute sounds"}

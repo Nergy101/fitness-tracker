@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   ChartPieSliceIcon as ChartPieSlice,
   FireIcon as Fire,
@@ -37,6 +37,7 @@ import { useLocale } from "../useLocale";
 import AppleHealthCharts from "./health/AppleHealthCharts";
 import MetricNamesDiagnostic from "./health/MetricNamesDiagnostic";
 import { niceTicks } from "./health/ticks";
+import { smoothAreaPath, smoothLinePath } from "./health/chartPath";
 import { combineHealthSeries } from "./health/utils";
 import ChartPoint from "./ChartPoint";
 import { chartRangeStart, type ChartRange } from "../chartRange";
@@ -144,14 +145,14 @@ function StackedBarChart<T>({
         const y = height - (t / max) * height;
         return (
           <g key={t}>
-            <line x1={gutter} y1={y} x2={w} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-            <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+            <line x1={gutter} y1={y} x2={w} y2={y} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
+            <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/35" fontSize="8" fontWeight="600">
               {formatValue(t)}
             </text>
           </g>
         );
       })}
-      <line x1={gutter} y1={height} x2={w} y2={height} className="stroke-fg/10" strokeWidth="0.5" />
+      <line x1={gutter} y1={height} x2={w} y2={height} className="stroke-fg/10" strokeWidth="1" />
       {data.map((d, i) => {
         const x = gutter + i * slot + 2;
         const parts = segments
@@ -252,6 +253,7 @@ function LineChart({
   height?: number;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const gradId = useId();
   if (points.length < 2) return null;
   const w = 300;
   const allRefs = [...(reference ? [reference] : []), ...(references ?? [])];
@@ -268,16 +270,25 @@ function LineChart({
   const py = (v: number) => height - ((v - lo) / range) * height;
   const labelIdxs = [...new Set([0, Math.floor((points.length - 1) / 2), points.length - 1])];
   const ticks = niceTicks(lo, hi, 4);
+  const pixelPts = points.map((p, i) => ({ x: px(i), y: py(p.value) }));
+  const linePath = smoothLinePath(pixelPts);
+  const areaPath = smoothAreaPath(pixelPts, height);
 
   return (
-    <svg viewBox={`0 0 ${w} ${height + 18}`} className="w-full">
+    <svg viewBox={`0 0 ${w} ${height + 18}`} className="w-full overflow-visible">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
       {ticks.map((t) => {
         const y = py(t);
         if (y < 5 || y > height - 1) return null;
         return (
           <g key={t}>
-            <line x1={24} y1={y} x2={w} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-            <text x={20} y={y + 2.5} textAnchor="end" className="fill-fg/30" fontSize="8">{formatValue(t)}</text>
+            <line x1={24} y1={y} x2={w} y2={y} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
+            <text x={20} y={y + 2.5} textAnchor="end" className="fill-fg/35" fontSize="8" fontWeight="600">{formatValue(t)}</text>
           </g>
         );
       })}
@@ -288,9 +299,18 @@ function LineChart({
         </g>
       ))}
       {overlay && overlay.length === points.length && (
-        <polyline points={overlay.map((v, i) => `${px(i)},${py(v)}`).join(" ")} fill="none" stroke={color} strokeWidth="1" strokeDasharray="3 3" opacity={0.55} />
+        <path
+          d={smoothLinePath(overlay.map((v, i) => ({ x: px(i), y: py(v) })))}
+          fill="none"
+          stroke={color}
+          strokeWidth="1.25"
+          strokeDasharray="3 3"
+          strokeLinecap="round"
+          opacity={0.55}
+        />
       )}
-      <polyline points={points.map((p, i) => `${px(i)},${py(p.value)}`).join(" ")} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path data-chart="area" d={areaPath} fill={`url(#${gradId})`} stroke="none" />
+      <path data-chart="line" d={linePath} fill="none" stroke={color} strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" />
       {points.map((point, index) => (
         <ChartPoint
           key={`chart-point-${index}`}
@@ -311,7 +331,7 @@ function LineChart({
       {labelIdxs.map((idx) => {
         const isLast = idx === points.length - 1;
         return (
-          <text key={`axis-label-${idx}`} x={isLast ? w - 4 : px(idx)} y={height + 13} textAnchor={isLast ? "end" : "middle"} className={isLast ? "fill-fg/60" : "fill-fg/30"} fontWeight={isLast ? "bold" : "normal"} fontSize="8">
+          <text key={`axis-label-${idx}`} x={isLast ? w - 4 : px(idx)} y={height + 13} textAnchor={isLast ? "end" : "middle"} className={isLast ? "fill-fg/60" : "fill-fg/35"} fontWeight={isLast ? "bold" : "500"} fontSize="8">
             {points[idx].label}
           </text>
         );
@@ -337,7 +357,7 @@ function ActivityMixBar({ weeks }: { weeks: WeeklyActivityStat[] }) {
 
   return (
     <div>
-      <div className="flex h-3 rounded-full overflow-hidden">
+      <div className="flex h-3.5 rounded-full overflow-hidden gap-px bg-[var(--track)]">
         {kinds.map((k) => (
           <div
             key={k}
@@ -345,11 +365,11 @@ function ActivityMixBar({ weeks }: { weeks: WeeklyActivityStat[] }) {
           />
         ))}
       </div>
-      <div className="flex items-center gap-3 mt-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5">
         {kinds.map((k) => (
-          <span key={k} className="flex items-center gap-1 text-[10px] text-fg/40">
+          <span key={k} className="flex items-center gap-1.5 text-[10px] font-medium text-fg/45">
             <span className="w-2 h-2 rounded-full shrink-0" style={{ background: ACTIVITY_COLORS[k] }} />
-            {ACTIVITY_LABELS[k]} {Math.round((minutes[k] / total) * 100)}%
+            {ACTIVITY_LABELS[k]} <span className="font-semibold text-fg/60">{Math.round((minutes[k] / total) * 100)}%</span>
           </span>
         ))}
       </div>
@@ -596,12 +616,12 @@ export default function StatsTab() {
   return (
     <div className="stats-tab space-y-4">
       <div className="flex items-center justify-end -mb-2">
-        <div className="flex bg-surface rounded-full p-0.5 border border-fg/10" role="group" aria-label="Chart date range">
+        <div className="flex bg-surface rounded-full p-0.5 border border-fg/10 shadow-[var(--shadow-sm)]" role="group" aria-label="Chart date range">
           <button
             type="button"
             aria-pressed={chartRange === "7d"}
             onClick={() => setChartRange("7d")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "7d" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "7d" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
           >
             Last 7 days
           </button>
@@ -609,7 +629,7 @@ export default function StatsTab() {
             type="button"
             aria-pressed={chartRange === "30d"}
             onClick={() => setChartRange("30d")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "30d" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "30d" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
           >
             Last 30 days
           </button>
@@ -617,7 +637,7 @@ export default function StatsTab() {
             type="button"
             aria-pressed={chartRange === "all"}
             onClick={() => setChartRange("all")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "all" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "all" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
           >
             All time
           </button>
@@ -644,7 +664,7 @@ export default function StatsTab() {
           <select
             value={volumeExercise ?? ""}
             onChange={(e) => setVolumeExercise(e.target.value ? Number(e.target.value) : null)}
-            className="w-full bg-surface border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg mb-3 outline-none focus:border-accent/50"
+            className="w-full bg-surface border border-fg/10 rounded-xl px-3 py-2 text-sm text-fg mb-3 outline-none focus:border-accent/50"
             aria-label="Volume exercise"
           >
             <option value="">All exercises</option>
@@ -664,26 +684,26 @@ export default function StatsTab() {
               const slot = (svgW - gutter) / dailyVolume.length;
               const maxKg = Math.max(1, ...dailyVolume.map((d) => d.kg));
               return (
-                <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
+                <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full overflow-visible">
                   {[maxKg, maxKg / 2].map((t) => {
                     const y = svgH - (t / maxKg) * svgH;
                     return (
                       <g key={t}>
-                        <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-                        <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                        <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
+                        <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/35" fontSize="8" fontWeight="600">
                           {t >= 1000 ? `${(t / 1000).toFixed(1)}k` : String(Math.round(t))}
                         </text>
                       </g>
                     );
                   })}
-                  <line x1={gutter} y1={svgH} x2={svgW} y2={svgH} className="stroke-fg/10" strokeWidth="0.5" />
+                  <line x1={gutter} y1={svgH} x2={svgW} y2={svgH} className="stroke-fg/10" strokeWidth="1" />
                   {dailyVolume.map((d, i) => {
                     const x = gutter + i * slot + 2;
                     const h = Math.max((d.kg / maxKg) * svgH, 1);
                     return (
                       <g key={i}>
-                        <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill="var(--accent)" opacity={0.7} />
-                        <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                        <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill="var(--accent)" opacity={0.85} />
+                        <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/35" fontSize="8" fontWeight="500">
                           {d.label}
                         </text>
                       </g>
@@ -701,11 +721,11 @@ export default function StatsTab() {
       {/* Activity charts — daily/weekly toggle */}
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xs font-semibold text-fg/60">Activity</span>
-        <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10">
+        <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10 shadow-[var(--shadow-sm)]">
           <button
             onClick={() => setChartMode("daily")}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              chartMode === "daily" ? "bg-accent text-on-accent" : "text-fg/50"
+              chartMode === "daily" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"
             }`}
           >
             Daily
@@ -713,7 +733,7 @@ export default function StatsTab() {
           <button
             onClick={() => setChartMode("weekly")}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              chartMode === "weekly" ? "bg-accent text-on-accent" : "text-fg/50"
+              chartMode === "weekly" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"
             }`}
           >
             Weekly
@@ -846,9 +866,9 @@ export default function StatsTab() {
       {/* Apple Health vitals */}
       {healthSeries && healthSeries.length > 0 && (
         <>
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-2 pt-2 mt-1 border-t border-fg/10">
             <Heart size={18} className="text-red-400" weight="fill" />
-            <h3 className="text-sm font-semibold">Apple Health</h3>
+            <h3 className="text-sm font-bold tracking-tight">Apple Health</h3>
           </div>
           {healthSeries
             .filter((s) => s.metric !== "sleep_analysis" && s.metric !== "heart_rate")

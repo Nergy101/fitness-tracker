@@ -894,14 +894,14 @@ export default function WorkoutRunner({
     <div className="workout-runner bg-bg h-full flex flex-col no-select">
       {postRest && phase !== "finished" && (
         <div className="fixed inset-0 z-40 bg-black/60 flex items-center justify-center p-6 pointer-events-none">
-          <div className="w-full max-w-xs bg-surface rounded-2xl border border-fg/10 p-6 text-center pointer-events-auto">
-            <p className="text-xs text-fg/40 uppercase tracking-wide mb-1">Rest between sets</p>
-            <div className="relative w-32 h-32 mx-auto my-4">
+          <div className="w-full max-w-xs bg-surface rounded-2xl border border-fg/10 shadow-[var(--shadow-lg)] p-6 text-center pointer-events-auto">
+            <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Rest between sets</p>
+            <div className="relative w-36 h-36 mx-auto my-4">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
+                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="7" />
                 <circle
                   cx="50" cy="50" r="42" fill="none"
-                  stroke="var(--accent)" strokeWidth="6"
+                  stroke="var(--accent)" strokeWidth="7"
                   strokeDasharray={RING}
                   strokeDashoffset={(1 - postRest.remaining / postRest.total) * RING}
                   strokeLinecap="round"
@@ -909,18 +909,18 @@ export default function WorkoutRunner({
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-4xl font-bold text-fg">{postRest.remaining}</span>
+                <span className="text-4xl font-extrabold tracking-tight tabular-nums text-fg">{postRest.remaining}</span>
               </div>
             </div>
-            <div className="flex justify-center gap-1.5 mb-4">
+            <div className="flex justify-center gap-0.5 mb-5 bg-bg rounded-full p-0.5 border border-fg/10 shadow-[var(--shadow-sm)]">
               {REST_PRESETS.map((s) => (
                 <button
                   key={s}
                   onClick={() => setPostRestDuration(s)}
-                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                  className={`flex-1 px-3 py-2 rounded-full text-xs font-semibold transition-colors ${
                     postRest.total === s
-                      ? "bg-accent text-on-accent"
-                      : "bg-bg text-fg/50 border border-fg/10 hover:text-fg"
+                      ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
+                      : "text-fg/50 hover:text-fg"
                   }`}
                 >
                   {s}s
@@ -930,7 +930,7 @@ export default function WorkoutRunner({
             <button
               onClick={skipPostRest}
               aria-label="Skip rest timer"
-              className="w-full bg-accent text-on-accent rounded-xl py-2.5 text-sm font-semibold hover:bg-accent-hover transition-colors"
+              className="w-full min-h-12 bg-accent text-on-accent rounded-xl text-sm font-semibold shadow-[var(--shadow-sm)] hover:bg-accent-hover active:scale-[0.98] transition"
             >
               Skip rest timer
             </button>
@@ -939,7 +939,7 @@ export default function WorkoutRunner({
       )}
 
       {loadError && (
-        <div role="status" className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-surface border border-red-400/30 text-red-300 rounded-xl px-4 py-2 text-sm shadow-lg">
+        <div role="status" className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-surface border border-red-400/30 text-red-300 rounded-xl px-4 py-2 text-sm shadow-[var(--shadow-md)]">
           {loadError}
           <button className="ml-3 underline" onClick={() => setLoadError(null)}>Dismiss</button>
         </div>
@@ -976,7 +976,7 @@ export default function WorkoutRunner({
         <div className="absolute top-6 left-4">
           <button
             onClick={onCancel}
-            className="inline-flex items-center gap-1.5 text-fg/40 hover:text-fg/70 text-sm px-3 py-1.5"
+            className="inline-flex items-center gap-1.5 text-fg/40 hover:text-fg/70 hover:bg-fg/5 active:bg-fg/10 text-sm font-medium rounded-full px-3.5 py-2.5 transition-colors"
           >
             <X size={16} weight="bold" /> Stop
           </button>

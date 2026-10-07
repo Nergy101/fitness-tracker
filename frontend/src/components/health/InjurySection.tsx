@@ -108,7 +108,7 @@ export default function InjurySection() {
 
   if (loading) {
     return (
-      <div className="bg-surface rounded-xl p-4 border border-fg/5">
+      <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
         <div className="skeleton-shimmer h-5 w-32 rounded" />
         <div className="skeleton-shimmer h-4 w-48 rounded mt-2" />
       </div>
@@ -116,7 +116,7 @@ export default function InjurySection() {
   }
 
   return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5">
+    <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
       {/* Toast notification */}
       {toast && (
         <div className="mb-3 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 text-xs text-accent text-center">
@@ -128,7 +128,7 @@ export default function InjurySection() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Bandaids size={20} className="text-red-400" />
-          <span className="text-sm font-semibold text-fg">Injury Timeline</span>
+          <span className="text-sm font-bold tracking-tight text-fg">Injury Timeline</span>
           {activeCount > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-400/15 text-red-400 text-[11px] font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
@@ -138,7 +138,7 @@ export default function InjurySection() {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/10 hover:bg-accent/20 text-accent text-xs font-medium transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/10 hover:bg-accent/20 text-accent text-xs font-medium transition-colors active:scale-[0.98]"
           aria-label="Log injury"
         >
           <PlusCircle size={14} />
@@ -148,7 +148,7 @@ export default function InjurySection() {
 
       {/* Add form */}
       {showForm && (
-        <div className="mb-4 p-3 rounded-lg bg-fg/[0.03] border border-fg/10 space-y-3">
+        <div className="mb-4 p-3 rounded-xl bg-fg/[0.03] border border-fg/10 space-y-3">
           <div>
             <label className="text-[11px] text-fg/50 mb-1 block">Body Part</label>
             <input
@@ -156,7 +156,7 @@ export default function InjurySection() {
               value={bodyPart}
               onChange={(e) => setBodyPart(e.target.value)}
               placeholder="e.g. left knee, right ankle, lower back"
-              className="w-full rounded-lg bg-surface border border-fg/10 px-3 py-2 text-sm text-fg placeholder:text-fg/25 focus:outline-none focus:border-accent"
+              className="w-full rounded-xl bg-surface border border-fg/10 px-3 py-2 text-sm text-fg placeholder:text-fg/25 focus:outline-none focus:border-accent"
               aria-label="Injury body part"
             />
           </div>
@@ -192,7 +192,7 @@ export default function InjurySection() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="How it happened..."
-              className="w-full rounded-lg bg-surface border border-fg/10 px-3 py-2 text-sm text-fg placeholder:text-fg/25 focus:outline-none focus:border-accent"
+              className="w-full rounded-xl bg-surface border border-fg/10 px-3 py-2 text-sm text-fg placeholder:text-fg/25 focus:outline-none focus:border-accent"
               aria-label="Injury notes"
             />
           </div>
@@ -201,14 +201,14 @@ export default function InjurySection() {
               onClick={submitInjury}
               disabled={!bodyPart.trim()}
               aria-label="Log injury entry"
-              className="flex-1 rounded-lg bg-red-500 hover:bg-red-600 text-on-accent py-2 text-sm font-medium disabled:opacity-40 transition-colors"
+              className="flex-1 rounded-xl bg-red-500 hover:bg-red-600 text-on-accent py-2 text-sm font-medium disabled:opacity-40 transition-colors active:scale-[0.98]"
             >
               Log Injury
             </button>
             <button
               onClick={() => setShowForm(false)}
               aria-label="Cancel injury form"
-              className="px-4 rounded-lg bg-fg/5 hover:bg-fg/10 text-fg/50 text-sm transition-colors"
+              className="px-4 rounded-xl bg-fg/5 hover:bg-fg/10 text-fg/50 text-sm transition-colors"
             >
               Cancel
             </button>
@@ -222,7 +222,7 @@ export default function InjurySection() {
           {active.map((i) => (
             <div
               key={i.id}
-              className="flex items-center justify-between py-1.5 px-2 rounded-md bg-red-400/5 border border-red-400/15"
+              className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-red-400/5 border border-red-400/15"
               style={{ opacity: 0.5 + i.severity * 0.1 }}
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -241,7 +241,7 @@ export default function InjurySection() {
               <button
                 onClick={() => resolveInjury(i.id)}
                 aria-label={`Mark ${i.body_part} as healed`}
-                className="shrink-0 ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-green-400 hover:text-green-300 border border-green-400/40 hover:border-green-400/70 hover:bg-green-400/10 rounded-full px-2.5 py-1 transition-colors"
+                className="shrink-0 ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-green-400 hover:text-green-300 border border-green-400/40 hover:border-green-400/70 hover:bg-green-400/10 rounded-full px-2.5 py-1 transition-colors active:scale-[0.98]"
               >
                 <CheckCircle size={13} weight="bold" /> heal
               </button>

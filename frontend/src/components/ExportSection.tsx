@@ -46,7 +46,7 @@ export default function ExportSection() {
             onClick={() => handleExport(entity, label)}
             disabled={downloading !== null}
             aria-label={`Export ${label}`}
-            className="flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-bg border border-fg/10 text-fg/70 hover:text-fg hover:border-accent/30 transition-colors disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-bg border border-fg/10 text-fg/70 hover:text-fg hover:border-accent/30 active:bg-fg/5 transition-colors disabled:opacity-50"
           >
             <DownloadSimple size={14} weight="bold" />
             {downloading === entity ? "..." : label}
@@ -54,7 +54,7 @@ export default function ExportSection() {
         ))}
       </div>
       {message && (
-        <p className="text-xs text-accent bg-accent/5 rounded-lg px-3 py-2">
+        <p className="text-xs text-accent bg-accent/5 border border-accent/10 rounded-xl px-3 py-2">
           {message}
         </p>
       )}

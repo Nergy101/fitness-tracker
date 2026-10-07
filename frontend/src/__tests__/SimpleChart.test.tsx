@@ -45,11 +45,11 @@ describe("SimpleChart", () => {
     expect(screen.getByText("Weight Trend (30d)")).toBeInTheDocument();
   });
 
-  it("renders SVG polyline", () => {
+  it("renders smoothed SVG trend line", () => {
     const entries = [entry(1, "2026-07-01", 80), entry(2, "2026-07-15", 78)];
     const { container } = render(<SimpleChart entries={entries} />);
-    const polyline = container.querySelector("polyline");
-    expect(polyline).toBeInTheDocument();
+    const line = container.querySelector('path[data-chart="line"]');
+    expect(line).toBeInTheDocument();
   });
 
   it("renders data point circles", () => {

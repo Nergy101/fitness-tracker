@@ -241,10 +241,10 @@ export default function HealthAndStatsTab() {
 
       {/* ── Goal Progress + BMI + Log Weight ── */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-3 sm:col-span-1">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-3 sm:col-span-1">
           {goal?.goal_weight_kg ? (
             <>
-              <p className="text-xs text-fg/40 mb-2 flex items-center gap-1.5">
+              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2 flex items-center gap-1.5">
                 <FlagBanner size={14} className="text-accent shrink-0" />
                 Goal Progress</p>
               <div className="w-full bg-bg rounded-full h-3 mb-2">
@@ -254,9 +254,9 @@ export default function HealthAndStatsTab() {
                 />
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-fg/50">{goal.current_weight_kg?.toFixed(1)} kg</span>
-                <span className="text-accent font-semibold">{goal.progress_percentage?.toFixed(0)}%</span>
-                <span className="text-fg/50">Goal: {goal.goal_weight_kg} kg</span>
+                <span className="text-fg/50 tabular-nums">{goal.current_weight_kg?.toFixed(1)} kg</span>
+                <span className="text-accent font-semibold tabular-nums">{goal.progress_percentage?.toFixed(0)}%</span>
+                <span className="text-fg/50 tabular-nums">Goal: {goal.goal_weight_kg} kg</span>
               </div>
               {goal.remaining_kg != null && (
                 <p className="text-xs text-fg/40 mt-1">
@@ -275,13 +275,13 @@ export default function HealthAndStatsTab() {
           )}
         </div>
 
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
           {bmi?.bmi ? (
             <>
-              <p className="text-xs text-fg/40 mb-1 flex items-center gap-1.5">
+              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1 flex items-center gap-1.5">
                 <Ruler size={14} className={`${bmiColor(bmi.category)} shrink-0`} />
                 BMI</p>
-              <p className={`text-2xl font-bold ${bmiColor(bmi.category)}`}>{bmi.bmi}</p>
+              <p className={`text-2xl font-extrabold tracking-tight tabular-nums ${bmiColor(bmi.category)}`}>{bmi.bmi}</p>
               <p className={`text-xs mt-0.5 ${bmiColor(bmi.category)}`}>{bmi.category}</p>
             </>
           ) : (
@@ -289,8 +289,8 @@ export default function HealthAndStatsTab() {
           )}
         </div>
 
-        <div className="bg-surface rounded-xl p-4 border border-fg/5 col-span-2 sm:col-span-1">
-          <p className="text-xs text-fg/40 mb-2 flex items-center gap-1.5">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-2 sm:col-span-1">
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2 flex items-center gap-1.5">
             <Scales size={14} className="text-accent shrink-0" />
             Log Weight</p>
           <div className="flex gap-2">
@@ -300,13 +300,13 @@ export default function HealthAndStatsTab() {
               value={newWeight}
               onChange={(e) => setNewWeight(e.target.value)}
               placeholder="kg"
-              className="flex-1 bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50 w-0"
+              className="flex-1 bg-bg border border-fg/10 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-accent/50 w-0"
               onKeyDown={(e) => e.key === "Enter" && logWeight()}
             />
             <button
               onClick={logWeight}
               disabled={!newWeight}
-              className="bg-accent text-bg rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-50"
+              className="bg-accent text-on-accent rounded-xl px-3 py-1.5 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50"
             >
               Log
             </button>
@@ -366,10 +366,10 @@ export default function HealthAndStatsTab() {
 
       {/* ── Boxing Stats ── */}
       {boxingStats && boxingStats.total_sessions > 0 && (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
           <div className="flex items-center gap-2 mb-3">
             <HandFist size={20} className="text-red-400 shrink-0" weight="fill" />
-            <p className="text-sm font-semibold text-fg">Boxing</p>
+            <p className="text-sm font-bold tracking-tight text-fg">Boxing</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <StatCard
@@ -403,7 +403,7 @@ export default function HealthAndStatsTab() {
           </div>
           {boxingStats.monthly_breakdown.length > 0 && (
             <div className="mt-3 pt-3 border-t border-fg/5">
-              <p className="text-xs text-fg/40 mb-2">Monthly</p>
+              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Monthly</p>
               <div className="space-y-1.5">
                 {boxingStats.monthly_breakdown.map((m) => (
                   <div key={m.month} className="flex items-center justify-between text-xs">
@@ -468,17 +468,17 @@ export default function HealthAndStatsTab() {
         return hasData ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-fg/60">Boxing Trends</span>
+              <span className="text-sm font-bold tracking-tight text-fg">Boxing Trends</span>
               <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10">
                 <button
                   onClick={() => setBoxingChartMode("daily")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "daily" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "daily" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
                 >
                   Daily
                 </button>
                 <button
                   onClick={() => setBoxingChartMode("weekly")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "weekly" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "weekly" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
                 >
                   Weekly
                 </button>
@@ -495,8 +495,8 @@ export default function HealthAndStatsTab() {
                   const y = svgH - (t / maxMin) * svgH;
                   return (
                     <g key={t}>
-                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
+                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {t >= 120 ? `${(t / 60).toFixed(1)}h` : `${Math.round(t)}m`}
                       </text>
                     </g>
@@ -508,8 +508,8 @@ export default function HealthAndStatsTab() {
                   const h = Math.max((d.minutes / maxMin) * svgH, 1);
                   return (
                     <g key={i}>
-                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill={ACTIVITY_COLORS.boxing} opacity={0.7} />
-                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={3} fill={ACTIVITY_COLORS.boxing} opacity={0.85} />
+                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {d.label}
                       </text>
                     </g>
@@ -528,8 +528,8 @@ export default function HealthAndStatsTab() {
                   const y = svgH - (t / maxKcal) * svgH;
                   return (
                     <g key={t}>
-                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
+                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {t >= 1000 ? `${(t / 1000).toFixed(1)}k` : String(Math.round(t))}
                       </text>
                     </g>
@@ -541,8 +541,8 @@ export default function HealthAndStatsTab() {
                   const h = Math.max((d.kcal / maxKcal) * svgH, 1);
                   return (
                     <g key={i}>
-                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill={ACTIVITY_COLORS.boxing} opacity={0.7} />
-                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={3} fill={ACTIVITY_COLORS.boxing} opacity={0.85} />
+                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {d.label}
                       </text>
                     </g>
@@ -605,17 +605,17 @@ export default function HealthAndStatsTab() {
         return hasData ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-fg/60">Cycling Trends</span>
+              <span className="text-sm font-bold tracking-tight text-fg">Cycling Trends</span>
               <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10">
                 <button
                   onClick={() => setCyclingChartMode("daily")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${cyclingChartMode === "daily" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${cyclingChartMode === "daily" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
                 >
                   Daily
                 </button>
                 <button
                   onClick={() => setCyclingChartMode("weekly")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${cyclingChartMode === "weekly" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${cyclingChartMode === "weekly" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
                 >
                   Weekly
                 </button>
@@ -632,8 +632,8 @@ export default function HealthAndStatsTab() {
                   const y = svgH - (t / maxMin) * svgH;
                   return (
                     <g key={t}>
-                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
+                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {t >= 120 ? `${(t / 60).toFixed(1)}h` : `${Math.round(t)}m`}
                       </text>
                     </g>
@@ -645,8 +645,8 @@ export default function HealthAndStatsTab() {
                   const h = Math.max((d.minutes / maxMin) * svgH, 1);
                   return (
                     <g key={i}>
-                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill={ACTIVITY_COLORS.cycling} opacity={0.7} />
-                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={3} fill={ACTIVITY_COLORS.cycling} opacity={0.85} />
+                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {d.label}
                       </text>
                     </g>
@@ -665,8 +665,8 @@ export default function HealthAndStatsTab() {
                   const y = svgH - (t / maxKcal) * svgH;
                   return (
                     <g key={t}>
-                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/30" fontSize="8">
+                      <line x1={gutter} y1={y} x2={svgW} y2={y} className="stroke-fg/[0.07]" strokeWidth="1" strokeDasharray="1 4" strokeLinecap="round" />
+                      <text x={gutter - 4} y={Math.max(y + 3, 7)} textAnchor="end" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {t >= 1000 ? `${(t / 1000).toFixed(1)}k` : String(Math.round(t))}
                       </text>
                     </g>
@@ -678,8 +678,8 @@ export default function HealthAndStatsTab() {
                   const h = Math.max((d.kcal / maxKcal) * svgH, 1);
                   return (
                     <g key={i}>
-                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={2} fill={ACTIVITY_COLORS.cycling} opacity={0.7} />
-                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/30" fontSize="8">
+                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={3} fill={ACTIVITY_COLORS.cycling} opacity={0.85} />
+                      <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {d.label}
                       </text>
                     </g>
@@ -693,21 +693,21 @@ export default function HealthAndStatsTab() {
 
       {/* Recent weights + trend */}
       {weights.length > 0 && (
-        <div className="bg-surface rounded-xl p-4 border border-fg/5">
-          <p className="text-xs text-fg/40 mb-2">Recent Weights</p>
+        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Recent Weights</p>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {weights.slice(0, 20).map((w) => (
               <div key={w.id} className="flex items-center justify-between py-1">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-fg">{w.weight_kg.toFixed(1)} kg</span>
+                    <span className="text-sm font-medium text-fg tabular-nums">{w.weight_kg.toFixed(1)} kg</span>
                     <span className="text-xs text-fg/40">{shortDate(w.date)}</span>
                   </div>
                   {w.notes && <p className="text-xs text-fg/30 truncate mt-0.5">{w.notes}</p>}
                 </div>
                 <button
                   onClick={() => deleteWeight(w.id)}
-                  className="text-xs text-red-400/50 hover:text-red-400 shrink-0 ml-2"
+                  className="text-xs text-red-400/60 hover:text-red-400 shrink-0 ml-2 px-2 py-1 rounded-full hover:bg-red-400/10 transition-colors"
                 >
                   del
                 </button>
@@ -725,12 +725,12 @@ export default function HealthAndStatsTab() {
       {/* ── Body Measurements ── */}
       <button
         onClick={() => setShowMeas(!showMeas)}
-        className="w-full bg-surface rounded-xl p-4 border border-fg/5 flex items-center justify-between"
+        className="w-full bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] flex items-center justify-between hover:bg-fg/5 transition-colors"
       >
         <div className="flex items-center gap-3">
           <Ruler size={22} className="text-accent shrink-0" />
           <div className="text-left">
-            <span className="text-sm font-semibold text-fg">Body Measurements</span>
+            <span className="text-sm font-bold tracking-tight text-fg">Body Measurements</span>
             <p className="text-[11px] text-fg/40 mt-0.5">Track waist, hips, arms, thighs and see changes over time</p>
           </div>
         </div>
@@ -741,12 +741,12 @@ export default function HealthAndStatsTab() {
       {/* ── Wellness Check-in ── */}
       <button
         onClick={() => setShowWellness(!showWellness)}
-        className="w-full bg-surface rounded-xl p-4 border border-fg/5 flex items-center justify-between"
+        className="w-full bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] flex items-center justify-between hover:bg-fg/5 transition-colors"
       >
         <div className="flex items-center gap-3">
           <Smiley size={22} className="text-accent shrink-0" />
           <div className="text-left">
-            <span className="text-sm font-semibold text-fg">Wellness Check-in</span>
+            <span className="text-sm font-bold tracking-tight text-fg">Wellness Check-in</span>
             <p className="text-[11px] text-fg/40 mt-0.5">Log your mood, energy, stress, and sleep to spot trends</p>
           </div>
         </div>

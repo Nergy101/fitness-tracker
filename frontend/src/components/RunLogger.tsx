@@ -87,9 +87,10 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
   // A Recent-workouts tag asked for this entry: open its form. Declared after
   // startEdit so the hook reads it as an already-initialised binding.
   useEffect(() => {
-    if (!editEntry) return;
-    startEdit(editEntry);
-    onEditHandled?.();
+    if (editEntry && editEntry.run_type === runType) {
+      startEdit(editEntry);
+      onEditHandled?.();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editEntry]);
 
@@ -146,7 +147,7 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
             resetForm();
             setShowForm(true);
           }}
-          className="order-1 bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+          className="order-1 bg-surface rounded-2xl p-3.5 border-2 shadow-[var(--shadow-sm)] hover:border-accent/40 active:scale-[0.98] transition-all flex flex-col items-center gap-1.5"
           style={{ borderColor: ACTIVITY_COLORS[runType] }}
         >
           <Icon size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS[runType] }} />
@@ -172,7 +173,7 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
           resetForm();
           setShowForm(true);
         }}
-        className="order-1 bg-surface rounded-xl p-3 border-2 hover:border-accent/40 transition-colors flex flex-col items-center gap-1.5"
+        className="order-1 bg-surface rounded-2xl p-3.5 border-2 shadow-[var(--shadow-sm)] hover:border-accent/40 active:scale-[0.98] transition-all flex flex-col items-center gap-1.5"
         style={{ borderColor: ACTIVITY_COLORS[runType] }}
       >
         <Icon size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS[runType] }} />
@@ -186,7 +187,7 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
           onClick={() => { resetForm(); setShowForm(false); }}
         >
           <div
-            className="bg-surface rounded-t-2xl w-full max-h-[85vh] overflow-y-auto pb-[max(env(safe-area-inset-bottom),1.5rem)]"
+            className="bg-surface rounded-t-2xl w-full max-h-[85vh] overflow-y-auto shadow-[var(--shadow-lg)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 space-y-3">
@@ -200,7 +201,7 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
                 <button
                   onClick={() => { resetForm(); setShowForm(false); }}
                   aria-label="Close"
-                  className="text-fg/40 hover:text-fg/70"
+                  className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-fg/40 hover:bg-fg/5 hover:text-fg/70 transition-colors"
                 >
                   <X size={18} />
                 </button>
@@ -208,7 +209,7 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
 
               {/* Duration quick-select */}
               <div>
-                <p className="text-xs text-fg/50 mb-1.5">Duration</p>
+                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">Duration</p>
           <div className="flex gap-2 flex-wrap">
             {DURATION_OPTIONS.map((opt) => (
               <button
@@ -223,14 +224,14 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
                     setRunCustomDuration("");
                   }
                 }}
-                className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                className={`inline-flex items-center justify-center h-10 px-4 text-xs font-semibold rounded-full transition-colors ${
                   opt.seconds === 0
                     ? isCustomDuration
-                      ? "bg-accent text-bg font-semibold"
-                      : "bg-bg text-fg/60 hover:text-fg"
+                      ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
+                      : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
                     : runDuration === opt.seconds && !runCustomDuration
-                      ? "bg-accent text-bg font-semibold"
-                      : "bg-bg text-fg/60 hover:text-fg"
+                      ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
+                      : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
                 }`}
               >
                 {opt.label}
@@ -246,38 +247,38 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
                 setRunDuration((parseInt(e.target.value) || 0) * 60);
               }}
               placeholder="Minutes"
-              className="mt-2 w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+              className="mt-2 w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
             />
           )}
         </div>
 
         <div>
-          <p className="text-xs text-fg/50 mb-1">Distance (km)</p>
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Distance (km)</p>
           <input
             type="number"
             step="0.1"
             value={runDistance}
             onChange={(e) => setRunDistance(e.target.value)}
             placeholder="e.g. 5.0"
-            className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+            className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
           />
         </div>
         <div>
-          <p className="text-xs text-fg/50 mb-1">Date</p>
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Date</p>
           <input
             type="date"
             value={runDate}
             onChange={(e) => setRunDate(e.target.value)}
-            className="w-full max-w-full min-w-0 box-border bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+            className="w-full max-w-full min-w-0 box-border bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
           />
         </div>
 
         {/* Pace preview */}
         {pace && pace > 0 && (
-          <div className="bg-bg rounded-lg px-3 py-2 flex items-center gap-2 text-sm">
+          <div className="bg-surface-2 rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm">
             <MapTrifold size={16} className="text-accent" />
             <span className="text-fg/60">Pace:</span>
-            <span className="text-fg font-semibold">{formatPace(pace)}</span>
+            <span className="text-fg font-semibold tabular-nums">{formatPace(pace)}</span>
             <span className="text-fg/40 text-xs ml-auto">
               {formatDuration(runDuration)} · {parseFloat(runDistance).toFixed(1)}km
             </span>
@@ -285,21 +286,21 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
         )}
 
         <div>
-          <p className="text-xs text-fg/50 mb-1">Notes (optional)</p>
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Notes (optional)</p>
           <input
             type="text"
             value={runNotes}
             onChange={(e) => setRunNotes(e.target.value)}
             placeholder={notePrompt}
             aria-label="Notes"
-            className="w-full bg-bg border border-fg/10 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-accent/50"
+            className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
           />
         </div>
 
         <button
           onClick={handleSubmit}
           disabled={!runDistance || parseFloat(runDistance) <= 0}
-          className="w-full bg-accent text-bg rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
+          className="w-full bg-accent text-on-accent rounded-xl h-11 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100"
         >
           {editingId ? `Update ${label}` : saveLabel}
         </button>

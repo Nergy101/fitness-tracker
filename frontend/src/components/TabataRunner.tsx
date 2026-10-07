@@ -267,12 +267,12 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
       {phase !== "finished" ? (
         <div className="relative flex flex-col items-center justify-center h-full px-6 text-center">
           <p
-            className="text-sm font-semibold tracking-wide mb-1"
+            className="text-[11px] font-bold uppercase tracking-widest mb-2"
             style={{ color: isReady ? undefined : isWork ? WORK_COLOR : REST_COLOR }}
           >
             {isReady ? "Get ready" : isWork ? "WORK" : "REST"}
           </p>
-          <h2 className="text-3xl font-bold text-fg mb-2">
+          <h2 className="text-3xl font-extrabold tracking-tight text-fg mb-2">
             Round {displayRound}/{rounds}
           </h2>
           {exerciseCount > 0 && (
@@ -283,14 +283,14 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
 
           <div className="relative w-56 h-56 mb-6">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
+              <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="8" />
               <circle
                 cx="50"
                 cy="50"
                 r="42"
                 fill="none"
                 stroke={isReady ? "var(--track)" : ringColor}
-                strokeWidth="6"
+                strokeWidth="8"
                 strokeDasharray={RING}
                 strokeDashoffset={(1 - progress) * RING}
                 strokeLinecap="round"
@@ -298,7 +298,7 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-6xl font-bold text-fg tabular-nums">{timer}</span>
+              <span className="text-6xl font-extrabold tracking-tight tabular-nums text-fg">{timer}</span>
               <span className="text-xs text-fg/40 mt-1">
                 {isWork ? `${WORK_SECONDS}s work` : isRest ? `${REST_SECONDS}s rest` : "starting…"}
               </span>
@@ -309,48 +309,48 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
             <ExerciseImage
               src={current.exercise.image_url}
               alt={currentName}
-              className="w-40 h-28 rounded-2xl mb-4 border border-fg/10"
+              className="w-40 h-28 rounded-2xl mb-4 border border-fg/10 shadow-[var(--shadow-sm)]"
               category={current.exercise.category}
             />
           )}
 
-          <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-3 mt-2 w-full max-w-xs">
             <button
               onClick={() => advanceRef.current()}
-              className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+              className="flex-1 min-h-12 inline-flex items-center justify-center gap-2 text-sm font-semibold text-fg/70 border border-fg/10 hover:bg-fg/5 active:bg-fg/10 rounded-xl px-4 transition-colors"
             >
-              <SkipForward size={16} weight="fill" /> Skip
+              <SkipForward size={18} weight="fill" /> Skip
             </button>
             <button
               onClick={() => (paused ? doResume() : doPause())}
-              className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
+              className="flex-1 min-h-12 inline-flex items-center justify-center gap-2 text-sm font-semibold text-accent bg-accent/15 border border-accent/30 hover:bg-accent/25 active:scale-[0.98] rounded-xl px-4 transition"
             >
-              {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+              {paused ? <PlayCircle size={18} weight="fill" /> : <PauseCircle size={18} weight="fill" />}
               {paused ? "Resume" : "Pause"}
             </button>
           </div>
         </div>
       ) : (
         <div className="relative flex flex-col items-center justify-center h-full px-6 text-center">
-          <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mb-6">
+          <div className="w-20 h-20 bg-accent/20 rounded-full flex items-center justify-center mb-6 shadow-[var(--shadow-sm)]">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5">
               <path d="M20 6 9 17l-5-5" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-fg mb-2">Tabata Complete!</h2>
+          <h2 className="text-3xl font-extrabold tracking-tight text-fg mb-2">Tabata Complete!</h2>
           <p className="text-fg/50 text-sm mb-6">{workout.name || "Workout"}</p>
-          <div className="grid grid-cols-3 gap-4 mb-8 w-full max-w-xs">
-            <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-fg">{formatDuration(totalDuration)}</p>
-              <p className="text-xs text-fg/40">Duration</p>
+          <div className="grid grid-cols-3 gap-3 mb-8 w-full max-w-xs">
+            <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+              <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">{formatDuration(totalDuration)}</p>
+              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Duration</p>
             </div>
-            <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-fg">{rounds}</p>
-              <p className="text-xs text-fg/40">Rounds</p>
+            <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+              <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">{rounds}</p>
+              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Rounds</p>
             </div>
-            <div className="bg-surface rounded-xl p-3">
-              <p className="text-2xl font-bold text-accent">{Math.round(totalKcal)}</p>
-              <p className="text-xs text-fg/40">Kcal</p>
+            <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+              <p className="text-xl font-extrabold tracking-tight tabular-nums text-accent">{Math.round(totalKcal)}</p>
+              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Kcal</p>
             </div>
           </div>
           <div className="mb-5 w-full max-w-xs">
@@ -365,7 +365,7 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
           <button
             onClick={handleDone}
             disabled={saving}
-            className="bg-accent text-on-accent rounded-xl px-8 py-3 font-semibold hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            className="min-h-12 bg-accent text-on-accent rounded-xl px-8 py-3 font-semibold shadow-[var(--shadow-sm)] hover:bg-accent-hover active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
           >
             {saving ? (
               <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -382,7 +382,7 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
         <div className="absolute top-4 left-4">
           <button
             onClick={onCancel}
-            className="inline-flex items-center gap-1.5 text-fg/40 hover:text-fg/70 text-sm px-3 py-1.5"
+            className="inline-flex items-center gap-1.5 text-fg/40 hover:text-fg/70 hover:bg-fg/5 active:bg-fg/10 text-sm font-medium rounded-full px-3.5 py-2.5 transition-colors"
           >
             <X size={16} weight="bold" /> Stop
           </button>
@@ -394,19 +394,19 @@ export default function TabataRunner({ workout, onFinish, onCancel }: TabataRunn
 
       {confirmStop && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-          <div className="w-full max-w-xs bg-surface rounded-2xl border border-fg/10 p-6 text-center">
-            <h3 className="text-base font-semibold text-fg mb-2">Stop workout?</h3>
-            <p className="text-sm text-fg/50 mb-5">Progress on this session will be discarded.</p>
-            <div className="flex gap-2">
+          <div className="w-full max-w-xs bg-surface rounded-2xl border border-fg/10 shadow-[var(--shadow-lg)] p-6 text-center">
+            <h3 className="text-lg font-bold tracking-tight text-fg mb-2">Stop workout?</h3>
+            <p className="text-sm text-fg/50 mb-6">Progress on this session will be discarded.</p>
+            <div className="flex gap-3">
               <button
                 onClick={() => setConfirmStop(false)}
-                className="flex-1 text-sm text-fg/60 hover:text-fg border border-fg/15 rounded-xl py-2.5 transition-colors"
+                className="flex-1 min-h-12 text-sm font-semibold text-fg/70 border border-fg/10 hover:bg-fg/5 active:bg-fg/10 rounded-xl transition-colors"
               >
                 Keep going
               </button>
               <button
                 onClick={onCancel}
-                className="flex-1 text-sm text-red-300 hover:text-red-200 border border-red-400/30 hover:border-red-400/50 rounded-xl py-2.5 transition-colors"
+                className="flex-1 min-h-12 text-sm font-semibold text-red-300 bg-red-500/10 border border-red-400/30 hover:bg-red-500/20 active:scale-[0.98] rounded-xl transition"
               >
                 Stop
               </button>

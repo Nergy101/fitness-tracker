@@ -9,10 +9,10 @@ export function ActivityStatsCard({ kind, stats }: { kind: ActivityKind; stats: 
   const Icon = ACTIVITY_ICONS[kind];
   const color = ACTIVITY_COLORS[kind];
   return (
-    <div className="bg-surface rounded-xl p-4 border border-fg/5">
+    <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
       <div className="flex items-center gap-2 mb-3">
         <Icon size={20} weight="fill" className="shrink-0" style={{ color }} />
-        <p className="text-sm font-semibold text-fg">{ACTIVITY_LABELS[kind]}</p>
+        <p className="text-sm font-bold tracking-tight text-fg">{ACTIVITY_LABELS[kind]}</p>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <StatCard
@@ -39,12 +39,12 @@ export function ActivityStatsCard({ kind, stats }: { kind: ActivityKind; stats: 
       </div>
       {stats.monthly_breakdown.length > 0 && (
         <div className="mt-3 pt-3 border-t border-fg/5">
-          <p className="text-xs text-fg/40 mb-2">Monthly</p>
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Monthly</p>
           <div className="space-y-1.5">
             {stats.monthly_breakdown.map((m) => (
               <div key={m.month} className="flex items-center justify-between text-xs">
                 <span className="text-fg/60">{m.month}</span>
-                <span className="text-fg/40">{m.sessions} sessions · {m.total_minutes} min</span>
+                <span className="text-fg/40 tabular-nums">{m.sessions} sessions · {m.total_minutes} min</span>
               </div>
             ))}
           </div>

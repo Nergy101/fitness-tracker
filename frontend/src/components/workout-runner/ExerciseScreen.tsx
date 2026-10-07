@@ -85,7 +85,7 @@ export default function ExerciseScreen({
 }: ExerciseScreenProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full px-6 text-center">
-      <p className="text-fg/50 text-sm mb-2">
+      <p className="text-xs font-semibold tracking-wide text-fg/40 mb-2">
         {isAmrap ? `Round ${amrapRounds}` : isEmom ? `Exercise ${currentIndex + 1} of ${totalExercises}` : `Exercise ${currentIndex + 1} of ${totalExercises}`}
         {currentSupersetGroup && (
           <span className="text-accent/70 ml-1.5 font-semibold text-xs">SS</span>
@@ -97,11 +97,12 @@ export default function ExerciseScreen({
           <span className="text-accent"> &middot; AMRAP</span>
         )}
       </p>
-      <h2 className="text-2xl font-bold text-fg mb-6">
+      <h2 className="text-3xl font-extrabold tracking-tight text-fg mb-5">
         {currentName}
         <button
           onClick={onOpenSwap}
-          className="ml-2 inline-flex items-center text-fg/30 hover:text-accent transition-colors align-middle"
+          aria-label="Swap exercise"
+          className="ml-2 inline-flex w-9 h-9 items-center justify-center text-fg/30 hover:text-accent hover:bg-fg/5 rounded-full transition-colors align-middle"
           title="Swap exercise"
         >
           <ArrowsLeftRight size={20} weight="bold" />
@@ -110,7 +111,7 @@ export default function ExerciseScreen({
       <ExerciseImage
         src={currentImage}
         alt={currentName}
-        className="w-56 h-40 rounded-2xl mb-3 border border-fg/10"
+        className="w-56 h-40 rounded-2xl mb-4 border border-fg/10 shadow-[var(--shadow-sm)]"
         category={currentCategory}
       />
       {currentDescription && (
@@ -120,8 +121,8 @@ export default function ExerciseScreen({
         <p className="text-accent/70 text-xs mb-3 font-medium">{currentPastHint}</p>
       )}
       {/* Weight / reps logging */}
-      <div className="flex flex-col items-center gap-1 mb-4">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col items-center gap-2 mb-5">
+        <div className="flex items-center gap-3">
           <input
             type="number"
             inputMode="decimal"
@@ -129,7 +130,7 @@ export default function ExerciseScreen({
             value={weightValue}
             onChange={(e) => onWeightChange(e.target.value)}
             disabled={paused}
-            className={`w-20 bg-surface border rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
+            className={`w-24 bg-surface border rounded-xl px-3 py-3 text-center text-base font-semibold text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
               weightError ? "border-red-400" : "border-fg/10"
             }`}
             aria-label="Weight in kg"
@@ -142,7 +143,7 @@ export default function ExerciseScreen({
             value={repsValue}
             onChange={(e) => onRepsChange(e.target.value)}
             disabled={paused}
-            className={`w-20 bg-surface border rounded-lg px-3 py-2 text-center text-sm text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
+            className={`w-24 bg-surface border rounded-xl px-3 py-3 text-center text-base font-semibold text-fg placeholder-fg/20 focus:outline-none focus:border-accent/50 disabled:opacity-40 ${
               repsError ? "border-red-400" : "border-fg/10"
             }`}
             aria-label="Reps"
@@ -161,21 +162,21 @@ export default function ExerciseScreen({
           <p className="text-xs text-red-400">{repsError}</p>
         )}
       </div>
-      <div className="flex items-center gap-1 mt-1 flex-wrap justify-center">
-        <span className="text-[10px] text-fg/30 mr-1 uppercase tracking-wide">RPE</span>
+      <div className="flex items-center gap-1.5 mt-1 flex-wrap justify-center">
+        <span className="text-[10px] font-semibold text-fg/40 mr-1 uppercase tracking-wide">RPE</span>
         {[1,2,3,4,5,6,7,8,9,10].map((n) => (
-          <button key={n} onClick={() => onRpeChange(rpeValue === n ? null : n)} disabled={paused} aria-label={`RPE ${n}`} className={`w-6 h-6 rounded-full text-[11px] font-medium ${rpeValue === n ? "bg-accent text-on-accent" : "bg-surface border border-fg/10 text-fg/50"}`}>{n}</button>
+          <button key={n} onClick={() => onRpeChange(rpeValue === n ? null : n)} disabled={paused} aria-label={`RPE ${n}`} className={`w-7 h-7 rounded-full text-[11px] font-semibold transition-colors ${rpeValue === n ? "bg-accent text-on-accent" : "bg-surface border border-fg/10 text-fg/50"}`}>{n}</button>
         ))}
       </div>
-      <button type="button" onClick={onToggleNotes} disabled={paused} aria-label="Toggle set notes" className="text-[11px] text-fg/40 mt-1">{notesOpen ? "▲ Hide set note" : "▼ Add set note"}</button>
-      {notesOpen && <input type="text" value={notesValue} onChange={(e) => onNotesChange(e.target.value)} disabled={paused} aria-label="Set notes" className="w-full max-w-xs mt-1.5 bg-surface border border-fg/10 rounded-lg px-3 py-1.5 text-sm text-fg" />}
-      <div className="relative w-48 h-48 mb-6">
+      <button type="button" onClick={onToggleNotes} disabled={paused} aria-label="Toggle set notes" className="text-xs font-medium text-fg/40 mt-2.5 px-3 py-1.5 -mx-3 rounded-lg hover:bg-fg/5 active:bg-fg/10 transition-colors">{notesOpen ? "▲ Hide set note" : "▼ Add set note"}</button>
+      {notesOpen && <input type="text" value={notesValue} onChange={(e) => onNotesChange(e.target.value)} disabled={paused} aria-label="Set notes" className="w-full max-w-xs mt-2 bg-surface border border-fg/10 rounded-xl px-3 py-2.5 text-sm text-fg" />}
+      <div className="relative w-56 h-56 mb-6 mt-4">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="6" />
+          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--track)" strokeWidth="8" />
           <circle
             cx="50" cy="50" r="42" fill="none"
             stroke={isAmrap ? "#f97316" : "var(--timer)"}
-            strokeWidth="6"
+            strokeWidth="8"
             strokeDasharray={RING}
             strokeDashoffset={(1 - timerProgress) * RING}
             strokeLinecap="round"
@@ -183,35 +184,35 @@ export default function ExerciseScreen({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-5xl font-bold text-fg">{displayTime}</span>
+          <span className="text-6xl font-extrabold tracking-tight tabular-nums text-fg">{displayTime}</span>
         </div>
       </div>
       {isAmrap && (
         <p className="text-fg/30 text-xs mb-1">Rounds completed: {amrapRounds}</p>
       )}
-      <p className="text-fg/30 text-sm">{isAmrap ? "Go!" : isEmom ? "Go!" : "Go!"}</p>
-      <div className="flex items-center gap-3 mt-4">
+      <p className="text-fg/30 text-sm mb-1">{isAmrap ? "Go!" : isEmom ? "Go!" : "Go!"}</p>
+      <div className="flex items-center justify-center gap-2.5 mt-4 flex-wrap">
         <button
           onClick={onSkip}
-          className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+          className="min-h-12 inline-flex items-center justify-center gap-2 text-sm font-semibold text-fg/70 border border-fg/10 hover:bg-fg/5 active:bg-fg/10 rounded-xl px-4 transition-colors"
         >
-          <SkipForward size={16} weight="fill" /> Skip
+          <SkipForward size={18} weight="fill" /> Skip
         </button>
         {hasLoggedSets && (
           <button
             onClick={onUndoLastSet}
-            className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg border border-fg/15 rounded-xl px-5 py-2 transition-colors"
+            className="min-h-12 inline-flex items-center justify-center gap-2 text-sm font-semibold text-fg/70 border border-fg/10 hover:bg-fg/5 active:bg-fg/10 rounded-xl px-4 transition-colors"
             aria-label="Undo last set"
             title="Undo last set"
           >
-            <ArrowCounterClockwise size={16} weight="fill" /> Undo last set
+            <ArrowCounterClockwise size={18} weight="fill" /> Undo last set
           </button>
         )}
         <button
           onClick={onTogglePause}
-          className="inline-flex items-center gap-2 text-sm text-accent/60 hover:text-accent border border-accent/20 hover:border-accent/40 rounded-xl px-5 py-2 transition-colors"
+          className="min-h-12 inline-flex items-center justify-center gap-2 text-sm font-semibold text-accent bg-accent/15 border border-accent/30 hover:bg-accent/25 active:scale-[0.98] rounded-xl px-4 transition"
         >
-          {paused ? <PlayCircle size={16} weight="fill" /> : <PauseCircle size={16} weight="fill" />}
+          {paused ? <PlayCircle size={18} weight="fill" /> : <PauseCircle size={18} weight="fill" />}
           {paused ? "Resume" : "Pause"}
         </button>
       </div>

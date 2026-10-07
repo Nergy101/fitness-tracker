@@ -37,7 +37,7 @@ export default function ExerciseImage({
     >
       {/* Shimmer skeleton while loading */}
       {state === "loading" && (
-        <div className="absolute inset-0 bg-fg/5 animate-pulse rounded-inherit" />
+        <div className="absolute inset-0 skeleton-shimmer rounded-inherit" />
       )}
 
       {/* Image (hidden until loaded, then fades in) */}

@@ -11,7 +11,7 @@ describe("ExerciseImage", () => {
   it("shows shimmer skeleton when src is provided (loading state)", () => {
     const { container } = render(<ExerciseImage src="https://example.com/img.jpg" alt="Squats" />);
     // The shimmer skeleton should be present during loading
-    expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
+    expect(container.querySelector(".skeleton-shimmer")).toBeInTheDocument();
     // The img should exist but be hidden
     const img = screen.getByAltText("Squats");
     expect(img).toBeInTheDocument();

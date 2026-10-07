@@ -8,7 +8,7 @@ export default function WorkoutSkeleton() {
       {[...Array(3)].map((_, i) => (
         <div
           key={i}
-          className="bg-surface rounded-xl p-4 border border-fg/5 space-y-2.5 mb-3"
+          className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-2.5 mb-3"
         >
           {/* Title + actions */}
           <div className="flex items-center justify-between">

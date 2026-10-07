@@ -6,10 +6,10 @@ import {
 } from "@phosphor-icons/react";
 import { api, OfflineError, type BackupConfigResponse, type BackupFileResponse, type BackupResultResponse } from "../api";
 
-const SEGMENT_ON = "bg-accent/15 border-accent/30 text-accent";
+const SEGMENT_ON = "bg-accent/15 border-accent/30 text-accent shadow-[var(--shadow-sm)]";
 const SEGMENT_OFF = "border-fg/10 text-fg/40 hover:text-fg/70";
 const SEGMENT =
-  "flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-2 py-2 rounded-lg border transition-colors ";
+  "flex-1 flex items-center justify-center gap-1.5 text-xs font-medium px-2 py-2 rounded-xl border transition-colors ";
 
 const INTERVAL_OPTIONS = [
   { value: "disabled", label: "Off" },
@@ -142,7 +142,7 @@ export default function BackupSection() {
           onClick={handleBackup}
           disabled={loading}
           aria-label="Backup now"
-          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20 active:scale-[0.98] transition"
         >
           <DownloadSimple size={14} weight="bold" />
           Backup Now
@@ -155,18 +155,18 @@ export default function BackupSection() {
       </div>
 
       {message && (
-        <p className="text-xs text-accent bg-accent/5 rounded-lg px-3 py-2">{message}</p>
+        <p className="text-xs text-accent bg-accent/5 border border-accent/10 rounded-xl px-3 py-2">{message}</p>
       )}
 
       {/* Backups list */}
       {backups.length > 0 && (
         <div className="border-t border-fg/10 pt-3">
-          <p className="text-xs text-fg/40 mb-2">Backups</p>
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Backups</p>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {backups.map((b) => (
               <div
                 key={b.filename}
-                className="flex items-center justify-between bg-bg rounded-lg px-4 py-3"
+                className="flex items-center justify-between bg-surface-2 rounded-xl border border-fg/[0.06] px-3.5 py-3"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-fg/80 truncate">{b.filename}</p>
@@ -180,14 +180,14 @@ export default function BackupSection() {
                     <button
                       onClick={() => handleRestore(b.filename)}
                       aria-label="Confirm restore"
-                      className="text-xs font-medium px-3 py-1.5 rounded bg-red-500/20 text-red-400"
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                     >
                       Confirm
                     </button>
                     <button
                       onClick={() => setRestoreTarget(null)}
                       aria-label="Cancel restore"
-                      className="text-xs font-medium px-3 py-1.5 rounded bg-fg/10 text-fg/50"
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg bg-fg/10 text-fg/50 hover:bg-fg/15 transition-colors"
                     >
                       Cancel
                     </button>
@@ -197,31 +197,31 @@ export default function BackupSection() {
                     <button
                       onClick={() => handleDelete(b.filename)}
                       aria-label="Confirm delete"
-                      className="text-xs font-medium px-3 py-1.5 rounded bg-red-500/20 text-red-400"
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                     >
                       Delete
                     </button>
                     <button
                       onClick={() => setDeleteTarget(null)}
                       aria-label="Cancel delete"
-                      className="text-xs font-medium px-3 py-1.5 rounded bg-fg/10 text-fg/50"
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg bg-fg/10 text-fg/50 hover:bg-fg/15 transition-colors"
                     >
                       Cancel
                     </button>
                   </div>
                 ) : (
-                  <div className="flex gap-0.5 shrink-0 ml-3">
+                  <div className="flex gap-0.5 shrink-0 ml-2">
                     <button
                       onClick={() => setRestoreTarget(b.filename)}
                       aria-label={`Restore from ${b.filename}`}
-                      className="p-2 text-fg/30 hover:text-accent transition-colors"
+                      className="w-10 h-10 flex items-center justify-center rounded-full text-fg/30 hover:text-accent hover:bg-fg/5 active:bg-fg/10 transition-colors"
                     >
                       <ArrowCounterClockwise size={18} weight="bold" />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(b.filename)}
                       aria-label={`Delete ${b.filename}`}
-                      className="p-2 text-fg/30 hover:text-red-400 transition-colors"
+                      className="w-10 h-10 flex items-center justify-center rounded-full text-fg/30 hover:text-red-400 hover:bg-fg/5 active:bg-fg/10 transition-colors"
                     >
                       <Trash size={18} weight="bold" />
                     </button>

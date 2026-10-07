@@ -87,9 +87,9 @@ function threeXLabels(pts: { date: string }[]): [string, string, string] {
 
 function Legend({ items }: { items: { color: string; label: string }[] }) {
   return (
-    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
+    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3">
       {items.map(({ color, label }) => (
-        <span key={label} className="flex items-center gap-1 text-[10px] text-fg/40">
+        <span key={label} className="flex items-center gap-1.5 text-[10px] font-medium text-fg/45">
           <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: color }} />
           {label}
         </span>

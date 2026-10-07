@@ -82,7 +82,7 @@ const GROUPS: CreditGroup[] = [
 
 function BrandIcon({ logo, label }: { logo: string; label: string }) {
   return (
-    <span className="w-7 h-7 shrink-0 rounded-md bg-surface flex items-center justify-center ring-1 ring-fg/10">
+    <span className="w-7 h-7 shrink-0 rounded-md bg-surface flex items-center justify-center ring-1 ring-fg/10 shadow-[var(--shadow-sm)]">
       <img src={logo} alt={label} className="w-5 h-5 object-contain" loading="lazy" />
     </span>
   );
@@ -96,7 +96,7 @@ export default function CreditsSection() {
       </p>
       {GROUPS.map((group) => (
         <div key={group.title}>
-          <p className="text-xs text-fg/50 mb-1.5">{group.title}</p>
+          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">{group.title}</p>
           <div className="space-y-1">
             {group.items.map((c) => (
               <a
@@ -104,7 +104,7 @@ export default function CreditsSection() {
                 href={c.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-fg/5 transition-colors"
+                className="group flex items-center gap-2.5 rounded-xl px-2.5 py-2 hover:bg-fg/5 active:bg-fg/10 transition-colors"
               >
                 <BrandIcon logo={c.logo} label={c.name} />
                 <span className="text-sm text-fg/80 group-hover:text-fg transition-colors">
