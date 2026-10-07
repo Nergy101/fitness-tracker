@@ -43,6 +43,7 @@ export function computeDailyActivity(
   rides: CyclingEntryResponse[],
   now: Date = new Date(),
   startDate?: string | null,
+  rangeDays = 30,
 ): DailyActivityStat[] {
   const byDate = new Map<string, DailyActivityStat>();
   const defaultStart = new Date(now);
@@ -62,9 +63,9 @@ export function computeDailyActivity(
     return day;
   };
 
-  if (startDate) {
+  if (typeof startDate === "string") {
     const d = new Date(`${startDate}T12:00:00`);
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < rangeDays; i++) {
       const current = new Date(d);
       current.setDate(d.getDate() + i);
       ensureDay(dayKey(current));

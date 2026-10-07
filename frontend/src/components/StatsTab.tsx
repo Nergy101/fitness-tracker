@@ -114,7 +114,7 @@ function StackedBarChart<T>({
   formatValue,
   /** Returns true if this data point falls on an injury date. */
   injuryMark,
-  height = 80,
+  height = 160,
 }: {
   data: T[];
   segments: StackSegment<T>[];
@@ -239,7 +239,7 @@ function LineChart({
   referenceColor,
   overlay,
   markerIndices,
-  height = 90,
+  height = 180,
 }: {
   points: { label: string; value: number }[];
   color: string;
@@ -451,9 +451,10 @@ export default function StatsTab() {
   const [volumeExercise, setVolumeExercise] = useState<number | null>(null);
 
   const [chartMode, setChartMode] = useState<"daily" | "weekly">("daily");
-  const [chartRange, setChartRange] = useState<ChartRange>(() =>
-    localStorage.getItem("stats-chart-range") === "all" ? "all" : "30d",
-  );
+  const [chartRange, setChartRange] = useState<ChartRange>(() => {
+    const stored = localStorage.getItem("stats-chart-range");
+    return stored === "7d" || stored === "all" ? stored : "30d";
+  });
   const { locale } = useLocale();
   const rangeStart = chartRangeStart(chartRange);
 
@@ -525,7 +526,7 @@ export default function StatsTab() {
     return <div className="text-center py-8 text-fg/40">Failed to load data.</div>;
   }
 
-  const daily = computeDailyActivity(sessions, runs, rides, new Date(), chartRange === "all" ? null : rangeStart);
+  const daily = computeDailyActivity(sessions, runs, rides, new Date(), chartRange === "all" ? null : rangeStart, chartRange === "7d" ? 7 : 30);
   const weeklyBuckets = new Map<string, WeeklyActivityStat>();
   for (const day of daily) {
     const weekDate = new Date(`${day.date}T12:00:00`);
@@ -598,6 +599,14 @@ export default function StatsTab() {
         <div className="flex bg-surface rounded-full p-0.5 border border-fg/10" role="group" aria-label="Chart date range">
           <button
             type="button"
+            aria-pressed={chartRange === "7d"}
+            onClick={() => setChartRange("7d")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "7d" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+          >
+            Last 7 days
+          </button>
+          <button
+            type="button"
             aria-pressed={chartRange === "30d"}
             onClick={() => setChartRange("30d")}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "30d" ? "bg-accent text-on-accent" : "text-fg/50"}`}
@@ -619,7 +628,7 @@ export default function StatsTab() {
         <ChartCard
           icon={<ChartPieSlice size={16} className="text-accent" />}
           title="Training Mix"
-          sub={chartRange === "all" ? "all time, by time" : "last 4 weeks, by time"}
+          sub={chartRange === "all" ? "all time, by time" : chartRange === "7d" ? "last 7 days, by time" : "last 4 weeks, by time"}
         >
           <ActivityMixBar weeks={mixWeeks} />
         </ChartCard>
@@ -650,7 +659,7 @@ export default function StatsTab() {
             (() => {
               const barW = 12;
               const gutter = 28;
-              const svgH = 80;
+              const svgH = 160;
               const svgW = Math.max(300, gutter + barW * dailyVolume.length);
               const slot = (svgW - gutter) / dailyVolume.length;
               const maxKg = Math.max(1, ...dailyVolume.map((d) => d.kg));

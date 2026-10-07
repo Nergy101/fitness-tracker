@@ -13,7 +13,7 @@ import { useState } from "react";
 import ChartPoint from "../ChartPoint";
 
 const W = 300;
-const H = 100;
+const H = 140;
 const GL = 30; // left gutter: y-axis tick labels
 export const ACCENT = "#4cb782";
 

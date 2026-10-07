@@ -260,21 +260,23 @@ describe("StatsTab", () => {
     expect(screen.getByText("Bench Press")).toBeDefined();
   });
 
-  it("filters all chart series to the selected 30-day range and expands to all time", async () => {
+  it("filters charts to 7-day, 30-day and all-time ranges", async () => {
     const oldDate = new Date();
     oldDate.setDate(oldDate.getDate() - 75);
     const oldDay = dayKey(oldDate);
     mockGetRuns.mockResolvedValue([
       { id: 1, duration_seconds: 1500, distance_km: 5, pace_per_km: 300, run_type: "run", date: daysAgo(1), notes: "", created_at: `${daysAgo(1)}T07:00:00` },
+      { id: 2, duration_seconds: 1500, distance_km: 5, pace_per_km: 300, run_type: "run", date: daysAgo(14), notes: "", created_at: `${daysAgo(14)}T07:00:00` },
       { id: 3, duration_seconds: 1500, distance_km: 5, pace_per_km: 300, run_type: "run", date: oldDay, notes: "", created_at: `${oldDay}T07:00:00` },
     ]);
     mockGetSessions.mockResolvedValue([
-      makeSessions()[0],
-      { ...makeSessions()[0], id: 4, started_at: `${daysAgo(3)}T09:00:00` },
+      { ...makeSessions()[0], id: 1, started_at: `${daysAgo(1)}T08:00:00` },
+      { ...makeSessions()[0], id: 2, started_at: `${daysAgo(14)}T08:00:00` },
       { ...makeSessions()[0], id: 3, template_name: "Morning Circuit", started_at: `${oldDay}T08:00:00` },
     ]);
     mockGetWeightEntries.mockResolvedValue([
-      ...makeWeights().slice(0, 1),
+      { id: 1, weight_kg: 80.5, date: daysAgo(1), notes: "", created_at: `${daysAgo(1)}T08:00:00` },
+      { id: 2, weight_kg: 81, date: daysAgo(14), notes: "", created_at: `${daysAgo(14)}T08:00:00` },
       { id: 3, weight_kg: 82, date: oldDay, notes: "", created_at: `${oldDay}T08:00:00` },
     ]);
 
@@ -282,22 +284,27 @@ describe("StatsTab", () => {
       render(<StatsTab />);
     });
     await screen.findByText("Daily Activity (min)");
-
     const rangeGroup = screen.getByRole("group", { name: "Chart date range" });
-    expect(rangeGroup.querySelectorAll("button")[0]).toHaveAttribute("aria-pressed", "true");
-    expect(document.querySelectorAll('rect[fill="#fb923c"], path[fill="#fb923c"]').length).toBeGreaterThan(0);
+    const [weekButton, monthButton, allButton] = rangeGroup.querySelectorAll("button");
+    expect(weekButton).toHaveTextContent("Last 7 days");
+    expect(monthButton).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Weight Journey")).toBeInTheDocument();
+
+    fireEvent.click(weekButton);
+    expect(weekButton).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByText("Weight Journey")).toBeNull();
-    expect(screen.queryByText("Run Pace Trend")).toBeNull();
-    expect(screen.getByText("Last 30 days")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: new RegExp(`: 81(?:\\.0)?$`) })).toBeNull();
+    expect(screen.getByRole("button", { name: /: 55m$/ })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("All time"));
+    fireEvent.click(monthButton);
+    expect(monthButton).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: new RegExp(`: 81(?:\\.0)?$`) })).toBeInTheDocument();
 
-    expect(rangeGroup.querySelectorAll("button")[1]).toHaveAttribute("aria-pressed", "true");
-    expect(document.querySelectorAll('rect[fill="#fb923c"], path[fill="#fb923c"]').length).toBeGreaterThan(0);
+    fireEvent.click(allButton);
+    expect(allButton).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Weight Journey")).toBeInTheDocument();
     expect(screen.getByText("Run Pace Trend")).toBeInTheDocument();
     expect(localStorage.getItem("stats-chart-range")).toBe("all");
-
   });
   it("restores the all-time chart selection after remount", async () => {
     localStorage.setItem("stats-chart-range", "all");
@@ -306,7 +313,7 @@ describe("StatsTab", () => {
     });
     await screen.findByText("Daily Activity (min)");
     const rangeGroup = screen.getByRole("group", { name: "Chart date range" });
-    expect(rangeGroup.querySelectorAll("button")[1]).toHaveAttribute("aria-pressed", "true");
+    expect(rangeGroup.querySelectorAll("button")[2]).toHaveAttribute("aria-pressed", "true");
   });
   it("renders daily activity chart by default", async () => {
     await act(async () => {

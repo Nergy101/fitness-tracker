@@ -27,6 +27,7 @@ A complete fitness PWA — track workouts, runs, walks, boxing, health metrics, 
 
 ### History & Stats
 - Session history with date range filtering (7 Days, 30 Days, This week, Calendar)
+- Stats charts show the last 7 days, last 30 days, or all-time history
 - Tap or click chart points to reveal their recorded value
 - Activity-colored left border on session cards (orange/blue/green/red)
 - Weekday bar chart + GitHub-style contribution heatmap (30-day)

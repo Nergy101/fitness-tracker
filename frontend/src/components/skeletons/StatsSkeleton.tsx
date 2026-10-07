@@ -17,7 +17,12 @@ export default function StatsSkeleton() {
         <Skeleton width="100%" height="28px" rounded="lg" />
       </div>
 
-      {/* Daily/Weekly toggle */}
+      {/* Chart date range and daily/weekly toggle */}
+      <div className="flex items-center justify-end">
+        <div className="flex gap-0.5">
+          {[["58px", "28px"], ["72px", "28px"], ["58px", "28px"]].map(([width, height], i) => <Skeleton key={i} width={width} height={height} rounded="full" />)}
+        </div>
+      </div>
       <div className="flex items-center gap-2">
         <Skeleton width="48px" height="16px" rounded="md" />
         <div className="ml-auto flex gap-0.5">
@@ -32,7 +37,7 @@ export default function StatsSkeleton() {
           <Skeleton width="16px" height="16px" rounded="md" />
           <Skeleton width="140px" height="12px" rounded="md" />
         </div>
-        <Skeleton width="100%" height="140px" rounded="lg" />
+        <Skeleton width="100%" height="180px" rounded="lg" />
         <div className="flex gap-3">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="flex items-center gap-1">
@@ -49,7 +54,7 @@ export default function StatsSkeleton() {
           <Skeleton width="16px" height="16px" rounded="md" />
           <Skeleton width="160px" height="12px" rounded="md" />
         </div>
-        <Skeleton width="100%" height="140px" rounded="lg" />
+        <Skeleton width="100%" height="180px" rounded="lg" />
         <div className="flex gap-3">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="flex items-center gap-1">
@@ -66,7 +71,7 @@ export default function StatsSkeleton() {
           <Skeleton width="16px" height="16px" rounded="md" />
           <Skeleton width="140px" height="12px" rounded="md" />
         </div>
-        <Skeleton width="100%" height="140px" rounded="lg" />
+        <Skeleton width="100%" height="180px" rounded="lg" />
       </div>
 
       {/* Pace trend */}
@@ -78,7 +83,7 @@ export default function StatsSkeleton() {
           </div>
           <Skeleton width="80px" height="10px" rounded="md" />
         </div>
-        <Skeleton width="100%" height="100px" rounded="lg" />
+        <Skeleton width="100%" height="140px" rounded="lg" />
       </div>
 
       {/* Weight journey */}
@@ -90,7 +95,7 @@ export default function StatsSkeleton() {
           </div>
           <Skeleton width="60px" height="10px" rounded="md" />
         </div>
-        <Skeleton width="100%" height="100px" rounded="lg" />
+        <Skeleton width="100%" height="140px" rounded="lg" />
       </div>
     </div>
   );
