@@ -440,6 +440,21 @@ class TestInsightsEndpoint:
         point_dates = {p["date"] for p in series_by_metric["step_count"]["points"]}
         assert old_date.isoformat() not in point_dates
         assert date.today().isoformat() in point_dates
+    def test_zero_days_includes_old_points(self, client: TestClient, auth_headers: dict):
+        old_date = date.today() - timedelta(days=200)
+        client.post(
+            self.IMPORT_URL,
+            json=_payload(_metric("step_count", "count", [
+                {"date": old_date.strftime(_FMT), "qty": 1111, "source": "iPhone"},
+            ])),
+            headers=auth_headers,
+        )
+
+        response = client.get(self.INSIGHTS_URL + "?days=0", headers=auth_headers)
+
+        assert response.status_code == 200
+        series = {row["metric"]: row for row in response.json()["series"]}
+        assert series["step_count"]["points"][0]["date"] == old_date.isoformat()
 
 
 # ---------------------------------------------------------------------------
@@ -739,6 +754,20 @@ class TestHealthWorkoutsEndpoint:
         returned_names = {w["name"] for w in resp.json()["workouts"]}
         assert "OldRun" not in returned_names
         assert "RecentRun" in returned_names
+    def test_zero_days_includes_old_workouts(self, client: TestClient, auth_headers: dict):
+        old_date = date.today() - timedelta(days=200)
+        self._import(client, auth_headers, {
+            "id": "W-OLD-ALL-TIME",
+            "name": "OldRun",
+            "start": old_date.strftime(_FMT),
+            "end": old_date.strftime(_FMT),
+            "duration": 1800.0,
+        })
+
+        response = client.get(self.WORKOUTS_URL + "?days=0", headers=auth_headers)
+
+        assert response.status_code == 200
+        assert response.json()["workouts"][0]["date"] == old_date.isoformat()
 
     def test_null_start_workout_excluded(
         self, client: TestClient, auth_headers: dict

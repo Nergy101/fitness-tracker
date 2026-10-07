@@ -80,8 +80,8 @@ def _consistency(activity_days: set[date], today: date) -> tuple[float, int]:
 def stats_overview(db: Session = Depends(get_db)):
     sessions = db.query(WorkoutSession).order_by(WorkoutSession.started_at.asc()).all()
     runs = db.query(RunEntry).order_by(RunEntry.date.asc()).all()
+    cycling_rides = db.query(CyclingEntry).order_by(CyclingEntry.date.asc()).all()
     weights = db.query(WeightEntry).order_by(WeightEntry.date.asc()).all()
-
     today = date.today()
     thirty_days_ago = today - timedelta(days=30)
     # Mirror sessions carry the run/walk kcal estimate, so summing every
@@ -94,14 +94,6 @@ def stats_overview(db: Session = Depends(get_db)):
     workouts = [s for s in sessions if not is_mirror_session(s)]
 
     # Weekly activity, split by type (last 12 weeks with any activity).
-    #
-    # Each activity is bucketed on ONE date: its session's. Runs/walks/rides are
-    # stored twice — the entry owns distance, the mirror session owns duration
-    # and the kcal estimate — so keying each half on its own date lets a pair
-    # that disagrees about the day land in different weeks (and, in the daily
-    # charts, on different bars). The mirror decides the week; the entry only
-    # supplies km. Entries with no mirror fall back to their own date.
-    cycling_rides = db.query(CyclingEntry).order_by(CyclingEntry.date.asc()).all()
     runs_by_id = {r.id: r for r in runs}
     rides_by_id = {c.id: c for c in cycling_rides}
     mirrored_run_ids: set[int] = set()
@@ -176,7 +168,6 @@ def stats_overview(db: Session = Depends(get_db)):
         )
         for wk in sorted(weekly.keys(), reverse=True)[:12]
     ]
-
     # Consistency: never go three days without training. Every activity counts —
     # workouts, runs, walks, boxing, rides — so an activity day is any day with
     # a session (mirrors included) or a dedicated entry.
@@ -230,17 +221,20 @@ def stats_overview(db: Session = Depends(get_db)):
 
 @router.get("/daily-activity", response_model=DailyActivityResponse)
 def daily_activity(days: int = 120, db: Session = Depends(get_db)):
-    """Native training load per day (minutes + kcal) for the most recent
-    `days` window. Run/walk mirror sessions carry their run's time and kcal,
-    so summing every session covers all activity without double-counting."""
-    cutoff = date.today() - timedelta(days=max(days, 1))
-    sessions = db.query(WorkoutSession).order_by(WorkoutSession.started_at.asc()).all()
+    """Native training load per day, oldest first. `days=0` returns all history.
+
+    Run/walk mirror sessions carry their run's time and kcal, so summing every
+    session covers all activity without double-counting.
+    """
+    query = db.query(WorkoutSession).order_by(WorkoutSession.started_at.asc())
+    if days != 0:
+        cutoff = date.today() - timedelta(days=max(days, 1))
+        query = query.filter(WorkoutSession.started_at >= datetime.combine(cutoff, datetime.min.time()))
+    sessions = query.all()
 
     per_day: dict[date, dict[str, float]] = defaultdict(lambda: {"minutes": 0.0, "kcal": 0.0})
     for s in sessions:
         d = _session_date(s)
-        if d < cutoff:
-            continue
         per_day[d]["minutes"] += (s.total_duration_seconds or 0) / 60
         per_day[d]["kcal"] += s.total_kcal_estimated or 0.0
 
@@ -248,25 +242,25 @@ def daily_activity(days: int = 120, db: Session = Depends(get_db)):
         DailyActivityPoint(date=d.isoformat(), minutes=round(v["minutes"], 1), kcal=round(v["kcal"], 1))
         for d, v in sorted(per_day.items())
     ])
-
-
 @router.get("/volume", response_model=list[VolumePoint])
 def volume(
     exercise_id: int | None = None,
     days: int = 30,
     db: Session = Depends(get_db),
 ):
-    """Total kg lifted (weight × reps) per exercise per session day, for the
-    most recent `days`. Optionally filtered to a single exercise. The frontend
-    aggregates these into a per-exercise volume trend and a weekly total."""
-    cutoff = date.today() - timedelta(days=max(days, 1))
+    """Total kg lifted (weight × reps) per exercise per session day.
+
+    `days=0` returns all history. Optionally filter to a single exercise.
+    """
     q = (
         db.query(ExerciseLog, SessionExercise, WorkoutSession)
         .join(SessionExercise, ExerciseLog.session_exercise_id == SessionExercise.id)
         .join(WorkoutSession, SessionExercise.session_id == WorkoutSession.id)
         .filter(ExerciseLog.weight_kg.isnot(None), ExerciseLog.reps.isnot(None))
-        .filter(WorkoutSession.started_at >= datetime.combine(cutoff, datetime.min.time()))
     )
+    if days != 0:
+        cutoff = date.today() - timedelta(days=max(days, 1))
+        q = q.filter(WorkoutSession.started_at >= datetime.combine(cutoff, datetime.min.time()))
     if exercise_id is not None:
         q = q.filter(SessionExercise.exercise_id == exercise_id)
     rows = q.all()
@@ -299,3 +293,5 @@ def volume(
             max_weight=max(weights) if weights else None,
         ))
     return points
+
+

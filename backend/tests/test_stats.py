@@ -635,6 +635,19 @@ class TestDailyActivityEndpoint:
         recent_date_iso = (date.today() - timedelta(days=1)).isoformat()
         assert old_date_iso not in result_dates
         assert recent_date_iso in result_dates
+    def test_zero_days_returns_old_and_recent_sessions(self, client: TestClient, auth_headers: dict, db: Session):
+        db.add_all([
+            WorkoutSession(template_name="OldSession", started_at=_session_dt(200), total_duration_seconds=1800, total_kcal_estimated=100.0),
+            WorkoutSession(template_name="RecentSession", started_at=_session_dt(1), total_duration_seconds=1800, total_kcal_estimated=100.0),
+        ])
+        db.commit()
+
+        response = client.get(DAILY_ACTIVITY_URL + "?days=0", headers=auth_headers)
+
+        assert response.status_code == 200
+        result_dates = {row["date"] for row in response.json()["days"]}
+        assert (date.today() - timedelta(days=200)).isoformat() in result_dates
+        assert (date.today() - timedelta(days=1)).isoformat() in result_dates
 
     def test_none_duration_and_kcal_treated_as_zero(
         self, client: TestClient, auth_headers: dict, db: Session
@@ -848,3 +861,16 @@ class TestVolume:
 
         data = client.get(self.VOLUME_URL + "?exercise_id=999999", headers=auth_headers).json()
         assert data == []
+    def test_zero_days_returns_old_volume(self, client: TestClient, auth_headers: dict, db: Session):
+        sid, seid = self._post_bench_session(client, auth_headers)
+        old_session = db.query(WorkoutSession).filter(WorkoutSession.id == sid).one()
+        old_session.started_at = _session_dt(200)
+        db.commit()
+        client.post(self.LOGS_TPL.format(sid=sid, seid=seid), json=[
+            {"weight_kg": 70, "reps": 5, "set_number": 1},
+        ], headers=auth_headers)
+
+        response = client.get(self.VOLUME_URL + "?days=0", headers=auth_headers)
+
+        assert response.status_code == 200
+        assert response.json()[0]["date"] == (date.today() - timedelta(days=200)).isoformat()

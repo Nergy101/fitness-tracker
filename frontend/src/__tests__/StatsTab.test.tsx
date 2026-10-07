@@ -22,6 +22,7 @@ vi.mock("../api", () => ({
     getRuns: (...args: unknown[]) => mockGetRuns(...args),
     getCycling: (...args: unknown[]) => mockGetCycling(...args),
     getSessions: (...args: unknown[]) => mockGetSessions(...args),
+    getAllSessions: (...args: unknown[]) => mockGetSessions(...args),
     getWeightEntries: (...args: unknown[]) => mockGetWeightEntries(...args),
     getGoalProgress: (...args: unknown[]) => mockGetGoalProgress(...args),
     getHealthInsights: (...args: unknown[]) => mockGetHealthInsights(...args),
@@ -200,6 +201,7 @@ function makeWeights() {
 describe("StatsTab", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.removeItem("stats-chart-range");
     mockGetStatsOverview.mockResolvedValue(makeStats());
     mockGetRuns.mockResolvedValue(makeRuns());
     mockGetCycling.mockResolvedValue([]);
@@ -258,6 +260,54 @@ describe("StatsTab", () => {
     expect(screen.getByText("Bench Press")).toBeDefined();
   });
 
+  it("filters all chart series to the selected 30-day range and expands to all time", async () => {
+    const oldDate = new Date();
+    oldDate.setDate(oldDate.getDate() - 75);
+    const oldDay = dayKey(oldDate);
+    mockGetRuns.mockResolvedValue([
+      { id: 1, duration_seconds: 1500, distance_km: 5, pace_per_km: 300, run_type: "run", date: daysAgo(1), notes: "", created_at: `${daysAgo(1)}T07:00:00` },
+      { id: 3, duration_seconds: 1500, distance_km: 5, pace_per_km: 300, run_type: "run", date: oldDay, notes: "", created_at: `${oldDay}T07:00:00` },
+    ]);
+    mockGetSessions.mockResolvedValue([
+      makeSessions()[0],
+      { ...makeSessions()[0], id: 4, started_at: `${daysAgo(3)}T09:00:00` },
+      { ...makeSessions()[0], id: 3, template_name: "Morning Circuit", started_at: `${oldDay}T08:00:00` },
+    ]);
+    mockGetWeightEntries.mockResolvedValue([
+      ...makeWeights().slice(0, 1),
+      { id: 3, weight_kg: 82, date: oldDay, notes: "", created_at: `${oldDay}T08:00:00` },
+    ]);
+
+    await act(async () => {
+      render(<StatsTab />);
+    });
+    await screen.findByText("Daily Activity (min)");
+
+    const rangeGroup = screen.getByRole("group", { name: "Chart date range" });
+    expect(rangeGroup.querySelectorAll("button")[0]).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelectorAll('rect[fill="#fb923c"], path[fill="#fb923c"]').length).toBeGreaterThan(0);
+    expect(screen.queryByText("Weight Journey")).toBeNull();
+    expect(screen.queryByText("Run Pace Trend")).toBeNull();
+    expect(screen.getByText("Last 30 days")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("All time"));
+
+    expect(rangeGroup.querySelectorAll("button")[1]).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelectorAll('rect[fill="#fb923c"], path[fill="#fb923c"]').length).toBeGreaterThan(0);
+    expect(screen.getByText("Weight Journey")).toBeInTheDocument();
+    expect(screen.getByText("Run Pace Trend")).toBeInTheDocument();
+    expect(localStorage.getItem("stats-chart-range")).toBe("all");
+
+  });
+  it("restores the all-time chart selection after remount", async () => {
+    localStorage.setItem("stats-chart-range", "all");
+    await act(async () => {
+      render(<StatsTab />);
+    });
+    await screen.findByText("Daily Activity (min)");
+    const rangeGroup = screen.getByRole("group", { name: "Chart date range" });
+    expect(rangeGroup.querySelectorAll("button")[1]).toHaveAttribute("aria-pressed", "true");
+  });
   it("renders daily activity chart by default", async () => {
     await act(async () => {
       render(<StatsTab />);
@@ -277,6 +327,16 @@ describe("StatsTab", () => {
       render(<StatsTab />);
     });
     expect(await screen.findByText("Run Pace Trend")).toBeDefined();
+  });
+  it("shows a chart point's exact value when tapped", async () => {
+    await act(async () => {
+      render(<StatsTab />);
+    });
+    await screen.findByText("Weight Journey");
+
+    fireEvent.click(screen.getByRole("button", { name: /: 80\.5$/ }));
+
+    expect(screen.getAllByText(/: 80\.5$/).length).toBeGreaterThan(0);
   });
 
   it("shows activity legend", async () => {

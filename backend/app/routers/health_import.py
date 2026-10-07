@@ -260,16 +260,17 @@ def _sleep_stages(raw: str | None) -> SleepStages | None:
 
 @router.get("/insights", response_model=HealthInsightsResponse)
 def health_insights(days: int = 120, db: Session = Depends(get_db)):
-    """Per-metric daily series for the curated dashboard metrics, most recent
-    `days` window. Only metrics with data are returned."""
-    cutoff = date.today() - timedelta(days=max(days, 1))
+    """Per-metric daily series. `days=0` returns all history."""
+    cutoff = date.today() - timedelta(days=max(days, 1)) if days != 0 else None
     series: list[HealthSeries] = []
     for name, label, unit, maybe_kj in _INSIGHTS:
-        rows = db.execute(
-            select(HealthMetric.date, HealthMetric.qty, HealthMetric.units, HealthMetric.data)
-            .where(HealthMetric.metric_name == name, HealthMetric.date >= cutoff, HealthMetric.qty.isnot(None))
-            .order_by(HealthMetric.date.asc())
-        ).all()
+        query = select(HealthMetric.date, HealthMetric.qty, HealthMetric.units, HealthMetric.data).where(
+            HealthMetric.metric_name == name,
+            HealthMetric.qty.isnot(None),
+        )
+        if cutoff is not None:
+            query = query.where(HealthMetric.date >= cutoff)
+        rows = db.execute(query.order_by(HealthMetric.date.asc())).all()
         if not rows:
             continue
         # Convert each point to kcal only when that row was stored in kJ, so a
@@ -286,11 +287,13 @@ def health_insights(days: int = 120, db: Session = Depends(get_db)):
 
     # Heart-rate range band: qty is the daily Avg; Min/Max live in the raw
     # point JSON (import keeps every non-qty field there).
-    hr_rows = db.execute(
-        select(HealthMetric.date, HealthMetric.qty, HealthMetric.data)
-        .where(HealthMetric.metric_name == "heart_rate", HealthMetric.date >= cutoff, HealthMetric.qty.isnot(None))
-        .order_by(HealthMetric.date.asc())
-    ).all()
+    query = select(HealthMetric.date, HealthMetric.qty, HealthMetric.data).where(
+        HealthMetric.metric_name == "heart_rate",
+        HealthMetric.qty.isnot(None),
+    )
+    if cutoff is not None:
+        query = query.where(HealthMetric.date >= cutoff)
+    hr_rows = db.execute(query.order_by(HealthMetric.date.asc())).all()
     if hr_rows:
         points = []
         for d, q, raw in hr_rows:
@@ -361,14 +364,12 @@ def _workout_energy_kcal(w: HealthWorkout) -> float | None:
 
 @router.get("/workouts", response_model=HealthWorkoutsResponse)
 def health_workouts(days: int = 120, db: Session = Depends(get_db)):
-    """Imported workout summaries for the most recent `days` window, oldest
-    first — feeds the intensity scatter on the Health tab."""
-    cutoff = datetime.combine(date.today() - timedelta(days=max(days, 1)), datetime.min.time())
-    rows = db.execute(
-        select(HealthWorkout)
-        .where(HealthWorkout.start.isnot(None), HealthWorkout.start >= cutoff)
-        .order_by(HealthWorkout.start.asc())
-    ).scalars().all()
+    """Imported workout summaries, oldest first; `days=0` returns all history."""
+    cutoff = datetime.combine(date.today() - timedelta(days=max(days, 1)), datetime.min.time()) if days != 0 else None
+    query = select(HealthWorkout).where(HealthWorkout.start.isnot(None))
+    if cutoff is not None:
+        query = query.where(HealthWorkout.start >= cutoff)
+    rows = db.execute(query.order_by(HealthWorkout.start.asc())).scalars().all()
     return HealthWorkoutsResponse(workouts=[
         HealthWorkoutSummary(
             date=w.start.date().isoformat(),

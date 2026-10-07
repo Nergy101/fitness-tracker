@@ -101,9 +101,11 @@ function Legend({ items }: { items: { color: string; label: string }[] }) {
 export default function AppleHealthCharts({
   series,
   weightEntries,
+  rangeStart = null,
 }: {
   series: HealthSeries[];
   weightEntries: WeightEntryResponse[];
+  rangeStart?: string | null;
 }) {
   const [workouts, setWorkouts] = useState<HealthWorkoutSummary[]>([]);
   const [activity, setActivity] = useState<DailyActivityPoint[]>([]);
@@ -111,8 +113,8 @@ export default function AppleHealthCharts({
 
   useEffect(() => {
     Promise.all([
-      api.getHealthWorkouts(120).catch(() => null),
-      api.getDailyActivity(120).catch(() => null),
+      api.getHealthWorkouts(0).catch(() => null),
+      api.getDailyActivity(0).catch(() => null),
       api.getWellnessEntries().catch(() => [] as WellnessResponse[]),
     ]).then(([wo, act, well]) => {
       setWorkouts(wo?.workouts ?? []);
@@ -122,13 +124,14 @@ export default function AppleHealthCharts({
   }, []);
 
   const pts = (metric: string): HealthPoint[] =>
-    series.find((s) => s.metric === metric)?.points ?? [];
+    series.find((s) => s.metric === metric)?.points.filter((p) => rangeStart === null || p.date >= rangeStart) ?? [];
 
   // ── Sleep: stage stack (or plain bars when the export has no stages) ──────
   const sleepRaw = pts("sleep_analysis");
   const hasStages = sleepRaw.some((p) => p.stages != null);
   const sleepStkPts: StkPt[] = sleepRaw.map((p, i) => ({
     x: i,
+    label: shortDate(p.date),
     segments: p.stages
       ? SLEEP_STAGES.flatMap(({ key, color }) => {
           const v = p.stages![key];
@@ -140,20 +143,20 @@ export default function AppleHealthCharts({
     x: i,
     y: p.value,
     color: p.value < 6.5 ? "#f97316" : ACCENT,
+    label: shortDate(p.date),
   }));
-  const sleepLatest = sleepRaw.length ? sleepRaw[sleepRaw.length - 1].value : null;
   const sleepAvg = sleepRaw.length
     ? sleepRaw.reduce((s, p) => s + p.value, 0) / sleepRaw.length
     : null;
 
+  const sleepLatest = sleepRaw.length ? sleepRaw[sleepRaw.length - 1].value : null;
   // ── Heart-rate range band ─────────────────────────────────────────────────
   const hrRaw = pts("heart_rate");
   const hrBanded = hrRaw.filter((p) => p.min != null && p.max != null);
   const hrBandPts: BandPt[] = hrBanded.map((p, i) => ({
-    x: i, avg: p.value, min: p.min as number, max: p.max as number,
+    x: i, avg: p.value, min: p.min as number, max: p.max as number, label: shortDate(p.date),
   }));
   const hrLatest = hrRaw.length ? hrRaw[hrRaw.length - 1].value : null;
-
   // ── Workout intensity scatter ─────────────────────────────────────────────
   // Normalize imported Apple Health workout names so language variants
   // (e.g. Dutch "wandelen" + "buiten wandelen") merge under one label + color.
@@ -162,13 +165,13 @@ export default function AppleHealthCharts({
     "buiten wandelen": "Buiten Wandelen",
   };
   const norm = (name: string) => NORMALIZE[name.toLowerCase()] ?? name;
-  const validWorkouts = workouts.filter((w) => w.duration_min != null && w.avg_hr != null);
+  const validWorkouts = workouts.filter((w) => w.duration_min != null && w.avg_hr != null && (rangeStart === null || w.date >= rangeStart));
   const workoutNames = [...new Set(validWorkouts.map((w) => norm(w.name)))].sort();
   const nameIdx = new Map(workoutNames.map((n, i) => [n, i]));
   const woSPts: SPt[] = validWorkouts.map((w) => {
     const idx = nameIdx.get(norm(w.name)) ?? MAX_LEGEND;
     const colorIdx = Math.min(idx, MAX_LEGEND, SPORT_PALETTE.length - 1);
-    return { x: w.duration_min!, y: w.avg_hr!, color: SPORT_PALETTE[colorIdx] };
+    return { x: w.duration_min!, y: w.avg_hr!, color: SPORT_PALETTE[colorIdx], label: `${shortDate(w.date)} ${w.name}` };
   });
   const woLegend = workoutNames
     .slice(0, MAX_LEGEND)
@@ -179,13 +182,14 @@ export default function AppleHealthCharts({
 
   // ── Recovery vs training load ─────────────────────────────────────────────
   const rstRaw = pts("resting_heart_rate");
-  const actMap = new Map(activity.map((d) => [d.date, d.minutes]));
+  const actMap = new Map(activity.filter((d) => rangeStart === null || d.date >= rangeStart).map((d) => [d.date, d.minutes]));
   const rstMap = new Map(rstRaw.map((p) => [p.date, p.value]));
-  const recoveryDates = [...new Set([...actMap.keys(), ...rstMap.keys()])].sort().slice(-60);
+  const recoveryDates = [...new Set([...actMap.keys(), ...rstMap.keys()])].sort();
   const recoveryPts: DualPt[] = recoveryDates.map((date, i) => ({
     x: i,
     bar: actMap.get(date) ?? 0,
     line: rstMap.get(date) ?? null,
+    label: shortDate(date),
   }));
   const showRecovery =
     recoveryPts.length >= 2 &&
@@ -193,26 +197,28 @@ export default function AppleHealthCharts({
     recoveryPts.some((p) => p.bar > 0);
 
   // ── Sleep vs wellness mood ────────────────────────────────────────────────
-  const wellnessMood = wellness.filter((w) => w.mood != null);
+  const wellnessMood = wellness.filter((w) => w.mood != null && (rangeStart === null || w.date >= rangeStart));
   const moodMap = new Map(wellnessMood.map((w) => [w.date, w.mood as number]));
   const sleepMoodPts: DualPt[] = sleepRaw.map((p, i) => ({
     x: i,
     bar: p.value,
     line: moodMap.get(p.date) ?? null,
+    label: shortDate(p.date),
   }));
   const showSleepMood =
     wellnessMood.length >= 3 && sleepRaw.length >= 2 && sleepMoodPts.some((p) => p.line != null);
 
   // ── Active energy vs weight ───────────────────────────────────────────────
   const energyRaw = pts("active_energy");
-  const wtMap = new Map(weightEntries.map((w) => [w.date, w.weight_kg]));
+  const wtMap = new Map(weightEntries.filter((w) => rangeStart === null || w.date >= rangeStart).map((w) => [w.date, w.weight_kg]));
   const wtEnergyPts: DualPt[] = energyRaw.map((p, i) => ({
     x: i,
     bar: p.value,
     line: wtMap.get(p.date) ?? null,
+    label: shortDate(p.date),
   }));
   const showWtEnergy =
-    weightEntries.length >= 2 && energyRaw.length >= 2 && wtEnergyPts.some((p) => p.line != null);
+    weightEntries.filter((w) => rangeStart === null || w.date >= rangeStart).length >= 2 && energyRaw.length >= 2 && wtEnergyPts.some((p) => p.line != null);
 
   return (
     <>

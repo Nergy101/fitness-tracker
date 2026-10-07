@@ -64,5 +64,5 @@ export const statsApi = {
     const params = new URLSearchParams({ days: String(days) });
     if (exerciseId != null) params.set("exercise_id", String(exerciseId));
     return fetchJSON<VolumePoint[]>(`/api/v1/stats/volume?${params.toString()}`);
-  },
+  }
 };

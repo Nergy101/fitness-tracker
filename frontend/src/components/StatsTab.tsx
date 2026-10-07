@@ -38,6 +38,8 @@ import AppleHealthCharts from "./health/AppleHealthCharts";
 import MetricNamesDiagnostic from "./health/MetricNamesDiagnostic";
 import { niceTicks } from "./health/ticks";
 import { combineHealthSeries } from "./health/utils";
+import ChartPoint from "./ChartPoint";
+import { chartRangeStart, type ChartRange } from "../chartRange";
 
 import { logger } from "../logger";
 const WEIGHT_COLOR = "#c084fc"; // purple-400
@@ -122,11 +124,9 @@ function StackedBarChart<T>({
   injuryMark?: (d: T) => boolean;
   height?: number;
 }) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   if (data.length === 0) return null;
-  const max = Math.max(
-    1,
-    ...data.map((d) => segments.reduce((sum, seg) => sum + seg.value(d), 0)),
-  );
+  const max = Math.max(1, ...data.map((d) => segments.reduce((sum, seg) => sum + seg.value(d), 0)));
   const wPerBar = 28;
   const gutter = 30;
   // Keep a constant minimum viewBox width so few bars don't inflate the
@@ -137,6 +137,7 @@ function StackedBarChart<T>({
   const hasSub = sublabel != null;
   const bottomPad = hasSub ? 28 : 20;
 
+  const totals = data.map((d) => segments.reduce((sum, seg) => sum + seg.value(d), 0));
   return (
     <svg viewBox={`0 0 ${w} ${height + bottomPad}`} className="w-full">
       {ticks.map((t) => {
@@ -164,29 +165,24 @@ function StackedBarChart<T>({
               const barH = Math.max((p.val / max) * height, 1);
               yCursor -= barH;
               const isTop = j === parts.length - 1;
-              return isTop ? (
-                <TopRoundedRect
-                  key={j}
-                  x={x}
-                  y={yCursor}
-                  width={slot - 4}
-                  height={barH}
-                  rx={2}
-                  fill={p.color}
-                  opacity={0.8}
-                />
+              const segmentShape = isTop ? (
+                <TopRoundedRect x={x} y={yCursor} width={slot - 4} height={barH} rx={2} fill={p.color} opacity={0.8} />
               ) : (
-                <rect
-                  key={j}
-                  x={x}
-                  y={yCursor}
-                  width={slot - 4}
-                  height={barH}
-                  fill={p.color}
-                  opacity={0.8}
-                />
+                <rect x={x} y={yCursor} width={slot - 4} height={barH} fill={p.color} opacity={0.8} />
               );
+              return <g key={j}>{segmentShape}</g>;
             })}
+            <ChartPoint
+              x={x + (slot - 4) / 2}
+              y={Math.max(4, height - (totals[i] / max) * height)}
+              value={formatValue(totals[i])}
+              label={sublabel?.(d) ?? label(d)}
+              color={parts[parts.length - 1]?.color ?? "var(--accent)"}
+              selected={selectedIndex === i}
+              onSelect={() => setSelectedIndex(selectedIndex === i ? null : i)}
+              chartWidth={w}
+              radius={0}
+            />
             <text
               x={x + (slot - 4) / 2}
               y={height + 12}
@@ -242,7 +238,6 @@ function LineChart({
   references,
   referenceColor,
   overlay,
-  /** Red dot markers at specific indices — used for injury dates. */
   markerIndices,
   height = 90,
 }: {
@@ -250,13 +245,13 @@ function LineChart({
   color: string;
   formatValue: (v: number) => string;
   reference?: { value: number; label: string };
-  /** Extra dashed reference lines (e.g. category bands like "low"/"high"). */
   references?: { value: number; label: string }[];
   referenceColor?: string;
   overlay?: number[];
   markerIndices?: Set<number>;
   height?: number;
 }) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   if (points.length < 2) return null;
   const w = 300;
   const allRefs = [...(reference ? [reference] : []), ...(references ?? [])];
@@ -271,8 +266,7 @@ function LineChart({
   const range = hi - lo;
   const px = (i: number) => 24 + (i / (points.length - 1)) * (w - 30);
   const py = (v: number) => height - ((v - lo) / range) * height;
-  const labelIdxs = [0, Math.floor((points.length - 1) / 2), points.length - 1];
-
+  const labelIdxs = [...new Set([0, Math.floor((points.length - 1) / 2), points.length - 1])];
   const ticks = niceTicks(lo, hi, 4);
 
   return (
@@ -283,63 +277,41 @@ function LineChart({
         return (
           <g key={t}>
             <line x1={24} y1={y} x2={w} y2={y} className="stroke-fg/10" strokeWidth="0.5" strokeDasharray="2 3" />
-            <text x={20} y={y + 2.5} textAnchor="end" className="fill-fg/30" fontSize="8">
-              {formatValue(t)}
-            </text>
+            <text x={20} y={y + 2.5} textAnchor="end" className="fill-fg/30" fontSize="8">{formatValue(t)}</text>
           </g>
         );
       })}
       {allRefs.map((r) => (
         <g key={r.value}>
-          <line
-            x1={24}
-            y1={py(r.value)}
-            x2={w}
-            y2={py(r.value)}
-            stroke={referenceColor ?? color}
-            strokeWidth="1"
-            strokeDasharray="4 3"
-            opacity={0.45}
-          />
-          <text x={w} y={py(r.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8" fill={referenceColor ?? undefined}>
-            {r.label}
-          </text>
+          <line x1={24} y1={py(r.value)} x2={w} y2={py(r.value)} stroke={referenceColor ?? color} strokeWidth="1" strokeDasharray="4 3" opacity={0.45} />
+          <text x={w} y={py(r.value) - 3} textAnchor="end" className="fill-fg/40" fontSize="8" fill={referenceColor ?? undefined}>{r.label}</text>
         </g>
       ))}
       {overlay && overlay.length === points.length && (
-        <polyline
-          points={overlay.map((v, i) => `${px(i)},${py(v)}`).join(" ")}
-          fill="none"
-          stroke={color}
-          strokeWidth="1"
-          strokeDasharray="3 3"
-          opacity={0.55}
-        />
+        <polyline points={overlay.map((v, i) => `${px(i)},${py(v)}`).join(" ")} fill="none" stroke={color} strokeWidth="1" strokeDasharray="3 3" opacity={0.55} />
       )}
-      <polyline
-        points={points.map((p, i) => `${px(i)},${py(p.value)}`).join(" ")}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {points.map((p, i) => (
-        <circle key={i} cx={px(i)} cy={py(p.value)} r="2.5" fill={color} />
+      <polyline points={points.map((p, i) => `${px(i)},${py(p.value)}`).join(" ")} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {points.map((point, index) => (
+        <ChartPoint
+          key={`chart-point-${index}`}
+          x={px(index)}
+          y={py(point.value)}
+          value={formatValue(point.value)}
+          label={point.label}
+          color={color}
+          selected={selectedIndex === index}
+          onSelect={() => setSelectedIndex(selectedIndex === index ? null : index)}
+          chartWidth={w}
+          radius={2.5}
+        />
       ))}
-      {markerIndices && Array.from(markerIndices).map((i) => (
-        <circle key={`inj-${i}`} cx={px(i)} cy={py(points[i].value)} r="4" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity={0.8} />
+      {markerIndices && Array.from(markerIndices).map((index) => (
+        <circle key={`injury-${index}`} cx={px(index)} cy={py(points[index].value)} r="4" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity={0.8} pointerEvents="none" />
       ))}
       {labelIdxs.map((idx) => {
         const isLast = idx === points.length - 1;
         return (
-          <text key={idx}
-            x={isLast ? w - 4 : px(idx)}
-            y={height + 13}
-            textAnchor={isLast ? "end" : "middle"}
-            className={isLast ? "fill-fg/60" : "fill-fg/30"}
-            fontWeight={isLast ? "bold" : "normal"}
-            fontSize="8">
+          <text key={`axis-label-${idx}`} x={isLast ? w - 4 : px(idx)} y={height + 13} textAnchor={isLast ? "end" : "middle"} className={isLast ? "fill-fg/60" : "fill-fg/30"} fontWeight={isLast ? "bold" : "normal"} fontSize="8">
             {points[idx].label}
           </text>
         );
@@ -479,7 +451,15 @@ export default function StatsTab() {
   const [volumeExercise, setVolumeExercise] = useState<number | null>(null);
 
   const [chartMode, setChartMode] = useState<"daily" | "weekly">("daily");
+  const [chartRange, setChartRange] = useState<ChartRange>(() =>
+    localStorage.getItem("stats-chart-range") === "all" ? "all" : "30d",
+  );
   const { locale } = useLocale();
+  const rangeStart = chartRangeStart(chartRange);
+
+  useEffect(() => {
+    localStorage.setItem("stats-chart-range", chartRange);
+  }, [chartRange]);
 
   // Volume: distinct exercises for the selector, weekly total kg buckets, and a
   // per-session series for the selected exercise.
@@ -497,12 +477,11 @@ export default function StatsTab() {
     [volume, volumeExercise],
   );
   const dailyVolume = useMemo(
-    () =>
-      [...selectedVolume]
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .slice(-30)
-        .map((p) => ({ label: formatWeekLabel(p.date, locale), kg: Math.round(p.total_kg) })),
-    [selectedVolume, locale],
+    () => [...selectedVolume]
+      .filter((point) => rangeStart === null || point.date >= rangeStart)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((point) => ({ label: formatWeekLabel(point.date, locale), kg: Math.round(point.total_kg) })),
+    [selectedVolume, rangeStart, locale],
   );
 
   useEffect(() => {
@@ -512,13 +491,13 @@ export default function StatsTab() {
           api.getStatsOverview(),
           api.getRuns().catch(() => [] as RunEntryResponse[]),
           api.getCycling().catch(() => [] as CyclingEntryResponse[]),
-          api.getSessions().catch(() => [] as WorkoutSession[]),
+          api.getAllSessions().catch(() => [] as WorkoutSession[]),
           api.getWeightEntries().catch(() => [] as WeightEntryResponse[]),
           api.getGoalProgress().catch(() => null),
-          api.getHealthInsights(120).catch(() => null),
-          api.getDailyActivity(120).catch(() => null),
+          api.getHealthInsights(0).catch(() => null),
+          api.getDailyActivity(0).catch(() => null),
           api.getInjuries().catch(() => [] as InjuryMarkerResponse[]),
-          api.getVolume().catch(() => [] as VolumePoint[]),
+          api.getVolume(undefined, 0).catch(() => [] as VolumePoint[]),
         ]);
         setStats(overview);
         setRuns(runList);
@@ -546,25 +525,51 @@ export default function StatsTab() {
     return <div className="text-center py-8 text-fg/40">Failed to load data.</div>;
   }
 
-  const weeks = [...stats.activity_weekly].reverse();
-  const daily = computeDailyActivity(sessions, runs, rides);
+  const daily = computeDailyActivity(sessions, runs, rides, new Date(), chartRange === "all" ? null : rangeStart);
+  const weeklyBuckets = new Map<string, WeeklyActivityStat>();
+  for (const day of daily) {
+    const weekDate = new Date(`${day.date}T12:00:00`);
+    weekDate.setDate(weekDate.getDate() - ((weekDate.getDay() + 6) % 7));
+    const weekStart = `${weekDate.getFullYear()}-${String(weekDate.getMonth() + 1).padStart(2, "0")}-${String(weekDate.getDate()).padStart(2, "0")}`;
+    const week = weeklyBuckets.get(weekStart) ?? {
+      week_start: weekStart,
+      workout_minutes: 0, run_minutes: 0, walk_minutes: 0, boxing_minutes: 0, cycling_minutes: 0,
+      run_km: 0, walk_km: 0, cycling_km: 0,
+      workout_kcal: 0, run_kcal: 0, walk_kcal: 0, boxing_kcal: 0, cycling_kcal: 0,
+    };
+    week.workout_minutes += day.workout_minutes;
+    week.run_minutes += day.run_minutes;
+    week.walk_minutes += day.walk_minutes;
+    week.boxing_minutes += day.boxing_minutes;
+    week.cycling_minutes += day.cycling_minutes;
+    week.run_km += day.run_km;
+    week.walk_km += day.walk_km;
+    week.cycling_km += day.cycling_km;
+    week.workout_kcal += day.workout_kcal;
+    week.run_kcal += day.run_kcal;
+    week.walk_kcal += day.walk_kcal;
+    week.boxing_kcal += day.boxing_kcal;
+    week.cycling_kcal += day.cycling_kcal;
+    weeklyBuckets.set(weekStart, week);
+  }
+  const weeks = [...weeklyBuckets.values()].sort((a, b) => a.week_start.localeCompare(b.week_start));
   const chartData = chartMode === "daily" ? daily : weeks;
   const hasDistance = chartData.some((d: ChartDatum) => (d.run_km || 0) + (d.walk_km || 0) + (d.cycling_km || 0) > 0);
   const hasKcal = chartData.some((d: ChartDatum) => (d.workout_kcal || 0) + (d.run_kcal || 0) + (d.walk_kcal || 0) + (d.boxing_kcal || 0) + (d.cycling_kcal || 0) > 0);
-  const mixWeeks = weeks.slice(-4);
-
+  const mixWeeks = chartRange === "all" ? weeks : weeks.slice(-4);
   const pacedRuns = runs
     .filter((r) => r.run_type !== "walk" && r.pace_per_km != null && r.distance_km >= 1)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-20);
+    .filter((r) => rangeStart === null || r.date >= rangeStart)
+    .sort((a, b) => a.date.localeCompare(b.date));
   const bestPace = pacedRuns.length > 0 ? Math.min(...pacedRuns.map((r) => r.pace_per_km as number)) : null;
 
   const weightSeries = [...weightEntries]
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-30);
+    .filter((w) => rangeStart === null || w.date >= rangeStart)
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   // Compute which weight/paced-run points fall on injury dates
-  const injuryDateSet = new Set(injuries.map((i) => i.date));
+  const rangeInjuries = injuries.filter((injury) => rangeStart === null || injury.date >= rangeStart);
+  const injuryDateSet = new Set(rangeInjuries.map((i) => i.date));
   const weightInjuryIndices = new Set<number>();
   weightSeries.forEach((w, i) => {
     if (injuryDateSet.has(w.date)) weightInjuryIndices.add(i);
@@ -574,24 +579,47 @@ export default function StatsTab() {
     if (injuryDateSet.has(r.date)) paceInjuryIndices.add(i);
   });
 
-  // Injury marker helpers for bar charts
   const injuryMarkDaily = (d: DailyActivityStat) => injuryDateSet.has(d.date);
 
   const appMinByDate = new Map(
-    activity.filter((d) => d.minutes > 0).map((d) => [d.date, d.minutes] as const),
+    activity.filter((d) => d.minutes > 0 && (rangeStart === null || d.date >= rangeStart)).map((d) => [d.date, d.minutes] as const),
   );
   const appKcalByDate = new Map(
-    activity.filter((d) => d.kcal > 0).map((d) => [d.date, d.kcal] as const),
+    activity.filter((d) => d.kcal > 0 && (rangeStart === null || d.date >= rangeStart)).map((d) => [d.date, d.kcal] as const),
   );
+  const healthSeries = health?.series.map((series) => ({
+    ...series,
+    points: series.points.filter((point) => rangeStart === null || point.date >= rangeStart),
+  }));
 
   return (
     <div className="stats-tab space-y-4">
-      {/* Training mix */}
+      <div className="flex items-center justify-end -mb-2">
+        <div className="flex bg-surface rounded-full p-0.5 border border-fg/10" role="group" aria-label="Chart date range">
+          <button
+            type="button"
+            aria-pressed={chartRange === "30d"}
+            onClick={() => setChartRange("30d")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "30d" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+          >
+            Last 30 days
+          </button>
+          <button
+            type="button"
+            aria-pressed={chartRange === "all"}
+            onClick={() => setChartRange("all")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "all" ? "bg-accent text-on-accent" : "text-fg/50"}`}
+          >
+            All time
+          </button>
+        </div>
+      </div>
+      {/* Training mix within the selected chart range */}
       {mixWeeks.length > 0 && (
         <ChartCard
           icon={<ChartPieSlice size={16} className="text-accent" />}
           title="Training Mix"
-          sub="last 4 weeks, by time"
+          sub={chartRange === "all" ? "all time, by time" : "last 4 weeks, by time"}
         >
           <ActivityMixBar weeks={mixWeeks} />
         </ChartCard>
@@ -807,13 +835,13 @@ export default function StatsTab() {
       )}
 
       {/* Apple Health vitals */}
-      {health && health.series.length > 0 && (
+      {healthSeries && healthSeries.length > 0 && (
         <>
           <div className="flex items-center gap-2 pt-1">
             <Heart size={18} className="text-red-400" weight="fill" />
             <h3 className="text-sm font-semibold">Apple Health</h3>
           </div>
-          {health.series
+          {healthSeries
             .filter((s) => s.metric !== "sleep_analysis" && s.metric !== "heart_rate")
             .map((s) => {
               const merged =
@@ -824,7 +852,7 @@ export default function StatsTab() {
                   : s;
               return <HealthTrendChart key={s.metric} series={merged} injuryDateSet={injuryDateSet} />;
             })}
-          <AppleHealthCharts series={health.series} weightEntries={weightEntries} />
+          <AppleHealthCharts series={healthSeries} weightEntries={weightSeries} rangeStart={rangeStart} />
         </>
       )}
 

@@ -9,6 +9,8 @@
  */
 
 import { fmtTick, niceTicks, ticksByStep } from "./ticks";
+import { useState } from "react";
+import ChartPoint from "../ChartPoint";
 
 const W = 300;
 const H = 100;
@@ -80,10 +82,10 @@ function threeSlotX(n: number, left: number, right: number): (j: number) => numb
 // ─── Shared point types ───────────────────────────────────────────────────────
 
 export type LPt = { x: number; y: number };
-export type BPt = { x: number; y: number; color?: string };
-export type SPt = { x: number; y: number; color?: string };
-export type BandPt = { x: number; avg: number; min: number; max: number };
-export type DualPt = { x: number; bar: number; line: number | null };
+export type BPt = { x: number; y: number; color?: string; label?: string };
+export type SPt = { x: number; y: number; color?: string; label?: string };
+export type BandPt = { x: number; avg: number; min: number; max: number; label?: string };
+export type DualPt = { x: number; bar: number; line: number | null; label?: string }
 
 // ─── BarChart ─────────────────────────────────────────────────────────────────
 // Index-based x (equal-width bars with 1 px gap).
@@ -109,6 +111,7 @@ export function BarChart({
   formatY,
   xLabels,
 }: BarChartProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const n = points.length;
   if (n < 2) return null;
 
@@ -134,15 +137,10 @@ export function BarChart({
     <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
       <YGrid ticks={niceTicks(0, yMax).filter((t) => t > 0)} yOf={bY} format={formatY ?? fmtTick} />
       {points.map((p, i) => (
-        <rect
-          key={i}
-          x={bX(i)}
-          y={bY(p.y)}
-          width={barW}
-          height={bH(p.y)}
-          fill={p.color ?? defaultColor}
-          opacity="0.8"
-        />
+        <g key={i}>
+          <rect x={bX(i)} y={bY(p.y)} width={barW} height={bH(p.y)} fill={p.color ?? defaultColor} opacity="0.8" />
+          <ChartPoint x={bCX(i)} y={Math.max(4, bY(p.y))} value={formatY?.(p.y) ?? fmtTick(p.y)} label={String(i + 1)} color={p.color ?? defaultColor} selected={selectedIndex === i} onSelect={() => setSelectedIndex(selectedIndex === i ? null : i)} chartWidth={W} radius={0} />
+        </g>
       ))}
       {goalY != null && (
         <>
@@ -174,7 +172,7 @@ export function BarChart({
 // Bar height = sum of segment values (e.g. sleep stages summing to totalSleep).
 
 export type StackSeg = { value: number; color: string };
-export type StkPt = { x: number; segments: StackSeg[] };
+export type StkPt = { x: number; segments: StackSeg[]; label?: string };
 
 interface DailyStackedBarChartProps {
   points: StkPt[];
@@ -183,8 +181,8 @@ interface DailyStackedBarChartProps {
   formatY?: (v: number) => string;
   xLabels?: [string, string, string];
 }
-
 export function DailyStackedBarChart({ points, goalValue, goalLabel, formatY, xLabels }: DailyStackedBarChartProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const n = points.length;
   if (n < 2) return null;
 
@@ -202,14 +200,20 @@ export function DailyStackedBarChart({ points, goalValue, goalLabel, formatY, xL
 
   return (
     <svg viewBox={`0 0 ${W} ${H + 20}`} className="w-full">
-      <YGrid ticks={niceTicks(0, yMax).filter((t) => t > 0)} yOf={yOf} format={formatY ?? fmtTick} />
       {points.map((p, i) => {
         let y = H;
-        return p.segments.map((seg, si) => {
+        const total = p.segments.reduce((sum, segment) => sum + segment.value, 0);
+        const rects = p.segments.map((seg, si) => {
           const h = segH(seg.value);
           y -= h;
           return <rect key={`${i}-${si}`} x={bX(i)} y={y} width={barW} height={h} fill={seg.color} opacity="0.85" />;
         });
+        return (
+          <g key={i}>
+            {rects}
+            <ChartPoint x={bX(i) + barW / 2} y={Math.max(4, yOf(total))} value={formatY?.(total) ?? fmtTick(total)} label={p.label ?? `Point ${i + 1}`} color={p.segments.at(-1)?.color ?? ACCENT} selected={selectedIndex === i} onSelect={() => setSelectedIndex(selectedIndex === i ? null : i)} chartWidth={W} radius={0} />
+          </g>
+        );
       })}
       {goalY != null && (
         <>
@@ -239,9 +243,9 @@ interface ScatterChartProps {
 }
 
 export function ScatterChart({ points, color = ACCENT, xLabel, xStep }: ScatterChartProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const n = points.length;
   if (n < 3) return null;
-
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
   const xLo = Math.min(...xs);
@@ -271,7 +275,7 @@ export function ScatterChart({ points, color = ACCENT, xLabel, xStep }: ScatterC
         </g>
       ))}
       {points.map((p, i) => (
-        <circle key={i} cx={ptX(p.x)} cy={ptY(p.y)} r="3" fill={p.color ?? color} opacity="0.85" />
+        <ChartPoint key={i} x={ptX(p.x)} y={ptY(p.y)} value={`x ${fmtTick(p.x)} · y ${fmtTick(p.y)}`} label={p.label ?? `Point ${i + 1}`} color={p.color ?? color} selected={selectedIndex === i} onSelect={() => setSelectedIndex(selectedIndex === i ? null : i)} chartWidth={W} />
       ))}
       {xLabel && (
         <text x={GL + (W - GL) / 2} y={H + 22} textAnchor="middle" className="fill-fg/40" fontSize="9">
@@ -294,6 +298,7 @@ interface BandChartProps {
 }
 
 export function BandChart({ points, color = ACCENT, xLabels, references }: BandChartProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const n = points.length;
   if (n < 2) return null;
 
@@ -336,6 +341,9 @@ export function BandChart({ points, color = ACCENT, xLabels, references }: BandC
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {points.map((point, i) => (
+        <ChartPoint key={i} x={xOf(i)} y={yOf(point.avg)} value={`avg ${fmtTick(point.avg)} · min ${fmtTick(point.min)} · max ${fmtTick(point.max)}`} label={point.label ?? `Point ${i + 1}`} color={color} selected={selectedIndex === i} onSelect={() => setSelectedIndex(selectedIndex === i ? null : i)} chartWidth={W} />
+      ))}
       {xLabels && <XLabels labels={xLabels} xOf={(j) => xOf(lblIdxs[j])} />}
     </svg>
   );
@@ -366,6 +374,7 @@ export function DualAxisChart({
   lineLabel,
   xLabels,
 }: DualAxisChartProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const n = points.length;
   if (n < 2) return null;
 
@@ -401,6 +410,10 @@ export function DualAxisChart({
   if (cur.length >= 2) segments.push(cur);
 
   const hasLegend = barLabel || lineLabel;
+  const labelIndices = [0, Math.floor((n - 1) / 2), n - 1];
+  const pointLabel = (point: DualPt, index: number) => point.label ?? (
+    xLabels && labelIndices.includes(index) ? xLabels[labelIndices.indexOf(index)] : `Point ${index + 1}`
+  );
 
   return (
     <svg viewBox={`0 0 ${W} ${H + 32}`} className="w-full">
@@ -432,10 +445,9 @@ export function DualAxisChart({
           strokeLinejoin="round"
         />
       ))}
-      {dots.map((d, di) => (
-        <circle key={di} cx={d.x} cy={d.y} r="1.5" fill={lineColor} />
+      {points.map((point, index) => point.line == null ? null : (
+        <ChartPoint key={`chart-point-${index}`} x={bCX(index)} y={lY(point.line)} value={`${lineLabel ?? "Line"}: ${fmtTick(point.line)} · ${barLabel ?? "Bar"}: ${fmtTick(point.bar)}`} label={pointLabel(point, index)} color={lineColor} selected={selectedIndex === index} onSelect={() => setSelectedIndex(selectedIndex === index ? null : index)} chartWidth={W} radius={1.5} />
       ))}
-      {xLabels && <XLabels labels={xLabels} xOf={threeSlotX(n, GL, right)} y={H + 12} />}
       {hasLegend && (
         <g transform={`translate(0,${H + 18})`}>
           {barLabel && (
@@ -456,6 +468,7 @@ export function DualAxisChart({
           )}
         </g>
       )}
+      {xLabels && <XLabels labels={xLabels} xOf={threeSlotX(n, GL, right)} y={H + 12} />}
     </svg>
   );
 }

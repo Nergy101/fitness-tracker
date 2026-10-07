@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import {
   BarChart,
   DailyStackedBarChart,
@@ -12,7 +13,6 @@ import {
   type DualPt,
   type StkPt,
 } from "../components/health/insightCharts";
-import { render } from "@testing-library/react";
 
 describe("insightCharts", () => {
   describe("BarChart", () => {
@@ -181,15 +181,15 @@ describe("insightCharts", () => {
       expect(container.innerHTML).toBe("");
     });
 
-    it("renders scatter points", () => {
+    it("shows the actual coordinates after selecting a scatter point", () => {
       const points: SPt[] = [
         { x: 10, y: 50 },
         { x: 20, y: 70 },
         { x: 30, y: 60 },
       ];
       const { container } = render(<ScatterChart points={points} />);
-      const circles = container.querySelectorAll("circle");
-      expect(circles.length).toBe(3);
+      fireEvent.click(screen.getByRole("button", { name: "Point 1: x 10 · y 50" }));
+      expect(container.textContent).toContain("Point 1: x 10 · y 50");
     });
 
     it("renders x label", () => {
@@ -225,10 +225,9 @@ describe("insightCharts", () => {
         { x: 30, y: 60, color: "#0000ff" },
       ];
       const { container } = render(<ScatterChart points={points} />);
-      const circles = container.querySelectorAll("circle");
-      expect(circles[0].getAttribute("fill")).toBe("#ff0000");
-      expect(circles[1].getAttribute("fill")).toBe("#00ff00");
-      expect(circles[2].getAttribute("fill")).toBe("#0000ff");
+      const markerColors = [...container.querySelectorAll('circle[fill="#ff0000"], circle[fill="#00ff00"], circle[fill="#0000ff"]')]
+        .map((circle) => circle.getAttribute("fill"));
+      expect(markerColors).toEqual(["#ff0000", "#00ff00", "#0000ff"]);
     });
   });
 
@@ -292,14 +291,20 @@ describe("insightCharts", () => {
         { x: 1, bar: 15, line: 25 },
       ];
       const { container } = render(
-        <DualAxisChart
-          points={points}
-          barLabel="Energy"
-          lineLabel="Weight"
-        />,
+        <DualAxisChart points={points} barLabel="Energy" lineLabel="Weight" />,
       );
       expect(container.textContent).toContain("Energy");
       expect(container.textContent).toContain("Weight");
+    });
+
+    it("shows both values after selecting a dual-axis point", () => {
+      const points: DualPt[] = [
+        { x: 0, bar: 10, line: 20, label: "3/9" },
+        { x: 1, bar: 15, line: 25, label: "4/9" },
+      ];
+      const { container } = render(<DualAxisChart points={points} barLabel="Energy" lineLabel="Weight" />);
+      fireEvent.click(screen.getByRole("button", { name: /3\/9: Weight: 20 · Energy: 10/ }));
+      expect(container.textContent).toContain("3/9: Weight: 20 · Energy: 10");
     });
 
     it("handles null line values (gaps)", () => {
