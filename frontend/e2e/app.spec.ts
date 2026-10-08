@@ -697,7 +697,7 @@ test.describe("authenticated", () => {
     await page.getByRole("button", { name: "30m" }).click();
 
     // Enter distance
-    await page.locator('input[placeholder="e.g. 5.0"]').fill("5.0");
+    await page.getByRole("textbox", { name: "Distance in km" }).fill("5.0");
 
     // Save
     await page.getByRole("button", { name: "Save Run" }).click();
@@ -797,7 +797,7 @@ test.describe("authenticated", () => {
     // Log a run via UI with notes
     await page.goto("/#workout");
     await page.getByRole("button", { name: "Log a custom run" }).click();
-    await page.locator('input[placeholder="e.g. 5.0"]').fill("5.2");
+    await page.getByRole("textbox", { name: "Distance in km" }).fill("5.2");
     await page.getByRole("button", { name: "1h", exact: true }).click();
     await page.getByRole("textbox", { name: "Notes" }).fill("test-run-notes");
     await page.getByRole("button", { name: "Save Run" }).click();
@@ -841,7 +841,7 @@ test.describe("authenticated", () => {
     const mirror = sessions.find((s: { template_name: string }) => s.template_name.includes("Boxing:"));
     expect(mirror).toBeTruthy();
     expect(mirror.total_duration_seconds).toBe(1800);
-    expect(mirror.notes).toBe("boxing-e2e-notes");
+    expect(mirror.notes).toBe("boxing-e2e-notes (6 rounds)");
 
     // Update boxing entry via API to change duration
     const boxingEntries = await (await request.get(`${API_URL}/api/v1/boxing`, { headers: _authHeaders })).json();
@@ -865,7 +865,7 @@ test.describe("authenticated", () => {
     // Open the cycling logger and log a 30m ride over 15 km
     await page.getByRole("region", { name: "Log an activity" }).getByRole("button", { name: "+ 45 min" }).click();
     await page.getByRole("button", { name: "30m", exact: true }).click();
-    await page.locator('input[placeholder="e.g. 24.0"]').fill("15.0");
+    await page.getByRole("textbox", { name: "Distance in km" }).fill("15.0");
     await page.getByRole("button", { name: "Save Cycling Ride" }).click();
     await expect(page.getByRole("status")).toContainText("Cycling ride logged!");
 
@@ -930,7 +930,7 @@ test.describe("authenticated", () => {
     await page.goto("/#workout");
     await page.getByRole("button", { name: "Log a custom run" }).click();
     await page.getByRole("button", { name: "30m", exact: true }).click();
-    await page.locator('input[placeholder="e.g. 5.0"]').fill("5.0");
+    await page.getByRole("textbox", { name: "Distance in km" }).fill("5.0");
     await page.getByRole("button", { name: "Save Run" }).click();
     await expect(page.getByRole("status")).toContainText("Run logged");
 
@@ -974,9 +974,8 @@ test.describe("authenticated", () => {
     await page.getByRole("button", { name: "History" }).click();
     await expect(page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Notes Test" }).first()).toBeVisible();
 
-    // Open the session detail modal
-    await expect(page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Notes Test" }).first()).toBeVisible();
-
+    // Open the session detail modal.
+    await page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Notes Test" }).first().click();
     // Type notes into the textarea
     const notesArea = page.locator('textarea[aria-label="Session notes"]');
     await expect(notesArea).toBeVisible();
