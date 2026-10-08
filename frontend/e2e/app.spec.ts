@@ -134,8 +134,10 @@ test.describe("authenticated", () => {
     // 1. Create a uniquely-named source template via API.
     await createFastWorkout(request, "E2E Clone Src", 2, 2, 30, _authHeaders);
 
-    // 2. Navigate to Today and confirm the source card is visible.
+    // Reload Today so the tab fetches the template created through the API.
+    await page.goto("/#exercises");
     await page.goto("/#workout");
+    await page.reload();
     await expect(page.getByRole("heading", { name: "E2E Clone Src", exact: true })).toBeVisible();
 
     // 3. Scope the Duplicate button to that card (use .first() since clone is prepended
@@ -224,7 +226,9 @@ test.describe("authenticated", () => {
     // total = 1 exercise x 2s x 2 rounds = 4s.
     expect(workout.total_duration_seconds).toBe(4);
 
+    await page.goto("/#exercises");
     await page.goto("/#workout");
+    await page.reload();
     await page.getByRole("heading", { name: "E2E Rounds", exact: true }).click();
 
     // Poll the runner text; capture that it reaches Round 2/2 (proves looping),
@@ -255,7 +259,9 @@ test.describe("authenticated", () => {
     // 2 exercises x 60s: without Skip this can't finish inside the test window.
     await createFastWorkout(request, "E2E Skip", 1, 2, 60, _authHeaders);
 
+    await page.goto("/#exercises");
     await page.goto("/#workout");
+    await page.reload();
     await page.getByRole("heading", { name: "E2E Skip", exact: true }).click();
 
     // Skip appears only during the exercise phase; wait past the initial rest.
@@ -292,7 +298,9 @@ test.describe("authenticated", () => {
     // total = 1 exercise x 2s + 2s warmup + 2s cooldown = 6s
     expect(workout.total_duration_seconds).toBe(6);
 
+    await page.goto("/#exercises");
     await page.goto("/#workout");
+    await page.reload();
     await page.getByRole("heading", { name: "E2E Warmup Cooldown", exact: true }).click();
 
     // Warmup phase should show
@@ -754,7 +762,9 @@ test.describe("authenticated", () => {
     const workout = await createFastWorkout(request, "E2E Log Test", 2, 2, 10, _authHeaders);
     expect(workout.id).toBeTruthy();
 
+    await page.goto("/#exercises");
     await page.goto("/#workout");
+    await page.reload();
 
     // Wait for workouts to load
     await expect(page.getByRole("heading", { name: "E2E Log Test", exact: true })).toBeVisible();
@@ -948,7 +958,9 @@ test.describe("authenticated", () => {
     const workout = await createFastWorkout(request, "E2E Notes Test", 1, 2, 10, _authHeaders);
     expect(workout.id).toBeTruthy();
 
+    await page.goto("/#exercises");
     await page.goto("/#workout");
+    await page.reload();
     await expect(page.getByRole("heading", { name: "E2E Notes Test", exact: true })).toBeVisible();
 
     // Log the workout
