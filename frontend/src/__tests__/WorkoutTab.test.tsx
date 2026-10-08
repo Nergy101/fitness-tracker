@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import WorkoutTab from "../components/WorkoutTab";
-import type { WorkoutTemplate, Exercise } from "../api";
+import { api, type WorkoutSession, type WorkoutTemplate, type Exercise } from "../api";
 
 // Hoist mutable references so vi.mock factories can access them.
 const mockGetWorkoutsImpl = vi.fn<() => Promise<WorkoutTemplate[]>>();
@@ -302,5 +302,29 @@ describe("WorkoutTab", () => {
     fireEvent.click(screen.getByLabelText("tag-run"));
     expect(screen.getByTestId("editing-run-run-43")).toBeInTheDocument();
     expect(screen.queryByTestId("editing-run-walk-43")).not.toBeInTheDocument();
+  });
+
+  it("This week tile totals and plots the sessions logged this week", async () => {
+    const daysAgo = (n: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - n);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+    const session = (id: number, template_name: string, started_at: string, total_duration_seconds: number): WorkoutSession => ({
+      id, template_id: null, template_name, started_at, finished_at: started_at,
+      total_duration_seconds, total_kcal_estimated: 0, notes: "",
+      boxing_entry_id: null, run_entry_id: null, cycling_entry_id: null, exercises: [],
+    } as unknown as WorkoutSession);
+    vi.mocked(api.getSessions).mockResolvedValueOnce([
+      session(1, "Morning Circuit", `${daysAgo(0)}T09:00:00`, 1800),
+      session(2, "Run: 5.0km", `${daysAgo(2)}T07:00:00`, 1500),
+    ]);
+
+    renderTab();
+    await screen.findByText("Full Body");
+
+    expect(screen.getByText("55 min")).toBeInTheDocument();
+    expect(screen.getByTitle(/: 30 minutes$/)).toBeInTheDocument();
+    expect(screen.getByTitle(/: 25 minutes$/)).toBeInTheDocument();
   });
 });

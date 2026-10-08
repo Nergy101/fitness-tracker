@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircleIcon as CheckCircle, PlusIcon as Plus, SmileySadIcon as SmileySad } from "@phosphor-icons/react";
 import Toast from "./Toast";
-import { api, OfflineError, type BoxingEntryResponse, type CyclingEntryResponse, type Exercise, type RunEntryResponse, type WorkoutSession, type WorkoutTemplate, type WeeklyActivityStat } from "../api";
+import { api, OfflineError, type BoxingEntryResponse, type CyclingEntryResponse, type Exercise, type RunEntryResponse, type WorkoutSession, type WorkoutTemplate } from "../api";
 import { ACTIVITY_ICONS, type ActivityKind } from "../activity";
 import { dayKey, todayKey } from "../dateKey";
 import { formatDuration } from "../format";
+import { computeDailyActivity } from "../dailyActivity";
 import WorkoutEditor from "./WorkoutEditor";
 import RunLogger from "./RunLogger";
 import CyclingLogger from "./CyclingLogger";
@@ -31,7 +32,6 @@ const activityTint: Record<ActivityKind, string> = {
 };
 function kcalFor(durationSeconds: number, kcalPerMin: number): number { return durationSeconds / 60 * kcalPerMin; }
 function dateHeading(date: Date): string { return new Intl.DateTimeFormat(undefined, { weekday: "long", day: "numeric", month: "long" }).format(date); }
-function shortDayLabel(key: string): string { const [year, month, day] = key.split("-").map(Number); return year && month && day ? new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(new Date(year, month - 1, day)) : key; }
 
 export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabProps) {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
@@ -52,7 +52,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
   const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const [activityRequest, setActivityRequest] = useState<ActivityRequest | null>(null);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
-  const [weekly, setWeekly] = useState<WeeklyActivityStat[]>([]);
+  const [lastSevenDays, setLastSevenDays] = useState<{ key: string; label: string; minutes: number }[]>([]);
   const [quickEntries, setQuickEntries] = useState<QuickEntry[]>([]);
   const deleteModalRef = useRef<HTMLDivElement>(null);
   useFocusTrap(deleteModalRef, () => setPendingDelete(null));
@@ -72,6 +72,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
     ];
     entries.sort((a, b) => (b.entry.created_at ?? b.entry.date).localeCompare(a.entry.created_at ?? a.entry.date));
     setQuickEntries(entries.slice(0, 4));
+    setLastSevenDays(computeDailyActivity(sessionList, runs, cycling).map((day) => ({ key: day.date, label: day.label, minutes: day.workout_minutes + day.run_minutes + day.walk_minutes + day.boxing_minutes + day.cycling_minutes })));
   }
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
       .then(async ([workouts, exercises, overview, prs]) => {
         setTemplates(workouts);
         setAllExercises(exercises);
-        if (overview) { setWeekly(overview.activity_weekly.slice(-7)); setConsistencyPct(overview.consistency_score_pct); }
+        if (overview) setConsistencyPct(overview.consistency_score_pct);
         if (prs) setStreakDays(prs.streak_days_30d);
         await refreshActivity();
       })
@@ -168,15 +169,7 @@ export default function WorkoutTab({ onStartWorkout, onLogWorkout }: WorkoutTabP
     catch (err) { setToast(err instanceof OfflineError ? "Duplication queued for sync" : "Failed to duplicate workout"); }
   }
 
-  const lastSevenDays = useMemo(() => {
-    const daily = new Map<string, number>();
-    for (const week of weekly) for (let offset = 0; offset < 7; offset++) {
-      const date = new Date(`${week.week_start}T12:00:00`); date.setDate(date.getDate() + offset); const key = dayKey(date);
-      if (key <= todayKey()) daily.set(key, week.workout_minutes + week.run_minutes + week.walk_minutes + week.boxing_minutes + week.cycling_minutes);
-    }
-    return Array.from({ length: 7 }, (_, index) => { const date = new Date(); date.setDate(date.getDate() - (6 - index)); const key = dayKey(date); return { key, label: shortDayLabel(key), minutes: daily.get(key) ?? 0 }; });
-  }, [weekly]);
-  const weekTotalMinutes = lastSevenDays.reduce((sum, day) => sum + day.minutes, 0);
+  const weekTotalMinutes = Math.round(lastSevenDays.reduce((sum, day) => sum + day.minutes, 0));
   const todaySessions = sessions.filter((session) => dayKey(new Date(session.started_at)) === todayKey());
   const maxDailyMinutes = Math.max(1, ...lastSevenDays.map((day) => day.minutes));
   const runRequest = activityRequest?.kind === "run" ? { ...activityRequest, runType: "run" as const } : null;
