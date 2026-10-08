@@ -615,33 +615,26 @@ export default function StatsTab() {
 
   return (
     <div className="stats-tab space-y-4 pb-24">
-      <div className="flex items-center justify-end -mb-2 overflow-x-auto">
-        <div className="flex shrink-0 bg-surface rounded-full p-0.5 border border-fg/10 shadow-[var(--shadow-sm)]" role="group" aria-label="Chart date range">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" role="group" aria-label="Chart date range">
+        {([
+          { key: "7d", label: "Last 7 days" },
+          { key: "30d", label: "Last 30 days" },
+          { key: "all", label: "All time" },
+        ] as const).map((r) => (
           <button
+            key={r.key}
             type="button"
-            aria-pressed={chartRange === "7d"}
-            onClick={() => setChartRange("7d")}
-            className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${chartRange === "7d" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
+            aria-pressed={chartRange === r.key}
+            onClick={() => setChartRange(r.key)}
+            className={`min-h-11 px-4 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              chartRange === r.key
+                ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
+                : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
+            }`}
           >
-            Last 7 days
+            {r.label}
           </button>
-          <button
-            type="button"
-            aria-pressed={chartRange === "30d"}
-            onClick={() => setChartRange("30d")}
-            className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${chartRange === "30d" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
-          >
-            Last 30 days
-          </button>
-          <button
-            type="button"
-            aria-pressed={chartRange === "all"}
-            onClick={() => setChartRange("all")}
-            className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${chartRange === "all" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
-          >
-            All time
-          </button>
-        </div>
+        ))}
       </div>
       {/* Training mix within the selected chart range */}
       {mixWeeks.length > 0 && (
