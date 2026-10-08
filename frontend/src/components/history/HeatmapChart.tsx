@@ -6,7 +6,7 @@ import { countsByDay, SINGLE_LETTER } from "./utils";
 // GitHub-style intensity: transparent-ish → full accent as count rises.
 function cellColor(count: number): string {
   if (count <= 0) return "var(--track)";
-  const pct = [45, 65, 85, 100][Math.min(count - 1, 3)];
+  const pct = [35, 55, 75, 100][Math.min(count - 1, 3)];
   return `color-mix(in srgb, var(--accent) ${pct}%, transparent)`;
 }
 

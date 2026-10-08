@@ -49,7 +49,7 @@ export default function DayBars({
 
   return (
     <div>
-      <div className="flex items-end gap-1.5 h-44">
+      <div className="flex items-end gap-1.5 h-40">
         {days.items.map((d) => {
           const today = d.key === days.todayKey;
           const total = d.counts.workout + d.counts.run + d.counts.walk + d.counts.boxing + d.counts.cycling;
@@ -80,12 +80,12 @@ export default function DayBars({
                 )}
               </div>
               <span
-                className={`text-[10px] leading-tight ${today ? "text-fg font-bold" : "text-fg/30"}`}
+                className={`text-[10px] leading-tight ${today ? "text-fg font-bold" : "text-fg/50"}`}
               >
                 {d.label}
               </span>
               <span
-                className={`text-[9px] leading-tight ${today ? "text-fg/70" : "text-fg/25"}`}
+                className={`text-[9px] leading-tight ${today ? "text-fg/70" : "text-fg/40"}`}
               >
                 {shortDate(d.date, locale)}
               </span>

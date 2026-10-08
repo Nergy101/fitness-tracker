@@ -1,15 +1,9 @@
 import { useState, useEffect } from "react";
-import {
-  PersonSimpleRunIcon as PersonSimpleRun,
-  MapTrifoldIcon as MapTrifold,
-  XIcon as X,
-} from "@phosphor-icons/react";
+import { PersonSimpleRunIcon as PersonSimpleRun } from "@phosphor-icons/react";
+import { LoggerSheet, LoggerToast, NumberControl, QuickPicks, DateQuickPicks, SheetField, useWeightForDate, runKcal } from "./LoggerSheet";
 import { Boot } from "@phosphor-icons/react/dist/csr/Boot";
-import Toast from "./Toast";
 import { api, OfflineError, type RunEntryResponse } from "../api";
-import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
-import { ACTIVITY_COLORS } from "../activity";
 import { todayKey } from "../dateKey";
 
 interface RunLoggerProps {
@@ -19,6 +13,8 @@ interface RunLoggerProps {
   editEntry?: RunEntryResponse | null;
   /** Called once `editEntry` has been consumed, so the parent can clear it. */
   onEditHandled?: () => void;
+  openRequest?: { key: number; runType: "run" | "walk"; durationSeconds?: number; distanceKm?: number } | null;
+  hideTrigger?: boolean;
 }
 
 const DURATION_OPTIONS = [
@@ -36,7 +32,7 @@ function formatPace(secondsPerKm: number | null): string {
   return `${min}:${sec.toString().padStart(2, "0")} /km`;
 }
 
-export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandled }: RunLoggerProps) {
+export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandled, openRequest, hideTrigger = false }: RunLoggerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [runDuration, setRunDuration] = useState(1800);
@@ -94,6 +90,21 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editEntry]);
 
+  useEffect(() => {
+    if (!openRequest || openRequest.runType !== runType) return;
+    resetForm();
+    if (openRequest.durationSeconds != null) {
+      const requestDuration = openRequest.durationSeconds;
+      setRunDuration(requestDuration);
+      const isPreset = DURATION_OPTIONS.some((option) => option.seconds === requestDuration);
+      setIsCustomDuration(!isPreset);
+      setRunCustomDuration(isPreset ? "" : String(Math.round(requestDuration / 60)));
+    }
+    if (openRequest.distanceKm != null) setRunDistance(String(openRequest.distanceKm));
+    setShowForm(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRequest?.key]);
+
   async function handleSubmit() {
     const dist = parseFloat(runDistance);
     const dur = runDuration;
@@ -126,187 +137,123 @@ export default function RunLogger({ onRunLogged, runType, editEntry, onEditHandl
     }
   }
 
-  const pace =
-    runDuration > 0 && parseFloat(runDistance) > 0
-      ? runDuration / parseFloat(runDistance)
-      : null;
-
-  // ── Collapsed state ──
-  if (!showForm) {
-    return (
-      <>
-        {toast && (
-          <Toast onDismiss={() => setToast(null)}>
-            <Icon size={18} weight="fill" />
-            {toast}
-          </Toast>
-        )}
-
-        <button
-          onClick={() => {
-            resetForm();
-            setShowForm(true);
-          }}
-          className="order-1 bg-surface rounded-2xl p-3.5 border-2 shadow-[var(--shadow-sm)] hover:border-accent/40 active:scale-[0.98] transition-all flex flex-col items-center gap-1.5"
-          style={{ borderColor: ACTIVITY_COLORS[runType] }}
-        >
-          <Icon size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS[runType] }} />
-          <p className="text-xs font-semibold text-fg">{label}</p>
-        </button>
-      </>
-    );
-  }
-
+  const distance = parseFloat(runDistance);
+  const pace = runDuration > 0 && distance > 0 ? runDuration / distance : null;
+  const weightKg = useWeightForDate(runDate, showForm);
+  const estimatedKcal = distance > 0 ? runKcal(distance, runType, weightKg) : null;
+  const speedKmh = runDuration > 0 && distance > 0 ? distance / (runDuration / 3600) : null;
   // ── Form as bottom sheet ──
   return (
     <>
+      {!hideTrigger && <button type="button" onClick={() => { resetForm(); setShowForm(true); }} aria-label={logLabel} className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-bold ${runType === "run" ? "bg-tint-run-bg text-tint-run-fg" : "bg-tint-walk-bg text-tint-walk-fg"}`}><Icon size={20} />{label}</button>}
       {toast && (
-        <Toast onDismiss={() => setToast(null)}>
+        <LoggerToast onDismiss={() => setToast(null)}>
           <Icon size={18} weight="fill" />
           {toast}
-        </Toast>
+        </LoggerToast>
       )}
 
-      {/* Collapsed button (always visible in grid) */}
-      <button
-        onClick={() => {
-          resetForm();
-          setShowForm(true);
-        }}
-        className="order-1 bg-surface rounded-2xl p-3.5 border-2 shadow-[var(--shadow-sm)] hover:border-accent/40 active:scale-[0.98] transition-all flex flex-col items-center gap-1.5"
-        style={{ borderColor: ACTIVITY_COLORS[runType] }}
-      >
-        <Icon size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS[runType] }} />
-        <p className="text-xs font-semibold text-fg">{label}</p>
-      </button>
 
-      {/* Bottom sheet overlay */}
+
       {showForm && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
-          onClick={() => { resetForm(); setShowForm(false); }}
+        <LoggerSheet
+          title={editingId ? `Edit ${label}` : logLabel}
+          activity={runType}
+          icon={<Icon size={22} />}
+          onClose={() => { resetForm(); setShowForm(false); }}
+          onSubmit={handleSubmit}
+          submitDisabled={!runDistance || distance <= 0 || runDuration <= 0}
+          submitLabel={editingId ? `Update ${label}` : saveLabel}
         >
-          <div
-            className="bg-surface rounded-t-2xl w-full max-h-[85vh] overflow-y-auto shadow-[var(--shadow-lg)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Icon size={18} className="text-accent" />
-                  <span className="text-sm font-semibold text-fg">
-                    {editingId ? `Edit ${label}` : logLabel}
-                  </span>
-                </div>
-                <button
-                  onClick={() => { resetForm(); setShowForm(false); }}
-                  aria-label="Close"
-                  className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-fg/40 hover:bg-fg/5 hover:text-fg/70 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Duration quick-select */}
-              <div>
-                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">Duration</p>
-          <div className="flex gap-2 flex-wrap">
-            {DURATION_OPTIONS.map((opt) => (
-              <button
-                key={opt.label}
-                onClick={() => {
-                  if (opt.seconds === 0) {
-                    setIsCustomDuration(true);
-                    setRunDuration(0);
-                  } else {
-                    setIsCustomDuration(false);
-                    setRunDuration(opt.seconds);
-                    setRunCustomDuration("");
-                  }
-                }}
-                className={`inline-flex items-center justify-center h-10 px-4 text-xs font-semibold rounded-full transition-colors ${
-                  opt.seconds === 0
-                    ? isCustomDuration
-                      ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
-                      : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
-                    : runDuration === opt.seconds && !runCustomDuration
-                      ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
-                      : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
-                }`}
-              >
-                {opt.label}
-              </button>
+          <div role="group" aria-label="Activity type" className="grid grid-cols-2 gap-1 rounded-full bg-field p-1">
+            {(["run", "walk"] as const).map((type) => (
+              <span key={type} aria-current={runType === type ? "true" : undefined} className={`flex min-h-10 items-center justify-center rounded-full text-sm font-extrabold capitalize ${runType === type ? (type === "run" ? "bg-[var(--tint-run-bg)] text-[var(--tint-run-fg)]" : "bg-[var(--tint-walk-bg)] text-[var(--tint-walk-fg)]") : "text-muted"}`}>
+                {type}
+              </span>
             ))}
           </div>
-          {isCustomDuration && (
-            <input
-              type="number"
-              value={runCustomDuration}
-              onChange={(e) => {
-                setRunCustomDuration(e.target.value);
-                setRunDuration((parseInt(e.target.value) || 0) * 60);
-              }}
-              placeholder="Minutes"
-              className="mt-2 w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
+          <SheetField label="Distance">
+            <NumberControl
+              label="Distance in km"
+              unit="km"
+              value={runDistance}
+              inputMode="decimal"
+placeholder="5.0"
+              onChange={setRunDistance}
+              onDecrease={() => setRunDistance(String(Math.max(0, (parseFloat(runDistance) || 0) - 0.5)))}
+              onIncrease={() => setRunDistance(String((parseFloat(runDistance) || 0) + 0.5))}
             />
-          )}
-        </div>
+            <QuickPicks
+              label="Quick distance"
+              options={["3", "5", "10", "21.1"].map((value) => ({ label: `${value} km`, value }))}
+              selected={runDistance}
+              activity={runType}
+              onSelect={setRunDistance}
+            />
+          </SheetField>
 
-        <div>
-          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Distance (km)</p>
-          <input
-            type="number"
-            step="0.1"
-            value={runDistance}
-            onChange={(e) => setRunDistance(e.target.value)}
-            placeholder="e.g. 5.0"
-            className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-          />
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Date</p>
-          <input
-            type="date"
-            value={runDate}
-            onChange={(e) => setRunDate(e.target.value)}
-            className="w-full max-w-full min-w-0 box-border bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-          />
-        </div>
+          <SheetField label="Duration">
+            <NumberControl
+              label="Duration in minutes"
+              unit="min"
+              value={runCustomDuration || (runDuration > 0 ? String(Math.round(runDuration / 60)) : "")}
+              inputMode="numeric"
+              onChange={(value) => {
+                setRunCustomDuration(value);
+                setRunDuration((parseInt(value, 10) || 0) * 60);
+                setIsCustomDuration(true);
+              }}
+              onDecrease={() => { setIsCustomDuration(true); setRunCustomDuration(String(Math.max(0, Math.round(runDuration / 60) - 5))); setRunDuration(Math.max(0, runDuration - 300)); }}
+              onIncrease={() => { setIsCustomDuration(true); setRunCustomDuration(String(Math.round(runDuration / 60) + 5)); setRunDuration(runDuration + 300); }}
+            />
+            <QuickPicks
+              label="Quick duration"
+              options={DURATION_OPTIONS.slice(0, 4).map((option) => ({ label: option.label, value: String(option.seconds) }))}
+              selected={!isCustomDuration ? String(runDuration) : ""}
+              activity={runType}
+              onSelect={(value) => { setIsCustomDuration(false); setRunDuration(Number(value)); setRunCustomDuration(""); }}
+            />
+            <button
+              type="button"
+              onClick={() => { setIsCustomDuration(true); setRunDuration(0); setRunCustomDuration(""); }}
+              aria-pressed={isCustomDuration}
+              className={`min-h-10 rounded-full border px-4 text-sm font-bold ${isCustomDuration ? `bg-[var(--tint-${runType}-bg)] text-[var(--tint-${runType}-fg)]` : "border-track text-fg"}`}
+            >
+              Custom
+            </button>
+            {isCustomDuration && (
+              <input
+                type="number"
+                inputMode="numeric"
+                value={runCustomDuration}
+                onChange={(event) => { setRunCustomDuration(event.target.value); setRunDuration((parseInt(event.target.value, 10) || 0) * 60); }}
+                placeholder="Minutes"
+                aria-label="Custom duration in minutes"
+                className="min-h-12 w-full rounded-2xl bg-field px-4 text-base text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              />
+            )}
+          </SheetField>
 
-        {/* Pace preview */}
-        {pace && pace > 0 && (
-          <div className="bg-surface-2 rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm">
-            <MapTrifold size={16} className="text-accent" />
-            <span className="text-fg/60">Pace:</span>
-            <span className="text-fg font-semibold tabular-nums">{formatPace(pace)}</span>
-            <span className="text-fg/40 text-xs ml-auto">
-              {formatDuration(runDuration)} · {parseFloat(runDistance).toFixed(1)}km
-            </span>
-          </div>
-        )}
-
-        <div>
-          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Notes (optional)</p>
-          <input
-            type="text"
-            value={runNotes}
-            onChange={(e) => setRunNotes(e.target.value)}
-            placeholder={notePrompt}
-            aria-label="Notes"
-            className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-          />
-        </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={!runDistance || parseFloat(runDistance) <= 0}
-          className="w-full bg-accent text-on-accent rounded-xl h-11 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100"
-        >
-          {editingId ? `Update ${label}` : saveLabel}
-        </button>
+          {pace && pace > 0 && (
+            <div className={`grid grid-cols-3 gap-2 rounded-2xl p-3 ${runType === "run" ? "bg-[var(--tint-run-bg)] text-[var(--tint-run-fg)]" : "bg-[var(--tint-walk-bg)] text-[var(--tint-walk-fg)]"}`} aria-live="polite">
+              <div><span className="block text-[11px] font-semibold opacity-75">Pace</span><span className="text-base font-extrabold tabular-nums">{formatPace(pace)}</span></div>
+              <div><span className="block text-[11px] font-semibold opacity-75">Speed</span><span className="text-base font-extrabold tabular-nums">{speedKmh?.toFixed(1)} km/h</span></div>
+              <div><span className="block text-[11px] font-semibold opacity-75">Active energy</span><span className="text-base font-extrabold tabular-nums">~{estimatedKcal} kcal</span></div>
             </div>
-          </div>
-        </div>
+          )}
+
+          <DateQuickPicks value={runDate} onChange={setRunDate} />
+          <SheetField label="Notes (optional)">
+            <input
+              type="text"
+              value={runNotes}
+              onChange={(event) => setRunNotes(event.target.value)}
+              placeholder={notePrompt}
+              aria-label="Notes"
+              className="min-h-[52px] w-full rounded-2xl bg-field px-4 text-base text-fg outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent"
+            />
+          </SheetField>
+        </LoggerSheet>
       )}
     </>
   );

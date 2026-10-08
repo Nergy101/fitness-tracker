@@ -52,20 +52,20 @@ import { shortDate } from "./utils";
 // `awake` is reported by the export but excluded: totalSleep = deep+core+rem,
 // so stacking awake would inflate bars past the hours actually slept.
 const SLEEP_STAGES: { key: "deep" | "core" | "rem"; color: string; label: string }[] = [
-  { key: "deep", color: "#6d28d9", label: "Deep" },
-  { key: "core", color: "#3b82f6", label: "Core" },
-  { key: "rem", color: "#7dd3fc", label: "REM" },
+  { key: "deep", color: "var(--tint-cycling-fg)", label: "Deep" },
+  { key: "core", color: "var(--tint-blue-bar)", label: "Core" },
+  { key: "rem", color: "var(--tint-run-fg)", label: "REM" },
 ];
 
 // Fixed palette for workout-name coloring (stable by first-seen index).
 const SPORT_PALETTE = [
-  "#4cb782", // accent green
-  "#38bdf8", // sky
-  "#fb923c", // orange
-  "#a78bfa", // violet
-  "#f472b6", // pink
-  "#34d399", // emerald
-  "#facc15", // yellow — also used for "Other" (index 6)
+  "var(--accent)",
+  "var(--tint-run-fg)",
+  "var(--tint-workout-fg)",
+  "var(--tint-cycling-fg)",
+  "var(--tint-boxing-fg)",
+  "var(--tint-walk-fg)",
+  "var(--tint-blue-bar)",
 ];
 const MAX_LEGEND = 6;
 
@@ -142,7 +142,7 @@ export default function AppleHealthCharts({
   const sleepBPts: BPt[] = sleepRaw.map((p, i) => ({
     x: i,
     y: p.value,
-    color: p.value < 6.5 ? "#f97316" : ACCENT,
+    color: p.value < 6.5 ? "var(--tint-workout-fg)" : ACCENT,
     label: shortDate(p.date),
   }));
   const sleepAvg = sleepRaw.length
@@ -225,7 +225,7 @@ export default function AppleHealthCharts({
       {/* Sleep — stage-stacked bars */}
       {sleepRaw.length >= 1 && (
         <ChartCard
-          icon={<Moon size={16} style={{ color: "#818cf8" }} />}
+          icon={<Moon size={16} style={{ color: "var(--tint-cycling-fg)" }} />}
           title="Sleep"
           sub={`${sleepLatest!.toFixed(1)} h · avg ${sleepAvg!.toFixed(1)} h · goal 8 h`}
         >
@@ -259,12 +259,12 @@ export default function AppleHealthCharts({
       {/* Heart Rate Range — min–max band + avg line */}
       {hrRaw.length >= 1 && (
         <ChartCard
-          icon={<Pulse size={16} style={{ color: "#f472b6" }} />}
+          icon={<Pulse size={16} style={{ color: "var(--tint-boxing-fg)" }} />}
           title="Heart Rate Range"
           sub={`avg ${Math.round(hrLatest!)} bpm`}
         >
           {hrBandPts.length >= 2 ? (
-            <BandChart points={hrBandPts} color="#f472b6" xLabels={threeXLabels(hrBanded)} references={HR_RANGE_REFERENCES} />
+            <BandChart points={hrBandPts} color="var(--tint-boxing-fg)" xLabels={threeXLabels(hrBanded)} references={HR_RANGE_REFERENCES} />
           ) : (
             <p className="text-[10px] text-fg/30 text-center py-2">{SYNC_HINT}</p>
           )}
@@ -286,14 +286,14 @@ export default function AppleHealthCharts({
       {/* Recovery vs Training Load */}
       {showRecovery && (
         <ChartCard
-          icon={<PersonSimpleRun size={16} style={{ color: "#38bdf8" }} />}
+          icon={<PersonSimpleRun size={16} style={{ color: "var(--tint-run-fg)" }} />}
           title="Recovery vs Training Load"
           sub="60 d"
         >
           <DualAxisChart
             points={recoveryPts}
-            barColor="#38bdf8"
-            lineColor="#fb923c"
+            barColor="var(--tint-blue-bar)"
+            lineColor="var(--tint-workout-fg)"
             barLabel="Activity min"
             lineLabel="Resting HR"
             xLabels={threeXLabels(recoveryDates.map((date) => ({ date })))}
@@ -303,11 +303,11 @@ export default function AppleHealthCharts({
 
       {/* Sleep vs Mood */}
       {showSleepMood && (
-        <ChartCard icon={<Smiley size={16} style={{ color: "#a78bfa" }} />} title="Sleep vs Mood">
+        <ChartCard icon={<Smiley size={16} style={{ color: "var(--tint-cycling-fg)" }} />} title="Sleep vs Mood">
           <DualAxisChart
             points={sleepMoodPts}
             barColor={ACCENT}
-            lineColor="#a78bfa"
+            lineColor="var(--tint-cycling-fg)"
             barLabel="Sleep (h)"
             lineLabel="Mood (1–5)"
             xLabels={threeXLabels(sleepRaw)}
@@ -317,11 +317,11 @@ export default function AppleHealthCharts({
 
       {/* Active Energy vs Weight */}
       {showWtEnergy && (
-        <ChartCard icon={<Fire size={16} style={{ color: "#f59e0b" }} />} title="Active Energy vs Weight">
+        <ChartCard icon={<Fire size={16} style={{ color: "var(--accent)" }} />} title="Active Energy vs Weight">
           <DualAxisChart
             points={wtEnergyPts}
-            barColor="#f59e0b"
-            lineColor="#c084fc"
+            barColor="var(--accent)"
+            lineColor="var(--tint-cycling-fg)"
             barLabel="Energy (kcal)"
             lineLabel="Weight (kg)"
             xLabels={threeXLabels(energyRaw)}

@@ -27,95 +27,40 @@ describe("RunLogger", () => {
     mockCreateRun.mockClear();
   });
 
-  it("renders the collapsed Run button initially", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    expect(screen.getByText("Run")).toBeInTheDocument();
+  it("opens the requested run sheet and renders its accessible controls", () => {
+    render(<RunLogger onRunLogged={vi.fn()} runType="run" openRequest={{key:1,runType:"run",distanceKm:5}} />);
+    expect(screen.getByRole("dialog", {name:"Log a Run"})).toBeInTheDocument();
+     expect(screen.getByText("Save Run")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", {name:"Distance in km"})).toHaveValue("5");
+     expect(screen.getByRole("textbox", { name: "Notes" })).toBeInTheDocument();
+   });
+ 
+  it("only opens the matching run or walk request", () => {
+    const { rerender } = render(<RunLogger onRunLogged={vi.fn()} runType="walk" openRequest={{key:1,runType:"run",distanceKm:3}} />);
+    expect(screen.queryByRole("dialog", {name:"Log a Walk"})).not.toBeInTheDocument();
+    rerender(<RunLogger onRunLogged={vi.fn()} runType="walk" openRequest={{key:2,runType:"walk",distanceKm:3}} />);
+    expect(screen.getByRole("dialog", {name:"Log a Walk"})).toBeInTheDocument();
+     expect(screen.getByText("Save Walk")).toBeInTheDocument();
   });
 
-  it("renders the collapsed Walk button initially", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="walk" />);
-    expect(screen.getByText("Walk")).toBeInTheDocument();
-  });
-
-  it("expands the form when clicked", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-    expect(screen.getByText("Save Run")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("e.g. 5.0")).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Notes" })).toBeInTheDocument();
-  });
-
-  it("expands the walk form when clicked", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="walk" />);
-    fireEvent.click(screen.getByText("Walk"));
-    expect(screen.getByText("Save Walk")).toBeInTheDocument();
-    expect(screen.getByText("Log a Walk")).toBeInTheDocument();
-  });
-
-  it("collapses the form when Close is clicked", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-    fireEvent.click(screen.getByLabelText("Close"));
-    expect(screen.getByText("Run")).toBeInTheDocument();
-  });
-
-  it("shows custom duration input when Custom is selected", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-    fireEvent.click(screen.getByText("Custom"));
-    expect(screen.getByPlaceholderText("Minutes")).toBeInTheDocument();
-  });
-
-  it("sets custom duration minutes convert to seconds", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-    fireEvent.click(screen.getByText("Custom"));
-    const customInput = screen.getByPlaceholderText("Minutes");
-    fireEvent.change(customInput, { target: { value: "20" } });
-    // Should cause pace calc: 20 min = 1200 sec
-    const distanceInput = screen.getByPlaceholderText("e.g. 5.0");
-    fireEvent.change(distanceInput, { target: { value: "5" } });
-    // Pace should be 1200/5 = 240 sec/km = 4:00/km
+  it("has functional steppers, quick picks, and computed pace in the sheet", () => {
+    render(<RunLogger onRunLogged={vi.fn()} runType="run" openRequest={{key:1,runType:"run",distanceKm:5}} />);
+    fireEvent.change(screen.getByRole("textbox", {name:"Duration in minutes"}), {target:{value:"20"}});
     expect(screen.getByText("4:00 /km")).toBeInTheDocument();
+    expect(screen.getByRole("button", {name:"45m"})).toBeInTheDocument();
   });
 
-  it("shows pace preview when distance and duration are set", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-
-    const distanceInput = screen.getByPlaceholderText("e.g. 5.0");
-    fireEvent.change(distanceInput, { target: { value: "5" } });
-
-    // Pace should appear (30min / 5km = 6:00/km)
-    expect(screen.getByText("6:00 /km")).toBeInTheDocument();
+  it("closes the requested run sheet from the backdrop", () => {
+    render(<RunLogger onRunLogged={vi.fn()} runType="run" openRequest={{key:1,runType:"run",distanceKm:5}} />);
+    fireEvent.click(document.querySelector(".fixed.inset-0.bg-black\\/60")!);
+    expect(screen.queryByRole("dialog", {name:"Log a Run"})).not.toBeInTheDocument();
   });
 
-  it("dismisses form when backdrop is clicked", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-    expect(screen.getByText("Save Run")).toBeInTheDocument();
-
-    // Click the backdrop (the fixed overlay)
-    const backdrop = document.querySelector(".fixed.inset-0");
-    expect(backdrop).toBeTruthy();
-    fireEvent.click(backdrop!);
-
-    expect(screen.queryByText("Save Run")).not.toBeInTheDocument();
-  });
-
-  it("changes date input value", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-
+  it("changes date and notes in the opened run sheet", () => {
+    render(<RunLogger onRunLogged={vi.fn()} runType="run" openRequest={{key:1,runType:"run",distanceKm:5}} />);
     const dateInput = screen.getByDisplayValue(todayKey());
     fireEvent.change(dateInput, { target: { value: "2026-07-15" } });
     expect(dateInput).toHaveValue("2026-07-15");
-  });
-
-  it("types notes into the notes field", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-
     const notesInput = screen.getByRole("textbox", { name: "Notes" });
     fireEvent.change(notesInput, { target: { value: "Felt great!" } });
     expect(notesInput).toHaveValue("Felt great!");
@@ -125,12 +70,7 @@ describe("RunLogger", () => {
     mockCreateRun.mockResolvedValue({ id: 1 });
     const onRunLogged = vi.fn();
 
-    render(<RunLogger onRunLogged={onRunLogged} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-
-    fireEvent.change(screen.getByPlaceholderText("e.g. 5.0"), {
-      target: { value: "5" },
-    });
+    render(<RunLogger onRunLogged={onRunLogged} runType="run" openRequest={{key:1,runType:"run",distanceKm:5}} />);
     fireEvent.change(screen.getByRole("textbox", { name: "Notes" }), {
       target: { value: "Good run" },
     });
@@ -154,13 +94,7 @@ describe("RunLogger", () => {
     mockCreateRun.mockResolvedValue({ id: 2 });
     const onRunLogged = vi.fn();
 
-    render(<RunLogger onRunLogged={onRunLogged} runType="walk" />);
-    fireEvent.click(screen.getByText("Walk"));
-
-    fireEvent.change(screen.getByPlaceholderText("e.g. 5.0"), {
-      target: { value: "3" },
-    });
-
+    render(<RunLogger onRunLogged={onRunLogged} runType="walk" openRequest={{key:1,runType:"walk",distanceKm:3}} />);
     fireEvent.click(screen.getByText("Save Walk"));
 
     await waitFor(() => {
@@ -179,12 +113,7 @@ describe("RunLogger", () => {
     mockCreateRun.mockRejectedValue(new OfflineError());
     const onRunLogged = vi.fn();
 
-    render(<RunLogger onRunLogged={onRunLogged} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-
-    fireEvent.change(screen.getByPlaceholderText("e.g. 5.0"), {
-      target: { value: "5" },
-    });
+    render(<RunLogger onRunLogged={onRunLogged} runType="run" openRequest={{key:1,runType:"run",distanceKm:5}} />);
 
     fireEvent.click(screen.getByText("Save Run"));
 
@@ -198,12 +127,7 @@ describe("RunLogger", () => {
   it("handles generic error on submit", async () => {
     mockCreateRun.mockRejectedValue(new Error("Network error"));
 
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-
-    fireEvent.change(screen.getByPlaceholderText("e.g. 5.0"), {
-      target: { value: "5" },
-    });
+    render(<RunLogger onRunLogged={vi.fn()} runType="run" openRequest={{key:1,runType:"run",distanceKm:5}} />);
 
     fireEvent.click(screen.getByText("Save Run"));
 
@@ -212,30 +136,17 @@ describe("RunLogger", () => {
     });
   });
 
-  it("does not submit with invalid distance", async () => {
+  it("does not submit with a missing distance", () => {
     mockCreateRun.mockResolvedValue({ id: 1 });
-
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-
-    // Leave distance empty - save button should be disabled
-    const saveBtn = screen.getByText("Save Run");
-    expect(saveBtn).toBeDisabled();
-
-    fireEvent.click(saveBtn);
+    render(<RunLogger onRunLogged={vi.fn()} runType="run" openRequest={{key:1,runType:"run"}} />);
+    expect(screen.getByText("Save Run")).toBeDisabled();
+    fireEvent.click(screen.getByText("Save Run"));
     expect(mockCreateRun).not.toHaveBeenCalled();
   });
 
-  it("selects different duration options", () => {
-    render(<RunLogger onRunLogged={vi.fn()} runType="run" />);
-    fireEvent.click(screen.getByText("Run"));
-
-    fireEvent.click(screen.getByText("45m"));
-
-    const distanceInput = screen.getByPlaceholderText("e.g. 5.0");
-    fireEvent.change(distanceInput, { target: { value: "10" } });
-
-    // 45 min = 2700 sec, pace = 2700/10 = 270 = 4:30/km
+  it("selecting a duration quick pick updates the pace preview", () => {
+    render(<RunLogger onRunLogged={vi.fn()} runType="run" openRequest={{key:1,runType:"run",distanceKm:10}} />);
+    fireEvent.click(screen.getByRole("button", {name:"45m"}));
     expect(screen.getByText("4:30 /km")).toBeInTheDocument();
   });
 
@@ -264,10 +175,10 @@ describe("RunLogger", () => {
     );
 
     expect(screen.getByText("Edit Run")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("e.g. 5.0")).toHaveValue(3);
+    expect(screen.getByRole("textbox", {name:"Distance in km"})).toHaveValue("3");
     expect(onEditHandled).toHaveBeenCalled();
 
-    fireEvent.change(screen.getByPlaceholderText("e.g. 5.0"), { target: { value: "4" } });
+fireEvent.change(screen.getByRole("textbox", {name:"Distance in km"}), { target: { value: "4" } });
     fireEvent.click(screen.getByText("Update Run"));
 
     await waitFor(() => {

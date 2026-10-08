@@ -22,7 +22,7 @@ import ChartPoint from "../ChartPoint";
 const W = 300;
 const H = 140;
 const GL = 30; // left gutter: y-axis tick labels
-export const ACCENT = "#4cb782";
+export const ACCENT = "var(--accent)";
 
 function yN(v: number, lo: number, hi: number): number {
   return hi === lo ? H / 2 : H - ((v - lo) / (hi - lo)) * H;
@@ -398,7 +398,7 @@ interface DualAxisChartProps {
 export function DualAxisChart({
   points,
   barColor = ACCENT,
-  lineColor = "#38bdf8",
+  lineColor = "var(--tint-blue-bar)",
   barLabel,
   lineLabel,
   xLabels,

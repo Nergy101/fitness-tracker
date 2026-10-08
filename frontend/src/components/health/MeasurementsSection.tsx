@@ -61,7 +61,7 @@ export default function MeasurementsSection() {
   const latest = measurements[0];
 
   return (
-    <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-3">
+    <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] space-y-3">
       {latest && (
         <div className="grid grid-cols-2 gap-2 text-xs">
           {MEAS_FIELDS.map((f) => {
@@ -73,7 +73,7 @@ export default function MeasurementsSection() {
                 <span className="text-fg font-medium tabular-nums">
                   {val != null ? `${val} cm` : "—"}
                   {delta != null && (
-                    <span className={delta >= 0 ? "text-orange-400 ml-1" : "text-green-400 ml-1"}>
+                    <span className={delta >= 0 ? "text-[var(--tint-workout-fg)] ml-1" : "text-[var(--tint-walk-fg)] ml-1"}>
                       {delta > 0 ? "+" : ""}{delta.toFixed(1)}
                     </span>
                   )}
@@ -103,7 +103,7 @@ export default function MeasurementsSection() {
                 <button
                   key={r}
                   onClick={() => setMeasRange(r)}
-                  className={`text-[10px] px-2 py-1 rounded-full transition-colors ${
+                  className={`min-h-10 px-3 rounded-full text-xs font-medium transition-colors ${
                     measRange === r
                       ? "bg-accent/20 text-accent"
                       : "text-fg/30 hover:text-fg/60"
@@ -126,7 +126,7 @@ export default function MeasurementsSection() {
                     else if (!active) next.add(f.key);
                     setSelectedMeas(next);
                   }}
-                  className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                  className={`min-h-10 px-3 rounded-full text-xs border transition-colors ${
                     active
                       ? "bg-accent/15 border-accent/30 text-accent"
                       : "border-fg/10 text-fg/40 hover:text-fg/70"
@@ -142,7 +142,7 @@ export default function MeasurementsSection() {
 
       {!showForm ? (
         <button onClick={() => setShowForm(true)}
-          className="w-full bg-[var(--surface-2)] border border-fg/10 rounded-xl py-2 text-sm text-accent font-medium hover:bg-fg/5 active:bg-fg/10 transition-colors">
+          className="w-full min-h-12 bg-field border border-fg/10 rounded-2xl py-2 text-sm text-accent font-medium hover:bg-fg/5 active:bg-fg/10 transition-colors">
           + Add Measurements
         </button>
       ) : (
@@ -155,7 +155,7 @@ export default function MeasurementsSection() {
             ))}
           </div>
           <button onClick={submit}
-            className="w-full bg-accent text-on-accent rounded-xl py-2 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition">
+            className="w-full min-h-12 bg-accent text-on-accent rounded-xl py-2 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition">
             Save
           </button>
         </div>
@@ -167,8 +167,8 @@ export default function MeasurementsSection() {
 // ─── Measurement Trend Chart ──────────────────────────────
 
 const MEAS_COLORS = [
-  "#4cb782", "#facc15", "#f97316", "#a78bfa",
-  "#f472b6", "#38bdf8", "#fb923c", "#34d399",
+  "var(--tint-walk-fg)", "var(--accent)", "var(--tint-workout-fg)", "var(--tint-cycling-fg)",
+  "var(--tint-boxing-fg)", "var(--tint-run-fg)", "var(--tint-blue-bar)", "var(--tint-walk-fg)",
 ];
 
 function MeasurementTrendChart({

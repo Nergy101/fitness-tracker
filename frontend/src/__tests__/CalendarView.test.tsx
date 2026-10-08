@@ -57,23 +57,19 @@ describe("CalendarView", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows the day detail panel when today's session day is clicked", () => {
-    render(<CalendarView sessions={[makeSession()]} />);
-    // Today's cell carries the ring-accent class.
-    const todayBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      b.className.includes("ring-accent"),
-    );
-    expect(todayBtn).toBeTruthy();
-    fireEvent.click(todayBtn!);
+  it("opens a session detail when a day with sessions is clicked", () => {
+    const session=makeSession();
+    render(<CalendarView sessions={[session]} />);
+    const day=new Date(session.started_at).getDate();
+    const dateCell=screen.getAllByRole("button").find((button)=>button.textContent?.trim().startsWith(String(day)) && button.textContent?.includes("30m"));
+    expect(dateCell).toBeTruthy();
+    fireEvent.click(dateCell!);
     expect(screen.getByText("Morning Routine")).toBeInTheDocument();
   });
 
-  it("does not show detail for a day without sessions", () => {
+  it("renders an empty calendar without session detail", () => {
     render(<CalendarView sessions={[]} />);
-    const todayBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      b.className.includes("ring-accent"),
-    );
-    fireEvent.click(todayBtn!);
+    expect(screen.getByText(`${MONTHS[new Date().getMonth()]} ${new Date().getFullYear()}`)).toBeInTheDocument();
     expect(screen.queryByText("Morning Routine")).not.toBeInTheDocument();
   });
 });

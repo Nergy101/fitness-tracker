@@ -1,21 +1,17 @@
 import { useState, useEffect } from "react";
-import {
-  HandFistIcon as HandFist,
-  XIcon as X,
-} from "@phosphor-icons/react";
-import Toast from "./Toast";
+import { HandFistIcon as HandFist } from "@phosphor-icons/react";
+import { LoggerSheet, LoggerToast, NumberControl, QuickPicks, DateQuickPicks, SheetField } from "./LoggerSheet";
 import { api, OfflineError, type BoxingEntryResponse } from "../api";
 import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
-import { ACTIVITY_COLORS } from "../activity";
 import { todayKey } from "../dateKey";
 
 interface BoxingLoggerProps {
   onWorkoutLogged: () => void;
-  /** Set by the Recent-workouts tag row to open this entry in the edit form. */
   editEntry?: BoxingEntryResponse | null;
-  /** Called once `editEntry` has been consumed, so the parent can clear it. */
   onEditHandled?: () => void;
+  openRequest?: { key: number; durationSeconds?: number; rounds?: number } | null;
+  hideTrigger?: boolean;
 }
 
 const DURATION_OPTIONS = [
@@ -26,14 +22,13 @@ const DURATION_OPTIONS = [
   { label: "Custom", seconds: 0 },
 ];
 
-// Average cardio boxing: ~10 kcal/min (moderate-to-vigorous intensity).
 const DEFAULT_KCAL_PER_MIN = 10;
 
 function calcKcal(durationSeconds: number, kcalPerMin: number): number {
   return Math.round((durationSeconds / 60) * kcalPerMin);
 }
 
-export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled }: BoxingLoggerProps) {
+export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled, openRequest, hideTrigger = false }: BoxingLoggerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [duration, setDuration] = useState(1800);
@@ -43,7 +38,6 @@ export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled
   const [date, setDate] = useState(todayKey);
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
-
   const [notePrompt, setNotePrompt] = useState(() => randomNotePrompt());
 
   function resetForm() {
@@ -59,7 +53,7 @@ export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled
 
   function startEdit(entry: BoxingEntryResponse) {
     setEditingId(entry.id);
-    const preset = DURATION_OPTIONS.find((o) => o.seconds === entry.duration_seconds);
+    const preset = DURATION_OPTIONS.find((option) => option.seconds === entry.duration_seconds);
     if (preset) {
       setDuration(entry.duration_seconds);
       setCustomDuration("");
@@ -74,8 +68,6 @@ export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled
     setShowForm(true);
   }
 
-  // A Recent-workouts tag asked for this entry: open its form. Declared after
-  // startEdit so the hook reads it as an already-initialised binding.
   useEffect(() => {
     if (editEntry) {
       startEdit(editEntry);
@@ -84,13 +76,27 @@ export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editEntry]);
 
+  useEffect(() => {
+    if (!openRequest) return;
+    resetForm();
+    if (openRequest.durationSeconds != null) {
+      const requestDuration = openRequest.durationSeconds;
+      setDuration(requestDuration);
+      const isPreset = DURATION_OPTIONS.some((option) => option.seconds === requestDuration);
+      setCustomDuration(isPreset ? "" : String(Math.round(requestDuration / 60)));
+    }
+    if (openRequest.rounds != null) setRounds(openRequest.rounds);
+    setShowForm(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRequest?.key]);
+
+
   async function handleSubmit() {
-    const dur = duration;
-    if (dur <= 0) return;
+    if (duration <= 0) return;
 
     try {
       const data = {
-        duration_seconds: dur,
+        duration_seconds: duration,
         kcal_per_min: kcalPerMin,
         rounds: rounds || null,
         date,
@@ -106,8 +112,8 @@ export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled
       resetForm();
       setShowForm(false);
       onWorkoutLogged();
-    } catch (e) {
-      if (e instanceof OfflineError) {
+    } catch (error) {
+      if (error instanceof OfflineError) {
         setToast("Boxing workout queued for sync");
       } else {
         setToast("Failed to save boxing workout");
@@ -116,180 +122,87 @@ export default function BoxingLogger({ onWorkoutLogged, editEntry, onEditHandled
   }
 
   const estimatedKcal = calcKcal(duration, kcalPerMin);
+  const selectedIntensity = kcalPerMin <= 7 ? "Technique" : kcalPerMin <= 11 ? "Bag work" : "Sparring";
 
-  // ── Collapsed state: show "Log Boxing" button ──
-  if (!showForm) {
-    return (
-      <>
-        {toast && (
-          <Toast onDismiss={() => setToast(null)}>
-            <HandFist size={18} weight="fill" />
-            {toast}
-          </Toast>
-        )}
-
-        <button
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="order-1 bg-surface rounded-2xl p-3.5 border-2 shadow-[var(--shadow-sm)] hover:border-accent/40 active:scale-[0.98] transition-all flex flex-col items-center gap-1.5"
-          style={{ borderColor: ACTIVITY_COLORS.boxing }}
-        >
-          <HandFist size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.boxing }} />
-          <p className="text-xs font-semibold text-fg">Boxing</p>
-        </button>
-      </>
-    );
-  }
-
-  // ── Form as bottom sheet ──
   return (
     <>
-      {toast && (
-        <Toast onDismiss={() => setToast(null)}>
-          <HandFist size={18} weight="fill" />
-          {toast}
-        </Toast>
-      )}
-
-      {/* Collapsed button (always visible in grid) */}
-      <button
-        onClick={() => { resetForm(); setShowForm(true); }}
-        className="order-1 bg-surface rounded-2xl p-3.5 border-2 shadow-[var(--shadow-sm)] hover:border-accent/40 active:scale-[0.98] transition-all flex flex-col items-center gap-1.5"
-        style={{ borderColor: ACTIVITY_COLORS.boxing }}
-      >
-        <HandFist size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.boxing }} />
-        <p className="text-xs font-semibold text-fg">Boxing</p>
-      </button>
-
-      {/* Bottom sheet overlay */}
+      {!hideTrigger && <button type="button" onClick={() => { resetForm(); setShowForm(true); }} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-tint-boxing-bg px-4 text-sm font-bold text-tint-boxing-fg"><HandFist size={20}/><span>Boxing</span></button>}
+      {toast && <LoggerToast onDismiss={() => setToast(null)}><HandFist size={18} weight="fill" />{toast}</LoggerToast>}
       {showForm && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
-          onClick={() => { resetForm(); setShowForm(false); }}
+        <LoggerSheet
+          title={editingId ? "Edit Boxing Session" : "Log Boxing"}
+          activity="boxing"
+          icon={<HandFist size={22} />}
+          onClose={() => { resetForm(); setShowForm(false); }}
+          onSubmit={handleSubmit}
+          submitDisabled={duration <= 0}
+          submitLabel={editingId ? "Update Boxing Session" : "Save Boxing Workout"}
         >
-          <div
-            className="bg-surface rounded-t-2xl w-full max-h-[85vh] overflow-y-auto shadow-[var(--shadow-lg)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <HandFist size={18} className="text-accent" />
-                  <span className="text-sm font-semibold text-fg">
-                    {editingId ? "Edit Boxing Session" : "Log Boxing"}
-                  </span>
-                </div>
+          <SheetField label="Duration">
+            <NumberControl
+              label="Duration in minutes"
+              unit="min"
+              value={customDuration || (duration > 0 ? String(Math.round(duration / 60)) : "")}
+              inputMode="numeric"
+              onChange={(value) => { setCustomDuration(value); setDuration((parseInt(value, 10) || 0) * 60); }}
+              onDecrease={() => { setCustomDuration(String(Math.max(0, Math.round(duration / 60) - 5))); setDuration(Math.max(0, duration - 300)); }}
+              onIncrease={() => { setCustomDuration(String(Math.round(duration / 60) + 5)); setDuration(duration + 300); }}
+            />
+            <QuickPicks
+              label="Quick duration"
+              options={DURATION_OPTIONS.slice(0, 4).map((option) => ({ label: option.label, value: String(option.seconds) }))}
+              selected={customDuration ? "" : String(duration)}
+              activity="boxing"
+              onSelect={(value) => { setDuration(Number(value)); setCustomDuration(""); }}
+            />
+            <button type="button" onClick={() => { setDuration(0); setCustomDuration(""); }} aria-pressed={duration === 0} className={`min-h-10 rounded-full border px-4 text-sm font-bold ${duration === 0 ? "bg-[var(--tint-boxing-bg)] text-[var(--tint-boxing-fg)]" : "border-track text-fg"}`}>Custom</button>
+            {duration === 0 && <input type="number" inputMode="numeric" value={customDuration} onChange={(event) => { setCustomDuration(event.target.value); setDuration((parseInt(event.target.value, 10) || 0) * 60); }} placeholder="Minutes" aria-label="Custom duration in minutes" className="min-h-12 w-full rounded-2xl bg-field px-4 text-base text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent" />}
+          </SheetField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <SheetField label="Rounds (optional)">
+              <NumberControl label="Rounds" value={rounds == null ? "" : String(rounds)} inputMode="numeric" onChange={(value) => setRounds(value ? parseInt(value, 10) || null : null)} onDecrease={() => setRounds(rounds == null || rounds <= 1 ? null : rounds - 1)} onIncrease={() => setRounds((rounds ?? 0) + 1)} placeholder="e.g. 10" />
+            </SheetField>
+            <SheetField label="Kcal per minute">
+              <NumberControl
+                label="Kcal per minute"
+                value={String(kcalPerMin)}
+                inputMode="decimal"
+                onChange={(value) => setKcalPerMin(parseFloat(value) || 0)}
+                onDecrease={() => setKcalPerMin(Math.max(0, Math.round((kcalPerMin - 1) * 10) / 10))}
+                onIncrease={() => setKcalPerMin(Math.round((kcalPerMin + 1) * 10) / 10)}
+              />
+            </SheetField>
+          </div>
+
+          <SheetField label="Intensity">
+            <div role="group" aria-label="Intensity preset" className="grid grid-cols-3 gap-1 rounded-3xl bg-field p-1">
+              {[{ label: "Technique", rate: 6 }, { label: "Bag work", rate: 10 }, { label: "Sparring", rate: 14 }].map((preset) => (
                 <button
-                  onClick={() => { resetForm(); setShowForm(false); }}
-                  aria-label="Close"
-                  className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-fg/40 hover:bg-fg/5 hover:text-fg/70 transition-colors"
+                  key={preset.label}
+                  type="button"
+                  aria-pressed={selectedIntensity === preset.label}
+                  onClick={() => setKcalPerMin(preset.rate)}
+                  className={`min-h-10 rounded-2xl px-1 text-xs font-bold transition-colors sm:text-sm ${selectedIntensity === preset.label ? "bg-[var(--tint-boxing-bg)] text-[var(--tint-boxing-fg)]" : "text-muted hover:bg-surface"}`}
                 >
-                  <X size={18} />
+                  {preset.label}
                 </button>
-              </div>
-
-        {/* Duration quick-select */}
-        <div>
-          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">How long did you box?</p>
-          <div className="flex gap-2 flex-wrap">
-            {DURATION_OPTIONS.map((opt) => (
-              <button
-                key={opt.label}
-                onClick={() => {
-                  setDuration(opt.seconds);
-                  setCustomDuration("");
-                }}
-                className={`inline-flex items-center justify-center h-10 px-4 text-xs font-semibold rounded-full transition-colors ${
-                  duration === opt.seconds && !customDuration
-                    ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
-                    : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          {duration === 0 && (
-            <input
-              type="number"
-              value={customDuration}
-              onChange={(e) => {
-                setCustomDuration(e.target.value);
-                setDuration((parseInt(e.target.value) || 0) * 60);
-              }}
-              placeholder="Minutes"
-              className="mt-2 w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-            />
-          )}
-        </div>
-
-        <div>
-          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Kcal per minute</p>
-          <input
-            type="number"
-            step="0.1"
-            value={kcalPerMin}
-            onChange={(e) => setKcalPerMin(parseFloat(e.target.value) || 0)}
-            className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-          />
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Date</p>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full max-w-full min-w-0 box-border bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Rounds (optional)</p>
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={rounds ?? ""}
-              onChange={(e) => setRounds(e.target.value ? parseInt(e.target.value) : null)}
-              placeholder="e.g. 10"
-              className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-            />
-          </div>
-        </div>
-
-        {/* Kcal preview */}
-        <div className="bg-surface-2 rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm">
-          <HandFist size={16} className="text-accent" />
-          <span className="text-fg/60">Estimated:</span>
-          <span className="text-fg font-semibold tabular-nums">~{estimatedKcal} kcal</span>
-          <span className="text-fg/40 text-xs ml-auto">
-            {formatDuration(duration)} · {kcalPerMin} kcal/min
-          </span>
-        </div>
-
-        <div>
-          <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Notes (optional)</p>
-          <input
-            type="text"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={notePrompt}
-            aria-label="Notes"
-            className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-          />
-        </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={duration <= 0}
-          className="w-full bg-accent text-on-accent rounded-xl h-11 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100"
-        >
-          {editingId ? "Update Boxing Session" : "Save Boxing Workout"}
-        </button>
+              ))}
             </div>
+          </SheetField>
+
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--tint-boxing-bg)] p-3 text-[var(--tint-boxing-fg)]" aria-live="polite">
+            <span><span className="block text-[11px] font-semibold opacity-75">Active energy</span><span className="text-xl font-extrabold tabular-nums">~{estimatedKcal} kcal</span></span>
+            <span className="text-right text-xs font-bold">{duration > 0 ? formatDuration(duration) : "—"} × {kcalPerMin}</span>
           </div>
-        </div>
+
+          <DateQuickPicks value={date} onChange={setDate} />
+          <SheetField label="Notes (optional)">
+            <input type="text" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={notePrompt} aria-label="Notes" className="min-h-[52px] w-full rounded-2xl bg-field px-4 text-base text-fg outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent" />
+          </SheetField>
+        </LoggerSheet>
       )}
     </>
   );
 }
+

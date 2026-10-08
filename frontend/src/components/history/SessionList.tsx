@@ -45,7 +45,7 @@ export default function SessionList({
       {hasMore && (
         <button
           onClick={() => setVisible((v) => v + PAGE_SIZE)}
-          className="w-full flex items-center justify-center gap-1.5 text-sm text-fg/70 hover:bg-fg/5 active:bg-fg/10 border border-fg/10 rounded-xl py-3 transition-colors"
+          className="w-full min-h-12 flex items-center justify-center gap-1.5 text-sm text-fg/70 hover:bg-fg/5 active:bg-fg/10 border border-fg/10 rounded-2xl py-3 transition-colors"
           aria-label="Load more sessions"
         >
           Load more

@@ -14,15 +14,16 @@ export default function DateRangeFilter({
   onToggleCalendar: () => void;
 }) {
   return (
-    <div className="flex gap-2 mb-4">
+    <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1" role="group" aria-label="History date range">
       {RANGES.map((r) => (
         <button
           key={r.key}
           onClick={() => onRangeChange(r.key)}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+          aria-pressed={range === r.key && !calendar}
+          className={`min-h-11 px-4 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
             range === r.key && !calendar
               ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
-              : "bg-surface text-fg/60 border border-fg/10 shadow-[var(--shadow-sm)] hover:text-fg"
+              : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
           }`}
         >
           {r.label}
@@ -30,10 +31,11 @@ export default function DateRangeFilter({
       ))}
       <button
         onClick={onToggleCalendar}
-        className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+        aria-pressed={calendar}
+        className={`min-h-11 px-4 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
           calendar
             ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
-            : "bg-surface text-fg/60 border border-fg/10 shadow-[var(--shadow-sm)] hover:text-fg"
+            : "bg-surface text-fg/60 border border-fg/10 hover:text-fg"
         }`}
       >
         <CalendarBlank size={16} className="inline mr-1" />

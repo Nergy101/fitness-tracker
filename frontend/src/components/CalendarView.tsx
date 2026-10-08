@@ -7,7 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import type { WorkoutSession } from "../api";
 import { formatDuration } from "../format";
-import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind } from "../activity";
+import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind, type ActivityKind } from "../activity";
 import { dayKey } from "../dateKey";
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -109,7 +109,8 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={prevMonth}
-          className="w-10 h-10 flex items-center justify-center rounded-full text-fg/40 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors"
+          aria-label="Previous month"
+          className="w-11 h-11 flex items-center justify-center rounded-full bg-field text-fg/60 hover:text-fg hover:bg-track transition-colors"
         >
           <CaretLeft size={20} weight="bold" />
         </button>
@@ -119,14 +120,15 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
         <div className="flex gap-1">
           <button
             onClick={jumpToday}
-            className="w-10 h-10 flex items-center justify-center rounded-full text-fg/30 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors"
-            title="Today"
+            aria-label="Jump to current month"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-field text-fg/50 hover:text-fg hover:bg-track transition-colors"
           >
             <ArrowClockwise size={18} />
           </button>
           <button
             onClick={nextMonth}
-            className="w-10 h-10 flex items-center justify-center rounded-full text-fg/40 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors"
+            aria-label="Next month"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-field text-fg/60 hover:text-fg hover:bg-track transition-colors"
           >
             <CaretRight size={20} weight="bold" />
           </button>
@@ -134,7 +136,7 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 mb-1">
+      <div className="grid grid-cols-7 gap-1 mb-1">
         {DAY_LABELS.map((l) => (
           <span key={l} className="text-[10px] font-semibold tracking-wide text-fg/45 text-center py-1">
             {l}
@@ -143,25 +145,31 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
       </div>
 
       {/* Calendar grid */}
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1">
         {weeks.map((row, r) => (
-          <div key={r} className="grid grid-cols-7 gap-0.5">
+          <div key={r} className="grid grid-cols-7 gap-1">
             {row.map((cell) => {
               const isToday = cell.key === todayKey;
               const hasWorkout = cell.sessions.length > 0;
+              const dayKinds = cell.sessions.reduce<ActivityKind[]>((kinds, session) => {
+                const kind = activityKind(session.template_name);
+                return kinds.includes(kind) ? kinds : [...kinds, kind];
+              }, []);
+              const dayKind = dayKinds[0] ?? null;
               return (
                 <button
                   key={cell.key}
                   onClick={() => cell.inMonth && hasWorkout && setSelectedDay(cell)}
                   disabled={!cell.inMonth}
                   className={`
-                    relative flex flex-col items-center justify-center rounded-xl p-1.5 min-h-[48px] transition-all text-xs
-                    ${!cell.inMonth ? "opacity-20" : hasWorkout ? "hover:bg-accent/10 cursor-pointer" : ""}
-                    ${isToday ? "ring-1 ring-accent/50" : ""}
-                    ${selectedDay?.key === cell.key ? "bg-accent/15 shadow-[var(--shadow-sm)]" : ""}
+                    relative flex flex-col items-center justify-center rounded-xl p-1 min-h-[44px] transition-all text-xs
+                    ${!cell.inMonth ? "opacity-20" : hasWorkout ? "hover:opacity-80 cursor-pointer" : ""}
+                    ${isToday ? "ring-2 ring-fg/70" : ""}
+                    ${selectedDay?.key === cell.key ? "ring-2 ring-accent shadow-[var(--shadow-sm)]" : ""}
                   `}
+                  style={dayKinds.length === 1 ? { backgroundColor: `var(--tint-${dayKind}-bg)` } : undefined}
                 >
-                  <span className={`text-xs tabular-nums ${isToday ? "text-accent font-bold" : "text-fg/70 font-medium"}`}>
+                  <span className={`text-xs tabular-nums ${hasWorkout ? "font-bold" : isToday ? "text-fg font-bold" : "text-fg/70 font-medium"}`} style={dayKinds.length === 1 ? { color: `var(--tint-${dayKind}-fg)` } : undefined}>
                     {cell.day}
                   </span>
                   {hasWorkout && (
@@ -176,7 +184,7 @@ export default function CalendarView({ sessions }: CalendarViewProps) {
                     </div>
                   )}
                   {cell.totalMinutes > 0 && (
-                    <span className="text-[9px] tabular-nums text-fg/30 mt-0.5">
+                    <span className="text-[9px] tabular-nums text-fg/60 mt-0.5">
                       {cell.totalMinutes}m
                     </span>
                   )}
@@ -208,7 +216,7 @@ function DayDetail({
   onClose: () => void;
 }) {
   return (
-    <div className="mt-4 bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+    <div className="mt-4 bg-bg rounded-[22px] p-4 border border-fg/[0.06]">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-bold tracking-tight">
           {day.date.toLocaleDateString(undefined, {
@@ -219,7 +227,8 @@ function DayDetail({
         </h4>
         <button
           onClick={onClose}
-          className="p-1.5 -m-1.5 rounded-full text-fg/30 hover:text-fg hover:bg-fg/5 active:bg-fg/10 transition-colors"
+          aria-label="Close day details"
+          className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-fg/50 hover:text-fg hover:bg-fg/5 transition-colors"
         >
           <X size={16} />
         </button>
@@ -232,12 +241,14 @@ function DayDetail({
           return (
           <div
             key={session.id}
-            className="bg-bg rounded-xl p-3 border border-fg/[0.06]"
+            className="bg-surface rounded-[22px] p-3 border border-fg/[0.06]"
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium flex items-center gap-1.5">
-                  <KindIcon size={14} className="shrink-0" style={{ color: ACTIVITY_COLORS[kind] }} />
+                <p className="text-sm font-medium flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `var(--tint-${kind}-bg)`, color: `var(--tint-${kind}-fg)` }}>
+                    <KindIcon size={16} />
+                  </span>
                   {session.template_name}
                 </p>
                 <p className="text-xs text-fg/40 mt-0.5">

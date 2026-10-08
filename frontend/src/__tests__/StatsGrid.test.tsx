@@ -28,10 +28,10 @@ describe("StatsGrid", () => {
     expect(screen.getAllByText("0").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("0m")).toBeInTheDocument();
     expect(screen.getByText("0s")).toBeInTheDocument();
-    expect(screen.getByText("Workouts")).toBeInTheDocument();
-    expect(screen.getByText("Total Time")).toBeInTheDocument();
-    expect(screen.getByText("Kcal")).toBeInTheDocument();
-    expect(screen.getByText("Avg")).toBeInTheDocument();
+    expect(screen.getByText("Sessions")).toBeInTheDocument();
+    expect(screen.getByText("Total time")).toBeInTheDocument();
+    expect(screen.getByText("Active kcal")).toBeInTheDocument();
+    expect(screen.getByText("Avg session")).toBeInTheDocument();
   });
 
   it("computes session count, total time, kcal and average duration", () => {

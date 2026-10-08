@@ -43,16 +43,16 @@ import ChartPoint from "./ChartPoint";
 import { chartRangeStart, type ChartRange } from "../chartRange";
 
 import { logger } from "../logger";
-const WEIGHT_COLOR = "#c084fc"; // purple-400
+const WEIGHT_COLOR = "var(--tint-cycling-fg)";
 
 // Per-metric presentation for imported Apple Health series.
 const HEALTH_META: Record<string, { icon: Icon; color: string }> = {
-  resting_heart_rate: { icon: Heart, color: "#f87171" },   // red-400
-  vo2_max: { icon: Pulse, color: "#2dd4bf" },              // teal-400
-  step_count: { icon: Footprints, color: "#60a5fa" },      // blue-400
-  sleep_analysis: { icon: Moon, color: "#818cf8" },        // indigo-400
-  active_energy: { icon: Fire, color: "#f59e0b" },         // amber-500
-  apple_exercise_time: { icon: Timer, color: "#34d399" },  // emerald-400
+  resting_heart_rate: { icon: Heart, color: "var(--tint-boxing-fg)" },
+  vo2_max: { icon: Pulse, color: "var(--tint-walk-fg)" },
+  step_count: { icon: Footprints, color: "var(--tint-blue-bar)" },
+  sleep_analysis: { icon: Moon, color: "var(--tint-cycling-fg)" },
+  active_energy: { icon: Fire, color: "var(--accent)" },
+  apple_exercise_time: { icon: Timer, color: "var(--tint-walk-fg)" },
 };
 
 function formatHealthValue(metric: string, v: number): string {
@@ -219,7 +219,7 @@ function StackedBarChart<T>({
             y={0}
             width={slot}
             height={height}
-            fill="#ef4444"
+            fill="var(--tint-boxing-fg)"
             opacity={0.08}
             rx={2}
           />
@@ -326,7 +326,7 @@ function LineChart({
         />
       ))}
       {markerIndices && Array.from(markerIndices).map((index) => (
-        <circle key={`injury-${index}`} cx={px(index)} cy={py(points[index].value)} r="4" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity={0.8} pointerEvents="none" />
+        <circle key={`injury-${index}`} cx={px(index)} cy={py(points[index].value)} r="4" fill="none" stroke="var(--tint-boxing-fg)" strokeWidth="1.5" opacity={0.8} pointerEvents="none" />
       ))}
       {labelIdxs.map((idx) => {
         const isLast = idx === points.length - 1;
@@ -614,14 +614,14 @@ export default function StatsTab() {
   }));
 
   return (
-    <div className="stats-tab space-y-4">
-      <div className="flex items-center justify-end -mb-2">
-        <div className="flex bg-surface rounded-full p-0.5 border border-fg/10 shadow-[var(--shadow-sm)]" role="group" aria-label="Chart date range">
+    <div className="stats-tab space-y-4 pb-24">
+      <div className="flex items-center justify-end -mb-2 overflow-x-auto">
+        <div className="flex shrink-0 bg-surface rounded-full p-0.5 border border-fg/10 shadow-[var(--shadow-sm)]" role="group" aria-label="Chart date range">
           <button
             type="button"
             aria-pressed={chartRange === "7d"}
             onClick={() => setChartRange("7d")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "7d" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
+            className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${chartRange === "7d" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
           >
             Last 7 days
           </button>
@@ -629,7 +629,7 @@ export default function StatsTab() {
             type="button"
             aria-pressed={chartRange === "30d"}
             onClick={() => setChartRange("30d")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "30d" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
+            className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${chartRange === "30d" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
           >
             Last 30 days
           </button>
@@ -637,7 +637,7 @@ export default function StatsTab() {
             type="button"
             aria-pressed={chartRange === "all"}
             onClick={() => setChartRange("all")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${chartRange === "all" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
+            className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${chartRange === "all" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
           >
             All time
           </button>
@@ -664,7 +664,7 @@ export default function StatsTab() {
           <select
             value={volumeExercise ?? ""}
             onChange={(e) => setVolumeExercise(e.target.value ? Number(e.target.value) : null)}
-            className="w-full bg-surface border border-fg/10 rounded-xl px-3 py-2 text-sm text-fg mb-3 outline-none focus:border-accent/50"
+            className="w-full min-h-11 bg-field border border-fg/10 rounded-xl px-3 py-2 text-sm text-fg mb-3 outline-none focus:border-accent/50"
             aria-label="Volume exercise"
           >
             <option value="">All exercises</option>
@@ -721,10 +721,11 @@ export default function StatsTab() {
       {/* Activity charts — daily/weekly toggle */}
       <div className="flex items-center gap-2 mb-2">
         <span className="text-xs font-semibold text-fg/60">Activity</span>
-        <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10 shadow-[var(--shadow-sm)]">
+        <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10 shadow-[var(--shadow-sm)]" role="group" aria-label="Activity chart scale">
           <button
             onClick={() => setChartMode("daily")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            aria-pressed={chartMode === "daily"}
+            className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${
               chartMode === "daily" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"
             }`}
           >
@@ -732,7 +733,8 @@ export default function StatsTab() {
           </button>
           <button
             onClick={() => setChartMode("weekly")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            aria-pressed={chartMode === "weekly"}
+            className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${
               chartMode === "weekly" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"
             }`}
           >
@@ -765,7 +767,7 @@ export default function StatsTab() {
           {chartMode === "weekly" && stats.current_month_vs_previous_pct != null && (
             <div className="flex justify-between mt-2 text-[10px] text-fg/40">
               <span>This month: {formatHours(stats.current_month_minutes)}</span>
-              <span className={stats.current_month_vs_previous_pct >= 0 ? "text-green-400" : "text-orange-400"}>
+              <span className={stats.current_month_vs_previous_pct >= 0 ? "text-[var(--tint-walk-fg)]" : "text-[var(--tint-workout-fg)]"}>
                 {stats.current_month_vs_previous_pct >= 0 ? "+" : ""}{stats.current_month_vs_previous_pct.toFixed(0)}%
               </span>
               <span>Last: {formatHours(stats.previous_month_minutes)}</span>
@@ -777,7 +779,7 @@ export default function StatsTab() {
       {/* Energy burn */}
       {hasKcal && (
         <ChartCard
-          icon={<Fire size={16} className="text-orange-400" />}
+          icon={<Fire size={16} className="text-[var(--accent)]" />}
           title={chartMode === "daily" ? "Daily Energy Burn (kcal)" : "Weekly Energy Burn (kcal)"}
         >
           <StackedBarChart
@@ -842,11 +844,7 @@ export default function StatsTab() {
         <ChartCard
           icon={<Scales size={16} style={{ color: WEIGHT_COLOR }} />}
           title="Weight Journey"
-          sub={
-            goal?.goal_weight_kg != null
-              ? `goal ${goal.goal_weight_kg.toFixed(1)} kg`
-              : undefined
-          }
+          sub={goal?.goal_weight_kg != null ? `goal ${goal.goal_weight_kg.toFixed(1)} kg` : undefined}
         >
           <LineChart
             points={weightSeries.map((e) => ({ label: formatWeekLabel(e.date, locale), value: e.weight_kg }))}
@@ -857,7 +855,7 @@ export default function StatsTab() {
                 ? { value: goal.goal_weight_kg, label: `Goal: ${goal.goal_weight_kg.toFixed(1)} kg` }
                 : undefined
             }
-            referenceColor="#22c55e"
+            referenceColor="var(--tint-walk-fg)"
             markerIndices={weightInjuryIndices.size > 0 ? weightInjuryIndices : undefined}
           />
         </ChartCard>
@@ -866,9 +864,9 @@ export default function StatsTab() {
       {/* Apple Health vitals */}
       {healthSeries && healthSeries.length > 0 && (
         <>
-          <div className="flex items-center gap-2 pt-2 mt-1 border-t border-fg/10">
-            <Heart size={18} className="text-red-400" weight="fill" />
-            <h3 className="text-sm font-bold tracking-tight">Apple Health</h3>
+          <div className="flex items-center gap-2 pt-4 mt-1 border-t border-fg/10">
+            <Heart size={18} className="text-[var(--tint-boxing-fg)]" weight="fill" />
+            <h3 className="text-base font-extrabold tracking-tight">Apple Health</h3>
           </div>
           {healthSeries
             .filter((s) => s.metric !== "sleep_analysis" && s.metric !== "heart_rate")
@@ -887,7 +885,7 @@ export default function StatsTab() {
 
       {injuries.length > 0 && (
         <div className="flex items-center gap-2 text-[10px] text-fg/30 mt-1">
-          <span className="w-2.5 h-2.5 rounded-full border-1.5 border-red-400 inline-block" style={{ borderWidth: "1.5px" }} />
+          <span className="w-2.5 h-2.5 rounded-full border-1.5 border-[var(--tint-boxing-fg)] inline-block" style={{ borderWidth: "1.5px" }} />
           <span>{injuries.length} injury {injuries.length === 1 ? "marker" : "markers"} shown as red circles on charts</span>
         </div>
       )}

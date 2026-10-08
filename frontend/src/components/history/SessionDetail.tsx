@@ -283,7 +283,7 @@ export default function SessionDetail({
           <h2 className="text-lg font-bold tracking-tight">{session.template_name}</h2>
           <button
             onClick={handleClose}
-            className="p-2 -m-2 rounded-full text-fg/40 hover:text-fg/70 hover:bg-fg/5 active:bg-fg/10 text-xl leading-none transition-colors"
+            className="w-11 h-11 -mr-2 rounded-full text-fg/40 hover:text-fg/70 hover:bg-fg/5 active:bg-fg/10 text-xl leading-none transition-colors"
           >
             &times;
           </button>
@@ -295,26 +295,26 @@ export default function SessionDetail({
               onStartWorkout(sessionToTemplate(session));
               onClose();
             }}
-            className="w-full inline-flex items-center justify-center gap-2 text-sm text-accent/70 hover:text-accent border border-accent/30 hover:border-accent/50 rounded-xl py-2.5 mb-4 transition-colors"
+            className="w-full min-h-12 inline-flex items-center justify-center gap-2 text-sm text-accent/70 hover:text-accent border border-accent/30 hover:border-accent/50 rounded-xl py-2.5 mb-4 transition-colors"
           >
             <PlayCircle size={16} weight="fill" /> Repeat Workout
           </button>
         )}
 
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
+          <div className="bg-surface rounded-[22px] p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
             <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">
               {formatDuration(session.total_duration_seconds)}
             </p>
             <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Duration</p>
           </div>
-          <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
+          <div className="bg-surface rounded-[22px] p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
             <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">
               {session.exercises.length}
             </p>
             <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Exercises</p>
           </div>
-          <div className="bg-surface rounded-2xl p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
+          <div className="bg-surface rounded-[22px] p-3.5 border border-fg/[0.06] shadow-[var(--shadow-sm)] text-center">
             <p className="text-xl font-extrabold tracking-tight tabular-nums text-accent">
               {Math.round(session.total_kcal_estimated)}
             </p>
@@ -333,7 +333,7 @@ export default function SessionDetail({
         </p>
 
         {isRegular && (
-          <div className="bg-surface rounded-xl p-3 mb-3 border border-fg/[0.06]">
+          <div className="bg-surface rounded-2xl p-4 mb-3 border border-fg/[0.06]">
             <div className="flex items-center justify-between mb-1">
               <p className="text-[10px] text-fg/40 font-medium">Duration (minutes)</p>
               {durationDirty && (

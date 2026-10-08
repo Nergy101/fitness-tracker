@@ -41,7 +41,7 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "workout", label: "Workouts", icon: Barbell },
+{ id: "workout", label: "Today", icon: Barbell },
   { id: "exercises", label: "Exercises", icon: PersonSimpleRun },
   { id: "health", label: "Health", icon: Heartbeat },
   { id: "history", label: "History", icon: Clock },
@@ -50,9 +50,8 @@ const TABS: Tab[] = [
 
 const TAB_IDS: readonly TabId[] = TABS.map((t) => t.id);
 
-/** Opening the app lands on the middle tab — the nav item under the thumb —
- *  instead of the first one. */
-const DEFAULT_TAB: TabId = TABS[Math.floor(TABS.length / 2)].id;
+/** Today is the app's logging-first landing screen. */
+const DEFAULT_TAB: TabId = TABS[0].id;
 
 export default function App() {
   // Nothing else mounts theme handling on the main screen (controls live in
@@ -141,16 +140,16 @@ export default function App() {
       <div className="app-shell flex flex-col h-full overflow-hidden pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
         {needRefresh && <UpdateBanner onUpdate={handleSWUpdate} />}
-        <header className="flex h-14 shrink-0 items-center bg-bg/95 backdrop-blur border-b border-fg/10 px-4 shadow-[var(--shadow-sm)] z-10">
+        <header className="flex h-14 shrink-0 items-center bg-bg px-4 pt-[calc(env(safe-area-inset-top,0px)+8px)] z-10">
           <div className="mx-auto w-full max-w-2xl flex items-center justify-between">
-          <h1 className="text-lg font-bold tracking-tight">{tabTitle}</h1>
+          <h1 className="text-[30px] font-extrabold tracking-tight">{tabTitle}</h1>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-fg/35 mr-2">FitnessTracker</span>
+
             <button
               onClick={() => setShowSettings(true)}
               aria-label="Settings"
               title="Settings"
-              className="p-2 rounded-full text-fg/50 hover:text-fg hover:bg-fg/5 transition-colors"
+              className="h-11 w-11 rounded-full bg-surface text-fg flex items-center justify-center hover:bg-field transition-colors"
             >
               <Gear size={20} weight="fill" />
             </button>
@@ -166,7 +165,7 @@ export default function App() {
         </header>
 
         <main
-          className="min-h-0 flex-1 overflow-y-auto px-4 py-4 touch-pan-y"
+className="min-h-0 flex-1 overflow-y-auto px-4 pt-3 pb-28 touch-pan-y"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -198,34 +197,25 @@ export default function App() {
           </div>
         </main>
 
-        {/* Bottom padding is owned by `.bottom-nav` in index.css, not a Tailwind
-            utility — it has to differ between browser and installed app. */}
-        <nav className="bottom-nav shrink-0 border-t border-fg/10 bg-surface">
-          <div className="mx-auto flex w-full max-w-2xl items-center justify-around pt-1.5">
-          {TABS.map((tab) => {
-            const idx = TAB_IDS.indexOf(tab.id);
-            const curIdx = TAB_IDS.indexOf(currentTab);
-            const dir = idx > curIdx ? "left" : idx < curIdx ? "right" : null;
-            const active = currentTab === tab.id;
-            return (
-            <button
-              key={tab.id}
-              onClick={() => dir ? navigateTab(dir, tab.id) : setCurrentTab(tab.id)}
-              aria-label={tab.label}
-              className={`flex flex-col items-center gap-0.5 w-16 py-1 rounded-xl transition-colors ${
-                active ? "text-accent" : "text-fg/40 active:text-fg/60"
-              }`}
-            >
-              <span
-                className={`flex h-8 w-11 items-center justify-center rounded-full transition-colors ${
-                  active ? "bg-accent/15" : ""
-                }`}
-              >
-                <tab.icon size={22} weight={active ? "fill" : "regular"} />
-              </span>
-              <span className={`text-[10px] leading-none ${active ? "font-semibold" : "font-medium"}`}>{tab.label}</span>
-            </button>
-          )})}
+        <nav aria-label="Main" className="bottom-nav fixed bottom-[max(env(safe-area-inset-bottom),0.75rem)] left-4 right-4 z-40 mx-auto max-w-2xl rounded-full bg-nav p-2 shadow-[var(--shadow-lg)]">
+          <div className="grid grid-cols-5 items-center gap-1">
+            {TABS.map((tab) => {
+              const idx = TAB_IDS.indexOf(tab.id);
+              const curIdx = TAB_IDS.indexOf(currentTab);
+              const dir = idx > curIdx ? "left" : idx < curIdx ? "right" : null;
+              const active = currentTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => dir ? navigateTab(dir, tab.id) : setCurrentTab(tab.id)}
+                  aria-label={tab.label}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex h-12 items-center justify-center rounded-full transition-colors ${active ? "bg-accent text-on-accent" : "text-nav-icon active:text-fg/70"}`}
+                >
+                  <tab.icon size={22} weight={active ? "fill" : "regular"} />
+                </button>
+              );
+            })}
           </div>
         </nav>
 

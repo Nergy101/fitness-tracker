@@ -53,10 +53,10 @@ import { PersonalRecordsCard } from "./health/PersonalRecordsCard";
 import { logger } from "../logger";
 function bmiColor(cat: string | null): string {
   switch (cat) {
-    case "Normal": return "text-green-400";
-    case "Underweight": return "text-yellow-400";
-    case "Overweight": return "text-orange-400";
-    case "Obese": return "text-red-400";
+    case "Normal": return "text-[var(--tint-walk-fg)]";
+    case "Underweight": return "text-[var(--tint-workout-fg)]";
+    case "Overweight": return "text-[var(--tint-cycling-fg)]";
+    case "Obese": return "text-[var(--tint-boxing-fg)]";
     default: return "text-fg/50";
   }
 }
@@ -200,23 +200,26 @@ export default function HealthAndStatsTab() {
   }
 
   return (
-    <div className="health-stats-tab space-y-4">
+    <div className="health-stats-tab space-y-4 pb-24 [&_.bg-surface.rounded-2xl]:rounded-[26px]">
       {/* ── Quick Stats ── */}
       <div className="grid grid-cols-2 gap-2">
         <StatCard
-          icon={<CalendarBlank size={14} className="text-accent" />}
+          icon={<CalendarBlank size={14} />}
           label="Consistency (30d)"
+          tint="blue"
           value={`${stats?.consistency_score_pct ?? 0}%`}
           sub={consistencySub(stats)}
         />
         <StatCard
-          icon={<Fire size={14} className="text-orange-400" />}
+          icon={<Fire size={14} />}
           label="Total kcal (30d)"
           value={(stats?.total_kcal_burned ?? 0).toLocaleString()}
+          tint="workout"
         />
         <StatCard
-          icon={<Scales size={14} className="text-purple-400" />}
+          icon={<Scales size={14} />}
           label="Weight chg (30d)"
+          tint="cycling"
           value={
             stats?.avg_weight_change_kg != null
               ? `${stats.avg_weight_change_kg > 0 ? "+" : ""}${stats.avg_weight_change_kg.toFixed(1)} kg`
@@ -225,41 +228,44 @@ export default function HealthAndStatsTab() {
         />
         {prs && prs.streak_days_30d > 0 ? (
           <StatCard
-            icon={<Flame size={14} className="text-orange-400" weight="fill" />}
+            icon={<Flame size={14} className="text-[var(--accent)]" weight="fill" />}
             label="Activity Streak (30d)"
+            tint="workout"
             value={`${prs.streak_days_30d} days`}
           />
         ) : (
           <StatCard
-            icon={<Flame size={14} className="text-fg/30" weight="fill" />}
+            icon={<Flame size={14} weight="fill" />}
             label="Activity Streak (30d)"
             value="—"
             sub="no activity yet"
+            tint="workout"
           />
         )}
       </div>
 
       {/* ── Goal Progress + BMI + Log Weight ── */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-3 sm:col-span-1">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-[var(--tint-workout-bg)] text-[var(--tint-workout-fg)] rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-3 sm:col-span-1">
           {goal?.goal_weight_kg ? (
             <>
-              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2 flex items-center gap-1.5">
+              <p className="text-[10px] font-semibold tracking-wide text-current/75 mb-2 flex items-center gap-1.5">
                 <FlagBanner size={14} className="text-accent shrink-0" />
-                Goal Progress</p>
-              <div className="w-full bg-bg rounded-full h-3 mb-2">
+                Goal Progress
+              </p>
+              <div className="w-full bg-[var(--tint-workout-chip)] rounded-full h-3 mb-2">
                 <div
                   className="bg-accent h-full rounded-full transition-all"
                   style={{ width: `${Math.min(goal.progress_percentage ?? 0, 100)}%` }}
                 />
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-fg/50 tabular-nums">{goal.current_weight_kg?.toFixed(1)} kg</span>
+                <span className="text-current/70 tabular-nums">{goal.current_weight_kg?.toFixed(1)} kg</span>
                 <span className="text-accent font-semibold tabular-nums">{goal.progress_percentage?.toFixed(0)}%</span>
-                <span className="text-fg/50 tabular-nums">Goal: {goal.goal_weight_kg} kg</span>
+                <span className="text-current/70 tabular-nums">Goal: {goal.goal_weight_kg} kg</span>
               </div>
               {goal.remaining_kg != null && (
-                <p className="text-xs text-fg/40 mt-1">
+                <p className="text-xs text-current/75 mt-1">
                   {(goal.progress_percentage ?? 0) >= 100 ? (
                     <span className="inline-flex items-center gap-1">
                       Goal reached! <Confetti size={14} weight="fill" className="text-accent" />
@@ -271,25 +277,26 @@ export default function HealthAndStatsTab() {
               )}
             </>
           ) : (
-            <p className="text-xs text-fg/30">Set a goal weight in Settings</p>
+            <p className="text-xs text-current/70">Set a goal weight in Settings</p>
           )}
         </div>
 
-        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+        <div className="bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-3 sm:col-span-1 flex flex-col justify-between">
           {bmi?.bmi ? (
             <>
-              <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1 flex items-center gap-1.5">
+              <p className="text-[10px] font-semibold tracking-wide text-[var(--tint-blue-fg)] mb-1 flex items-center gap-1.5">
                 <Ruler size={14} className={`${bmiColor(bmi.category)} shrink-0`} />
-                BMI</p>
+                BMI
+              </p>
               <p className={`text-2xl font-extrabold tracking-tight tabular-nums ${bmiColor(bmi.category)}`}>{bmi.bmi}</p>
               <p className={`text-xs mt-0.5 ${bmiColor(bmi.category)}`}>{bmi.category}</p>
             </>
           ) : (
-            <p className="text-xs text-fg/30">{bmi?.message || "Log weight for BMI"}</p>
+            <p className="text-xs text-[var(--tint-blue-fg)]/80">{bmi?.message || "Log weight for BMI"}</p>
           )}
         </div>
 
-        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-2 sm:col-span-1">
+        <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] col-span-3 sm:col-span-1">
           <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2 flex items-center gap-1.5">
             <Scales size={14} className="text-accent shrink-0" />
             Log Weight</p>
@@ -300,13 +307,13 @@ export default function HealthAndStatsTab() {
               value={newWeight}
               onChange={(e) => setNewWeight(e.target.value)}
               placeholder="kg"
-              className="flex-1 bg-bg border border-fg/10 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-accent/50 w-0"
+              className="flex-1 min-h-11 bg-bg border border-fg/10 rounded-xl px-3 py-2 text-sm outline-none focus:border-accent/50 w-0"
               onKeyDown={(e) => e.key === "Enter" && logWeight()}
             />
             <button
               onClick={logWeight}
               disabled={!newWeight}
-              className="bg-accent text-on-accent rounded-xl px-3 py-1.5 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50"
+              className="bg-accent text-on-accent rounded-xl px-4 min-h-11 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50"
             >
               Log
             </button>
@@ -321,8 +328,8 @@ export default function HealthAndStatsTab() {
       {insightLines.length > 0 && (
         <div className="space-y-1.5">
           {insightLines.map(({ icon: InsightIcon, text, tone }, i) => (
-            <p key={i} className="flex items-center gap-1.5 text-xs text-fg/70 bg-surface rounded-lg px-3 py-2 border border-fg/5">
-              <InsightIcon size={14} className={`shrink-0 ${tone === "warn" ? "text-orange-400" : "text-accent"}`} />
+            <p key={i} className="flex items-center gap-1.5 text-xs text-fg/70 bg-surface rounded-2xl px-4 py-3 border border-fg/5">
+              <InsightIcon size={14} className={`shrink-0 ${tone === "warn" ? "text-[var(--tint-workout-fg)]" : "text-accent"}`} />
               {text}
             </p>
           ))}
@@ -332,24 +339,28 @@ export default function HealthAndStatsTab() {
       {/* ── Summary cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <StatCard
-          icon={<Barbell size={14} style={{ color: ACTIVITY_COLORS.workout }} />}
+          icon={<Barbell size={14} />}
           label="Total workouts"
           value={String(stats.total_sessions_all)}
+          tint="workout"
         />
         <StatCard
-          icon={<PersonSimpleRun size={14} style={{ color: ACTIVITY_COLORS.run }} />}
+          icon={<PersonSimpleRun size={14} />}
           label="Total runs"
           value={String(stats.total_runs)}
+          tint="run"
         />
         <StatCard
-          icon={<Sneaker size={14} style={{ color: ACTIVITY_COLORS.walk }} />}
+          icon={<Sneaker size={14} />}
           label="Total walks"
           value={String(stats.total_walks)}
+          tint="walk"
         />
         <StatCard
-          icon={<HandFist size={14} style={{ color: ACTIVITY_COLORS.boxing }} />}
+          icon={<HandFist size={14} />}
           label="Total boxing"
           value={String(stats.total_boxing)}
+          tint="boxing"
         />
       </div>
 
@@ -366,39 +377,24 @@ export default function HealthAndStatsTab() {
 
       {/* ── Boxing Stats ── */}
       {boxingStats && boxingStats.total_sessions > 0 && (
-        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+        <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
           <div className="flex items-center gap-2 mb-3">
-            <HandFist size={20} className="text-red-400 shrink-0" weight="fill" />
+            <HandFist size={20} className="text-[var(--tint-boxing-fg)] shrink-0" weight="fill" />
             <p className="text-sm font-bold tracking-tight text-fg">Boxing</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <StatCard tint="boxing" icon={<HandFist size={14} />} label="Sessions" value={String(boxingStats.total_sessions)} />
+            <StatCard tint="boxing" icon={<Timer size={14} />} label="Total hours" value={`${boxingStats.total_hours}h`} />
+            <StatCard tint="boxing" icon={<Timer size={14} />} label="Avg session" value={boxingStats.avg_duration_seconds ? `${Math.round(boxingStats.avg_duration_seconds / 60)}m` : "—"} />
             <StatCard
-              icon={<HandFist size={14} className="text-red-400" />}
-              label="Sessions"
-              value={String(boxingStats.total_sessions)}
-            />
-            <StatCard
-              icon={<Timer size={14} className="text-red-400" />}
-              label="Total hours"
-              value={`${boxingStats.total_hours}h`}
-            />
-            <StatCard
-              icon={<Timer size={14} className="text-red-400" />}
-              label="Avg session"
-              value={boxingStats.avg_duration_seconds ? `${Math.round(boxingStats.avg_duration_seconds / 60)}m` : "—"}
-            />
-            <StatCard
-              icon={<Fire size={14} className="text-orange-400" />}
+              tint="boxing"
+              icon={<Fire size={14} className="text-[var(--accent)]" />}
               label="Total kcal"
               value={Math.round(boxingStats.total_kcal_estimated).toLocaleString()}
               sub={boxingStats.avg_kcal_per_min ? `${boxingStats.avg_kcal_per_min.toFixed(1)} kcal/min` : undefined}
             />
             {boxingStats.avg_rounds != null && (
-              <StatCard
-                icon={<HandFist size={14} className="text-red-400" />}
-                label="Avg rounds"
-                value={String(boxingStats.avg_rounds)}
-              />
+              <StatCard tint="boxing" icon={<HandFist size={14} />} label="Avg rounds" value={String(boxingStats.avg_rounds)} />
             )}
           </div>
           {boxingStats.monthly_breakdown.length > 0 && (
@@ -457,28 +453,28 @@ export default function HealthAndStatsTab() {
         const data = boxingChartMode === "daily" ? daily : weekly;
         const hasData = data.some((d: { minutes: number; kcal: number }) => d.minutes > 0);
 
-        const barW = 20;
         const gutter = 28;
         const svgH = 80;
-        const svgW = Math.max(300, gutter + barW * data.length);
-        const slot = (svgW - gutter) / data.length;
-        const maxMin = Math.max(1, ...data.map((d: { minutes: number }) => d.minutes));
-        const maxKcal = Math.max(1, ...data.map((d: { kcal: number }) => d.kcal));
-
+        const slot = 26;
+        const svgW = gutter + Math.max(data.length, 1) * slot;
+        const maxMin = Math.max(1, ...data.map((item) => item.minutes));
+        const maxKcal = Math.max(1, ...data.map((item) => item.kcal));
         return hasData ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold tracking-tight text-fg">Boxing Trends</span>
-              <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10">
+              <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10" role="group" aria-label="Boxing chart scale">
                 <button
                   onClick={() => setBoxingChartMode("daily")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "daily" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
+                  aria-pressed={boxingChartMode === "daily"}
+                  className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "daily" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
                 >
                   Daily
                 </button>
                 <button
                   onClick={() => setBoxingChartMode("weekly")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "weekly" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
+                  aria-pressed={boxingChartMode === "weekly"}
+                  className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${boxingChartMode === "weekly" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
                 >
                   Weekly
                 </button>
@@ -487,7 +483,7 @@ export default function HealthAndStatsTab() {
 
             {/* Minutes chart */}
             <ChartCard
-              icon={<Timer size={16} className="text-red-400" />}
+              icon={<Timer size={16} className="text-[var(--tint-boxing-fg)]" />}
               title={boxingChartMode === "daily" ? "Boxing Minutes (daily)" : "Boxing Minutes (weekly)"}
             >
               <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
@@ -508,7 +504,7 @@ export default function HealthAndStatsTab() {
                   const h = Math.max((d.minutes / maxMin) * svgH, 1);
                   return (
                     <g key={i}>
-                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={3} fill={ACTIVITY_COLORS.boxing} opacity={0.85} />
+                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={3} fill="var(--tint-boxing-fg)" opacity={0.85} />
                       <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {d.label}
                       </text>
@@ -520,7 +516,7 @@ export default function HealthAndStatsTab() {
 
             {/* Kcal chart */}
             <ChartCard
-              icon={<Fire size={16} className="text-orange-400" />}
+              icon={<Fire size={16} className="text-[var(--accent)]" />}
               title={boxingChartMode === "daily" ? "Boxing kcal (daily)" : "Boxing kcal (weekly)"}
             >
               <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
@@ -541,7 +537,7 @@ export default function HealthAndStatsTab() {
                   const h = Math.max((d.kcal / maxKcal) * svgH, 1);
                   return (
                     <g key={i}>
-                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={3} fill={ACTIVITY_COLORS.boxing} opacity={0.85} />
+                      <rect x={x} y={svgH - h} width={slot - 4} height={h} rx={3} fill="var(--tint-boxing-fg)" opacity={0.85} />
                       <text x={x + (slot - 4) / 2} y={svgH + 12} textAnchor="middle" className="fill-fg/35" fontSize="8" fontWeight="600">
                         {d.label}
                       </text>
@@ -594,28 +590,28 @@ export default function HealthAndStatsTab() {
         const data = cyclingChartMode === "daily" ? daily : weekly;
         const hasData = data.some((d: { minutes: number; kcal: number }) => d.minutes > 0);
 
-        const barW = 20;
         const gutter = 28;
         const svgH = 80;
-        const svgW = Math.max(300, gutter + barW * data.length);
-        const slot = (svgW - gutter) / data.length;
-        const maxMin = Math.max(1, ...data.map((d: { minutes: number }) => d.minutes));
-        const maxKcal = Math.max(1, ...data.map((d: { kcal: number }) => d.kcal));
-
+        const slot = 26;
+        const svgW = gutter + Math.max(data.length, 1) * slot;
+        const maxMin = Math.max(1, ...data.map((item) => item.minutes));
+        const maxKcal = Math.max(1, ...data.map((item) => item.kcal));
         return hasData ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold tracking-tight text-fg">Cycling Trends</span>
-              <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10">
+              <div className="ml-auto flex bg-surface rounded-full p-0.5 border border-fg/10" role="group" aria-label="Cycling chart scale">
                 <button
                   onClick={() => setCyclingChartMode("daily")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${cyclingChartMode === "daily" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
+                  aria-pressed={cyclingChartMode === "daily"}
+                  className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${cyclingChartMode === "daily" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
                 >
                   Daily
                 </button>
                 <button
                   onClick={() => setCyclingChartMode("weekly")}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${cyclingChartMode === "weekly" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
+                  aria-pressed={cyclingChartMode === "weekly"}
+                  className={`min-h-11 px-3 rounded-full text-xs font-medium transition-colors ${cyclingChartMode === "weekly" ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]" : "text-fg/50"}`}
                 >
                   Weekly
                 </button>
@@ -624,7 +620,7 @@ export default function HealthAndStatsTab() {
 
             {/* Minutes chart */}
             <ChartCard
-              icon={<Timer size={16} className="text-violet-400" />}
+              icon={<Timer size={16} className="text-[var(--tint-cycling-fg)]" />}
               title={cyclingChartMode === "daily" ? "Cycling Minutes (daily)" : "Cycling Minutes (weekly)"}
             >
               <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
@@ -657,7 +653,7 @@ export default function HealthAndStatsTab() {
 
             {/* Kcal chart */}
             <ChartCard
-              icon={<Fire size={16} className="text-orange-400" />}
+              icon={<Fire size={16} className="text-[var(--accent)]" />}
               title={cyclingChartMode === "daily" ? "Cycling kcal (daily)" : "Cycling kcal (weekly)"}
             >
               <svg viewBox={`0 0 ${svgW} ${svgH + 20}`} className="w-full">
@@ -693,7 +689,7 @@ export default function HealthAndStatsTab() {
 
       {/* Recent weights + trend */}
       {weights.length > 0 && (
-        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+        <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
           <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-2">Recent Weights</p>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {weights.slice(0, 20).map((w) => (
@@ -707,7 +703,7 @@ export default function HealthAndStatsTab() {
                 </div>
                 <button
                   onClick={() => deleteWeight(w.id)}
-                  className="text-xs text-red-400/60 hover:text-red-400 shrink-0 ml-2 px-2 py-1 rounded-full hover:bg-red-400/10 transition-colors"
+                  className="w-11 h-11 flex items-center justify-center text-xs text-[var(--tint-boxing-fg)] shrink-0 ml-2 rounded-full hover:bg-[var(--tint-boxing-bg)] transition-colors"
                 >
                   del
                 </button>
@@ -725,7 +721,8 @@ export default function HealthAndStatsTab() {
       {/* ── Body Measurements ── */}
       <button
         onClick={() => setShowMeas(!showMeas)}
-        className="w-full bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] flex items-center justify-between hover:bg-fg/5 transition-colors"
+        aria-expanded={showMeas}
+        className="w-full min-h-16 bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] flex items-center justify-between hover:bg-fg/5 transition-colors"
       >
         <div className="flex items-center gap-3">
           <Ruler size={22} className="text-accent shrink-0" />
@@ -741,7 +738,8 @@ export default function HealthAndStatsTab() {
       {/* ── Wellness Check-in ── */}
       <button
         onClick={() => setShowWellness(!showWellness)}
-        className="w-full bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] flex items-center justify-between hover:bg-fg/5 transition-colors"
+        aria-expanded={showWellness}
+        className="w-full min-h-16 bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] flex items-center justify-between hover:bg-fg/5 transition-colors"
       >
         <div className="flex items-center gap-3">
           <Smiley size={22} className="text-accent shrink-0" />

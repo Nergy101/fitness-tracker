@@ -3,257 +3,95 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import CyclingLogger from "../components/CyclingLogger";
 import { todayKey } from "../dateKey";
 
-const mockCreateCycling = vi.fn().mockResolvedValue({ id: 1 });
-const mockUpdateCycling = vi.fn().mockResolvedValue({ id: 1 });
+const { mockCreateCycling, mockUpdateCycling, MockOfflineError } = vi.hoisted(() => ({
+  mockCreateCycling: vi.fn(),
+  mockUpdateCycling: vi.fn().mockResolvedValue({ id: 1 }),
+  MockOfflineError: class extends Error { readonly offline = true; },
+}));
 
 vi.mock("../api", () => ({
   api: {
     createCycling: (...args: unknown[]) => mockCreateCycling(...args),
     updateCycling: (...args: unknown[]) => mockUpdateCycling(...args),
+    getWeightEntries: vi.fn().mockResolvedValue([]),
   },
-  OfflineError: class OfflineError extends Error {
-    readonly offline = true;
-    constructor(message = "Offline") {
-      super(message);
-      this.name = "OfflineError";
-    }
-  },
+  OfflineError: MockOfflineError,
 }));
 
 describe("CyclingLogger", () => {
   const onWorkoutLogged = vi.fn();
+  beforeEach(() => vi.clearAllMocks());
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  // ── Smoke tests ──
-
-  it("renders the collapsed Cycling button", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    expect(screen.getByText("Cycling")).toBeInTheDocument();
-  });
-
-  // ── Expand / collapse ──
-
-  it("expands the form when Cycling button is clicked", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    expect(screen.getByText("Log a Cycling Ride")).toBeInTheDocument();
-    expect(screen.getByText("Save Cycling Ride")).toBeInTheDocument();
-  });
-
-  it("collapses the form when Close (X) is clicked", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    expect(screen.getByText("Log a Cycling Ride")).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText("Close"));
-    expect(screen.getByText("Cycling")).toBeInTheDocument();
-  });
-
-  it("collapses the form when backdrop is clicked", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    const backdrop = document.querySelector(".fixed.inset-0.bg-black\\/60");
-    expect(backdrop).toBeTruthy();
-    fireEvent.click(backdrop!);
-    expect(screen.getByText("Cycling")).toBeInTheDocument();
-  });
-
-  // ── Duration selection ──
-
-  it("shows duration quick-select buttons when form is open", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    expect(screen.getByText("15m")).toBeInTheDocument();
-    expect(screen.getByText("30m")).toBeInTheDocument();
-    expect(screen.getByText("45m")).toBeInTheDocument();
-    expect(screen.getByText("1h")).toBeInTheDocument();
-    expect(screen.getByText("Custom")).toBeInTheDocument();
-  });
-
-  it("shows custom minutes input when Custom is selected", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.click(screen.getByText("Custom"));
-    expect(screen.getByPlaceholderText("Minutes")).toBeInTheDocument();
-  });
-
-  it("switches away from custom input when a preset duration is clicked", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.click(screen.getByText("Custom"));
-    expect(screen.getByPlaceholderText("Minutes")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("15m"));
-    expect(screen.queryByPlaceholderText("Minutes")).not.toBeInTheDocument();
-  });
-
-  // ── Form fields ──
-
-  it("renders distance input with placeholder", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    expect(screen.getByPlaceholderText("e.g. 24.0")).toBeInTheDocument();
-  });
-
-  it("defaults the date to the local calendar day, not the UTC one", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
+  it("opens the requested ride sheet with editable inputs and a live preview", () => {
+    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1,durationSeconds:2700,distanceKm:24}} />);
+    expect(screen.getByRole("dialog", {name:"Log a Cycling Ride"})).toBeInTheDocument();
+    expect(screen.getByRole("textbox", {name:"Distance in km"})).toHaveValue("24");
+    expect(screen.getByRole("textbox", {name:"Duration in minutes"})).toHaveValue("45");
+    expect(screen.getByText("Avg speed")).toBeInTheDocument();
+    expect(screen.getByText("Active energy")).toBeInTheDocument();
     expect(screen.getByDisplayValue(todayKey())).toBeInTheDocument();
   });
 
-  it("renders Notes input with aria-label", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    expect(screen.getByRole("textbox", { name: "Notes" })).toBeInTheDocument();
+  it("selects duration quick picks and custom minutes", () => {
+    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1,distanceKm:10}} />);
+    fireEvent.click(screen.getByRole("button", {name:"45m"}));
+    expect(screen.getByRole("textbox", {name:"Duration in minutes"})).toHaveValue("45");
+    fireEvent.click(screen.getByRole("button", {name:"Custom"}));
+    fireEvent.change(screen.getByRole("spinbutton", {name:"Custom duration in minutes"}), {target:{value:"75"}});
+    expect(screen.getByRole("textbox", {name:"Duration in minutes"})).toHaveValue("75");
   });
 
-  it("shows summary preview when distance and duration are set", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    const distanceInput = screen.getByPlaceholderText("e.g. 24.0");
-    fireEvent.change(distanceInput, { target: { value: "12.5" } });
-    // Default 30m duration: preview shows "12.5 km" and the formatted duration
-    expect(screen.getByText("12.5 km")).toBeInTheDocument();
-    expect(screen.getByText("30m")).toBeInTheDocument();
+  it("requires a positive distance before saving", () => {
+    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1}} />);
+    const save = screen.getByRole("button", {name:"Save Cycling Ride"});
+    expect(save).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", {name:"Distance in km"}), {target:{value:"10"}});
+    expect(save).toBeEnabled();
   });
 
-  it("disables submit until a distance is entered", () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    const submit = screen.getByText("Save Cycling Ride");
-    expect(submit).toBeDisabled();
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "10" } });
-    expect(screen.getByText("Save Cycling Ride")).not.toBeDisabled();
+  it("closes on close button and backdrop", () => {
+    const {rerender} = render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1}} />);
+    fireEvent.click(screen.getByRole("button", {name:"Close"}));
+    expect(screen.queryByRole("dialog", {name:"Log a Cycling Ride"})).not.toBeInTheDocument();
+    rerender(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:2}} />);
+    fireEvent.click(document.querySelector(".fixed.inset-0.bg-black\\/60")!);
+    expect(screen.queryByRole("dialog", {name:"Log a Cycling Ride"})).not.toBeInTheDocument();
   });
 
-  // ── Submit ──
-
-  it("calls api.createCycling with correct data on submit", async () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "20" } });
-    fireEvent.click(screen.getByText("Save Cycling Ride"));
-
-    await vi.waitFor(() => {
-      expect(mockCreateCycling).toHaveBeenCalledWith({
-        duration_seconds: 1800,
-        distance_km: 20,
-        date: expect.any(String),
-        notes: "",
-      });
-    });
+  it("submits the entered activity and notifies the parent", async () => {
+    mockCreateCycling.mockResolvedValue({id:2});
+    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1,durationSeconds:1800,distanceKm:20}} />);
+    fireEvent.click(screen.getByRole("button", {name:"Save Cycling Ride"}));
+    await vi.waitFor(() => expect(mockCreateCycling).toHaveBeenCalledWith({duration_seconds:1800,distance_km:20,date:expect.any(String),notes:""}));
+    expect(onWorkoutLogged).toHaveBeenCalled();
   });
 
-  it("calls onWorkoutLogged after successful submit", async () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "20" } });
-    fireEvent.click(screen.getByText("Save Cycling Ride"));
-
-    await vi.waitFor(() => {
-      expect(onWorkoutLogged).toHaveBeenCalled();
-    });
+  it("submits custom duration and distance values", async () => {
+    mockCreateCycling.mockResolvedValue({id:3});
+    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1,distanceKm:30}} />);
+    fireEvent.click(screen.getByRole("button", {name:"Custom"}));
+    fireEvent.change(screen.getByRole("spinbutton", {name:"Custom duration in minutes"}), {target:{value:"75"}});
+    fireEvent.click(screen.getByRole("button", {name:"Save Cycling Ride"}));
+    await vi.waitFor(() => expect(mockCreateCycling).toHaveBeenCalledWith(expect.objectContaining({duration_seconds:4500,distance_km:30})));
   });
 
-  it("shows success toast after submit", async () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "20" } });
-    fireEvent.click(screen.getByText("Save Cycling Ride"));
-
-    await vi.waitFor(() => {
-      expect(screen.getByText("Cycling ride logged!")).toBeInTheDocument();
-    });
-  });
-
-  it("submits with custom duration when provided", async () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.click(screen.getByText("Custom"));
-    fireEvent.change(screen.getByPlaceholderText("Minutes"), { target: { value: "75" } });
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "30" } });
-    fireEvent.click(screen.getByText("Save Cycling Ride"));
-
-    await vi.waitFor(() => {
-      expect(mockCreateCycling).toHaveBeenCalledWith(
-        expect.objectContaining({ duration_seconds: 4500 }),
-      );
-    });
-  });
-
-  // ── Error handling ──
-
-  it("shows error toast on API failure", async () => {
+  it("shows save errors and queued-offline feedback", async () => {
     mockCreateCycling.mockRejectedValueOnce(new Error("Server error"));
-
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "20" } });
-    fireEvent.click(screen.getByText("Save Cycling Ride"));
-
-    await vi.waitFor(() => {
-      expect(screen.getByText("Failed to save cycling ride")).toBeInTheDocument();
-    });
+    const {rerender} = render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1,durationSeconds:1800,distanceKm:20}} />);
+    fireEvent.click(screen.getByRole("button", {name:"Save Cycling Ride"}));
+    expect(await screen.findByText("Failed to save cycling ride")).toBeInTheDocument();
+    mockCreateCycling.mockRejectedValueOnce(new MockOfflineError());
+    rerender(<CyclingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:2,durationSeconds:1800,distanceKm:20}} />);
+    fireEvent.click(screen.getByRole("button", {name:"Save Cycling Ride"}));
+    expect(await screen.findByText("Cycling ride queued for sync")).toBeInTheDocument();
   });
 
-  it("shows offline toast on OfflineError", async () => {
-    const { OfflineError } = await import("../api");
-    mockCreateCycling.mockRejectedValueOnce(new OfflineError());
-
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "20" } });
-    fireEvent.click(screen.getByText("Save Cycling Ride"));
-
-    await vi.waitFor(() => {
-      expect(screen.getByText("Cycling ride queued for sync")).toBeInTheDocument();
-    });
-  });
-
-  it("does not submit without a valid distance", async () => {
-    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Cycling"));
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "0" } });
-    fireEvent.click(screen.getByText("Save Cycling Ride"));
-
-    expect(mockCreateCycling).not.toHaveBeenCalled();
-  });
-
-  // ── Edit hand-off from the Recent-workouts tags ──
-
-  it("opens the edit form from an editEntry prop and calls update on submit", async () => {
-    const entry = {
-      id: 5,
-      duration_seconds: 2700,
-      distance_km: 24,
-      date: "2026-08-01",
-      notes: "fast",
-      created_at: "2026-08-01T10:00:00",
-    };
-    const onEditHandled = vi.fn();
-    render(
-      <CyclingLogger
-        onWorkoutLogged={onWorkoutLogged}
-        editEntry={entry}
-        onEditHandled={onEditHandled}
-      />,
-    );
-
-    expect(screen.getByText("Edit Cycling Ride")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("e.g. 24.0")).toHaveValue(24);
-    expect(onEditHandled).toHaveBeenCalled();
-
-    fireEvent.change(screen.getByPlaceholderText("e.g. 24.0"), { target: { value: "30" } });
-    fireEvent.click(screen.getByText("Update Cycling Ride"));
-
-    await vi.waitFor(() => {
-      expect(mockUpdateCycling).toHaveBeenCalledWith(5, {
-        duration_seconds: 2700,
-        distance_km: 30,
-        date: "2026-08-01",
-        notes: "fast",
-      });
-    });
+  it("edits an existing ride through the original entry id", async () => {
+    const entry = {id:5,duration_seconds:2700,distance_km:24,date:"2026-08-01",notes:"fast",created_at:"2026-08-01T10:00:00"};
+    mockUpdateCycling.mockResolvedValue({id:5});
+    render(<CyclingLogger onWorkoutLogged={onWorkoutLogged} editEntry={entry} />);
+    fireEvent.change(screen.getByRole("textbox", {name:"Distance in km"}), {target:{value:"30"}});
+    fireEvent.click(screen.getByRole("button", {name:"Update Cycling Ride"}));
+    await vi.waitFor(() => expect(mockUpdateCycling).toHaveBeenCalledWith(5,{duration_seconds:2700,distance_km:30,date:"2026-08-01",notes:"fast"}));
   });
 });

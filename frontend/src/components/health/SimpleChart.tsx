@@ -3,7 +3,7 @@ import { type WeightEntryResponse } from "../../api";
 import { shortDate } from "./utils";
 import { smoothAreaPath, smoothLinePath } from "./chartPath";
 
-const WEIGHT_COLOR = "#4cb782";
+const WEIGHT_COLOR = "var(--tint-walk-fg)";
 
 /** SVG trend chart of the last 30 weight entries — a Catmull-Rom smoothed
  *  curve with a gradient area fill, matching the Weight Journey chart style
@@ -29,7 +29,7 @@ export default function SimpleChart({ entries }: { entries: WeightEntryResponse[
   const areaPath = smoothAreaPath(pixelPts, h);
 
   return (
-    <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+    <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
       <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-3">Weight Trend (30d)</p>
       <svg viewBox={`0 0 ${w} ${h + 20}`} className="w-full overflow-visible">
         <defs>

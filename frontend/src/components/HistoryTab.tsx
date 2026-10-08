@@ -128,7 +128,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
   }
   if (error) {
     return (
-      <div className="flex flex-col items-center py-8 text-red-400">
+      <div className="flex flex-col items-center bg-surface rounded-[26px] p-6 text-[var(--tint-boxing-fg)] border border-fg/[0.06]">
         <SmileySad size={40} weight="regular" className="mb-3 opacity-80" />
         <p>{error}</p>
       </div>
@@ -136,7 +136,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
   }
   if (sessions.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="bg-surface rounded-[26px] border border-fg/[0.06] text-center py-12 px-4">
         <p className="text-fg/40 text-lg mb-2">No sessions yet</p>
         <p className="text-fg/30 text-sm">
           Complete a workout to see your history here!
@@ -160,7 +160,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
   // ── All-time view ──────────────────────────────────────
   if (view === "all") {
     return (
-      <div className="history-tab">
+      <div className="history-tab pb-24">
         {toast && (
           <Toast onDismiss={() => setToast(null)}>
             <CloudArrowUp size={18} weight="fill" />
@@ -169,12 +169,12 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
         )}
         <button
           onClick={() => setView("range")}
-          className="flex items-center gap-1.5 text-sm text-fg/60 hover:text-fg mb-4 transition-colors"
+          className="min-h-11 flex items-center gap-1.5 text-sm text-fg/60 hover:text-fg mb-4 transition-colors"
         >
           <ArrowLeft size={16} weight="bold" /> Back
         </button>
 
-        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
+        <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
           <p className="text-sm font-bold tracking-tight mb-3">All time</p>
           <StatsGrid sessions={sessions} />
           <WeekdayBarChart sessions={sessions} />
@@ -195,7 +195,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
 
   // ── Range view ─────────────────────────────────────────
   return (
-    <div className="history-tab">
+    <div className="history-tab pb-24">
       {toast && (
         <Toast onDismiss={() => setToast(null)}>
           <CloudArrowUp size={18} weight="fill" />
@@ -214,11 +214,11 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
 
       {/* Activity + summary — chart depends on the mode. */}
       {calendar ? (
-        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
+        <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
           <CalendarView sessions={sessions} />
         </div>
       ) : (
-        <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
+        <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)] mb-4">
           <StatsGrid sessions={rangeSessions} />
           {range === "30d" ? (
             <HeatmapChart sessions={rangeSessions} />
@@ -234,14 +234,14 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by exercise..."
-          className="w-full bg-surface border border-fg/10 rounded-xl pl-4 pr-9 py-2.5 text-sm text-fg outline-none focus:border-accent/50 placeholder:text-fg/20"
+          className="w-full bg-surface border border-fg/10 rounded-2xl pl-4 pr-11 min-h-12 text-sm text-fg outline-none focus:border-accent/50 placeholder:text-fg/20"
           aria-label="Search sessions by exercise"
         />
         {search && (
           <button
             onClick={() => setSearch("")}
             aria-label="Clear search"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-fg/40 hover:text-fg/70"
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full text-fg/40 hover:text-fg/70"
           >
             <X size={16} weight="bold" />
           </button>
@@ -260,7 +260,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
             setGrouped((g) => !g);
             setExpandedGroup(null);
           }}
-          className="mb-2 text-xs text-fg/50 hover:text-fg transition-colors"
+          className="mb-2 min-h-11 px-2 text-xs text-fg/50 hover:text-fg transition-colors"
         >
           {grouped ? "Show flat list" : "Group by template"}
         </button>
@@ -271,10 +271,10 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
           {groups.map((g) => {
             const open = expandedGroup === g.name;
             return (
-              <div key={g.name} className="bg-surface rounded-2xl border border-fg/[0.06] shadow-[var(--shadow-sm)] overflow-hidden">
+              <div key={g.name} className="bg-surface rounded-[26px] border border-fg/[0.06] shadow-[var(--shadow-sm)] overflow-hidden">
                 <button
                   onClick={() => setExpandedGroup(open ? null : g.name)}
-                  className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left"
+                  className="w-full min-h-14 flex items-center justify-between gap-2 px-4 py-3 text-left"
                   aria-expanded={open}
                 >
                   <div className="min-w-0">
@@ -287,7 +287,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
                   <span className="text-fg/40 shrink-0">{open ? "−" : "+"}</span>
                 </button>
                 {open && (
-                  <div className="border-t border-fg/10 p-2">
+                  <div className="border-t border-fg/10 p-3">
                     <SessionList
                       sessions={g.sessions}
                       onSelect={setDetail}
@@ -314,7 +314,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
       {/* View all → all-time */}
       <button
         onClick={() => setView("all")}
-        className="w-full mt-4 flex items-center justify-center gap-1.5 text-sm text-fg/70 hover:bg-fg/5 active:bg-fg/10 border border-fg/10 rounded-xl py-3 transition-colors"
+        className="w-full mt-4 min-h-12 flex items-center justify-center gap-1.5 text-sm text-fg/70 hover:bg-fg/5 active:bg-fg/10 border border-fg/10 rounded-2xl py-3 transition-colors"
       >
         View all
         <ClockCounterClockwise size={16} weight="bold" />

@@ -12,7 +12,7 @@ export default function ChartCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-surface rounded-2xl p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
+    <div className="bg-surface rounded-[26px] p-4 border border-fg/[0.06] shadow-[var(--shadow-sm)]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-1.5">
           {icon}

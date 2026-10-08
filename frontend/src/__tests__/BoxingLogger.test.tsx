@@ -27,100 +27,25 @@ describe("BoxingLogger", () => {
     vi.clearAllMocks();
   });
 
-  // ── Smoke tests ──
-
-  it("renders the collapsed Boxing button", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    expect(screen.getByText("Boxing")).toBeInTheDocument();
-  });
-
-  // ── Expand / collapse ──
-
-  it("expands the form when Boxing button is clicked", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    expect(screen.getByText("Log Boxing")).toBeInTheDocument();
+  it("opens a requested boxing sheet with the requested duration and rounds", () => {
+    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1,durationSeconds:1800,rounds:6}} />);
+    expect(screen.getByRole("dialog",{name:"Log Boxing"})).toBeInTheDocument();
+    expect(screen.getByRole("textbox",{name:"Rounds"})).toHaveValue("6");
     expect(screen.getByText("Save Boxing Workout")).toBeInTheDocument();
   });
 
-  it("collapses the form when Close (X) is clicked", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    expect(screen.getByText("Log Boxing")).toBeInTheDocument();
-    fireEvent.click(screen.getByLabelText("Close"));
-    // Back to collapsed
-    expect(screen.getByText("Boxing")).toBeInTheDocument();
+  it("closes an opened boxing sheet by backdrop", () => {
+    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1,durationSeconds:1800,rounds:6}} />);
+    fireEvent.click(document.querySelector(".fixed.inset-0.bg-black\\/60")!);
+    expect(screen.queryByRole("dialog",{name:"Log Boxing"})).not.toBeInTheDocument();
   });
 
-  it("collapses the form when backdrop is clicked", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    // Click the backdrop (the fixed overlay with bg-black/60)
-    const backdrop = document.querySelector(".fixed.inset-0.bg-black\\/60");
-    expect(backdrop).toBeTruthy();
-    fireEvent.click(backdrop!);
-    expect(screen.getByText("Boxing")).toBeInTheDocument();
-  });
-
-  // ── Duration selection ──
-
-  it("shows duration quick-select buttons when form is open", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    expect(screen.getByText("15m")).toBeInTheDocument();
-    expect(screen.getByText("30m")).toBeInTheDocument();
-    expect(screen.getByText("45m")).toBeInTheDocument();
-    expect(screen.getByText("1h")).toBeInTheDocument();
-    expect(screen.getByText("Custom")).toBeInTheDocument();
-  });
-
-  it("shows custom minutes input when Custom is selected", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    fireEvent.click(screen.getByText("Custom"));
-    expect(screen.getByPlaceholderText("Minutes")).toBeInTheDocument();
-  });
-
-  it("switches away from custom input when a preset duration is clicked after Custom", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    fireEvent.click(screen.getByText("Custom"));
-    expect(screen.getByPlaceholderText("Minutes")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("15m"));
-    expect(screen.queryByPlaceholderText("Minutes")).not.toBeInTheDocument();
-  });
-
-  // ── Form fields ──
-
-  it("renders kcal per minute input with default value", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    const kcalInput = screen.getByDisplayValue("10");
-    expect(kcalInput).toBeInTheDocument();
-  });
-
-  it("defaults the date to the local calendar day, not the UTC one", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
+  it("shows duration picks, rounds, date, notes, and energy on a sheet", () => {
+    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} openRequest={{key:1,durationSeconds:1800,rounds:6}} />);
+    expect(screen.getByRole("button",{name:"15m"})).toBeInTheDocument();
+    expect(screen.getByRole("textbox",{name:"Rounds"})).toHaveValue("6");
     expect(screen.getByDisplayValue(todayKey())).toBeInTheDocument();
-  });
-
-  it("renders rounds optional input", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    expect(screen.getByPlaceholderText("e.g. 10")).toBeInTheDocument();
-  });
-
-  it("renders Notes input with aria-label", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    expect(screen.getByRole("textbox", { name: "Notes" })).toBeInTheDocument();
-  });
-
-  it("shows estimated kcal preview", () => {
-    render(<BoxingLogger onWorkoutLogged={onWorkoutLogged} />);
-    fireEvent.click(screen.getByText("Boxing"));
-    // Default 30min * 10 kcal/min = 300 kcal
+    expect(screen.getByRole("textbox",{name:"Notes"})).toBeInTheDocument();
     expect(screen.getByText(/~300 kcal/)).toBeInTheDocument();
   });
 
@@ -237,10 +162,9 @@ describe("BoxingLogger", () => {
     );
 
     expect(screen.getByText("Edit Boxing Session")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("e.g. 10")).toHaveValue(12);
+    expect(screen.getByRole("textbox", {name:"Rounds"})).toHaveValue("12");
     expect(onEditHandled).toHaveBeenCalled();
-
-    fireEvent.change(screen.getByPlaceholderText("e.g. 10"), { target: { value: "15" } });
+    fireEvent.change(screen.getByRole("textbox", {name:"Rounds"}), {target:{value:"15"}});
     fireEvent.click(screen.getByText("Update Boxing Session"));
 
     await vi.waitFor(() => {

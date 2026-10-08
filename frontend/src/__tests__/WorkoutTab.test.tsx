@@ -18,8 +18,13 @@ vi.mock("../api", () => ({
     getStatsOverview: vi.fn().mockResolvedValue({
       consistency_score_pct: 80,
       avg_weight_change_kg: 0.5,
+      activity_weekly: [],
     }),
     getPrs: vi.fn().mockResolvedValue({ streak_days_30d: 3 }),
+    getSessions: vi.fn().mockResolvedValue([]),
+    getRuns: vi.fn().mockResolvedValue([]),
+    getCycling: vi.fn().mockResolvedValue([]),
+    getBoxing: vi.fn().mockResolvedValue([]),
     togglePin: vi.fn().mockImplementation((...args: unknown[]) => mockTogglePinImpl(args[0] as number, args[1] as boolean)),
     deleteWorkout: vi.fn().mockImplementation((...args: unknown[]) => mockDeleteWorkoutImpl(args[0] as number)),
     duplicateWorkout: vi.fn().mockImplementation((...args: unknown[]) => mockDuplicateWorkoutImpl(args[0] as number)),
@@ -204,16 +209,11 @@ describe("WorkoutTab", () => {
     );
   }
 
-  it("renders templates after loading", async () => {
+  it("renders the activity dashboard and loaded workout templates", async () => {
     renderTab();
-    // Loading skeleton first
-    expect(screen.getByTestId("workout-skeleton")).toBeInTheDocument();
-    // Then the template appears
+    expect(await screen.findByRole("heading", { name: "What did you do?" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Log an activity" })).toBeInTheDocument();
     expect(await screen.findByText("Full Body")).toBeInTheDocument();
-    // Quick-log row rendered after load
-    expect(screen.getByTestId("run-logger-run")).toBeInTheDocument();
-    expect(screen.getByTestId("cycling-logger")).toBeInTheDocument();
-    expect(screen.getByTestId("boxing-logger")).toBeInTheDocument();
   });
 
   it("renders empty state when no templates exist", async () => {
@@ -250,7 +250,7 @@ describe("WorkoutTab", () => {
     await waitFor(() => {
       expect(mockDeleteWorkoutImpl).toHaveBeenCalledWith(1);
     });
-    expect(await screen.findByText('"Full Body" deleted')).toBeInTheDocument();
+    expect(await screen.findByText("Deleted Full Body")).toBeInTheDocument();
     // Template removed from list
     expect(screen.queryByText("Full Body")).not.toBeInTheDocument();
   });

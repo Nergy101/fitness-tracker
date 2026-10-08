@@ -26,28 +26,22 @@ function computeStats(sessions: WorkoutSession[]): Stats {
 export default function StatsGrid({ sessions }: { sessions: WorkoutSession[] }) {
   const stats = computeStats(sessions);
   return (
-    <div className="grid grid-cols-4 gap-2 mb-3">
-      <div className="text-center">
-        <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">{stats.totalSessions}</p>
-        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Workouts</p>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+      <div className="min-h-[76px] rounded-[22px] bg-[var(--tint-workout-bg)] text-[var(--tint-workout-fg)] p-3 flex flex-col justify-between">
+        <p className="text-xs font-semibold">Sessions</p>
+        <p className="text-2xl font-extrabold tracking-tight tabular-nums">{stats.totalSessions}</p>
       </div>
-      <div className="text-center">
-        <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">
-          {formatHours(stats.totalMinutes)}
-        </p>
-        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Total Time</p>
+      <div className="min-h-[76px] rounded-[22px] bg-[var(--tint-blue-bg)] text-[var(--tint-blue-fg)] p-3 flex flex-col justify-between">
+        <p className="text-xs font-semibold">Total time</p>
+        <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatHours(stats.totalMinutes)}</p>
       </div>
-      <div className="text-center">
-        <p className="text-xl font-extrabold tracking-tight tabular-nums text-accent">
-          {Math.round(stats.totalKcal)}
-        </p>
-        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Kcal</p>
+      <div className="min-h-[76px] rounded-[22px] bg-[var(--tint-run-bg)] text-[var(--tint-run-fg)] p-3 flex flex-col justify-between">
+        <p className="text-xs font-semibold">Active kcal</p>
+        <p className="text-2xl font-extrabold tracking-tight tabular-nums">{Math.round(stats.totalKcal).toLocaleString()}</p>
       </div>
-      <div className="text-center">
-        <p className="text-xl font-extrabold tracking-tight tabular-nums text-fg">
-          {formatDuration(stats.avgDuration)}
-        </p>
-        <p className="text-[10px] font-semibold tracking-wide text-fg/45 mt-0.5">Avg</p>
+      <div className="min-h-[76px] rounded-[22px] bg-[var(--tint-walk-bg)] text-[var(--tint-walk-fg)] p-3 flex flex-col justify-between">
+        <p className="text-xs font-semibold">Avg session</p>
+        <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatDuration(stats.avgDuration)}</p>
       </div>
     </div>
   );

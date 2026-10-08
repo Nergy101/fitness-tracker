@@ -24,14 +24,16 @@ export default function SessionCard({
   return (
     <div
       data-testid="session-card"
-      className="bg-surface rounded-2xl p-4 border border-l-[3px] border-fg/[0.06] shadow-[var(--shadow-sm)] cursor-pointer hover:border-accent/30 transition-colors"
+      className="bg-surface rounded-[26px] p-4 border border-l-[3px] border-fg/[0.06] shadow-[var(--shadow-sm)] cursor-pointer hover:border-accent/30 transition-colors"
       style={{ borderLeftColor: ACTIVITY_COLORS[kind] }}
       onClick={() => onSelect(session)}
     >
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <KindIcon size={16} className="shrink-0" style={{ color: ACTIVITY_COLORS[kind] }} />
+            <span className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `var(--tint-${kind}-bg)`, color: `var(--tint-${kind}-fg)` }}>
+              <KindIcon size={18} />
+            </span>
             <h3 className="font-semibold text-sm">{session.template_name}</h3>
           </div>
           {editing ? (
@@ -50,7 +52,7 @@ export default function SessionCard({
                 if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                 if (e.key === "Escape") setEditing(false);
               }}
-              className="text-xs bg-bg border border-accent/30 rounded-lg px-2 py-1 mt-0.5 w-48 text-fg outline-none"
+              className="min-h-11 text-sm bg-bg border border-accent/30 rounded-lg px-3 mt-0.5 w-48 text-fg outline-none"
               autoFocus
             />
           ) : (
@@ -65,10 +67,10 @@ export default function SessionCard({
                   setEditValue(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
                   setEditing(true);
                 }}
-                className="p-1 -m-1 rounded-full text-fg/20 hover:text-accent hover:bg-fg/5 active:bg-fg/10 mt-0.5 transition-colors"
+                className="w-10 h-10 -my-2 flex items-center justify-center rounded-full text-fg/40 hover:text-accent hover:bg-fg/5 active:bg-fg/10 mt-0.5 transition-colors"
                 title="Edit date/time"
               >
-                <PencilSimple size={12} />
+                <PencilSimple size={16} />
               </button>
             </div>
           )}
@@ -82,11 +84,11 @@ export default function SessionCard({
               e.stopPropagation();
               onDelete(session);
             }}
-            className="p-1.5 -m-1.5 rounded-full text-fg/20 hover:text-red-400 hover:bg-fg/5 active:bg-fg/10 transition-colors"
+            className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-fg/40 hover:text-[var(--tint-boxing-fg)] hover:bg-[var(--tint-boxing-bg)] active:bg-fg/10 transition-colors"
             title="Delete session"
             aria-label="Delete session"
           >
-            <Trash size={14} />
+            <Trash size={16} />
           </button>
         </div>
       </div>

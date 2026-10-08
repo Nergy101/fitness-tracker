@@ -57,13 +57,12 @@ describe("App tab routing", () => {
     window.location.hash = "";
   });
 
-  it("opens on the middle navigation item", async () => {
+  it("opens on Today", async () => {
     render(<App />);
-    // TABS order: Workouts, Exercises, Health, History, Stats.
-    expect(await screen.findByTestId("health-tab")).toBeInTheDocument();
-    expect(screen.queryByTestId("workout-tab")).not.toBeInTheDocument();
-    // The URL is normalized to the default so refresh/back stay consistent.
-    expect(window.location.hash).toBe("#health");
+    expect(await screen.findByTestId("workout-tab")).toBeInTheDocument();
+    expect(screen.queryByTestId("health-tab")).not.toBeInTheDocument();
+    // The URL is normalized so refresh/back stay consistent.
+    expect(window.location.hash).toBe("#workout");
   });
 
   it("still honours an explicit hash on load", async () => {
@@ -72,20 +71,20 @@ describe("App tab routing", () => {
     expect(await screen.findByTestId("stats-tab")).toBeInTheDocument();
   });
 
-  it("normalizes an unknown hash to the default tab", async () => {
+  it("normalizes an unknown hash to Today", async () => {
     window.location.hash = "#nope";
     render(<App />);
-    expect(await screen.findByTestId("health-tab")).toBeInTheDocument();
-    expect(window.location.hash).toBe("#health");
+    expect(await screen.findByTestId("workout-tab")).toBeInTheDocument();
+    expect(window.location.hash).toBe("#workout");
   });
 
   it("navigates to another tab on tap", async () => {
     render(<App />);
-    await screen.findByTestId("health-tab");
-
-    fireEvent.click(screen.getByRole("button", { name: "Workouts" }));
-
-    expect(await screen.findByTestId("workout-tab")).toBeInTheDocument();
-    await waitFor(() => expect(window.location.hash).toBe("#workout"));
+    await screen.findByTestId("workout-tab");
+ 
+    fireEvent.click(screen.getByRole("button", { name: "Exercises" }));
+ 
+    expect(await screen.findByTestId("exercises-tab")).toBeInTheDocument();
+    await waitFor(() => expect(window.location.hash).toBe("#exercises"));
   });
 });

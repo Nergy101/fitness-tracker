@@ -1,21 +1,17 @@
 import { useState, useEffect } from "react";
-import {
-  BicycleIcon as Bicycle,
-  XIcon as X,
-} from "@phosphor-icons/react";
-import Toast from "./Toast";
+import { BicycleIcon as Bicycle } from "@phosphor-icons/react";
+import { LoggerSheet, LoggerToast, NumberControl, QuickPicks, DateQuickPicks, SheetField, useWeightForDate, cyclingKcal } from "./LoggerSheet";
 import { api, OfflineError, type CyclingEntryResponse } from "../api";
 import { formatDuration } from "../format";
 import { randomNotePrompt } from "../notePrompts";
-import { ACTIVITY_COLORS } from "../activity";
 import { todayKey } from "../dateKey";
 
 interface CyclingLoggerProps {
   onWorkoutLogged: () => void;
-  /** Set by the Recent-workouts tag row to open this entry in the edit form. */
   editEntry?: CyclingEntryResponse | null;
-  /** Called once `editEntry` has been consumed, so the parent can clear it. */
   onEditHandled?: () => void;
+  hideTrigger?: boolean;
+  openRequest?: { key: number; durationSeconds?: number; distanceKm?: number } | null;
 }
 
 const DURATION_OPTIONS = [
@@ -26,7 +22,7 @@ const DURATION_OPTIONS = [
   { label: "Custom", seconds: 0 },
 ];
 
-export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandled }: CyclingLoggerProps) {
+export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandled, openRequest, hideTrigger = false }: CyclingLoggerProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [duration, setDuration] = useState(1800);
@@ -36,7 +32,6 @@ export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandle
   const [date, setDate] = useState(todayKey);
   const [notes, setNotes] = useState("");
   const [toast, setToast] = useState<string | null>(null);
-
   const [notePrompt, setNotePrompt] = useState(() => randomNotePrompt());
 
   function resetForm() {
@@ -52,7 +47,7 @@ export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandle
 
   function startEdit(entry: CyclingEntryResponse) {
     setEditingId(entry.id);
-    const preset = DURATION_OPTIONS.find((o) => o.seconds === entry.duration_seconds);
+    const preset = DURATION_OPTIONS.find((option) => option.seconds === entry.duration_seconds);
     if (preset) {
       setDuration(entry.duration_seconds);
       setIsCustomDuration(false);
@@ -68,8 +63,6 @@ export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandle
     setShowForm(true);
   }
 
-  // A Recent-workouts tag asked for this entry: open its form. Declared after
-  // startEdit so the hook reads it as an already-initialised binding.
   useEffect(() => {
     if (editEntry) {
       startEdit(editEntry);
@@ -77,14 +70,29 @@ export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandle
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editEntry]);
+  useEffect(() => {
+    if (!openRequest) return;
+    resetForm();
+    if (openRequest.durationSeconds != null) {
+      const requestDuration = openRequest.durationSeconds;
+      setDuration(requestDuration);
+      const isPreset = DURATION_OPTIONS.some((option) => option.seconds === requestDuration);
+      setIsCustomDuration(!isPreset);
+      setCustomDuration(isPreset ? "" : String(Math.round(requestDuration / 60)));
+    }
+    if (openRequest.distanceKm != null) setDistanceKm(String(openRequest.distanceKm));
+    setShowForm(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openRequest?.key]);
+
 
   async function handleSubmit() {
-    const dist = parseFloat(distanceKm);
-    const dur = duration;
-    if (isNaN(dist) || dist <= 0 || dur <= 0) return;
+    const distance = parseFloat(distanceKm);
+    const rideDuration = duration;
+    if (isNaN(distance) || distance <= 0 || rideDuration <= 0) return;
 
     try {
-      const data = { duration_seconds: dur, distance_km: dist, date, notes };
+      const data = { duration_seconds: rideDuration, distance_km: distance, date, notes };
       if (editingId) {
         await api.updateCycling(editingId, data);
         setToast("Cycling ride updated!");
@@ -95,8 +103,8 @@ export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandle
       resetForm();
       setShowForm(false);
       onWorkoutLogged();
-    } catch (e) {
-      if (e instanceof OfflineError) {
+    } catch (error) {
+      if (error instanceof OfflineError) {
         setToast("Cycling ride queued for sync");
       } else {
         setToast("Failed to save cycling ride");
@@ -104,181 +112,93 @@ export default function CyclingLogger({ onWorkoutLogged, editEntry, onEditHandle
     }
   }
 
-  // ── Collapsed state ──
-  if (!showForm) {
-    return (
-      <>
-        {toast && (
-          <Toast onDismiss={() => setToast(null)}>
-            <Bicycle size={18} weight="fill" />
-            {toast}
-          </Toast>
-        )}
+  const distance = parseFloat(distanceKm);
+  const weightKg = useWeightForDate(date, showForm);
+  const averageSpeed = distance > 0 && duration > 0 ? distance / (duration / 3600) : 0;
+  const energy = distance > 0 && duration > 0 ? cyclingKcal(distance, duration, weightKg) : 0;
+  const effort = averageSpeed < 15 ? "Easy" : averageSpeed < 21 ? "Moderate" : averageSpeed < 28 ? "Fast" : "Racing";
+  const intensityIndex = effort === "Easy" ? 0 : effort === "Moderate" ? 1 : effort === "Fast" ? 2 : 3;
 
-        <button
-          onClick={() => {
-            resetForm();
-            setShowForm(true);
-          }}
-          className="order-1 bg-surface rounded-2xl p-3.5 border-2 shadow-[var(--shadow-sm)] hover:border-accent/40 active:scale-[0.98] transition-all flex flex-col items-center gap-1.5"
-          style={{ borderColor: ACTIVITY_COLORS.cycling }}
-        >
-          <Bicycle size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.cycling }} />
-          <p className="text-xs font-semibold text-fg">Cycling</p>
-        </button>
-      </>
-    );
-  }
-
-  // ── Form as bottom sheet ──
   return (
     <>
-      {toast && (
-        <Toast onDismiss={() => setToast(null)}>
-          <Bicycle size={18} weight="fill" />
-          {toast}
-        </Toast>
-      )}
-
-      {/* Collapsed button (always visible in grid) */}
-      <button
-        onClick={() => {
-          resetForm();
-          setShowForm(true);
-        }}
-        className="order-1 bg-surface rounded-2xl p-3.5 border-2 shadow-[var(--shadow-sm)] hover:border-accent/40 active:scale-[0.98] transition-all flex flex-col items-center gap-1.5"
-        style={{ borderColor: ACTIVITY_COLORS.cycling }}
-      >
-        <Bicycle size={22} className="shrink-0" style={{ color: ACTIVITY_COLORS.cycling }} />
-        <p className="text-xs font-semibold text-fg">Cycling</p>
-      </button>
-
-      {/* Bottom sheet overlay */}
+      {!hideTrigger && <button type="button" onClick={() => { resetForm(); setShowForm(true); }} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-tint-cycling-bg px-4 text-sm font-bold text-tint-cycling-fg"><Bicycle size={20}/><span>Cycling</span></button>}
+      {toast && <LoggerToast onDismiss={() => setToast(null)}><Bicycle size={18} weight="fill" />{toast}</LoggerToast>}
       {showForm && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center"
-          onClick={() => { resetForm(); setShowForm(false); }}
+        <LoggerSheet
+          title={editingId ? "Edit Cycling Ride" : "Log a Cycling Ride"}
+          activity="cycling"
+          icon={<Bicycle size={22} />}
+          onClose={() => { resetForm(); setShowForm(false); }}
+          onSubmit={handleSubmit}
+          submitDisabled={!distanceKm || distance <= 0 || duration <= 0}
+          submitLabel={editingId ? "Update Cycling Ride" : "Save Cycling Ride"}
         >
-          <div
-            className="bg-surface rounded-t-2xl w-full max-h-[85vh] overflow-y-auto shadow-[var(--shadow-lg)] pb-[max(env(safe-area-inset-bottom),1.5rem)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Bicycle size={18} style={{ color: ACTIVITY_COLORS.cycling }} />
-                  <span className="text-sm font-semibold text-fg">
-                    {editingId ? "Edit Cycling Ride" : "Log a Cycling Ride"}
-                  </span>
+          <SheetField label="Distance">
+            <NumberControl
+              label="Distance in km"
+              unit="km"
+              value={distanceKm}
+              inputMode="decimal"
+placeholder="24.0"
+              onChange={setDistanceKm}
+              onDecrease={() => setDistanceKm(String(Math.max(0, (parseFloat(distanceKm) || 0) - 1)))}
+              onIncrease={() => setDistanceKm(String((parseFloat(distanceKm) || 0) + 1))}
+            />
+            <QuickPicks
+              label="Quick distance"
+              options={[10, 20, 30, 50].map((value) => ({ label: `${value} km`, value: String(value) }))}
+              selected={distanceKm}
+              activity="cycling"
+              onSelect={setDistanceKm}
+            />
+          </SheetField>
+
+          <SheetField label="Duration">
+            <NumberControl
+              label="Duration in minutes"
+              unit="min"
+              value={customDuration || (duration > 0 ? String(Math.round(duration / 60)) : "")}
+              inputMode="numeric"
+              onChange={(value) => { setCustomDuration(value); setDuration((parseInt(value, 10) || 0) * 60); setIsCustomDuration(true); }}
+              onDecrease={() => { setIsCustomDuration(true); setCustomDuration(String(Math.max(0, Math.round(duration / 60) - 5))); setDuration(Math.max(0, duration - 300)); }}
+              onIncrease={() => { setIsCustomDuration(true); setCustomDuration(String(Math.round(duration / 60) + 5)); setDuration(duration + 300); }}
+            />
+            <QuickPicks
+              label="Quick duration"
+              options={DURATION_OPTIONS.slice(0, 4).map((option) => ({ label: option.label, value: String(option.seconds) }))}
+              selected={!isCustomDuration ? String(duration) : ""}
+              activity="cycling"
+              onSelect={(value) => { setIsCustomDuration(false); setDuration(Number(value)); setCustomDuration(""); }}
+            />
+            <button type="button" onClick={() => { setIsCustomDuration(true); setDuration(0); setCustomDuration(""); }} aria-pressed={isCustomDuration} className={`min-h-10 rounded-full border px-4 text-sm font-bold ${isCustomDuration ? "bg-[var(--tint-cycling-bg)] text-[var(--tint-cycling-fg)]" : "border-track text-fg"}`}>Custom</button>
+            {isCustomDuration && <input type="number" inputMode="numeric" value={customDuration} onChange={(event) => { setCustomDuration(event.target.value); setDuration((parseInt(event.target.value, 10) || 0) * 60); }} placeholder="Minutes" aria-label="Custom duration in minutes" className="min-h-12 w-full rounded-2xl bg-field px-4 text-base text-fg outline-none focus-visible:ring-2 focus-visible:ring-accent" />}
+          </SheetField>
+
+          {distance > 0 && duration > 0 && (
+            <div className="space-y-3 rounded-2xl bg-[var(--tint-cycling-bg)] p-3 text-[var(--tint-cycling-fg)]" aria-live="polite">
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="block text-[11px] font-semibold opacity-75">Avg speed</span><span className="text-base font-extrabold tabular-nums">{averageSpeed.toFixed(1)} km/h</span></div>
+                <div><span className="block text-[11px] font-semibold opacity-75">Effort</span><span className="text-base font-extrabold">{effort}</span></div>
+                <div><span className="block text-[11px] font-semibold opacity-75">Active energy</span><span className="text-base font-extrabold tabular-nums">~{energy} kcal</span></div>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t border-current/15 pt-2 text-xs font-semibold">
+                <span className="tabular-nums">{distance.toFixed(1)} km</span>
+                <span>{formatDuration(duration)}</span>
+              </div>
+              <div aria-label={`Intensity: ${effort}`}>
+                <div className="grid grid-cols-4 gap-1">
+                  {[0, 1, 2, 3].map((index) => <span key={index} className={`h-1.5 rounded-full ${index <= intensityIndex ? "bg-[var(--tint-cycling-fg)]" : "bg-surface"}`} />)}
                 </div>
-                <button
-                  onClick={() => { resetForm(); setShowForm(false); }}
-                  aria-label="Close"
-                  className="w-10 h-10 -mr-2 flex items-center justify-center rounded-full text-fg/40 hover:bg-fg/5 hover:text-fg/70 transition-colors"
-                >
-                  <X size={18} />
-                </button>
+                <div className="mt-1 grid grid-cols-4 text-[10px] font-semibold opacity-75"><span>Easy</span><span>Moderate</span><span>Fast</span><span>Racing</span></div>
               </div>
-
-              {/* Duration quick-select */}
-              <div>
-                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1.5">Duration</p>
-                <div className="flex gap-2 flex-wrap">
-                  {DURATION_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.label}
-                      onClick={() => {
-                        if (opt.seconds === 0) {
-                          setIsCustomDuration(true);
-                          setDuration(0);
-                        } else {
-                          setIsCustomDuration(false);
-                          setDuration(opt.seconds);
-                          setCustomDuration("");
-                        }
-                      }}
-                      className={`inline-flex items-center justify-center h-10 px-4 text-xs font-semibold rounded-full transition-colors ${
-                        opt.seconds === 0
-                          ? isCustomDuration
-                            ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
-                            : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
-                          : duration === opt.seconds && !isCustomDuration
-                            ? "bg-accent text-on-accent shadow-[var(--shadow-sm)]"
-                            : "bg-surface-2 text-fg/60 border border-fg/10 hover:bg-fg/5 hover:text-fg"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                {isCustomDuration && (
-                  <input
-                    type="number"
-                    value={customDuration}
-                    onChange={(e) => {
-                      setCustomDuration(e.target.value);
-                      setDuration((parseInt(e.target.value) || 0) * 60);
-                    }}
-                    placeholder="Minutes"
-                    className="mt-2 w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-                  />
-                )}
-              </div>
-
-              <div>
-                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Distance (km)</p>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={distanceKm}
-                  onChange={(e) => setDistanceKm(e.target.value)}
-                  placeholder="e.g. 24.0"
-                  className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-                />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Date</p>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full max-w-full min-w-0 box-border bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-                />
-              </div>
-
-              {/* Summary preview */}
-              {parseFloat(distanceKm) > 0 && duration > 0 && (
-                <div className="bg-surface-2 rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm">
-                  <Bicycle size={16} style={{ color: ACTIVITY_COLORS.cycling }} />
-                  <span className="text-fg font-semibold tabular-nums">{parseFloat(distanceKm).toFixed(1)} km</span>
-                  <span className="text-fg/40 text-xs ml-auto">
-                    {formatDuration(duration)}
-                  </span>
-                </div>
-              )}
-
-              <div>
-                <p className="text-[10px] font-semibold tracking-wide text-fg/45 mb-1">Notes (optional)</p>
-                <input
-                  type="text"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder={notePrompt}
-                  aria-label="Notes"
-                  className="w-full bg-surface-2 border border-fg/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent/50"
-                />
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={!distanceKm || parseFloat(distanceKm) <= 0}
-                className="w-full bg-accent text-on-accent rounded-xl h-11 text-sm font-semibold shadow-[var(--shadow-sm)] active:scale-[0.98] transition disabled:opacity-50 disabled:active:scale-100"
-              >
-                {editingId ? "Update Cycling Ride" : "Save Cycling Ride"}
-              </button>
             </div>
-          </div>
-        </div>
+          )}
+
+          <DateQuickPicks value={date} onChange={setDate} />
+          <SheetField label="Notes (optional)">
+            <input type="text" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={notePrompt} aria-label="Notes" className="min-h-[52px] w-full rounded-2xl bg-field px-4 text-base text-fg outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-accent" />
+          </SheetField>
+        </LoggerSheet>
       )}
     </>
   );

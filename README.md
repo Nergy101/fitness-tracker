@@ -8,6 +8,12 @@ A complete fitness PWA — track workouts, runs, walks, boxing, health metrics, 
 
 ## Features
 
+### Bento Redesign
+- Logging-first Today dashboard with tinted activity tiles and quick presets.
+- Bento-style history, health, and stats screens; logger sheets show activity-specific inputs and previews.
+- Existing API records and estimates remain the source of truth. No database schema or migration changes are required, so existing production data is retained.
+- To preview locally, run `make` (backend and Vite frontend). For an isolated local database, set `DATABASE_URL=sqlite:////tmp/fitness-tracker-local.db` for the backend; never point a local process at production.
+
 ### Workouts
 - **195 seeded exercises** with images — 37 cardio, 116 strength, 42 flexibility
 - **5 circuit templates** (Basic, Calisthenics, Beginner Calisthenics, Cardio, Dumbbells) with per-exercise durations, configurable rounds, rest between rounds

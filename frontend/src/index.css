@@ -17,20 +17,50 @@
   --color-on-accent: var(--on-accent);
   --color-timer: var(--timer);
   --color-border: var(--border);
+  --color-tint-run-bg: var(--tint-run-bg);
+  --color-tint-run-fg: var(--tint-run-fg);
+  --color-tint-run-chip: var(--tint-run-chip);
+  --color-tint-walk-bg: var(--tint-walk-bg);
+  --color-tint-walk-fg: var(--tint-walk-fg);
+  --color-tint-walk-chip: var(--tint-walk-chip);
+  --color-tint-cycling-bg: var(--tint-cycling-bg);
+  --color-tint-cycling-fg: var(--tint-cycling-fg);
+  --color-tint-cycling-chip: var(--tint-cycling-chip);
+  --color-tint-boxing-bg: var(--tint-boxing-bg);
+  --color-tint-boxing-fg: var(--tint-boxing-fg);
+  --color-tint-boxing-chip: var(--tint-boxing-chip);
+  --color-tint-workout-bg: var(--tint-workout-bg);
+  --color-tint-workout-fg: var(--tint-workout-fg);
+  --color-tint-workout-chip: var(--tint-workout-chip);
+  --color-tint-blue-bg: var(--tint-blue-bg);
+  --color-tint-blue-fg: var(--tint-blue-fg);
+  --color-tint-blue-bar: var(--tint-blue-bar);
+
+  --color-field: var(--field);
+  --color-inverse: var(--inverse);
+  --color-on-inverse: var(--on-inverse);
+  --color-nav: var(--nav);
+  --color-nav-icon: var(--nav-icon);
+  --color-track: var(--track);
 }
 
 :root {
   color-scheme: light;
-  --bg: #f4f4f6;
+  --bg: #f1f2f6;
   --surface: #ffffff;
-  --fg: #1e1e2e;
-  --accent: #27855b;
-  --accent-hover: #1f6f4b;
-  --on-accent: #ffffff;
+  --fg: #1b1b24;
+  --muted: #5a5b6b;
+  --accent: #ffd23f;
+  --accent-hover: #f2c52e;
+  --on-accent: #1b1b24;
+  --inverse: #1b1b24;
+  --on-inverse: #ffffff;
+  --nav: #1b1b24;
+  --nav-icon: #b8b9c8;
+  --scrim: rgb(20 20 32 / 50%);
+  --field: #f1f2f6;
   --timer: #ea6a12;
-  --track: #1e1e2e14; /* faint neutral: ring track / empty chart bar */
-  /* Elevation + hairline system — derived from --fg via color-mix so both
-     themes stay in sync automatically (no separate .dark overrides needed). */
+  --track: #e9eaef;
   --border: color-mix(in srgb, var(--fg) 10%, transparent);
   --surface-2: color-mix(in srgb, var(--fg) 4%, var(--surface));
   --shadow-sm: 0 1px 2px color-mix(in srgb, var(--fg) 7%, transparent);
@@ -39,19 +69,80 @@
   --shadow-lg: 0 16px 40px -12px color-mix(in srgb, var(--fg) 28%, transparent),
     0 4px 12px -4px color-mix(in srgb, var(--fg) 14%, transparent);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --tint-run-bg: #d4f0ff;
+  --tint-run-fg: #0b3a52;
+  --tint-run-chip: #ffffff;
+  --tint-walk-bg: #d6f5e0;
+  --tint-walk-fg: #0e4425;
+  --tint-walk-chip: #ffffff;
+  --tint-cycling-bg: #e7e0ff;
+  --tint-cycling-fg: #33206e;
+  --tint-cycling-chip: #ffffff;
+  --tint-boxing-bg: #ffdede;
+  --tint-boxing-fg: #6b1616;
+  --tint-boxing-chip: #ffffff;
+  --tint-workout-bg: #ffd9bf;
+  --tint-workout-fg: #5a2106;
+  --tint-workout-chip: #ffffff;
+  --tint-blue-bg: #d6e8ff;
+  --tint-blue-fg: #0b2a52;
+  --tint-blue-bar: #2563c9;
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #1e1e2e;
-  --surface: #181825;
-  --fg: #ffffff;
-  --accent: #4cb782;
-  --accent-hover: #5dd495;
-  --on-accent: #1e1e2e;
+  --bg: #111118;
+  --surface: #1c1c26;
+  --fg: #f1f1f6;
+  --muted: #a3a4b5;
+  --accent: #ffd23f;
+  --accent-hover: #ffe078;
+  --on-accent: #1b1b24;
+  --inverse: #f1f1f6;
+  --on-inverse: #111118;
+  --nav: #26263a;
+  --nav-icon: #a3a4b5;
+  --scrim: rgb(0 0 0 / 62%);
+  --field: #262633;
   --timer: #f97316;
-  --track: #ffffff10;
+  --track: #2c2c3a;
+  --tint-run-bg: #0f2a36;
+  --tint-run-fg: #bfe8fb;
+  --tint-run-chip: #17394a;
+  --tint-walk-bg: #10291a;
+  --tint-walk-fg: #c4f5d4;
+  --tint-walk-chip: #173a25;
+  --tint-cycling-bg: #251c44;
+  --tint-cycling-fg: #e7e0ff;
+  --tint-cycling-chip: #33285a;
+  --tint-boxing-bg: #2e1414;
+  --tint-boxing-fg: #ffd0d0;
+  --tint-boxing-chip: #451e1e;
+  --tint-workout-bg: #3a1f10;
+  --tint-workout-fg: #ffd9bf;
+  --tint-workout-chip: #4d2a15;
+  --tint-blue-bg: #13263f;
+  --tint-blue-fg: #d6e8ff;
+  --tint-blue-bar: #60a5fa;
 }
+.tint-run-bg { background-color: var(--tint-run-bg); }
+.tint-run-fg { color: var(--tint-run-fg); }
+.tint-run-chip { background-color: var(--tint-run-chip); }
+.tint-walk-bg { background-color: var(--tint-walk-bg); }
+.tint-walk-fg { color: var(--tint-walk-fg); }
+.tint-walk-chip { background-color: var(--tint-walk-chip); }
+.tint-cycling-bg { background-color: var(--tint-cycling-bg); }
+.tint-cycling-fg { color: var(--tint-cycling-fg); }
+.tint-cycling-chip { background-color: var(--tint-cycling-chip); }
+.tint-boxing-bg { background-color: var(--tint-boxing-bg); }
+.tint-boxing-fg { color: var(--tint-boxing-fg); }
+.tint-boxing-chip { background-color: var(--tint-boxing-chip); }
+.tint-workout-bg { background-color: var(--tint-workout-bg); }
+.tint-workout-fg { color: var(--tint-workout-fg); }
+.tint-workout-chip { background-color: var(--tint-workout-chip); }
+.tint-blue-bg { background-color: var(--tint-blue-bg); }
+.tint-blue-fg { color: var(--tint-blue-fg); }
+.tint-blue-bar { background-color: var(--tint-blue-bar); }
 
 /* The app shell owns the viewport. `100vh` — NOT `100%` — is mandatory here:
    with `viewport-fit=cover` + `black-translucent`, a percentage height silently
@@ -69,11 +160,19 @@ body,
   overflow: hidden;
 }
 
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("/fonts/bricolage-grotesque-latin.woff2") format("woff2");
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+  font-family: "Bricolage Grotesque", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
