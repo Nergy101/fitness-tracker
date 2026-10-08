@@ -9,7 +9,7 @@ async function login(page: Page): Promise<Record<string, string>> {
   await page.goto("/");
   await page.getByPlaceholder("Password").fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Unlock" }).click();
-  await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 5000 });
+  await expect(page.getByRole("button", { name: "Today" })).toBeVisible({ timeout: 5000 });
   const token = await page.evaluate(() => localStorage.getItem("fitness_auth"));
   return { Authorization: "Bearer " + token };
 }
@@ -134,7 +134,7 @@ test.describe("authenticated", () => {
     // 1. Create a uniquely-named source template via API.
     await createFastWorkout(request, "E2E Clone Src", 2, 2, 30, _authHeaders);
 
-    // 2. Navigate to Workouts tab and confirm the source card is visible.
+    // 2. Navigate to Today and confirm the source card is visible.
     await page.goto("/#workout");
     await expect(page.getByRole("heading", { name: "E2E Clone Src", exact: true }).first()).toBeVisible();
 
@@ -1015,7 +1015,7 @@ test.describe("auth", () => {
     await expect(page.getByPlaceholder("Password")).toBeVisible();
     await expect(page.getByRole("button", { name: "Unlock" })).toBeVisible();
     // App tabs should NOT be visible
-    await expect(page.getByRole("button", { name: "Workouts" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
   });
 
   test("wrong password shows error and stays on login", async ({ page }) => {
@@ -1037,7 +1037,7 @@ test.describe("auth", () => {
     await page.getByRole("button", { name: "Unlock" }).click();
 
     // App should now be visible with tabs
-    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Today" })).toBeVisible({ timeout: 5000 });
     await expect(page.getByRole("button", { name: "Exercises" })).toBeVisible();
 
     // Data loads (exercises tab)
@@ -1049,12 +1049,12 @@ test.describe("auth", () => {
     await page.goto("/");
     await page.getByPlaceholder("Password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Unlock" }).click();
-    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Today" })).toBeVisible({ timeout: 5000 });
 
     // Reload
     await page.reload();
     // Should still be logged in
-    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Today" })).toBeVisible();
     await expect(page.getByText("Enter your password")).toHaveCount(0);
   });
 
@@ -1062,13 +1062,13 @@ test.describe("auth", () => {
     await page.goto("/");
     await page.getByPlaceholder("Password").fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Unlock" }).click();
-    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole("button", { name: "Today" })).toBeVisible({ timeout: 5000 });
 
     // Click logout
     await page.getByTitle("Logout").click();
     // Should be back at login screen
     await expect(page.getByText("Enter your password to unlock")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Workouts" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Today" })).toHaveCount(0);
   });
 });
 
@@ -1094,11 +1094,11 @@ test.describe("onboarding", () => {
 
     // Overlay is conditionally unmounted; app is now usable.
     await expect(tour).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Today" })).toBeVisible();
 
     // Reload — the tour must not reappear (flag persisted in localStorage).
     await page.reload();
-    await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Today" })).toBeVisible();
     await expect(tour).toHaveCount(0);
   });
 });
