@@ -100,10 +100,10 @@ test.describe("authenticated", () => {
   test("seeded workouts show rounds and multiplied duration", async ({ page }) => {
     await page.goto("/#workout");
     // Basic: 6 exercises x (40+30+40+30+40+45=225s) x 3 rounds = 675s = 11m 15s.
-    const basic = page.locator("div", { hasText: "Basic" }).first();
-    await expect(page.getByText("Basic", { exact: true })).toBeVisible();
-    await expect(page.getByText("Calisthenics", { exact: true })).toBeVisible();
-    await expect(page.getByText("Dumbbells", { exact: true })).toBeVisible();
+    const basic = page.locator('[data-testid="workout-card"]').filter({ has: page.getByRole("heading", { name: "Basic", exact: true }) });
+    await expect(page.getByRole("heading", { name: "Basic", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Calisthenics", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dumbbells", exact: true })).toBeVisible();
     // At least one "3 rounds" badge is present on the seeded cards.
     await expect(page.getByText("3 rounds").first()).toBeVisible();
     // Cards show the Work / Rest / Total breakdown (labels sit inline with values).
@@ -136,7 +136,7 @@ test.describe("authenticated", () => {
 
     // 2. Navigate to Today and confirm the source card is visible.
     await page.goto("/#workout");
-    await expect(page.getByRole("heading", { name: "E2E Clone Src", exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "E2E Clone Src", exact: true })).toBeVisible();
 
     // 3. Scope the Duplicate button to that card (use .first() since clone is prepended
     //    after creation, creating two cards with that heading).
@@ -225,7 +225,7 @@ test.describe("authenticated", () => {
     expect(workout.total_duration_seconds).toBe(4);
 
     await page.goto("/#workout");
-    await page.getByText("E2E Rounds", { exact: true }).click();
+    await page.getByRole("heading", { name: "E2E Rounds", exact: true }).click();
 
     // Poll the runner text; capture that it reaches Round 2/2 (proves looping),
     // then that it completes.
@@ -248,7 +248,7 @@ test.describe("authenticated", () => {
     // And it renders in History.
     await page.getByRole("button", { name: "Done" }).click();
     await page.getByRole("button", { name: "History" }).click();
-    await expect(page.getByText("E2E Rounds").first()).toBeVisible();
+    await expect(page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Rounds" }).first()).toBeVisible();
   });
 
   test("Skip advances past the current exercise", async ({ page, request }) => {
@@ -256,7 +256,7 @@ test.describe("authenticated", () => {
     await createFastWorkout(request, "E2E Skip", 1, 2, 60, _authHeaders);
 
     await page.goto("/#workout");
-    await page.getByText("E2E Skip", { exact: true }).click();
+    await page.getByRole("heading", { name: "E2E Skip", exact: true }).click();
 
     // Skip appears only during the exercise phase; wait past the initial rest.
     const skip = page.getByRole("button", { name: "Skip", exact: true });
@@ -293,7 +293,7 @@ test.describe("authenticated", () => {
     expect(workout.total_duration_seconds).toBe(6);
 
     await page.goto("/#workout");
-    await page.getByText("E2E Warmup Cooldown", { exact: true }).click();
+    await page.getByRole("heading", { name: "E2E Warmup Cooldown", exact: true }).click();
 
     // Warmup phase should show
     await expect(page.getByText("Warmup", { exact: true })).toBeVisible({ timeout: 5000 });
@@ -683,7 +683,7 @@ test.describe("authenticated", () => {
     await page.goto("/#workout");
 
     // Open the run logger
-    await page.getByText("Run").click();
+    await page.getByRole("region", { name: "Log an activity" }).getByText("Run", { exact: true }).click();
 
     // Select 30m duration
     await page.getByRole("button", { name: "30m" }).click();
@@ -757,12 +757,12 @@ test.describe("authenticated", () => {
     await page.goto("/#workout");
 
     // Wait for workouts to load
-    await expect(page.getByText("E2E Log Test", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "E2E Log Test", exact: true })).toBeVisible();
 
     // Click the Log button on our test workout's card
     await page
-      .locator("div.bg-surface")
-      .filter({ has: page.getByRole("heading", { name: "E2E Log Test" }) })
+      .locator('[data-testid="workout-card"]')
+      .filter({ has: page.getByRole("heading", { name: "E2E Log Test", exact: true }) })
       .first()
       .getByRole("button", { name: "Log", exact: true })
       .click();
@@ -780,13 +780,13 @@ test.describe("authenticated", () => {
 
     // Verify it appears in the History tab
     await page.getByRole("button", { name: "History" }).click();
-    await expect(page.getByText("E2E Log Test").first()).toBeVisible();
+    await expect(page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Log Test" }).first()).toBeVisible();
   });
 
   test("run notes update persists in SessionDetail after closing and reopening", async ({ page }) => {
     // Log a run via UI with notes
     await page.goto("/#workout");
-    await page.getByText("Run").click();
+    await page.getByRole("region", { name: "Log an activity" }).getByText("Run", { exact: true }).click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.2");
     await page.getByRole("button", { name: "1h" }).click();
     await page.getByRole("textbox", { name: "Notes" }).fill("test-run-notes");
@@ -820,7 +820,7 @@ test.describe("authenticated", () => {
   test("boxing mirror session reflects notes on create and duration on update", async ({ page, request }) => {
     // Log a boxing session via UI
     await page.goto("/#workout");
-    await page.getByText("Boxing").click();
+    await page.getByRole("region", { name: "Log an activity" }).getByText("Box", { exact: true }).click();
     await page.getByRole("button", { name: "30m" }).click();
     await page.getByText("Notes (optional)").locator("..").locator("input").fill("boxing-e2e-notes");
     await page.getByRole("button", { name: "Save Boxing Workout" }).click();
@@ -853,7 +853,7 @@ test.describe("authenticated", () => {
     await page.goto("/#workout");
 
     // Open the cycling logger and log a 30m ride over 15 km
-    await page.getByText("Cycling").click();
+    await page.getByRole("region", { name: "Log an activity" }).getByText("Ride", { exact: true }).click();
     await page.getByRole("button", { name: "30m" }).click();
     await page.locator('input[placeholder="e.g. 24.0"]').fill("15.0");
     await page.getByRole("button", { name: "Save Cycling Ride" }).click();
@@ -918,7 +918,7 @@ test.describe("authenticated", () => {
   test("run session is editable from the History tab", async ({ page, request }) => {
     // Log a 30m / 5.0km run via UI
     await page.goto("/#workout");
-    await page.getByText("Run").click();
+    await page.getByRole("region", { name: "Log an activity" }).getByText("Run", { exact: true }).click();
     await page.getByRole("button", { name: "30m" }).click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.0");
     await page.getByRole("button", { name: "Save Run" }).click();
@@ -949,24 +949,21 @@ test.describe("authenticated", () => {
     expect(workout.id).toBeTruthy();
 
     await page.goto("/#workout");
-    await expect(page.getByText("E2E Notes Test", { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "E2E Notes Test", exact: true })).toBeVisible();
 
     // Log the workout
-    await page
-      .locator("div.bg-surface")
-      .filter({ has: page.getByRole("heading", { name: "E2E Notes Test" }) })
-      .first()
-      .getByRole("button", { name: "Log", exact: true })
-      .click();
+    await page.locator('[data-testid="workout-card"]')
+      .filter({ has: page.getByRole("heading", { name: "E2E Notes Test", exact: true }) })
+      .getByRole("button", { name: "Log", exact: true }).click();
 
     await expect(page.getByRole("status")).toContainText("Workout logged!", { timeout: 5000 });
 
     // Navigate to History
     await page.getByRole("button", { name: "History" }).click();
-    await expect(page.getByText("E2E Notes Test").first()).toBeVisible();
+    await expect(page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Notes Test" }).first()).toBeVisible();
 
     // Open the session detail modal
-    await page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Notes Test" }).first().click();
+    await expect(page.locator('[data-testid="session-card"]').filter({ hasText: "E2E Notes Test" }).first()).toBeVisible();
 
     // Type notes into the textarea
     const notesArea = page.locator('textarea[aria-label="Session notes"]');
