@@ -691,7 +691,7 @@ test.describe("authenticated", () => {
     await page.goto("/#workout");
 
     // Open the run logger
-    await page.getByRole("region", { name: "Log an activity" }).getByText("Run", { exact: true }).click();
+    await page.getByRole("button", { name: "Log a custom run" }).click();
 
     // Select 30m duration
     await page.getByRole("button", { name: "30m" }).click();
@@ -796,9 +796,9 @@ test.describe("authenticated", () => {
   test("run notes update persists in SessionDetail after closing and reopening", async ({ page }) => {
     // Log a run via UI with notes
     await page.goto("/#workout");
-    await page.getByRole("region", { name: "Log an activity" }).getByText("Run", { exact: true }).click();
+    await page.getByRole("button", { name: "Log a custom run" }).click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.2");
-    await page.getByRole("button", { name: "1h" }).click();
+    await page.getByRole("button", { name: "1h", exact: true }).click();
     await page.getByRole("textbox", { name: "Notes" }).fill("test-run-notes");
     await page.getByRole("button", { name: "Save Run" }).click();
     await expect(page.getByRole("status")).toContainText("Run logged");
@@ -830,8 +830,8 @@ test.describe("authenticated", () => {
   test("boxing mirror session reflects notes on create and duration on update", async ({ page, request }) => {
     // Log a boxing session via UI
     await page.goto("/#workout");
-    await page.getByRole("region", { name: "Log an activity" }).getByText("Box", { exact: true }).click();
-    await page.getByRole("button", { name: "30m" }).click();
+    await page.getByRole("region", { name: "Log an activity" }).getByRole("button", { name: "+ 6 rounds" }).click();
+    await page.getByRole("button", { name: "30m", exact: true }).click();
     await page.getByText("Notes (optional)").locator("..").locator("input").fill("boxing-e2e-notes");
     await page.getByRole("button", { name: "Save Boxing Workout" }).click();
     await expect(page.getByRole("status")).toContainText("Boxing workout logged!");
@@ -863,8 +863,8 @@ test.describe("authenticated", () => {
     await page.goto("/#workout");
 
     // Open the cycling logger and log a 30m ride over 15 km
-    await page.getByRole("region", { name: "Log an activity" }).getByText("Ride", { exact: true }).click();
-    await page.getByRole("button", { name: "30m" }).click();
+    await page.getByRole("region", { name: "Log an activity" }).getByRole("button", { name: "+ 45 min" }).click();
+    await page.getByRole("button", { name: "30m", exact: true }).click();
     await page.locator('input[placeholder="e.g. 24.0"]').fill("15.0");
     await page.getByRole("button", { name: "Save Cycling Ride" }).click();
     await expect(page.getByRole("status")).toContainText("Cycling ride logged!");
@@ -928,8 +928,8 @@ test.describe("authenticated", () => {
   test("run session is editable from the History tab", async ({ page, request }) => {
     // Log a 30m / 5.0km run via UI
     await page.goto("/#workout");
-    await page.getByRole("region", { name: "Log an activity" }).getByText("Run", { exact: true }).click();
-    await page.getByRole("button", { name: "30m" }).click();
+    await page.getByRole("button", { name: "Log a custom run" }).click();
+    await page.getByRole("button", { name: "30m", exact: true }).click();
     await page.locator('input[placeholder="e.g. 5.0"]').fill("5.0");
     await page.getByRole("button", { name: "Save Run" }).click();
     await expect(page.getByRole("status")).toContainText("Run logged");
