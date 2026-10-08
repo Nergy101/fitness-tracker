@@ -140,7 +140,7 @@ export default function App() {
       <div className="app-shell flex flex-col h-full overflow-hidden pt-[env(safe-area-inset-top)]">
         <OfflineBanner />
         {needRefresh && <UpdateBanner onUpdate={handleSWUpdate} />}
-        <header className="flex h-14 shrink-0 items-center bg-bg px-4 pt-[calc(env(safe-area-inset-top,0px)+8px)] z-10">
+        <header className="flex h-14 shrink-0 items-center bg-bg px-4 z-10">
           <div className="mx-auto w-full max-w-2xl flex items-center justify-between">
           <h1 className="text-[30px] font-extrabold tracking-tight">{tabTitle}</h1>
           <div className="flex items-center gap-1">

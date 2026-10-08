@@ -52,6 +52,7 @@ A complete fitness PWA — track workouts, runs, walks, boxing, health metrics, 
 - Installable on iOS/Android/desktop with service worker precache
 - Swipe left/right to navigate between tabs with native-feel slide animation
 - Pill-shaped active indicator on bottom nav
+- Top and bottom navigation respect device safe areas without double-counting the home-indicator inset.
 - Loading skeleton states on all tabs
 - Offline banner + ErrorBoundary for resilience
 - Light/dark theme toggle, audio mute, selectable date format (D/M or M/D)

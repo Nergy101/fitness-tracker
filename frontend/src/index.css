@@ -203,21 +203,11 @@ input[type="time"] {
   box-sizing: border-box;
 }
 
-/* Bottom nav padding. In a browser tab the inset has to be honored: iOS
-   Safari's toolbar strip sits in it, and content padded flat would land under
-   it. Installed (standalone) the full ~34px home-indicator inset is still
-   reported and still needed — the indicator sits inside the page once
-   viewport-fit=cover works, so the icon row has to clear it.
-
-   This used to force a flat 0.75rem in standalone because the icon row seemed
-   to sit too high — but that gap was the letterbox (the page was 62px shorter
-   than the screen, per the 100vh fix above), not the padding. With the page
-   now covering the full screen, `max(env(safe-area-inset-bottom), 0.75rem)`
-   is correct in both modes and there is no standalone override to drift.
-   Written here (not as a Tailwind `pb-[…]` utility) so the padding lives in
-   one place and unlayered rules can't silently outrank it. */
+/* The fixed bottom offset clears the home-indicator safe area. Keep only a
+   small inner gap below the icons; applying the inset to padding as well lifts
+   the nav by the inset twice and makes the row sit high in a large pill. */
 .bottom-nav {
-  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+  padding-bottom: 0.75rem;
 }
 
 /* Prevent text selection during workout timer */
