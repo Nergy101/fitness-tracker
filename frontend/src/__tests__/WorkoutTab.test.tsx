@@ -304,7 +304,7 @@ describe("WorkoutTab", () => {
     expect(screen.queryByTestId("editing-run-walk-43")).not.toBeInTheDocument();
   });
 
-  it("This week tile totals and plots the sessions logged this week", async () => {
+  it("Last 7 days tile totals and plots the sessions logged in the rolling week", async () => {
     const daysAgo = (n: number) => {
       const d = new Date();
       d.setDate(d.getDate() - n);

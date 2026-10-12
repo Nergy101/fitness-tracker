@@ -411,6 +411,29 @@ describe("HistoryTab", () => {
     });
   });
 
+  it("'This week' starts on Monday and says so when nothing is logged yet", async () => {
+    // Sunday 23:59 just before this week's Monday — belongs to last week.
+    const monday = new Date();
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+    monday.setHours(0, 0, 0, 0);
+    const lastSunday = new Date(monday.getTime() - 60_000).toISOString();
+    mockGetAllSessionsImpl = async () => [
+      { ...defaultSessions[1], id: 3, started_at: lastSunday, finished_at: lastSunday },
+    ];
+    render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("range-week")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId("range-week"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Nothing logged yet this week.")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("session-3")).toBeNull();
+    expect(screen.queryByText("No workouts match that search.")).toBeNull();
+  });
+
   it("filters sessions by exercise name search and clears", async () => {
     render(<HistoryTab refreshKey={0} onStartWorkout={vi.fn()} />);
     await waitFor(() => {

@@ -21,6 +21,12 @@ import StatsGrid from "./history/StatsGrid";
 import WeekdayBarChart from "./history/WeekdayBarChart";
 import { rangeStart, type RangeKey } from "./history/utils";
 
+const EMPTY_RANGE_LABEL: Record<RangeKey, string> = {
+  week: "Nothing logged yet this week.",
+  "7d": "Nothing logged in the last 7 days.",
+  "30d": "Nothing logged in the last 30 days.",
+};
+
 interface HistoryTabProps {
   refreshKey: number;
   onStartWorkout: (template: WorkoutTemplate) => void;
@@ -307,7 +313,7 @@ export default function HistoryTab({ refreshKey, onStartWorkout }: HistoryTabPro
           onSelect={setDetail}
           onEditDate={updateSession}
           onDelete={handleDelete}
-          emptyLabel="No workouts match that search."
+          emptyLabel={search.trim() ? "No workouts match that search." : EMPTY_RANGE_LABEL[range]}
         />
       )}
 
