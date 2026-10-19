@@ -62,10 +62,15 @@ function makeMeasurement(overrides: Partial<BodyMeasurementResponse> = {}): Body
   };
 }
 
+function daysAgoIso(days: number): string {
+  return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+}
+
 function twoMeasurements(): BodyMeasurementResponse[] {
+  // Relative to today so the default 90d range filter never drops them.
   return [
-    makeMeasurement({ id: 1, date: "2026-07-20", waist_cm: 82, hips_cm: 96 }),
-    makeMeasurement({ id: 2, date: "2026-07-29", waist_cm: 80, hips_cm: 95 }),
+    makeMeasurement({ id: 1, date: daysAgoIso(10), waist_cm: 82, hips_cm: 96 }),
+    makeMeasurement({ id: 2, date: daysAgoIso(1), waist_cm: 80, hips_cm: 95 }),
   ];
 }
 
