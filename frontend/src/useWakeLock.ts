@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { logger } from "./logger";
 
 /**
  * Keeps the screen awake while `active` is true using the Screen Wake Lock API
@@ -42,7 +43,9 @@ export function useWakeLock(active: boolean): void {
       disposed = true;
       document.removeEventListener("visibilitychange", onVisibilityChange);
       if (lock) {
-        void lock.release().catch(() => {});
+        void lock.release().catch((err) => {
+          logger.error("WakeLock release failed", err);
+        });
         lock = null;
       }
     };

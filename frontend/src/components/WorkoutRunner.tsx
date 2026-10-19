@@ -851,7 +851,9 @@ export default function WorkoutRunner({
               rpe: l.rpe ?? null,
               notes: l.notes ?? "",
             })),
-          ).catch(() => {});
+          ).catch((err) => {
+            logger.error("Failed to save exercise logs", err);
+          });
         }
         return null;
       });

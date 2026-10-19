@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { logger } from "../../logger";
 import {
   api,
   type BodyMeasurementCreate,
@@ -41,8 +42,8 @@ export default function MeasurementsSection() {
   const [measRange, setMeasRange] = useState<MeasRange>("90d");
 
   useEffect(() => {
-    api.getMeasurements().then(setMeasurements).catch(() => {});
-    api.getMeasurementChanges().then(setChanges).catch(() => {});
+    api.getMeasurements().then(setMeasurements).catch((e) => logger.error("Failed to load measurements", e));
+    api.getMeasurementChanges().then(setChanges).catch((e) => logger.error("Failed to load measurement changes", e));
   }, []);
 
   const submit = async () => {

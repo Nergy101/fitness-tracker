@@ -2,6 +2,7 @@
 
 import { API_BASE, fetchJSON } from "./client";
 import { getStoredAuth } from "../auth";
+import { logger } from "../logger";
 
 export type Category = "cardio" | "strength" | "flexibility" | "other";
 
@@ -103,7 +104,7 @@ export const exercisesApi = {
       if (stale) {
         // Serve cached immediately; refresh in the background so the next
         // load sees any newly-seeded exercises.
-        fetchExercisesFresh().catch(() => {});
+        fetchExercisesFresh().catch((e) => logger.error("Background exercise refresh failed", e));
       }
       return Promise.resolve(cached.exercises);
     }

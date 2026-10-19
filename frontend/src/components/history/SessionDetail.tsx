@@ -94,7 +94,7 @@ export default function SessionDetail({
           setBoxRounds(e.rounds != null ? String(e.rounds) : "");
         }
       })
-      .catch(() => {});
+      .catch((e) => logger.error("Failed to load boxing entry", e));
     return () => {
       active = false;
     };
@@ -192,7 +192,7 @@ export default function SessionDetail({
           setRunMinutesEdit(String(Math.round(e.duration_seconds / 60)));
         }
       })
-      .catch(() => {});
+      .catch((e) => logger.error("Failed to load run entry", e));
     return () => {
       active = false;
     };

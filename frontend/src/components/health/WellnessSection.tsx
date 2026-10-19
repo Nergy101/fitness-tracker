@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { logger } from "../../logger";
 import {
   SmileyIcon as Smiley,
   SmileyMehIcon as SmileyMeh,
@@ -18,8 +19,8 @@ export default function WellnessSection() {
   const [sleep, setSleep] = useState(7);
 
   useEffect(() => {
-    api.getWellnessEntries().then(setEntries).catch(() => {});
-    api.getWellnessTrends().then(setTrends).catch(() => {});
+    api.getWellnessEntries().then(setEntries).catch((e) => logger.error("Failed to load wellness entries", e));
+    api.getWellnessTrends().then(setTrends).catch((e) => logger.error("Failed to load wellness trends", e));
   }, []);
 
   const submit = async () => {

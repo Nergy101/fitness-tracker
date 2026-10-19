@@ -3,6 +3,7 @@ import { PencilSimpleIcon as PencilSimple, TrashIcon as Trash } from "@phosphor-
 import { api, type WorkoutSession } from "../../api";
 import { formatDate, formatDuration, localISO } from "../../format";
 import { ACTIVITY_COLORS, ACTIVITY_ICONS, activityKind } from "../../activity";
+import { logger } from "../../logger";
 
 /** A single session row with inline date/time editing. */
 export default function SessionCard({
@@ -44,7 +45,7 @@ export default function SessionCard({
               onBlur={() => {
                 api.updateSession(session.id, { started_at: localISO(editValue) }).then((updated) => {
                   onEditDate(updated);
-                }).catch(() => {});
+                }).catch((e) => logger.error("Failed to update session date", e));
                 setEditing(false);
               }}
               onClick={(e) => e.stopPropagation()}

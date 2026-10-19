@@ -64,7 +64,7 @@ export async function getPushSubscription(): Promise<PushSubscriptionInfo | null
 export async function registerPushSubscription(): Promise<PushSubscriptionInfo | null> {
   const registration = await getSWRegistration();
   if (!registration) {
-    console.warn("No service worker registration available");
+    logger.warn("Push", "No service worker registration available");
     return null;
   }
 
@@ -80,7 +80,8 @@ export async function registerPushSubscription(): Promise<PushSubscriptionInfo |
   const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY ?? "";
 
   if (!vapidPublicKey) {
-    console.warn(
+    logger.warn(
+      "Push",
       "No VAPID public key configured (set VITE_VAPID_PUBLIC_KEY env var). " +
         "Push subscription will be skipped.",
     );
