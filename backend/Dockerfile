@@ -1,7 +1,10 @@
 # FitnessTracker backend — FastAPI + SQLite.
-FROM python:3.14-slim
+FROM python:3.14-alpine
 
 WORKDIR /app
+
+# Pull latest alpine security patches (base image tags lag the repos by days)
+RUN apk upgrade --no-cache
 
 # Install deps first for layer caching.
 COPY requirements.txt .
